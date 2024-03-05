@@ -478,6 +478,24 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.imod_flags"] = mrch.imod_flags;
 	dict["MRC.map"] = string(mrch.map, 4);		/* constant string "MAP "  */
 
+	dict["IMODMRC.dvid"] = mrch.dvid;
+	dict["IMODMRC.numintegers"] = mrch.numintegers;
+	dict["IMODMRC.numfloats"] = mrch.numfloats;
+	dict["IMODMRC.sub"] = mrch.sub;
+	dict["IMODMRC.zfac"] = mrch.zfac;
+
+	dict["IMODMRC.min2"] = mrch.min2;
+	dict["IMODMRC.max2"] = mrch.max2;
+	dict["IMODMRC.min3"] = mrch.min3;
+	dict["IMODMRC.max3"] = mrch.max3;
+
+	dict["IMODMRC.idtype"] = mrch.idtype;
+	dict["IMODMRC.lens"] = mrch.lens;
+	dict["IMODMRC.nd1"] = mrch.nd1;
+	dict["IMODMRC.nd2"] = mrch.nd2;
+	dict["IMODMRC.vd1"] = mrch.vd1;
+	dict["IMODMRC.vd2"] = mrch.vd2;
+
 	float apx = mrch.xlen / mrch.mx;
 	float apy = mrch.ylen / mrch.my;
 	float apz = mrch.zlen / mrch.mz;
@@ -569,27 +587,6 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 {
 	ENTERFUNC;
 
-	dict["FEIMRC.next"] = feimrch.next;	//offset from end of header to the first dataset
-	dict["FEIMRC.dvid"] = feimrch.dvid;
-	dict["FEIMRC.numintegers"] = feimrch.numintegers;
-	dict["FEIMRC.numfloats"] = feimrch.numfloats;
-	dict["FEIMRC.sub"] = feimrch.sub;
-	dict["FEIMRC.zfac"] = feimrch.zfac;
-
-	dict["FEIMRC.min2"] = feimrch.min2;
-	dict["FEIMRC.max2"] = feimrch.max2;
-	dict["FEIMRC.min3"] = feimrch.min3;
-	dict["FEIMRC.max3"] = feimrch.max3;
-	dict["FEIMRC.min4"] = feimrch.min4;
-	dict["FEIMRC.max4"] = feimrch.max4;
-
-	dict["FEIMRC.idtype"] = feimrch.idtype;
-	dict["FEIMRC.lens"] = feimrch.lens;
-	dict["FEIMRC.nd1"] = feimrch.nd1;
-	dict["FEIMRC.nd2"] = feimrch.nd2;
-	dict["FEIMRC.vd1"] = feimrch.vd1;
-	dict["FEIMRC.vd2"] = feimrch.vd2;
-
 	/* Read extended image header by specified image index */
 	FeiMrcExtHeader feiexth;
 
@@ -598,29 +595,6 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, file) != 1) {
 		throw ImageReadException(filename, "FEI MRC extended header");
 	}
-
-	dict["FEIMRC.a_tilt"] = feiexth.a_tilt;
-	dict["FEIMRC.b_tilt"] = feiexth.b_tilt;
-
-	dict["FEIMRC.x_stage"] = feiexth.x_stage;
-	dict["FEIMRC.y_stage"] = feiexth.y_stage;
-	dict["FEIMRC.z_stage"] = feiexth.z_stage;
-
-	dict["FEIMRC.x_shift"] = feiexth.x_shift;
-	dict["FEIMRC.y_shift"] = feiexth.y_shift;
-
-	dict["FEIMRC.defocus"] = feiexth.defocus;
-	dict["FEIMRC.exp_time"] = feiexth.exp_time;
-	dict["FEIMRC.mean_int"] = feiexth.mean_int;
-	dict["FEIMRC.tilt_axis"] = feiexth.tilt_axis;
-
-	dict["FEIMRC.pixel_size"] = feiexth.pixel_size;
-	dict["FEIMRC.magnification"] = feiexth.magnification;
-	dict["FEIMRC.ht"] = feiexth.ht;
-	dict["FEIMRC.binning"] = feiexth.binning;
-	dict["FEIMRC.appliedDefocus"] = feiexth.appliedDefocus;
-
-	// remainder 16 4-byte floats not used
 
 	EXITFUNC;
 
