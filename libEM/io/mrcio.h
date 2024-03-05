@@ -122,7 +122,7 @@ namespace EMAN
 			int nsymbt;			/* 23 - Number of bytes in extended header. */
 
 			/* https://bio3d.colorado.edu/imod/doc/libhelp/mrcfiles.html */
-			short dvid;
+			short creatid;
 			char blank[6];
 
 			/* https://www.ccpem.ac.uk/mrc_format/mrc2014.php */
@@ -131,8 +131,8 @@ namespace EMAN
 			char blank2[16];
 
 			/* https://bio3d.colorado.edu/imod/doc/libhelp/mrcfiles.html */
-			short numintegers;
-			short numfloats;
+			short nint;
+			short nreal;
 
 			short sub;
 			short zfac;

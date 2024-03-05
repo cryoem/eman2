@@ -496,9 +496,9 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.imod_flags"] = mrch.imod_flags;
 	dict["MRC.map"] = string(mrch.map, 4);		/* constant string "MAP "  */
 
-	dict["IMODMRC.dvid"] = mrch.dvid;
-	dict["IMODMRC.numintegers"] = mrch.numintegers;
-	dict["IMODMRC.numfloats"] = mrch.numfloats;
+	dict["IMODMRC.creatid"] = mrch.creatid;
+	dict["IMODMRC.nint"] = mrch.nint;
+	dict["IMODMRC.nreal"] = mrch.nreal;
 	dict["IMODMRC.sub"] = mrch.sub;
 	dict["IMODMRC.zfac"] = mrch.zfac;
 
