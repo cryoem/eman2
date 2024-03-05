@@ -418,12 +418,13 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 {
 	init();
 
+	read_mrc_header(dict, image_index, area, is_3d);
+
 	if (isFEI) {
-		return read_fei_header(dict, image_index, area, is_3d);
+		read_fei_header(dict, image_index, area, is_3d);
 	}
-	else {
-		return read_mrc_header(dict, image_index, area, is_3d);
-	}
+
+	return 0;
 }
 
 int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bool)
