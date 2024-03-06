@@ -32,6 +32,7 @@
 from EMAN3 import *
 from EMAN3tensor import *
 import random
+from sys import argv
 
 def main():
 
@@ -74,7 +75,7 @@ At the moment this program provides only an option for estimating the gain image
 		avg.div(avg["mean"])
 		#avg.add(-avg["mean"])
 		nimg=EMUtil.get_image_count(args[0])
-		imgs=EMDataStack2D(EMData.read_images(f"{args[i]}:0:{min(50,nimg)}"))
+		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
 		for im in imgs:
 			im.div(avg)
 		ffts=imgs.do_fft()
