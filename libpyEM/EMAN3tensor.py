@@ -317,6 +317,9 @@ class EMStack2D(EMStack):
 				return EMStack2D(self.tensor*tf.math.conj(target))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+	def write_images(self,fsp=None):
+		self.coerce_emdata()
+		EMData.write_images(fsp,self._data)
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount

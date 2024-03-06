@@ -35,7 +35,7 @@ import random
 
 def main():
 
-	usage="""e3movie_align.py <movie stack> ...
+	usage="""e3movie.py <movie stack> ...
 
 At the moment this program provides only an option for estimating the gain image from a large set of counting-mode images. Eventually this will include movie alignment.
 	"""
@@ -70,12 +70,18 @@ At the moment this program provides only an option for estimating the gain image
 		avg2.write_image("average.hdf",2)
 
 	if options.ccftest is not None:
-		avg.add(-avg["mean"])
-		nimg=EMUtil.get_image_count(args[i])
-		imgs=EMData.read_images(f"{args[i]}:0:{min(50,nimg)}")
-		for i in imgs:
-			i.
-		emds=EMDataStack(imgs)
+		avg=EMData("average.hdf",0)
+		avg.div(avg["mean"])
+		#avg.add(-avg["mean"])
+		nimg=EMUtil.get_image_count(args[0])
+		imgs=EMDataStack2D(EMData.read_images(f"{args[i]}:0:{min(50,nimg)}"))
+		for im in imgs:
+			im.div(avg)
+		ffts=imgs.do_fft()
+		ccfs=imgs.calc_ccf(imgs[len(imgs)//2])
+		ccfsr=ccfs.do_ift()
+
+		ccfsr.write_images("ccfs.hdf")
 
 
 	E3end(argv)
