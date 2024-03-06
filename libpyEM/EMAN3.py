@@ -647,6 +647,10 @@ def good_size_small(size):
 	for i in reversed(good_box_sizes) :
 		if i<=size: return i
 
+def clamp(low,value,high):
+	"""Fast function to return value "clamped" to specified low-high range. Float or int."""
+	return low if value<low else high if value>high else value
+
 def re_filter_list(listtofilter, regex, invert=False):
 	"""
 	Filter a list by a regular expression
