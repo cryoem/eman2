@@ -69,7 +69,9 @@ def save_model_pdb(gen_model, gen_model_ca, options, fname, thetas=[]):
 
 		pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
 
-	np.savetxt(fname+".txt", pout[0].numpy())
+	if options.writetxt:
+		np.savetxt(fname+".txt", pout[0].numpy())
+		
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 	atom_pos=atom_pos[0].numpy()
 
@@ -109,6 +111,7 @@ def main():
 	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 32", default=32)
 	parser.add_argument("--batchsz", type=int,help="batch size. default is 16", default=16)
 	parser.add_argument("--rebuild_rotamer", action="store_true", default=False ,help="rebuild all rotamers. slow. require high resolution map.")
+	parser.add_argument("--writetxt", action="store_true", default=False ,help="write txt for model in addtion to pdb.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
