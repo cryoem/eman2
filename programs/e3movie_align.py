@@ -29,7 +29,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 
-from EMAN2 import *
+from EMAN3 import *
 import random
 
 def main():
@@ -44,26 +44,29 @@ At the moment this program provides only an option for estimating the gain image
 
 	(options, args) = parser.parse_args()
 
+	pid=E3init(argv)
 	nmov=len(args)
 
 	if options.est_gain is not None:
 
-		med1=Averagers.get("mean")
-		for i in range(400):
-			med2=Averagers.get("median")
-			for j in range(25):
-				msel=random.randint(0,nmov-1)	# pick a random movie
-				nimg=EMUtil.get_image_count(args[msel])
-				isel=random.randint(2,nimg-2)	# skip the first 2 frames since they may be unusual
-				img=EMData(args[msel],isel)
-				if options.verbose>1 : print(i,j,msel,isel)
-				med2.add_image(img)
-			img2=med2.finish()
-			med1.add_image(img2)
-		final=med1.finish()
-		#final.mult(1.0/final["mean"])
+		sig=EMData()
+		avgr=Averagers.get("mean",{"sigma":sig})
+		for i in range(nmov):
+			if (i%10==0): E3progress(pid,i/nmov)
+			nimg=EMUtil.get_image_count(args[i])
+			print(f"{args[i]}: {nimg}")
+			if (nimg>500) : raise Exception("Can't deal with movies with >500 frames at present")
+			for j in range(0,nimg,50):
+				imgs=EMData.read_images(f"{args[i]}:{j}:{j+50}")
+				for img in imgs: avgr.add_image(img)
 
-		final.write_image(options.est_gain,0)
+		avg=avgr.finish()
+		avg.write_image("average.hdf",0)
+		sig.write_image("average.hdf",1)
+		avg.mult(sig.process("math.reciprocal"))
+		avg.write_image("average.hdf",2)
+
+	E3end(argv)
 
 if __name__ == '__main__':
 	main()

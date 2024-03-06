@@ -322,7 +322,7 @@ This function is called to log the end of the current job. n is returned by E3in
 
 	return n
 
-def E2saveappwin(app,key,win):
+def E3saveappwin(app,key,win):
 	"""stores the window geometry using the application default mechanism for later restoration. Note that
 	this will only work with Qt windows"""
 	try:
@@ -335,7 +335,7 @@ def E2saveappwin(app,key,win):
 	except:
 		print("Error saving window location ",key)
 
-def E2loadappwin(app,key,win):
+def E3loadappwin(app,key,win):
 	"""restores a geometry saved with E2saveappwin"""
 	try:
 		geom=list(E2getappval(app,key))
@@ -347,13 +347,13 @@ def E2loadappwin(app,key,win):
 #		print(app,key,geom)
 	except: return
 
-def E2saveprojtype(app,key,win):
+def E3saveprojtype(app,key,win):
 	"""stores the project type using the application default mechanism for later restoration. Note that
 	this will only work with Qt windows"""
 	try: E2setappval(app,key,win.modeCB.currentIndex())
 	except: print("Error saving project type")
 
-def E2loadprojtype(app,key,win):
+def E3loadprojtype(app,key,win):
 	"""restores project type saved with E2saveappwin"""
 	try:
 		idx=E2getappval(app,key)
@@ -361,7 +361,7 @@ def E2loadprojtype(app,key,win):
 		win._onModeChange(idx)
 	except: return
 
-def E2setappval(app,key,value):
+def E3setappval(app,key,value):
 	"""E2setappval
 This function will set an application default value both in the local directory and ~/.eman2
 When settings are read, the local value is checked first, then if necessary, the global value."""
@@ -396,7 +396,7 @@ When settings are read, the local value is checked first, then if necessary, the
 		return
 
 
-def E2getappval(app,key,dfl=None):
+def E3getappval(app,key,dfl=None):
 	"""E2getappval
 This function will get an application default by first checking the local directory, followed by
 ~/.eman2"""
@@ -428,7 +428,7 @@ This function will get an application default by first checking the local direct
 
 	return dfl
 
-def E2getappvals():
+def E3getappvals():
 	"""E2getappvals
 This function will return a list of lists containing all currently set application defaults as [program,option,value,global|local]"""
 
@@ -646,6 +646,10 @@ def good_size_small(size):
 
 	for i in reversed(good_box_sizes) :
 		if i<=size: return i
+
+def clamp(low,value,high):
+	"""Fast function to return value "clamped" to specified low-high range. Float or int."""
+	return low if value<low else high if value>high else value
 
 def re_filter_list(listtofilter, regex, invert=False):
 	"""

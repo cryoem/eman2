@@ -189,7 +189,7 @@ namespace EMAN
 		TypeDict get_param_types() const
 		{
 			TypeDict d;
-			d.put("sigma", EMObject::EMDATA, "sigma value");
+			d.put("sigma", EMObject::EMDATA, "Pass in a new image object. It will be resized and contain the standard deviation of the image after finish().");
 			d.put("normimage", EMObject::EMDATA, "In conjunction with ignore0, the number of non zero values for each pixel will be stored in this image.");
 			d.put("ignore0", EMObject::INT, "if set, ignore zero value pixels");
 			return d;
