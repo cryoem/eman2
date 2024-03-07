@@ -1046,27 +1046,27 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
 
-		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
-		portable_fseek(file, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
+	portable_fseek(file, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
-		size_t modesize;
+	size_t modesize;
 
-		if (mrch.mode == MRC_UHEX) {
-			// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
-			// so the mode size is effectively half a byte, signalled by this value:
-			modesize = 11111111;
-		}
-		else {
-			modesize = mode_size;
-		}
+	if (mrch.mode == MRC_UHEX) {
+		// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
+		// so the mode size is effectively half a byte, signalled by this value:
+		modesize = 11111111;
+	}
+	else {
+		modesize = mode_size;
+	}
 
-		EMUtil::process_region_io(cdata, file, READ_ONLY,
-								  image_index, modesize,
-								  mrch.nx, mrch.ny, mrch.nz, area);
+	EMUtil::process_region_io(cdata, file, READ_ONLY,
+							  image_index, modesize,
+							  mrch.nx, mrch.ny, mrch.nz, area);
 
-		EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 
-		size = (size_t)xlen * ylen * zlen;
+	size = (size_t)xlen * ylen * zlen;
 
 	if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR  &&
 	    mrch.mode != MRC_UHEX) {
