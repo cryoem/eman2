@@ -1046,19 +1046,6 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
 
-	if (isFEI) {	// FEI extended MRC
-		check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
-		portable_fseek(file, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
-
-		EMUtil::process_region_io(cdata, file, READ_ONLY,
-								  image_index, mode_size,
-								  feimrch.nx, feimrch.ny, feimrch.nz, area);
-
-		EMUtil::get_region_dims(area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
-
-		size = (size_t)xlen * ylen * zlen;
-	}
-	else {	// regular MRC
 		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
 		portable_fseek(file, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
@@ -1080,7 +1067,6 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
 
 		size = (size_t)xlen * ylen * zlen;
-	}
 
 	if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR  &&
 	    mrch.mode != MRC_UHEX) {
