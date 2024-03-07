@@ -31,6 +31,8 @@
 
 #include <cstring>
 #include <climits>
+#include <chrono>
+#include <ctime>
 
 #include <sys/stat.h>
 
@@ -42,6 +44,22 @@
 #include "transform.h"
 
 using namespace EMAN;
+
+string convert_microseconds_to_local_time(long us) {
+	using std::chrono::microseconds;
+	using std::chrono::system_clock;
+
+    auto time_point = system_clock::time_point(microseconds(us));
+    time_t current_t = system_clock::to_time_t(time_point);
+    tm* timeInfo = std::localtime(&current_t);
+
+    // Format and return the local time as a string
+    char buffer[80];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+	string local_t = string(buffer) + " (localtime)";
+
+	return local_t;
+}
 
 const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
@@ -730,6 +748,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	if(bitmask[4]) dict["FEIMRC.image_rotation"] = feiexth.image_rotation;
 	if(bitmask[5]) dict["FEIMRC.scan_mode_enumeration"] = feiexth.scan_mode_enumeration;
 
+	if(bitmask[6]) dict["FEIMRC.acquisition_time_stamp"] = convert_microseconds_to_local_time(feiexth.acquisition_time_stamp);
 	if(bitmask[7]) dict["FEIMRC.detector_commercial_name"] = string(feiexth.detector_commercial_name, 16);
 	if(bitmask[8]) dict["FEIMRC.start_tilt_angle"] = feiexth.start_tilt_angle;
 	if(bitmask[9]) dict["FEIMRC.end_tilt_angle"] = feiexth.end_tilt_angle;
@@ -738,6 +757,7 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 	if(bitmask[12]) dict["FEIMRC.beam_center_x_pixel"] = feiexth.beam_center_x_pixel;
 	if(bitmask[13]) dict["FEIMRC.beam_center_y_pixel"] = feiexth.beam_center_y_pixel;
 
+	if(bitmask[14]) dict["FEIMRC.cfeg_flash_timestamp"] = convert_microseconds_to_local_time(feiexth.cfeg_flash_timestamp);
 	if(bitmask[15]) dict["FEIMRC.phase_plate_position_index"] = feiexth.phase_plate_position_index;
 	if(bitmask[16]) dict["FEIMRC.objective_aperture_name"] = string(feiexth.objective_aperture_name, 16);
 
