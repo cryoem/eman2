@@ -19,7 +19,7 @@ import tensorflow as tf
 from e2gmm_refine_new import set_indices_boxsz, load_particles, pts2img, calc_frc, get_clip
 from e2gmm_model_refine import calc_clashid, calc_bond, calc_angle, find_clash, compile_chi_matrix, get_rotamer_angle, rotate_sidechain, get_info, calc_dihedral_tf
 
-def build_decoder_anchor(pts, icls, ninp=4, meanzero=False):
+def build_decoder_anchor(pts, icls, ninp=4, meanzero=False, freeamp=False):
 	nc=int(np.max(icls))+1
 	print("building decoder with {} Gaussian, using {} anchor points".format(len(pts[0]), nc))
 	
@@ -41,12 +41,20 @@ def build_decoder_anchor(pts, icls, ninp=4, meanzero=False):
 		y0=l(y0)
 
 	y0=tf.gather(y0, icls, axis=1)
+	
+	if freeamp:
+		lz0=tf.keras.layers.Dense((len(pts[0])*5), activation="linear", kernel_initializer=kinit)
+		y1=lz0(x0)
+		y1=tf.reshape(y1, (-1, len(pts[0]), 5))
+		y1=y1*[0,0,0,1,1]
+		y0+=y1
+		
 	if meanzero==False:
 		y0=y0+pts
 	
 	model=tf.keras.Model(x0, y0)
 	return model
-
+	
 def save_model_pdb(gen_model, gen_model_ca, options, fname, thetas=[]):
 	
 	conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
@@ -61,6 +69,9 @@ def save_model_pdb(gen_model, gen_model_ca, options, fname, thetas=[]):
 
 		pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
 
+	if options.writetxt:
+		np.savetxt(fname+".txt", pout[0].numpy())
+		
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 	atom_pos=atom_pos[0].numpy()
 
@@ -96,9 +107,11 @@ def main():
 	parser.add_argument("--model", type=str,help="alternative pdb model. default is model_input in path.", default=None)
 	parser.add_argument("--map", type=str,help="map file for model fitting.", default=None)
 	parser.add_argument("--resolution", type=float,help="target resolution.", default=4.)
+	parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
 	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 32", default=32)
 	parser.add_argument("--batchsz", type=int,help="batch size. default is 16", default=16)
 	parser.add_argument("--rebuild_rotamer", action="store_true", default=False ,help="rebuild all rotamers. slow. require high resolution map.")
+	parser.add_argument("--writetxt", action="store_true", default=False ,help="write txt for model in addtion to pdb.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -182,7 +195,7 @@ def main():
 	conf=tf.zeros((2,4), dtype=floattype)+1.
 	pout=gen_model(conf)
 	
-	gen_model_ca=build_decoder_anchor(pts[None,...], caidx, meanzero=True)
+	gen_model_ca=build_decoder_anchor(pts[None,...], caidx, meanzero=True, freeamp=False)
 	conf=tf.zeros((2,4), dtype=floattype)+1.
 	d=gen_model_ca(conf)[0]
 	
@@ -194,7 +207,7 @@ def main():
 	options.minpx=4
 	options.maxpx=maxboxsz//2
 	nbatch=int(trainset.cardinality())
-	opt=tf.keras.optimizers.Adam(learning_rate=1e-5) 
+	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	
 	##########################################
 	etc=""
@@ -260,7 +273,9 @@ def main():
 		
 		
 	##########################################
-	opt=tf.keras.optimizers.Adam(learning_rate=1e-5) 
+	print("C-alpha model refinement...")
+	print("iter,   loss,   bond outlier,  angle outlier, clash_score,  number of clash")
+	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	wts=gen_model.trainable_variables
 	wts+=gen_model_ca.trainable_variables
 	weight_model=1e-4
@@ -527,7 +542,7 @@ def main():
 	
 	for itr in range(20):
 		if itr==10:
-			opt=tf.keras.optimizers.Adam(learning_rate=1e-5) 
+			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 			wts=tf_theta
 			wts+=gen_model.trainable_variables
 			wts+=gen_model_ca.trainable_variables

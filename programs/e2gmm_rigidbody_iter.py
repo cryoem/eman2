@@ -15,6 +15,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="number of iteration. default is 5", default=5)
 	parser.add_argument("--npatch", type=int,help="number of patches. default is 8", default=8)
 	parser.add_argument("--maxres", type=float,help="max resolution to consider in refinement. i.e. the alignment will not use information beyond this even if FSC goes further.", default=4.)
+	parser.add_argument("--startres", type=float,help="start resolution.", default=-1)
 	parser.add_argument("--expandsym", type=str,help="symmetry expansion. i.e. start from an input refinement with the given symmetry and perform the new refinement with c1 by making copies of each particle at symmetrical equivalent positions. ", default=None)
 	parser.add_argument("--masktight", action="store_true", default=False ,help="Use tight patch mask instead of spherical ones. seems safe.")
 	parser.add_argument("--masks", type=str,help="masks for refinement. multiple files separated by ','. Replace npatch if specified.", default=None)
@@ -132,7 +133,15 @@ def main():
 	#### starting refinement
 	maskfile=[f"{path}/mask_patch_{ci:02d}.hdf" for ci in range(options.npatch)]
 	masks=','.join(maskfile)
-	resmult=[1.5,1.5,1.3,1.1,1.0]+[1.0]*options.niter
+	if options.startres<0:
+		resmult=[1.5,1.5,1.3,1.1,1.0]+[1.0]*options.niter
+	else:
+		resmult=np.arange(options.niter)/(options.niter-1)
+		resmult=resmult[::-1]*(options.startres-options.maxres)+options.maxres
+		print(resmult)
+		resmult/=options.maxres
+		resmult=np.append(resmult[0], resmult)
+		resmult=np.append(resmult, resmult[-1])
 	
 	for iiter in range(options.startiter, options.niter+1):
 		res=options.maxres*resmult[iiter]

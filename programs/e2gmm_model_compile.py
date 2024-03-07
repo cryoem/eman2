@@ -35,6 +35,17 @@ def main():
 		pdbpar = PDBParser( QUIET = True) 
 		
 	pdb = pdbpar.get_structure("model",options.model)
+	######## remove Hydrogen
+	residue=list(pdb.get_residues())
+	nh=0
+	for r in residue:
+		d=list(r.child_dict)
+		for a in d:
+			if a[0]=='H':
+				r.detach_child(a)
+				nh+1
+	if nh>0:
+		print(f"Removing {nh} H atoms")
 	atoms=list(pdb.get_atoms())
 	
 
@@ -290,6 +301,7 @@ def main():
 
 	tosave=np.hstack([dihs_chi, dihs_chi_res[:,None], chi_id[:,None]])
 	np.savetxt(f"{path}/model_dih_chi.txt", tosave.astype(int))
+	print(f"Done. Parameters written in folder {path}")
 	E2end(logid)
 	
 	

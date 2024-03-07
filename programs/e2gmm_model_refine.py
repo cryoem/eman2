@@ -33,9 +33,9 @@ def build_decoder(p0, options):
 		# tf.keras.layers.Dense(64, activation="relu"),
 		tf.keras.layers.Dense(128, activation="relu"),
 		tf.keras.layers.Dense(256, activation="relu"),
-		tf.keras.layers.Dropout(.1),
+		# tf.keras.layers.Dropout(.1),
 		tf.keras.layers.Dense(512, activation="relu"),
-		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dropout(.1),
 		# tf.keras.layers.BatchNormalization(),
 		tf.keras.layers.Dense(np.prod(p0.shape), activation="linear", kernel_initializer=kinit),
 		tf.keras.layers.Reshape(p0.shape),
@@ -297,10 +297,15 @@ def get_rotamer_angle(atoms, nchi=0):
 	rotmat_idx[rotmat_idx==-1]=len(rot_axis)
 	return rot_axis, rotmat_idx
 
-def rotate_sidechain(pout, rot_axis, theta, rotmat_idx):
-	rtax=tf.gather(pout[:,:,:3], rot_axis, axis=1)
-	px=tf.reshape(rtax, (-1,2,3))
-	tt=tf.reshape(theta, -1)
+
+# @tf.function(experimental_relax_shapes=True)
+def rotate_sidechain_one(args):
+	
+	pp, tt=args
+	pp=pp[None,:]
+	# print(pp.shape,  tt.shape)
+	px=tf.gather(pp[:,:,:3], params_sidechain["rot_axis"], axis=1)[0]
+	# print(pp.shape, px.shape, tt.shape)
 
 	axi=px[:,1,:]-px[:,0,:]
 	axn=tf.math.sqrt(tf.reduce_sum(axi*axi, axis=1))[:,None]
@@ -319,17 +324,71 @@ def rotate_sidechain(pout, rot_axis, theta, rotmat_idx):
 	axc=0.5*(px[:,1,:]+px[:,0,:])[:,None,:]
 	trans=-tf.matmul(axc, mat)+axc
 	mat=tf.concat([mat, trans], axis=1)
-	mat=tf.reshape(mat, (pout.shape[0], -1, 4,3))
+	mat=tf.reshape(mat, (pp.shape[0], -1, 4,3))
 
 	eye=tf.eye(4,3)[None,None,:,:]
-	eye=tf.repeat(eye, pout.shape[0], axis=0)
+	eye=tf.repeat(eye, pp.shape[0], axis=0)
 	mat=tf.concat([mat, eye], axis=1)
 	
 	
-	allmat=tf.gather(mat, rotmat_idx, axis=1)
-	pout_trans=tf.concat([pout[:,:,:3], tf.zeros_like(pout[:,:,:1])+1], axis=-1)
+	allmat=tf.gather(mat, params_sidechain["rotmat_idx"], axis=1)
+	pout_trans=tf.concat([pp[:,:,:3], tf.zeros_like(pp[:,:,:1])+1], axis=-1)
 	pout_rot=tf.matmul(pout_trans[:,:,None,:], allmat)[:,:,0,:]
-	return pout_rot
+	return pout_rot[0]
+	
+def rotate_sidechain(pout, rot_axis, theta, rotmat_idx):
+	global params_sidechain
+	params_sidechain={
+		"rot_axis": rot_axis,
+		"rotmat_idx": rotmat_idx
+		}
+	
+	assert theta.shape[0]<100
+	# print("@@@@@@@",pout.shape, theta.shape)
+	
+	# rt=tf.vectorized_map(rotate_sidechain_one, (pout, theta))
+	rt=[]
+	for i in range(pout.shape[0]):
+		rt.append(rotate_sidechain_one((pout[i], theta[i])))
+		
+	rt=tf.stack(rt, axis=0)
+	# print(rt.shape)
+	return rt
+
+# 
+# def rotate_sidechain1(pout, rot_axis, theta, rotmat_idx):
+# 	rtax=tf.gather(pout[:,:,:3], rot_axis, axis=1)
+# 	px=tf.reshape(rtax, (-1,2,3))
+# 	tt=tf.reshape(theta, -1)
+# 
+# 	axi=px[:,1,:]-px[:,0,:]
+# 	axn=tf.math.sqrt(tf.reduce_sum(axi*axi, axis=1))[:,None]
+# 	axi=tf.math.divide_no_nan(axi,axn)
+# 
+# 	a = tf.cos(tt / 2.0)
+# 	bcd=-tf.sin(tt / 2.0)[:,None]*axi
+# 	b,c,d=bcd[:,0],bcd[:,1],bcd[:,2]
+# 	aa, bb, cc, dd = a * a, b * b, c * c, d * d
+# 	bc, ad, ac, ab, bd, cd = b * c, a * d, a * c, a * b, b * d, c * d
+# 	mat=[[aa + bb - cc - dd, 2 * (bc + ad), 2 * (bd - ac)],
+# 		[2 * (bc - ad), aa + cc - bb - dd, 2 * (cd + ab)],
+# 		[2 * (bd + ac), 2 * (cd - ab), aa + dd - bb - cc]]
+# 	mat=tf.transpose(tf.stack(mat), (2,0,1))
+# 
+# 	axc=0.5*(px[:,1,:]+px[:,0,:])[:,None,:]
+# 	trans=-tf.matmul(axc, mat)+axc
+# 	mat=tf.concat([mat, trans], axis=1)
+# 	mat=tf.reshape(mat, (pout.shape[0], -1, 4,3))
+# 
+# 	eye=tf.eye(4,3)[None,None,:,:]
+# 	eye=tf.repeat(eye, pout.shape[0], axis=0)
+# 	mat=tf.concat([mat, eye], axis=1)
+# 	
+# 	
+# 	allmat=tf.gather(mat, rotmat_idx, axis=1)
+# 	pout_trans=tf.concat([pout[:,:,:3], tf.zeros_like(pout[:,:,:1])+1], axis=-1)
+# 	pout_rot=tf.matmul(pout_trans[:,:,None,:], allmat)[:,:,0,:]
+# 	return pout_rot
 
 def compile_hydrogen(pdb):
 	atoms=list(pdb.get_atoms())
@@ -420,6 +479,7 @@ def calc_atom_pos(conf, model, theta_all, options, training=False, addh=False, t
 	for ii in range(4):
 		theta=theta_all[ii][None,:]
 		theta=tf.repeat(theta, conf.shape[0], axis=0)
+		# print("#####", pout_rot.shape, conf.shape,theta.shape)
 		pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
 
 	pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
@@ -428,7 +488,7 @@ def calc_atom_pos(conf, model, theta_all, options, training=False, addh=False, t
 	if addh:
 		atom_pos=add_h(atom_pos,options.h_info)
 		if len(theta_h)!=0:
-			atom_pos=rotate_sidechain(atom_pos, options.rot_axish, theta_h[:,None], options.rotmat_idxh)
+			atom_pos=rotate_sidechain(atom_pos, options.rot_axish, theta_h[None,:], options.rotmat_idxh)
 		
 	return atom_pos
 	
@@ -492,15 +552,20 @@ def eval_chem(model, theta_all, theta_h, options):
 	etc+=" {} rotamer outlier.".format(np.sum(rotout))
 	
 	atom_pos=add_h(atom_pos,options.h_info)
-	arot=rotate_sidechain(atom_pos, options.rot_axish, theta_h[:,None], options.rotmat_idxh)
+	arot=rotate_sidechain(atom_pos, options.rot_axish, theta_h[None,:], options.rotmat_idxh)
 	
 	tree=KDTree(arot[0])
 	clashid=calc_clashid(arot[0].numpy(), options, pad=60)
 	vdw_radius=tf.gather(options.vdwr_h, clashid)+options.vdwr_h[:,None]
 	
-	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4,'M':9,'P':9}
+	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4,'P':4,'M':9}
 	atype=np.array([atomdic[a.id[0]] for a in options.atoms])
 	atype=np.append(atype, np.zeros(len(options.h_info[0]), dtype=int))
+
+	ah0=options.h_info[1][:,0]
+	ah0=(atype[ah0]==1).astype(int)
+	atype[options.npt_noh:]+=ah0*9
+
 	ii=np.arange(len(clashid))
 	ii=np.repeat(ii[:,None], clashid.shape[1], axis=1)
 	ab=atype[clashid]*10+atype[ii]
@@ -646,7 +711,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 	for itr in range(niter):
 		with tf.GradientTape() as gt:
 			conf=tf.zeros((2,options.nmid), dtype=floattype)+1
-			atom_pos=calc_atom_pos(conf, model, theta_all, options, training=True)
+			atom_pos=calc_atom_pos(conf, model, theta_all, options, training=training)
 			lossetc=0
 
 			######
@@ -672,7 +737,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			rama=eval_rama(phi, psi, options)
 			rama_score=tf.reduce_mean(rama)*.1
 			rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500
-			rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*100
+			rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*1
 			lossetc+=rama_score
 			lossetc+=rama_outlier
 			
@@ -725,7 +790,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			lossetc+=rota_outlier
 				
 			atom_pos=add_h(atom_pos,options.h_info)
-			tt=tf.repeat(theta_h[:,None], conf.shape[0], axis=0)
+			tt=tf.repeat(theta_h[None,:], conf.shape[0], axis=0)
 			arot=rotate_sidechain(atom_pos, options.rot_axish, tt, options.rotmat_idxh)
 			clash=find_clash(arot, options, relu=False)
 			clash0=tf.maximum(0,clash)
@@ -733,22 +798,21 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0+clash1))/conf.shape[0]/2.*5.
 			# c=tf.reduce_sum(tf.sign(clash))
 			lossetc+=clash_score
-			
-			l=lossetc
+			l=tf.math.log(lossetc)
 
 
 		assert np.isnan(l.numpy())==False
-
+		nclash=np.sum(clash.numpy()>0)//2
+		
 		grad=gt.gradient(l, wts)
 		optimizer.apply_gradients(zip(grad, wts))
 		etc=""
 		etc+=f", bond {bond_score:.3f},{bond_outlier:.3f}"
 		etc+=f", angle {ang_score:.3f},{ang_outlier:.3f}"
 		etc+=f", rama {rama_score:.3f},{rama_outlier:.3f}"
-		etc+=f", clash {clash_score:.3f}"
+		etc+=f", clash {clash_score:.3f},{nclash:d}"
 		etc+=f", rota {rota_score:.3f},{rota_outlier:.3f}"
 		etc+=f", plane {plane_score:.3f}"
-
 
 
 		print("{}/{}\t{:.3f}{}".format(len(cost), niter, l, etc), end='\r')
@@ -810,6 +874,7 @@ def main():
 	parser.add_argument("--path", type=str,help="folder generated by e2gmm_compile_model", default=None)
 	parser.add_argument("--model", type=str,help="alternative pdb model. default is model_input in path.", default=None)
 	parser.add_argument("--niter", type=str, help="number of iteration for loose and tight constraints. default is 5,10",default="5,10")
+	parser.add_argument("--fixrotamer", action="store_true", default=False ,help="select good rotamer before refinement")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -935,6 +1000,10 @@ def main():
 	print(f"  total {len(options.rot_axish)} angles for H rotation")
 	
 	theta_h=np.zeros(len(options.rot_axish), dtype=floattype)
+	
+	conf=np.zeros((3,options.nmid), dtype=floattype)+1
+	atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=False)
+	
 	save_model_pdb(gen_model_full, theta_all, theta_h, options, f"{path}/model_00")
 	
 	##########################################
@@ -964,31 +1033,34 @@ def main():
 	etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 	print(etc)
 	
-	print("Fixing bad rotamers....")
-	for chin in range(4):
-		fix_bad_rotamer(chin, gen_model_full, theta_all, theta_h, options)
+	if options.fixrotamer:
+		print("Fixing bad rotamers....")
+		for chin in range(4):
+			fix_bad_rotamer(chin, gen_model_full, theta_all, theta_h, options)
+		
+		atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
+		theta_h=optimize_h(atom_pos, options, npos=24)
+		etc=eval_chem(gen_model_full, theta_all, theta_h, options)
+		print(etc)
+		save_model_pdb(gen_model_full, theta_all, theta_h, options, f"{path}/model_01")
 	
-	atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
-	theta_h=optimize_h(atom_pos, options, npos=24)
-	etc=eval_chem(gen_model_full, theta_all, theta_h, options)
-	print(etc)
-	save_model_pdb(gen_model_full, theta_all, theta_h, options, f"{path}/model_01")
-	
+	learnrate=1e-5
+	# learnrate=0
 	##########################################
 	print("Start full refinemnet....")
-	opt=tf.keras.optimizers.Adam(learning_rate=1e-6)
+	opt=tf.keras.optimizers.Adam(learning_rate=learnrate)
 	for itr in range(niter[0]):
 		print("iteration ",itr)
-		cost=refine_backbone(gen_model_full, theta_all, theta_h, options, opt, niter=200, training=True)
+		cost=refine_backbone(gen_model_full, theta_all, theta_h, options, opt, niter=200, training=False)
 		etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 		print(etc)
 		
 	# options.nstd_bond=4.5
 	# options.nstd_angle=4.5
-	options.vdroverlap=0.25
-	
+	options.vdroverlap=0.35
+	etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 	print("Tightening constraints...")
-	opt=tf.keras.optimizers.Adam(learning_rate=1e-6)
+	opt=tf.keras.optimizers.Adam(learning_rate=learnrate)
 	for itr in range(niter[1]):
 		print("iteration ",itr)
 		cost=refine_backbone(gen_model_full, theta_all, theta_h, options, opt, niter=200, training=True)
@@ -996,12 +1068,12 @@ def main():
 		theta_h=optimize_h(atom_pos, options, npos=24)
 		etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 		print(etc)
+
+	##########################################
+	# cost=refine_backbone(gen_model_full, theta_all, theta_h, options, opt, niter=200, training=False)
+	# etc=eval_chem(gen_model_full, theta_all, theta_h, options)
+	# print(etc)
 # 	
-# 	opt=tf.keras.optimizers.Adam(learning_rate=1e-7)
-# 	cost=refine_backbone(gen_model_full, theta_all, theta_h, options, opt, niter=100, training=False)
-# 	etc=eval_chem(gen_model_full, theta_all, theta_h, options)
-	print(etc)
-	
 	save_model_pdb(gen_model_full, theta_all, theta_h, options, f"{path}/model_02")
 
 	E2end(logid)
