@@ -1812,8 +1812,52 @@ def main():
 		if options.evalmodel:
 			options.evalsize=raw_boxsz
 			eval_model(gen_model, options)
+		
+	##################
+	if options.anchor:
+		print("making anchor points...")
+		if os.path.isfile(options.anchor):
+			anchor=np.loadtxt(options.anchor)[:,:3]
+			anchor=tf.constant(anchor,dtype=floattype)
+		else:
+			pn=32
+			km=KMeans(pn,max_iter=30)
+			pp=pts[:,:3].copy()
+			km.fit(pp)
+			pc=km.cluster_centers_
 			
-	
+			emmask=True
+			try:
+				msk=EMData(options.selgauss)
+			except:
+				emmask=False
+				
+			if emmask:
+				## read selected Gaussian from mask file
+				m=msk.numpy().copy()
+				p=pp.copy()
+				p=p[:,::-1]
+				p[:,:2]*=-1
+				p=(p+.5)*msk["nx"]
+
+				o=np.round(p).astype(int)
+				v=m[o[:,0], o[:,1], o[:,2]]
+				imsk=v.astype(float)
+			else:
+				i=np.loadtxt(options.selgauss).astype(int).flatten()
+				imsk=np.zeros(len(pp), dtype=float)
+				imsk[i]=1
+			
+			pm=pp[imsk>.1]
+			km=KMeans(pn,max_iter=30)
+			km.fit(pm)
+			pc2=km.cluster_centers_
+			
+			anchor=np.vstack([pc, pc2])
+			np.savetxt(options.anchor, anchor)
+			print(f"Saving anchor points to {options.anchor}")
+			anchor=tf.constant(anchor,dtype=floattype)
+
 	#### For Gaussian selection
 	##   used both for align and heterg
 	imsk=tf.zeros(npt, dtype=floattype)+1
@@ -1905,9 +1949,6 @@ def main():
 				else:
 					encode_model=build_encoder(nout=options.nmid, conv=options.conv,ninp=len(pts[0]))
 				
-		if options.anchor:
-			anchor=np.loadtxt(options.anchor)[:,:3]
-			anchor=tf.constant(anchor,dtype=floattype)
 			
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
