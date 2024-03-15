@@ -17,7 +17,7 @@ from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emannotate2d import EMAnnotate2DWidget,EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
-from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
+from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
 from eman2_gui.embrowser import EMBrowserWidget
 from eman2_gui.emshape import EMShape
 from eman2_gui.valslider import ValSlider,ValBox,StringBox,EMSpinWidget
@@ -345,6 +345,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		tomo_vbl.setRowStretch(3,1)
 		tomo_vbl.addWidget(self.thumbnail,2,0)
 		zt_hbl = QtWidgets.QHBoxLayout()
+		self.show_vol_bt = QtWidgets.QPushButton("Show 3D Region")
+		self.view = None
 
 
 
@@ -357,6 +359,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		tomo_vbl.addLayout(zt_hbl,3,0)
+		tomo_vbl.addWidget(self.show_vol_bt,4,0)
 		self.tomo_list_panel.setLayout(tomo_vbl)
 		self.tomo_list_panel.setWindowTitle("Tomograms List")
 		self.tomo_list_panel.show()
@@ -579,6 +582,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.mousedrag.connect(self.img_view_mouse_drag)
 		self.zt_spinbox.valueChanged.connect(self.z_spinbox_changed)
 		self.zc_spinbox.valueChanged.connect(self.z_spinbox_changed)
+		self.show_vol_bt.clicked[bool].connect(self.show_3D_region)
 		self.previous_z = self.get_zpos()
 
 		E2loadappwin("e2annotate","main",self)
@@ -778,7 +782,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			try:
 				file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
 			except Exception as e:
-				print("Error writing file out due to",e)
+				print("Error writing file out due to", e)
 				return
 		else:
 
@@ -864,6 +868,43 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			pass
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 		self.reset_morp_params(reset_vs=False)
+
+	def show_3D_region(self):
+		print("SHOW 3D")
+		if self.zt_spinbox.value() == 0:
+			print("Cannot show 3D region of 2D slice. Set zthick spinbox to non-zero value to continue")
+			return
+		self.view = EMScene3D()
+		## slice through the original tomogram
+		print(self.cur_region)
+		#tomo = self.get_full_data_from_file().get_clip(self.cur_region)
+		#tomo = EMData(self.data_file, 0, False, self.cur_region)
+		tomo = self.get_data()
+		tomo_di = EMDataItem3D(tomo, transform=Transform())
+		self.view.insertNewNode('Data', tomo_di, parentnode=self.view)
+		volslice = EMSliceItem3D(tomo_di, transform=Transform())
+		#volslice = EMSliceItem3D(tomo_di, transform=self.img_view.get_xform())
+		self.view.insertNewNode("Slice", volslice, parentnode=tomo_di)
+		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
+		self.view.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
+
+		# #isosurface of reconstituted particles
+		# try:
+		# 	self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+		# except:
+		# 	pass
+		# annotate = EMData(self.seg_path, 0, False, self.cur_region)
+		annotate = self.get_annotation()
+		annotate_di = EMDataItem3D(annotate, transform=Transform())
+		self.view.insertNewNode('Annotate', annotate_di, parentnode=self.view)
+		isosurface = EMIsosurface(annotate_di, transform=Transform())
+
+		self.view.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		self.view.show()
+		try: self.view.raise_()
+		except: pass
+
+		return
 
 
 	def test_drawing_function(self):
@@ -1922,7 +1963,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.get_treeset().clear()
 
 		try:
-			print(self.get_annotation().numpy().shape, self.cur_region)
+			#print(self.get_annotation().numpy().shape, self.cur_region)
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 		except:
 			print("Cannot write annotation to segs file.")
@@ -1934,6 +1975,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		for widget in self.popwidgets:
 			print("Closing",widget)
 			widget.close()
+		if self.view:
+			self.view.close()
 
 		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
@@ -4295,8 +4338,8 @@ class Subtom_Tab(QtWidgets.QWidget):
 		self.map_ptcls_launcher.close()
 		try:
 			os.system(self.map_ptcls_cmd.toPlainText())
-		except:
-			print("Error launching e2spt_mapptclstotomo.py program. Abort.")
+		except Exception as e:
+			print("Error launching e2spt_mapptclstotomo.py program due to,",e," Abort.")
 			pass
 		return
 
