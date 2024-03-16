@@ -31,6 +31,8 @@
 
 #include <cstring>
 #include <climits>
+#include <chrono>
+#include <ctime>
 
 #include <sys/stat.h>
 
@@ -43,8 +45,26 @@
 
 using namespace EMAN;
 
+string convert_microseconds_to_local_time(long us) {
+	using std::chrono::microseconds;
+	using std::chrono::system_clock;
+
+    auto time_point = system_clock::time_point(microseconds(us));
+    time_t current_t = system_clock::to_time_t(time_point);
+    tm* timeInfo = std::localtime(&current_t);
+
+    // Format and return the local time as a string
+    char buffer[80];
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeInfo);
+	string local_t = string(buffer) + " (localtime)";
+
+	return local_t;
+}
+
 const char *MrcIO::CTF_MAGIC = "!-";
 const char *MrcIO::SHORT_CTF_MAGIC = "!$";
+
+static int vertical_flip_messsage_counter = 0;
 
 MrcIO::MrcIO(const string & fname, IOMode rw)
 :	ImageIO(fname, rw), mode_size(0),
@@ -151,11 +171,7 @@ void MrcIO::init()
 			mrch.zlen = 1.0;
 		}
 
-		if (mrch.nlabels > 0) {
-			if (string(mrch.labels[0],3) == "Fei") {
-				isFEI = true;
-			}
-		}
+		isFEI = (string(mrch.exttyp,3) == "FEI");
 
 		is_transpose = (mrch.mapc == 2 && mrch.mapr == 1);
 
@@ -402,12 +418,13 @@ int MrcIO::read_header(Dict & dict, int image_index, const Region * area, bool i
 {
 	init();
 
+	read_mrc_header(dict, image_index, area, is_3d);
+
 	if (isFEI) {
-		return read_fei_header(dict, image_index, area, is_3d);
+		read_fei_header(dict, image_index, area, is_3d);
 	}
-	else {
-		return read_mrc_header(dict, image_index, area, is_3d);
-	}
+
+	return 0;
 }
 
 int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bool)
@@ -447,6 +464,8 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 	dict["MRC.my"] = mrch.my;
 	dict["MRC.mz"] = mrch.mz;
 
+	dict["MRC.mode"] = mrch.mode;
+
 	dict["MRC.xlen"] = mrch.xlen;
 	dict["MRC.ylen"] = mrch.ylen;
 	dict["MRC.zlen"] = mrch.zlen;
@@ -468,6 +487,31 @@ int MrcIO::read_mrc_header(Dict & dict, int image_index, const Region * area, bo
 
 	dict["MRC.ispg"] = mrch.ispg;
 	dict["MRC.nsymbt"] = mrch.nsymbt;
+
+	dict["MRC.exttyp"] = string(mrch.exttyp, 4);
+	dict["MRC.nversion"] = mrch.nversion;
+
+	dict["MRC.imod_stamp"] = string(mrch.imod_stamp, 4);
+	dict["MRC.imod_flags"] = mrch.imod_flags;
+	dict["MRC.map"] = string(mrch.map, 4);		/* constant string "MAP "  */
+
+	dict["IMODMRC.creatid"] = mrch.creatid;
+	dict["IMODMRC.nint"] = mrch.nint;
+	dict["IMODMRC.nreal"] = mrch.nreal;
+	dict["IMODMRC.sub"] = mrch.sub;
+	dict["IMODMRC.zfac"] = mrch.zfac;
+
+	dict["IMODMRC.min2"] = mrch.min2;
+	dict["IMODMRC.max2"] = mrch.max2;
+	dict["IMODMRC.min3"] = mrch.min3;
+	dict["IMODMRC.max3"] = mrch.max3;
+
+	dict["IMODMRC.idtype"] = mrch.idtype;
+	dict["IMODMRC.lens"] = mrch.lens;
+	dict["IMODMRC.nd1"] = mrch.nd1;
+	dict["IMODMRC.nd2"] = mrch.nd2;
+	dict["IMODMRC.vd1"] = mrch.vd1;
+	dict["IMODMRC.vd2"] = mrch.vd2;
 
 	float apx = mrch.xlen / mrch.mx;
 	float apy = mrch.ylen / mrch.my;
@@ -560,132 +604,166 @@ int MrcIO::read_fei_header(Dict & dict, int image_index, const Region * area, bo
 {
 	ENTERFUNC;
 
-	if(image_index < 0) {
-		image_index = 0;
-	}
-
-	init();
-
-	check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
-
-	int xlen = 0, ylen = 0, zlen = 0;
-
-	EMUtil::get_region_dims(area, feimrch.nx, & xlen, feimrch.ny, & ylen, feimrch.nz, & zlen);
-
-	dict["nx"] = xlen;
-	dict["ny"] = ylen;
-	dict["nz"] = zlen;
-	dict["FEIMRC.nx"] = feimrch.nx;
-	dict["FEIMRC.ny"] = feimrch.ny;
-	dict["FEIMRC.nz"] = feimrch.nz;
-
-	dict["datatype"] = to_em_datatype(feimrch.mode);	//=1, FEI-MRC file always use short for data type
-
-	dict["FEIMRC.nxstart"] = feimrch.nxstart;
-	dict["FEIMRC.nystart"] = feimrch.nystart;
-	dict["FEIMRC.nzstart"] = feimrch.nzstart;
-
-	dict["FEIMRC.mx"] = feimrch.mx;
-	dict["FEIMRC.my"] = feimrch.my;
-	dict["FEIMRC.mz"] = feimrch.mz;
-
-	dict["FEIMRC.xlen"] = feimrch.xlen;
-	dict["FEIMRC.ylen"] = feimrch.ylen;
-	dict["FEIMRC.zlen"] = feimrch.zlen;
-
-	dict["FEIMRC.alpha"] = feimrch.alpha;
-	dict["FEIMRC.beta"] = feimrch.beta;
-	dict["FEIMRC.gamma"] = feimrch.gamma;
-
-	dict["FEIMRC.mapc"] = feimrch.mapc;
-	dict["FEIMRC.mapr"] = feimrch.mapr;
-	dict["FEIMRC.maps"] = feimrch.maps;
-
-	dict["FEIMRC.minimum"] = feimrch.amin;
-	dict["FEIMRC.maximum"] = feimrch.amax;
-	dict["FEIMRC.mean"] = feimrch.amean;
-//	dict["mean"] = feimrch.amean;
-
-	dict["FEIMRC.ispg"] = feimrch.ispg;
-	dict["FEIMRC.nsymbt"] = feimrch.nsymbt;
-
-	dict["apix_x"] = feimrch.xlen / feimrch.mx;
-	dict["apix_y"] = feimrch.ylen / feimrch.my;
-	dict["apix_z"] = feimrch.zlen / feimrch.mz;
-
-	dict["FEIMRC.next"] = feimrch.next;	//offset from end of header to the first dataset
-	dict["FEIMRC.dvid"] = feimrch.dvid;
-	dict["FEIMRC.numintegers"] = feimrch.numintegers;
-	dict["FEIMRC.numfloats"] = feimrch.numfloats;
-	dict["FEIMRC.sub"] = feimrch.sub;
-	dict["FEIMRC.zfac"] = feimrch.zfac;
-
-	dict["FEIMRC.min2"] = feimrch.min2;
-	dict["FEIMRC.max2"] = feimrch.max2;
-	dict["FEIMRC.min3"] = feimrch.min3;
-	dict["FEIMRC.max3"] = feimrch.max3;
-	dict["FEIMRC.min4"] = feimrch.min4;
-	dict["FEIMRC.max4"] = feimrch.max4;
-
-	dict["FEIMRC.idtype"] = feimrch.idtype;
-	dict["FEIMRC.lens"] = feimrch.lens;
-	dict["FEIMRC.nd1"] = feimrch.nd1;
-	dict["FEIMRC.nd2"] = feimrch.nd2;
-	dict["FEIMRC.vd1"] = feimrch.vd1;
-	dict["FEIMRC.vd2"] = feimrch.vd2;
-
-	char label[32];
-
-	for(int i=0; i<9; i++) {	// 9 tilt angles
-		sprintf(label, "MRC.tiltangles%d", i);
-		dict[string(label)] = feimrch.tiltangles[i];
-	}
-
-	dict["FEIMRC.zorg"] = feimrch.zorg;
-	dict["FEIMRC.xorg"] = feimrch.xorg;
-	dict["FEIMRC.yorg"] = feimrch.yorg;
-
-	dict["FEIMRC.nlabl"] = feimrch.nlabl;
-
-	for (int i = 0; i < feimrch.nlabl; i++) {
-		sprintf(label, "MRC.label%d", i);
-		dict[string(label)] = string(feimrch.labl[i], MRC_LABEL_SIZE);
-	}
+ 	if ((vertical_flip_messsage_counter++) == 0 \
+		 && (dict["MRC.exttyp"] == string("FEI1") || dict["MRC.exttyp"] == string("FEI2")) \
+		 && dict["MRC.imodStamp"] != string("IMOD"))
+		cout << "File: " << filename << " is flipped vertically!" << endl;
 
 	/* Read extended image header by specified image index */
 	FeiMrcExtHeader feiexth;
 
-	portable_fseek(file, sizeof(FeiMrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
+	portable_fseek(file, sizeof(MrcHeader)+sizeof(FeiMrcExtHeader)*image_index, SEEK_SET);
 
 	if (fread(&feiexth, sizeof(FeiMrcExtHeader), 1, file) != 1) {
 		throw ImageReadException(filename, "FEI MRC extended header");
 	}
 
-	dict["FEIMRC.a_tilt"] = feiexth.a_tilt;
-	dict["FEIMRC.b_tilt"] = feiexth.b_tilt;
+//	Image, System and Application
+	dict["FEIMRC.metadata_size"] = feiexth.metadata_size;
+	dict["FEIMRC.metadata_version"] = feiexth.metadata_version;
 
-	dict["FEIMRC.x_stage"] = feiexth.x_stage;
-	dict["FEIMRC.y_stage"] = feiexth.y_stage;
-	dict["FEIMRC.z_stage"] = feiexth.z_stage;
+	auto bitmask = std::bitset<32>(feiexth.bitmask_1);
+	if(bitmask[0]) dict["FEIMRC.timestamp"] = feiexth.timestamp;
+	if(bitmask[1]) dict["FEIMRC.microscope_type"] = string(feiexth.microscope_type, 16);
+	if(bitmask[2]) dict["FEIMRC.d_number"] = string(feiexth.d_number, 16);
+	if(bitmask[3]) dict["FEIMRC.application"] = string(feiexth.application, 16);
+	if(bitmask[4]) dict["FEIMRC.application_version"] = string(feiexth.application_version, 16);
 
-	dict["FEIMRC.x_shift"] = feiexth.x_shift;
-	dict["FEIMRC.y_shift"] = feiexth.y_shift;
+//	Gun
+	if(bitmask[5]) dict["FEIMRC.ht"] = feiexth.ht;
+	if(bitmask[6]) dict["FEIMRC.dose"] = feiexth.dose;
 
-	dict["FEIMRC.defocus"] = feiexth.defocus;
-	dict["FEIMRC.exp_time"] = feiexth.exp_time;
-	dict["FEIMRC.mean_int"] = feiexth.mean_int;
-	dict["FEIMRC.tilt_axis"] = feiexth.tilt_axis;
+//	Stage
+	if(bitmask[7]) dict["FEIMRC.alpha_tilt"] = feiexth.alpha_tilt;
+	if(bitmask[8]) dict["FEIMRC.beta_tilt"] = feiexth.beta_tilt;
+	if(bitmask[9]) dict["FEIMRC.x_stage"] = feiexth.x_stage;
+	if(bitmask[10]) dict["FEIMRC.y_stage"] = feiexth.y_stage;
+	if(bitmask[11]) dict["FEIMRC.z_stage"] = feiexth.z_stage;
+	if(bitmask[12]) dict["FEIMRC.tilt_axis_angle"] = feiexth.tilt_axis_angle;
+	if(bitmask[13]) dict["FEIMRC.dual_axis_rotation"] = feiexth.dual_axis_rotation;
 
-	dict["FEIMRC.pixel_size"] = feiexth.pixel_size;
-	dict["apix_x"] = feiexth.pixel_size *1.0e10;
-	dict["apix_y"] = feiexth.pixel_size *1.0e10;
-	dict["apix_z"] = feiexth.pixel_size *1.0e10;
-	dict["FEIMRC.magnification"] = feiexth.magnification;
-	dict["FEIMRC.ht"] = feiexth.ht;
-	dict["FEIMRC.binning"] = feiexth.binning;
-	dict["FEIMRC.appliedDefocus"] = feiexth.appliedDefocus;
+//	Pixel Size
+	if(bitmask[14]) dict["FEIMRC.pixel_size_x"] = feiexth.pixel_size_x;
+	if(bitmask[15]) dict["FEIMRC.pixel_size_y"] = feiexth.pixel_size_y;
 
-	// remainder 16 4-byte floats not used
+//	Optics
+	if(bitmask[22]) dict["FEIMRC.defocus"] = feiexth.defocus;
+	if(bitmask[23]) dict["FEIMRC.stem_defocus"] = feiexth.stem_defocus;
+	if(bitmask[24]) dict["FEIMRC.applied_defocus"] = feiexth.applied_defocus;
+	if(bitmask[25]) dict["FEIMRC.instrument_mode"] = feiexth.instrument_mode;
+	if(bitmask[26]) dict["FEIMRC.projection_mode"] = feiexth.projection_mode;
+	if(bitmask[27]) dict["FEIMRC.objective_lens_mode"] = string(feiexth.objective_lens_mode, 16);
+	if(bitmask[28]) dict["FEIMRC.high_magnification_mode"] = string(feiexth.high_magnification_mode, 16);
+	if(bitmask[29]) dict["FEIMRC.probe_mode"] = feiexth.probe_mode;
+	if(bitmask[30]) dict["FEIMRC.eftem_on"] = feiexth.eftem_on;
+	if(bitmask[31]) dict["FEIMRC.magnification"] = feiexth.magnification;
+
+	bitmask = std::bitset<32>(feiexth.bitmask_2);
+	if(bitmask[0]) dict["FEIMRC.camera_length"] = feiexth.camera_length;
+	if(bitmask[1]) dict["FEIMRC.spot_index"] = feiexth.spot_index;
+	if(bitmask[2]) dict["FEIMRC.illuminated_area"] = feiexth.illuminated_area;
+	if(bitmask[3]) dict["FEIMRC.intensity"] = feiexth.intensity;
+	if(bitmask[4]) dict["FEIMRC.convergence_angle"] = feiexth.convergence_angle;
+	if(bitmask[5]) dict["FEIMRC.illumination_mode"] = string(feiexth.illumination_mode, 16);
+	if(bitmask[6]) dict["FEIMRC.wide_convergence_angle_range"] = feiexth.wide_convergence_angle_range;
+
+//	EFTEM Imaging
+	if(bitmask[7]) dict["FEIMRC.slit_inserted"] = feiexth.slit_inserted;
+	if(bitmask[8]) dict["FEIMRC.slit_width"] = feiexth.slit_width;
+	if(bitmask[9]) dict["FEIMRC.acceleration_voltage_offset"] = feiexth.acceleration_voltage_offset;
+	if(bitmask[10]) dict["FEIMRC.drift_tube_voltage"] = feiexth.drift_tube_voltage;
+	if(bitmask[11]) dict["FEIMRC.energy_shift"] = feiexth.energy_shift;
+
+//	Image Shifts
+	if(bitmask[12]) dict["FEIMRC.shift_offset_x"] = feiexth.shift_offset_x;
+	if(bitmask[13]) dict["FEIMRC.shift_offset_y"] = feiexth.shift_offset_y;
+	if(bitmask[14]) dict["FEIMRC.shift_x"] = feiexth.shift_x;
+	if(bitmask[15]) dict["FEIMRC.shift_y"] = feiexth.shift_y;
+
+//	Camera
+	if(bitmask[16]) dict["FEIMRC.integration_time"] = feiexth.integration_time;
+	if(bitmask[17]) dict["FEIMRC.binning_width"] = feiexth.binning_width;
+	if(bitmask[18]) dict["FEIMRC.binning_height"] = feiexth.binning_height;
+	if(bitmask[19]) dict["FEIMRC.camera_name"] = string(feiexth.camera_name, 16);
+	if(bitmask[20]) dict["FEIMRC.readout_area_left"] = feiexth.readout_area_left;
+	if(bitmask[21]) dict["FEIMRC.readout_area_top"] = feiexth.readout_area_top;
+	if(bitmask[22]) dict["FEIMRC.readout_area_right"] = feiexth.readout_area_right;
+	if(bitmask[23]) dict["FEIMRC.readout_area_bottom"] = feiexth.readout_area_bottom;
+	if(bitmask[24]) dict["FEIMRC.ceta_noise_reduction"] = feiexth.ceta_noise_reduction;
+	if(bitmask[25]) dict["FEIMRC.ceta_frames_summed"] = feiexth.ceta_frames_summed;
+	if(bitmask[26]) dict["FEIMRC.direct_detector_electron_counting"] = feiexth.direct_detector_electron_counting;
+	if(bitmask[27]) dict["FEIMRC.direct_detector_align_frames"] = feiexth.direct_detector_align_frames;
+	if(bitmask[28]) dict["FEIMRC.camera_param_reserved_0"] = feiexth.camera_param_reserved_0;
+	if(bitmask[29]) dict["FEIMRC.camera_param_reserved_1"] = feiexth.camera_param_reserved_1;
+	if(bitmask[30]) dict["FEIMRC.camera_param_reserved_2"] = feiexth.camera_param_reserved_2;
+	if(bitmask[31]) dict["FEIMRC.camera_param_reserved_3"] = feiexth.camera_param_reserved_3;
+
+	bitmask = std::bitset<32>(feiexth.bitmask_3);
+	if(bitmask[0]) dict["FEIMRC.camera_param_reserved_4"] = feiexth.camera_param_reserved_4;
+	if(bitmask[1]) dict["FEIMRC.camera_param_reserved_5"] = feiexth.camera_param_reserved_5;
+	if(bitmask[2]) dict["FEIMRC.camera_param_reserved_6"] = feiexth.camera_param_reserved_6;
+	if(bitmask[3]) dict["FEIMRC.camera_param_reserved_7"] = feiexth.camera_param_reserved_7;
+	if(bitmask[4]) dict["FEIMRC.camera_param_reserved_8"] = feiexth.camera_param_reserved_8;
+	if(bitmask[5]) dict["FEIMRC.camera_param_reserved_9"] = feiexth.camera_param_reserved_9;
+	if(bitmask[6]) dict["FEIMRC.phase_plate"] = feiexth.phase_plate;
+
+//	STEM
+	if(bitmask[7]) dict["FEIMRC.stem_detector_name"] = string(feiexth.stem_detector_name, 16);
+	if(bitmask[8]) dict["FEIMRC.gain"] = feiexth.gain;
+	if(bitmask[9]) dict["FEIMRC.offset"] = feiexth.offset;
+	if(bitmask[10]) dict["FEIMRC.stem_param_reserved_0"] = feiexth.stem_param_reserved_0;
+	if(bitmask[11]) dict["FEIMRC.stem_param_reserved_1"] = feiexth.stem_param_reserved_1;
+	if(bitmask[12]) dict["FEIMRC.stem_param_reserved_2"] = feiexth.stem_param_reserved_2;
+	if(bitmask[13]) dict["FEIMRC.stem_param_reserved_3"] = feiexth.stem_param_reserved_3;
+	if(bitmask[14]) dict["FEIMRC.stem_param_reserved_4"] = feiexth.stem_param_reserved_4;
+
+//	Scan settings
+	if(bitmask[15]) dict["FEIMRC.dwell_time"] = feiexth.dwell_time;
+	if(bitmask[16]) dict["FEIMRC.frame_time"] = feiexth.frame_time;
+	if(bitmask[17]) dict["FEIMRC.scan_size_left"] = feiexth.scan_size_left;
+	if(bitmask[18]) dict["FEIMRC.scan_size_top"] = feiexth.scan_size_top;
+	if(bitmask[19]) dict["FEIMRC.scan_size_right"] = feiexth.scan_size_right;
+	if(bitmask[20]) dict["FEIMRC.scan_size_bottom"] = feiexth.scan_size_bottom;
+	if(bitmask[21]) dict["FEIMRC.full_scan_fov_x"] = feiexth.full_scan_fov_x;
+	if(bitmask[22]) dict["FEIMRC.full_scan_fov_y"] = feiexth.full_scan_fov_y;
+
+//	EDX Elemental maps
+ 	if(bitmask[23]) dict["FEIMRC.element"] = string(feiexth.element, 16);
+	if(bitmask[24]) dict["FEIMRC.energy_interval_lower"] = feiexth.energy_interval_lower;
+	if(bitmask[25]) dict["FEIMRC.energy_interval_higher"] = feiexth.energy_interval_higher;
+	if(bitmask[26]) dict["FEIMRC.method"] = feiexth.method;
+
+//	Dose fractions
+	if(bitmask[27]) dict["FEIMRC.is_dose_fraction"] = feiexth.is_dose_fraction;
+	if(bitmask[28]) dict["FEIMRC.fraction_number"] = feiexth.fraction_number;
+	if(bitmask[29]) dict["FEIMRC.start_frame"] = feiexth.start_frame;
+	if(bitmask[30]) dict["FEIMRC.end_frame"] = feiexth.end_frame;
+
+//	Reconstruction
+	if(bitmask[31]) dict["FEIMRC.input_stack_filename"] = string(feiexth.input_stack_filename, 80);
+
+	bitmask = std::bitset<32>(feiexth.bitmask_4);
+	if(bitmask[0]) dict["FEIMRC.alpha_tilt_min"] = feiexth.alpha_tilt_min;
+	if(bitmask[1]) dict["FEIMRC.alpha_tilt_max"] = feiexth.alpha_tilt_max;
+
+//	FEI2 Version 2 Extension to the Extended Header Specification
+	if(bitmask[2]) dict["FEIMRC.scan_rotation"] = feiexth.scan_rotation;
+	if(bitmask[3]) dict["FEIMRC.diffraction_pattern_rotation"] = feiexth.diffraction_pattern_rotation;
+	if(bitmask[4]) dict["FEIMRC.image_rotation"] = feiexth.image_rotation;
+	if(bitmask[5]) dict["FEIMRC.scan_mode_enumeration"] = feiexth.scan_mode_enumeration;
+
+	if(bitmask[6]) dict["FEIMRC.acquisition_time_stamp"] = convert_microseconds_to_local_time(feiexth.acquisition_time_stamp);
+	if(bitmask[7]) dict["FEIMRC.detector_commercial_name"] = string(feiexth.detector_commercial_name, 16);
+	if(bitmask[8]) dict["FEIMRC.start_tilt_angle"] = feiexth.start_tilt_angle;
+	if(bitmask[9]) dict["FEIMRC.end_tilt_angle"] = feiexth.end_tilt_angle;
+	if(bitmask[10]) dict["FEIMRC.tilt_per_image"] = feiexth.tilt_per_image;
+	if(bitmask[11]) dict["FEIMRC.tilt_speed"] = feiexth.tilt_speed;
+	if(bitmask[12]) dict["FEIMRC.beam_center_x_pixel"] = feiexth.beam_center_x_pixel;
+	if(bitmask[13]) dict["FEIMRC.beam_center_y_pixel"] = feiexth.beam_center_y_pixel;
+
+	if(bitmask[14]) dict["FEIMRC.cfeg_flash_timestamp"] = convert_microseconds_to_local_time(feiexth.cfeg_flash_timestamp);
+	if(bitmask[15]) dict["FEIMRC.phase_plate_position_index"] = feiexth.phase_plate_position_index;
+	if(bitmask[16]) dict["FEIMRC.objective_aperture_name"] = string(feiexth.objective_aperture_name, 16);
 
 	EXITFUNC;
 
@@ -968,41 +1046,27 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
 
-	if (isFEI) {	// FEI extended MRC
-		check_region(area, FloatSize(feimrch.nx, feimrch.ny, feimrch.nz), is_new_file, false);
-		portable_fseek(file, sizeof(MrcHeader)+feimrch.next, SEEK_SET);
+	check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
+	portable_fseek(file, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
 
-		EMUtil::process_region_io(cdata, file, READ_ONLY,
-								  image_index, mode_size,
-								  feimrch.nx, feimrch.ny, feimrch.nz, area);
+	size_t modesize;
 
-		EMUtil::get_region_dims(area, feimrch.nx, &xlen, feimrch.ny, &ylen, feimrch.nz, &zlen);
-
-		size = (size_t)xlen * ylen * zlen;
+	if (mrch.mode == MRC_UHEX) {
+		// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
+		// so the mode size is effectively half a byte, signalled by this value:
+		modesize = 11111111;
 	}
-	else {	// regular MRC
-		check_region(area, FloatSize(mrch.nx, mrch.ny, mrch.nz), is_new_file, false);
-		portable_fseek(file, sizeof(MrcHeader)+mrch.nsymbt, SEEK_SET);
-
-		size_t modesize;
-
-		if (mrch.mode == MRC_UHEX) {
-			// Have MRC packed 8 bit format with 2 4-bit values in each 8-bit byte,
-			// so the mode size is effectively half a byte, signalled by this value:
-			modesize = 11111111;
-		}
-		else {
-			modesize = mode_size;
-		}
-
-		EMUtil::process_region_io(cdata, file, READ_ONLY,
-								  image_index, modesize,
-								  mrch.nx, mrch.ny, mrch.nz, area);
-
-		EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
-
-		size = (size_t)xlen * ylen * zlen;
+	else {
+		modesize = mode_size;
 	}
+
+	EMUtil::process_region_io(cdata, file, READ_ONLY,
+							  image_index, modesize,
+							  mrch.nx, mrch.ny, mrch.nz, area);
+
+	EMUtil::get_region_dims(area, mrch.nx, &xlen, mrch.ny, &ylen, mrch.nz, &zlen);
+
+	size = (size_t)xlen * ylen * zlen;
 
 	if (mrch.mode != MRC_UCHAR  &&  mrch.mode != MRC_CHAR  &&
 	    mrch.mode != MRC_UHEX) {
