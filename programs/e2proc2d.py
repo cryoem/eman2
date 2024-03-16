@@ -244,6 +244,10 @@ def main():
 
 	(options, args) = parser.parse_args()
 
+	if any([arg[0] != ':' and ':' in arg for arg in args]):
+		print("\nThe new filename syntax (using : after filename) is not yet supported in e2proc2d.py.\n")
+		sys.exit(1)
+
 	if len(args) < 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
