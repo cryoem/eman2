@@ -290,9 +290,8 @@ def main():
 	for infile in args[0 : num_input_files]:
 		inp_num = inp_num + 1
 
-		if infile[0] != ":":
-			fsp = infile
-			infile, _ = parse_infile_arg(infile)
+		fsp = infile
+		infile, _ = parse_infile_arg(infile)
 
 		if outpattern.lower()=="none":
 			outfile=None
