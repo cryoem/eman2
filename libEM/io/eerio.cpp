@@ -251,6 +251,10 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	const size_t nThreads = std::thread::hardware_concurrency();
 	const size_t sChunk = decoder.camera_size * decoder.camera_size / nThreads;
 
+	cout<<"nThreads: " << nThreads
+		<<" sChunk: " << sChunk
+		<<" ";
+
 	vector<std::thread> threads;
 	for(size_t i=0; i<nThreads; ++i) {
 		auto beg = i * sChunk;
@@ -263,6 +267,7 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		t.join();
 
 	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
+	cout<<"Coords.size(): " << coords.size() << endl;
 	for(const auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
