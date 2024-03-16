@@ -168,10 +168,6 @@ def main():
 
 	infile = args[0]
 	outfile = args[1]
-
-	fsp = infile
-	infile, _ = parse_infile_arg(infile)
-
 	is_new_file = not os.path.isfile(outfile)
 
 	out_ext = os.path.splitext(outfile)[1]
@@ -294,7 +290,7 @@ def main():
 	n0 = options.first
 	n1 = options.last
 	if infile[0]==":" : nimg=1
-	else : nimg = EMUtil.get_image_count(fsp)
+	else : nimg = EMUtil.get_image_count(infile)
 	if n1 > nimg or n1<0: n1=nimg-1
 
 	# If the output file exists and has exactly one image we delete the file later if writing compressed
@@ -806,9 +802,7 @@ def parse_infile(infile, first, last, step, apix=None):
 		ret.to_value(float(parm[4]))
 		return [ret]
 
-	fsp = infile
-	infile, _ = parse_infile_arg(infile)
-	nimg = EMUtil.get_image_count(fsp)
+	nimg = EMUtil.get_image_count(infile)
 
 	if (nimg > 1):
 		#print "it appears %s contains %d image" % (infile, nimg)

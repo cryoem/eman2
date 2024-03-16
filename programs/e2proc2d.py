@@ -290,9 +290,6 @@ def main():
 	for infile in args[0 : num_input_files]:
 		inp_num = inp_num + 1
 
-		fsp = infile
-		infile, _ = parse_infile_arg(infile)
-
 		if outpattern.lower()=="none":
 			outfile=None
 			is_inp_bdb = False
@@ -327,7 +324,7 @@ def main():
 			num_inp_images = 2
 		elif os.path.isfile(infile):
 			try:
-				num_inp_images = EMUtil.get_image_count(fsp)
+				num_inp_images = EMUtil.get_image_count(infile)
 			except:
 				num_inp_images = -1
 
@@ -439,7 +436,7 @@ def main():
 			nimg=1
 			isthreed=False
 		else:
-			nimg = EMUtil.get_image_count(fsp)
+			nimg = EMUtil.get_image_count(infile)
 
 			# reads header only
 			isthreed = False
