@@ -32,6 +32,7 @@
 #include "eerio.h"
 
 #include <algorithm>
+#include <thread>
 #include <tiffio.h>
 #include <boost/property_tree/xml_parser.hpp>
 
@@ -247,8 +248,19 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	
 	auto data = read_raw_data(tiff_file);
 
-//	fill_rdata(rdata, decoder.camera_size);
-	std::fill(rdata, rdata + decoder.camera_size * decoder.camera_size, 0);
+	const size_t nThreads = std::thread::hardware_concurrency();
+	const size_t sChunk = decoder.camera_size * decoder.camera_size / nThreads;
+
+	vector<std::thread> threads;
+	for(size_t i=0; i<nThreads; ++i) {
+		auto beg = i * sChunk;
+		auto end = (i == nThreads-1 ? decoder.camera_size * decoder.camera_size : beg + sChunk);
+
+		threads.emplace_back([&rdata, beg, end]{std::fill(rdata + beg, rdata + end, 0);});
+	}
+
+	for(auto &t:threads)
+		t.join();
 
 	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
 	for(const auto &c : coords)
