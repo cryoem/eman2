@@ -36,9 +36,12 @@
 #include <future>
 #include <tiffio.h>
 #include <boost/property_tree/xml_parser.hpp>
+#include <boost/asio/thread_pool.hpp>
 
 
 using boost::property_tree::ptree;
+//using boost::asio::post;
+
 using namespace EMAN;
 
 
@@ -151,7 +154,7 @@ auto read_raw_data(TIFF *tiff) {
 
 
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
-:	ImageIO(fname, rw), decoder(dec)
+:	ImageIO(fname, rw), decoder(dec), pool(12)
 {
 	TIFFSetWarningHandler(TIFFOutputWarning);
 
@@ -267,7 +270,12 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 //		});
 		futures.push_back(std::async(std::launch::async, [&] {
 			std::fill(rdata + beg, rdata + end, 0);
+//			for(auto p = rdata + beg; p<rdata + end; ++p)
+//				*p=0;
         }));
+//		boost::asio::post(pool, [&] {
+//					std::fill(rdata + beg, rdata + end, 0);
+//		        });
 	}
 
 //	for(auto &t:threads)
