@@ -204,7 +204,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			del seg_out
 			seg_item = QtWidgets.QTreeWidgetItem()
 			try:
-				self.tomo_tree.currentItem().addChild(seg_item)
+				self.tomo_tree.topLevelItem(0).addChild(seg_item)
 				seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
 
 				#seg_item.setCheckState(0,0)
@@ -212,7 +212,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 				seg_button.setChecked(True)
 				self.tomo_tree.setItemWidget(seg_item,0,seg_button)
-			except:
+			except Exception as e:
+				print("EXCEPTION when add child", e)
 				pass
 
 		self.seg_path = seg_path
@@ -853,10 +854,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# 	print("Except")
 		# 	pass
 
-
-
-
-
 	def z_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
 		try:
@@ -869,42 +866,18 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 		self.reset_morp_params(reset_vs=False)
 
+
 	def show_3D_region(self):
-		print("SHOW 3D")
-		if self.zt_spinbox.value() == 0:
-			print("Cannot show 3D region of 2D slice. Set zthick spinbox to non-zero value to continue")
-			return
-		self.view = EMScene3D()
-		## slice through the original tomogram
-		print(self.cur_region)
-		#tomo = self.get_full_data_from_file().get_clip(self.cur_region)
-		#tomo = EMData(self.data_file, 0, False, self.cur_region)
-		tomo = self.get_data()
-		tomo_di = EMDataItem3D(tomo, transform=Transform())
-		self.view.insertNewNode('Data', tomo_di, parentnode=self.view)
-		volslice = EMSliceItem3D(tomo_di, transform=Transform())
-		#volslice = EMSliceItem3D(tomo_di, transform=self.img_view.get_xform())
-		self.view.insertNewNode("Slice", volslice, parentnode=tomo_di)
-		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
-		self.view.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
-
-		# #isosurface of reconstituted particles
-		# try:
-		# 	self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-		# except:
+		# if self.view is None:
+		# 	self.view = CustomScene3D(target=self)
+		# 	print("Init a new 3Dscene")
+		# else:
 		# 	pass
-		# annotate = EMData(self.seg_path, 0, False, self.cur_region)
-		annotate = self.get_annotation()
-		annotate_di = EMDataItem3D(annotate, transform=Transform())
-		self.view.insertNewNode('Annotate', annotate_di, parentnode=self.view)
-		isosurface = EMIsosurface(annotate_di, transform=Transform())
-
-		self.view.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		self.view = CustomScene3D(target=self)
+		self.view.show_3D_region()
 		self.view.show()
 		try: self.view.raise_()
 		except: pass
-
-		return
 
 
 	def test_drawing_function(self):
@@ -1975,12 +1948,51 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		for widget in self.popwidgets:
 			print("Closing",widget)
 			widget.close()
-		if self.view:
-			self.view.close()
+		# if self.view:
+		# 	self.view.close()
 
 		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
 
+class CustomScene3D(EMScene3D):
+	def __init__(self,target = None):
+		super().__init__()
+		self.target=target
+
+	def show_3D_region(self):
+		print("SHOW 3D")
+		if self.target.zt_spinbox.value() == 0:
+			print("Cannot show 3D region of 2D slice. Set zthick spinbox to non-zero value to continue")
+			return
+		reg = Region()
+		reg.set_origin(self.target.cur_region.get_origin())
+		reg.set_width(self.target.cur_region.get_width()+2)
+		reg.set_height(self.target.cur_region.get_height()+2)
+		reg.set_depth(self.target.cur_region.get_depth())
+		print("Reg", reg)
+
+		tomo = self.target.get_data().get_clip(reg)
+		tomo_di = EMDataItem3D(tomo, transform=Transform())
+		self.insertNewNode('Data', tomo_di, parentnode=self)
+		volslice = EMSliceItem3D(tomo_di, transform=Transform())
+		#volslice = EMSliceItem3D(tomo_di, transform=self.img_view.get_xform())
+		self.insertNewNode("Slice", volslice, parentnode=tomo_di)
+		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
+		self.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
+
+		# #isosurface of reconstituted particles
+		# try:
+		# 	self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+		# except:
+		# 	pass
+		# annotate = EMData(self.seg_path, 0, False, self.cur_region)
+		annotate = self.target.get_annotation().get_clip(reg)
+		print("annotate size",annotate.get_sizes())
+		annotate_di = EMDataItem3D(annotate, transform=Transform())
+		self.insertNewNode('Annotate', annotate_di, parentnode=self)
+		isosurface = EMIsosurface(annotate_di, transform=Transform())
+		self.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		return
 
 
 
@@ -3441,7 +3453,7 @@ class NNet_Tab(QtWidgets.QWidget):
 			for pair in cent_mass:
 				reg_list.append([pair[1],pair[0],i])
 
-		print(reg_list)
+		#print(reg_list)
 		return reg_list
 
 	def get_selected_item(self):
@@ -4657,7 +4669,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 		#if sel not in self.counted_item:
 		#val = int(sel.text(0))
 		#raw_mask = self.target.get_segtab().get_whole_annotate(sel)
-
 		#if len(self.target.get_segtab().get_whole_branch(sel))==1:
 		self.label_objs(ask_user=False)
 		if (self.stat_combo.currentText() == "Center of Mass"):
@@ -4680,7 +4691,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 					print("Largest Area of Obj",i,":", str(self.area_vol[-i]),"pixels")
 					print("Largest Area of Obj",i,":", str(self.area_vol[-i]*apix*apix)," A^2")
 			else:
-				#self.projs = [from_numpy(obj).process("xform",{"transform":Transform()}).process("misc.directional_sum",{"axis":"z"}) for obj in self.objs]
 				for i in range(1,len(self.objs)+1):
 					obj = self.objs[-i]
 					a = from_numpy(obj)
