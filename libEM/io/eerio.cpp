@@ -234,6 +234,10 @@ int EerIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	return 0;
 }
+void fill_rdata(float *rdata, uint cam) {
+	std::fill(rdata, rdata + cam * cam, 0);
+}
+
 
 int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
@@ -243,6 +247,7 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	
 	auto data = read_raw_data(tiff_file);
 
+//	fill_rdata(rdata, decoder.camera_size);
 	std::fill(rdata, rdata + decoder.camera_size * decoder.camera_size, 0);
 
 	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
