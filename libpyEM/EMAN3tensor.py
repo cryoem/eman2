@@ -100,11 +100,6 @@ class EMStack():
 	def __setitem__(self,key,value):
 		raise Exception("Cannot set individual elements")
 
-	def update(self):
-		"""Call this if any of the contained EMData objects are altered (image values) to trigger regeneration of the tensor upon next use. Not necessary
-	to call this if you alter which image objects are contained in the stack."""
-		self._tensor=None
-
 	@property
 	def tensor(self):
 		self.coerce_tensor()
@@ -157,7 +152,7 @@ class EMStack():
 	def coerce_tensor(self):
 		if isinstance(self._data,tf.Tensor): return
 		elif isinstance(self._data,list): self._data=to_tf(self._data)
-		elif isinstance(self._data,np.ndarray): self._data=self._data.numpy()
+		elif isinstance(self._data,np.ndarray): self._data=tf.constant(self._data)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 
 	# TODO - implement keep_type
@@ -167,7 +162,7 @@ class EMStack():
 	def do_ift(self,keep_type=False):
 		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
 
-	def calc_ccf(self,target):
+	def calc_ccf(self,target,offset=0):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size"""
 
 		if isinstance(target,EMStack3D):
@@ -300,23 +295,30 @@ class EMStack2D(EMStack):
 
 		return EMStack2D(tf_ift2d(self._data))
 
-	def calc_ccf(self,target,center=True):
+	def calc_ccf(self,target,center=True,offset=0):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size.
 	If center is True, will shift the phase origin so zero shift corresponds to the middle of the image"""
 
 		if center:
-			if isinstance(target,EMStack2D):
+			if isinstance(target,EMStack2D) and offset!=0:
+				return EMStack2D(tf_phaseorigin2d(self.tensor[:-offset]*tf.math.conj(target.tensor[offset:])))
+			elif isinstance(target,EMStack2D):
 				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target.tensor)))
-			elif isinstance(target,tf.Tensor):
+			elif isinstance(target,tf.Tensor) and offset==0:
 				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target)))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 		else:
-			if isinstance(target,EMStack2D):
+			if isinstance(target,EMStack2D) and offset!=0:
+				return EMStack2D(self.tensor[:-offset]*tf.math.conj(target.tensor[offset:]))
+			elif isinstance(target,EMStack2D):
 				return EMStack2D(self.tensor*tf.math.conj(target.tensor))
-			elif isinstance(target,tf.Tensor):
+			elif isinstance(target,tf.Tensor) and offset==0:
 				return EMStack2D(self.tensor*tf.math.conj(target))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+	def write_images(self,fsp=None):
+		self.coerce_emdata()
+		EMData.write_images(fsp,self._data)
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
