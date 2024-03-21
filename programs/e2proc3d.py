@@ -146,6 +146,10 @@ def main():
 
 	(options, args) = parser.parse_args()
 
+	if any([arg[0] != ':' and ':' in arg for arg in args]):
+		print("\nThe new filename syntax (using : after filename) is not yet supported in e2proc3d.py.\n")
+		sys.exit(1)
+
 	if len(args) != 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
@@ -168,11 +172,6 @@ def main():
 
 	infile = args[0]
 	outfile = args[1]
-
-	if infile[0] != ":":
-		fsp = infile
-		infile, _ = parse_infile_arg(infile)
-
 	is_new_file = not os.path.isfile(outfile)
 
 	out_ext = os.path.splitext(outfile)[1]
@@ -295,7 +294,7 @@ def main():
 	n0 = options.first
 	n1 = options.last
 	if infile[0]==":" : nimg=1
-	else : nimg = EMUtil.get_image_count(fsp)
+	else : nimg = EMUtil.get_image_count(infile)
 	if n1 > nimg or n1<0: n1=nimg-1
 
 	# If the output file exists and has exactly one image we delete the file later if writing compressed
@@ -807,9 +806,7 @@ def parse_infile(infile, first, last, step, apix=None):
 		ret.to_value(float(parm[4]))
 		return [ret]
 
-	fsp = infile
-	infile, _ = parse_infile_arg(infile)
-	nimg = EMUtil.get_image_count(fsp)
+	nimg = EMUtil.get_image_count(infile)
 
 	if (nimg > 1):
 		#print "it appears %s contains %d image" % (infile, nimg)
