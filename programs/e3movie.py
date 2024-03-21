@@ -42,7 +42,11 @@ At the moment this program provides only an option for estimating the gain image
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
-	parser.add_argument("--ccftest", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
+	parser.add_argument("--align",action="store_true",default=False,help="Performs movie alignment via progressive ")
+	parser.add_argument("--acftest",action="store_true",default=False,help="compute ACF images for input stack")
+	parser.add_argument("--ccftest",action="store_true",default=False,help="compute CCF between each image and the middle image in the movie")
+	parser.add_argument("--ccfdtest",action="store_true",default=False,help="compute the CCT between each image and the next image in the movie, length n-1")
+	parser.add_argument("--ccftiletest",action="store_true",default=False,help="test on tiled average of CCF")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
@@ -70,7 +74,59 @@ At the moment this program provides only an option for estimating the gain image
 		avg2.mult(sig.process("math.reciprocal"))
 		avg2.write_image("average.hdf",2)
 
-	if options.ccftest is not None:
+	if options.align :
+		nimg=EMUtil.get_image_count(args[0])
+		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
+		for i in imgs.emdata: i.process_inplace("normalize.edgemean")
+		ffts=imgs.do_fft()
+
+		# compute the ACF of each image in the movie, then average them
+		acfs=ffts.calc_ccf(ffts,offset=0)
+		acfsr=acfs.do_ift()
+		_,nx,ny=acfsr.shape
+		acfsrc=acfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64]
+		acfav=EMStack2D(tf.math.reduce_mean(acfsrc,0,keepdims=True))
+		a=acfav.numpy[0]
+
+		# we zero out the region near the origin
+		a[63,63]=(a[62,63]+a[63,62])/2.0
+		a[64,63]=a[64,62]
+		a[65,63]=(a[65,62]+a[66,63])/2.0
+		a[63,64]=a[62,64]
+		a[65,64]=a[66,64]
+		a[63,65]=(a[62,65]+a[63,66])/2.0
+		a[64,65]=a[64,66]
+		a[65,65]=(a[66,65]+a[65,66])/2.0
+		a[64,64]=(a[64,63]+a[63,64]+a[65,64]+a[64,65])/4.0
+		print(np.std(acfav),np.mean(acfav))
+		a/=np.std(a)
+		print(np.std(acfav),np.mean(acfav))
+
+		acfavf=acfav.do_fft()	# this is the ACF FFT we will align the CCFS to
+		acfav.write_images("acfref.hdf")
+
+		# CCF between each image and the subsequent image
+		ccfs=ffts.calc_ccf(ffts,offset=1)
+		ccfsr=ccfs.do_ift()
+		ccfsr=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		ccfsr.numpy[:,64,64]=(ccfsr[:,63,64]+ccfsr[:,65,64]+ccfsr[:,64,63]+ccfsr[:,64,65])/4.0
+		for i in ccfsr.numpy: i/=np.std(i)
+		ccfsr.write_images("ccfsr.hdf")
+		ccfsr.coerce_tensor()
+		ccfsf=ccfsr.do_fft()
+
+		# CCF between CCFS and ACF ref
+		ccfacf=ccfsf.calc_ccf(acfavf)
+		ccfacfr=ccfacf.do_ift()
+
+		peaks=tf.math.argmax(tf.reshape(ccfacfr.tensor,[len(ccfacfr),128*128]),axis=1)
+		print(tf.unravel_index(peaks,dims=[128,128])-64)
+#		for i in ccfacfr.tensor: print(tf.math.argmax(tf.reshape(i,[128*128])))
+#		for im in ccfacfr.numpy: im/=np.std(im)
+#		ccfacfr.write_images("ccfacfs.hdf")
+
+
+	if options.ccftest:
 		avg=EMData("average.hdf",0)
 		avg.div(avg["mean"])
 		#avg.add(-avg["mean"])
@@ -79,10 +135,70 @@ At the moment this program provides only an option for estimating the gain image
 		for im in imgs:
 			im.div(avg)
 		ffts=imgs.do_fft()
-		ccfs=imgs.calc_ccf(imgs[len(imgs)//2])
+		ccfs=ffts.calc_ccf(ffts[len(imgs)//2])
 		ccfsr=ccfs.do_ift()
+		_,nx,ny=ccfsr.shape
 
-		ccfsr.write_images("ccfs.hdf")
+		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		cens.write_images("ccfs.hdf")
+
+	if options.acftest:
+		avg=EMData("average.hdf",0)
+		avg.div(avg["mean"])
+		#avg.add(-avg["mean"])
+		nimg=EMUtil.get_image_count(args[0])
+		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
+		for im in imgs:
+			im.div(avg)
+		ffts=imgs.do_fft()
+		ccfs=ffts.calc_ccf(ffts,offset=0)
+		ccfsr=ccfs.do_ift()
+		_,nx,ny=ccfsr.shape
+
+		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		for im in cens.emdata: im.process_inplace("normalize.edgemean")
+		cens.write_images("ccfs.hdf")
+
+	if options.ccfdtest:
+		avg=EMData("average.hdf",0)
+		avg.div(avg["mean"])
+		#avg.add(-avg["mean"])
+		nimg=EMUtil.get_image_count(args[0])
+		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
+		for im in imgs:
+			im.div(avg)
+		ffts=imgs.do_fft()
+		ccfs=ffts.calc_ccf(ffts,offset=1)
+		ccfsr=ccfs.do_ift()
+		_,nx,ny=ccfsr.shape
+
+		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		for im in cens.emdata: im.process_inplace("normalize.edgemean")
+		cens.write_images("ccfs.hdf")
+
+	if options.ccftiletest:
+		avg=EMData("average.hdf",0)
+		avg.div(avg["mean"])
+		#avg.add(-avg["mean"])
+		nimg=EMUtil.get_image_count(args[0])
+		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
+		_,nx,ny=imgs.shape
+		for im in imgs: im.div(avg)
+
+		for x in range(0,nx-1024,1024):
+			for y in range(0,ny-1024,1024):
+				imgt=EMStack2D(imgs.tensor[:,x:x+1024,y:y+1024])
+
+				ffts=imgt.do_fft()
+				ccfs=ffts.calc_ccf(ffts,offset=1)
+				ccfsr=ccfs.do_ift()
+
+				try: ccfsum=ccfsum+ccfsr
+				except: ccfsum=ccfsr
+
+#		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		for im in ccfsum.emdata: im.process_inplace("normalize.edgemean")
+		ccfsum.write_images("ccfs.hdf")
 
 
 	E3end(argv)
