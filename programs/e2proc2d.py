@@ -244,6 +244,10 @@ def main():
 
 	(options, args) = parser.parse_args()
 
+	if any([arg[0] != ':' and ':' in arg for arg in args]):
+		print("\nThe new filename syntax (using : after filename) is not yet supported in e2proc2d.py.\n")
+		sys.exit(1)
+
 	if len(args) < 2:
 		print("usage: " + usage)
 		print("Please run '" + progname + " -h' for detailed options")
@@ -290,10 +294,6 @@ def main():
 	for infile in args[0 : num_input_files]:
 		inp_num = inp_num + 1
 
-		if infile[0] != ":":
-			fsp = infile
-			infile, _ = parse_infile_arg(infile)
-
 		if outpattern.lower()=="none":
 			outfile=None
 			is_inp_bdb = False
@@ -328,7 +328,7 @@ def main():
 			num_inp_images = 2
 		elif os.path.isfile(infile):
 			try:
-				num_inp_images = EMUtil.get_image_count(fsp)
+				num_inp_images = EMUtil.get_image_count(infile)
 			except:
 				num_inp_images = -1
 
@@ -440,7 +440,7 @@ def main():
 			nimg=1
 			isthreed=False
 		else:
-			nimg = EMUtil.get_image_count(fsp)
+			nimg = EMUtil.get_image_count(infile)
 
 			# reads header only
 			isthreed = False
