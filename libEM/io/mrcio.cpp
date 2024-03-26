@@ -33,6 +33,7 @@
 #include <climits>
 #include <chrono>
 #include <ctime>
+#include <bitset>
 
 #include <sys/stat.h>
 
