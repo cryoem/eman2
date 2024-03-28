@@ -3164,10 +3164,6 @@ class Boxer_Widget(QtWidgets.QWidget):
 		except Exception as e:
 			print("Cannot extract box due to error", e, "while writing annotation to segs file. Abort")
 			return
-
-		# if not os.path.exists("./trainset"):
-		# 	os.mkdir("./trainset")
-
 		print("Extract image and label patches of size",self.target.bsz_vs.value) #"at positions:",self.target.boxes)
 		outfile_trainset = self.extract_train_le.text()
 		tentative_seg = self.get_seg_file_name()
@@ -3185,33 +3181,20 @@ class Boxer_Widget(QtWidgets.QWidget):
 			nz = self.target.get_nz()//2
 			x,y,z = int(self.target.boxes[i][0]),int(self.target.boxes[i][1]),int(self.target.boxes[i][2]+nz)
 			bs = self.target.bsz_vs.value
-			target_data =  self.target.get_full_data_from_file()
-			target_annotation = self.target.get_full_annotation_from_file()
-			#if self.boxes[i][3] == 1:
-			# if self.target.boxes[i][3] != 1:
-			# 	pass
-			# else:
 			box_region = Region(x-bs//2,y-bs//2,z,bs,bs,1)
-			r = target_data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-			l = target_annotation.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-
+			r = EMData(self.target.data_file, 0, False, box_region)
+			l = EMData(self.target.seg_path, 0, False, box_region)
 			try:
 				r.write_image(outfile_raw,-1)
 				l.write_image(outfile_seg,-1)
-
 			except Exception as e:
 				print("Trainset file is not correctly formatted. Abort")
 				print(e)
 				return
 			sys.stdout.write("\r{}/{} boxes written".format(i+1,len(self.target.boxes)))
 			sys.stdout.flush()
-
 		print("\nBuilding trainset")
 		os.system("e2tomoseg_buildtrainset.py --buildset --particles_raw={} --particles_label={} --ncopy={} --trainset_output={} --validset=0.0".format(outfile_raw,outfile_seg,str(self.extract_train_ncopy_sb.value()),outfile_trainset))
-		try:
-			del target_data, target_annotation
-		except:
-			pass
 		self.target.clear_shapes()
 		return
 
