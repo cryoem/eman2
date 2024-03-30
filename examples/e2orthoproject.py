@@ -77,7 +77,8 @@ def main():
 	
 	#c:this checks whether input is supplied directly via sys.argv, or --input, counts valid input files, and puts them in a list for future use.
 	options, inputs = checkinput( options )
-	
+	print(f"inputs are {inputs}")
+
 	if options.transformsfile:
 		n=EMUtil.get_image_count(options.input)
 		if n>1:
@@ -163,17 +164,19 @@ def main():
 	path = rootpath + '/' + options.path
 	
 	for model in inputs:
+		model = os.getcwd() + '/' + model
+		print(f"working on model {model}")
 		n = EMUtil.get_image_count(model)	
 		
 		newpath = path
 		if len(inputs) > 1:
-			newpath = path + '/' + model.split('.hdf')[0]
+			newpath = path + '/' + os.path.basename(model).split('.hdf')[0]
 			os.system('mkdir ' + newpath)
 		
 		kstack=0
 		for i in range(n):
 			subpath = newpath
-			submodelname = subpath + '/' + model.split('.')[0] + '_prjs.hdf'
+			submodelname = subpath + '/' + os.path.basename(model).split('.')[0] + '_prjs.hdf'
 			if n > 1:
 				if not options.onlyx and not options.onlyy and not options.onlyz:
 					subpath = newpath + '/ptcl' + str(i).zfill(len(str(n)))
@@ -231,6 +234,7 @@ def main():
 				else:
 					k = kindividual
 				
+				print(f"writing prj to file {submodelname}")
 				if tag:
 					prj.write_image(submodelname.replace('.hdf','_' + tag + '.hdf'),k)
 				else:
