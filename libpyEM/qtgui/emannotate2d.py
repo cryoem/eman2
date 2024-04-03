@@ -1301,11 +1301,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		for k,s in list(self.shapes.items()):
 			try:
 				if s.shape[0][:3]=="scr":
-#					print "shape",s.shape
-#					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
 					s.draw()		# No need for coordinate transform any more
-#					GL.glPopMatrix()
-#					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 
 
@@ -1467,7 +1463,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		except:pass
 
 	def del_shapes(self,k=None):
-		#print(self.shapes)
 		if k:
 			try:
 				for i in k:
@@ -1485,11 +1480,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		try: img_coords = (((v0+origin_x)/self.scale), ((self.height()-(v1-origin_y))/self.scale) )
 		except:	img_coords = (((v0[0]+origin_x)/self.scale),((self.height()-(v0[1]-origin_y))/self.scale))
-
-#		print "Screen:", v0, v1
-#		print "Img:", img_coords
-#		print "Screen:", self.img_to_scr(img_coords)
-
 		return img_coords
 
 	def img_to_scr(self,v0,v1=None):
@@ -1508,14 +1498,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 			os.rmdir('./segs/temp')
 		except:
 			pass
-
 		try:
 			for w in self.inspector.pspecwins: w.close()
 		except: pass
 
 	def dragEnterEvent(self,event):
-
-
 		if event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
@@ -1558,8 +1545,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		trans_rot = Transform(xform.get_rotation()).transpose()
 		xlate_vec = xform.get_trans()
 		untrans_point = [point[0]-xlate_vec[0],point[1]-xlate_vec[1],point[2]-self.nz//2]
-		#untrans_point=[point[0]-xlate_vec[0],point[1]-xlate_vec[1],point[2]-self.nz//2]
-		#print("UP",untrans_point)
 		return self.transform_point(untrans_point,trans_rot)
 
 
@@ -1614,7 +1599,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						pen_width = inspector.seg_tab.get_pen_width()
 						xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
 						xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
-						if self.brush_mode ==0:
+						if self.brush_mode ==0 or self.nz==1:
 							subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,1),0)
 						else:
 							subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,2*pen_width),0)
@@ -1681,7 +1666,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					pen_width = inspector.seg_tab.get_pen_width()
 					xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
 					xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
-					if self.brush_mode ==0:
+					if self.brush_mode ==0 or self.nz==1:
 						subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,1),0)
 					else:
 						subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,2*pen_width),0)
@@ -1689,21 +1674,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.full_annotation.set_rotated_clip(xform,subvol)
 					self.force_display_update()
 				self.updateGL()
-
-	# def create_sphere_vol(self,r):
-	# 	#Create a 3D numpy array of zeros with dimension (2r, 2r, 2r)
-	# 	vol = np.zeros((2*r+1, 2*r+1, 2*r+1))
-	#
-	# 	# Iterate through each element in the array
-	# 	for x in range(2*r):
-	# 		for y in range(2*r):
-	# 			for z in range(2*r):
-	# 		# Calculate the distance from the center (r, r, r)
-	# 				distance = np.sqrt((x - r)**2 + (y - r)**2 + (z - r)**2)
-	# 				# If the distance is less than or equal to r, set the element to 1
-	# 				if distance < r:
-	# 					vol[x, y, z] = 1
-	# 	return from_numpy(1-vol)
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -2705,19 +2675,6 @@ class EMSegTab(QtWidgets.QWidget):
 		self.tree_set.setDragEnabled(True)
 		self.tree_set.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
 		self.tree_root = self.tree_set.invisibleRootItem()
-		# self.tree_set.setColumnWidth(0,60)
-		# self.tree_set.setColumnWidth(1,120)
-		# self.tree_set.setColumnWidth(2,60)
-
-		#REMOVE TABLE_SET
-		# self.table_set=QtWidgets.QTableWidget(0, 3, self)
-		# #self.table_set=QtWidgets.QTreeWidget(self)
-		# self.table_set.setColumnWidth(0,60)
-		# self.table_set.setColumnWidth(1,120)
-		# self.table_set.setColumnWidth(2,60)
-		# self.table_set.setHorizontalHeaderLabels(['Index','Class Name','Group'])
-		# for i in range(3):
-		# 	self.table_set.horizontalHeaderItem(i).setTextAlignment(Qt.AlignLeft)
 
 
 		#self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
@@ -2729,7 +2686,6 @@ class EMSegTab(QtWidgets.QWidget):
 		#self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
 		self.colors = self.target.get_color_palette()
 
-		#self.read_header(self.target.get_full_annotation())
 
 
 
@@ -3819,10 +3775,12 @@ class EMSegTab(QtWidgets.QWidget):
 					new_item(item, text, val)
 			else:
 				new_item(item, str(value))
+		#js=js_open_dict("./test_json.json")
 		js=js_open_dict(json_file)
 		json_str = js['tree_dict']
 		self.tree_set.clear()
 		fill_item(self.tree_set.invisibleRootItem(),json_str)
+
 
 def main():
 	from eman2_gui.emapplication import EMApp
