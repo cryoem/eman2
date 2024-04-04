@@ -301,7 +301,8 @@ EMData * ImageAverager::finish()
 				for (size_t j = 0; j < image_size; ++j) {
 					float f1 = sigma_image_data[j] / nimg;
 					float f2 = result_data[j];
-					sigma_image_data[j] = sqrt(f1 - f2 * f2);
+					float f3=f1-f2*f2;
+					sigma_image_data[j] = f3>=0?sqrt(f3):0.0f;
 				}
 
 				sigma_image->update();
@@ -318,7 +319,8 @@ EMData * ImageAverager::finish()
 					float f1 = 0;
 					if (normimage->get_value_at(j)>0) f1=sigma_image_data[j] / normimage->get_value_at(j);
 					float f2 = result_data[j];
-					sigma_image_data[j] = sqrt(f1 - f2 * f2);
+					float f3=f1-f2*f2;
+					sigma_image_data[j] = f3>=0?sqrt(f3):0.0f;
 				}
 
 				sigma_image->update();

@@ -191,6 +191,7 @@ const string NormalizeLREdgeMeanProcessor::NAME = "normalize.lredge";
 const string NormalizeHistPeakProcessor::NAME = "normalize.histpeak";
 const string NormalizeMaxMinProcessor::NAME = "normalize.maxmin";
 const string NormalizeRowProcessor::NAME = "normalize.rows";
+const string FixGainCountingProcessor::NAME = "math.fixgain.counting";
 const string NormalizeToLeastSquareProcessor::NAME = "normalize.toimage";
 const string RotationalAverageProcessor::NAME = "math.rotationalaverage";
 const string RotationalSubstractProcessor::NAME = "math.rotationalsubtract";
@@ -403,6 +404,7 @@ template <> Factory < Processor >::Factory()
 	force_add<MaskGaussNonuniformProcessor>();
 	force_add<MaskGaussInvProcessor>();
 	force_add<GridKernelFixProcessor>();
+	force_add<FixGainCountingProcessor>();
 	force_add<MaskAzProcessor>();
 
 	force_add<MaxShrinkProcessor>();
@@ -814,6 +816,84 @@ EMData* MaskPackProcessor::process(const EMData *image) {
 	
 	ret->update();
 	return ret;
+}
+
+void FixGainCountingProcessor::process_inplace(EMData *image) {
+	EMData *gain = (EMData *)params.get("gain");
+	float gainmax = params.set_default("gainmax",2.0);
+	float gainmin = params.set_default("gainmin",2.0);
+
+	int nx = image->get_xsize();
+	int ny = image->get_ysize();
+	int nz = image->get_zsize();
+	float gmean = gain->get_attr("mean");
+	float gsig = gain->get_attr("sigma");
+
+	gainmax=gmean+gainmax*gsig;
+	gainmin=gmean-gainmin*gsig;
+	if (gainmin<0.1) gainmin=0.1;
+
+	// we do this in quadrants to make it easier to find good "filler" values
+	for (int y=0; y<ny/2; y++) {
+		for (int x=0; x<nx/2; x++) {
+			float g=gain->get_value_at(x,y,0);
+			if (g>gainmax || g<gainmin) {
+				float g2=0.0f;
+				int i=0;
+				for (i=0; i<nx/2; i++) {
+					g2=gain->get_value_at(x+i,y+i,0);
+					if (g2<gainmax && g2>gainmin) break;
+				}
+				image->set_value_at_fast(x,y,0,image->get_value_at(x+i,y+i,0)/g2);
+			}
+			else image->mult_value_at_fast(x,y,0,1.0/g);
+		}
+	}
+	for (int y=0; y<ny/2; y++) {
+		for (int x=nx/2; x<nx; x++) {
+			float g=gain->get_value_at(x,y,0);
+			if (g>gainmax || g<gainmin) {
+				float g2=0.0f;
+				int i=0;
+				for (i=0; i<nx/2; i++) {
+					g2=gain->get_value_at(x-i,y+i,0);
+					if (g2<gainmax && g2>gainmin) break;
+				}
+				image->set_value_at_fast(x,y,0,image->get_value_at(x-i,y+i,0)/g2);
+			}
+			else image->mult_value_at_fast(x,y,0,1.0/g);
+		}
+	}
+	for (int y=ny/2; y<ny; y++) {
+		for (int x=0; x<nx/2; x++) {
+			float g=gain->get_value_at(x,y,0);
+			if (g>gainmax || g<gainmin) {
+				float g2=0.0f;
+				int i=0;
+				for (i=0; i<nx/2; i++) {
+					g2=gain->get_value_at(x+i,y-i,0);
+					if (g2<gainmax && g2>gainmin) break;
+				}
+				image->set_value_at_fast(x,y,0,image->get_value_at(x+i,y-i,0)/g2);
+			}
+			else image->mult_value_at_fast(x,y,0,1.0/g);
+		}
+	}
+	for (int y=ny/2; y<ny; y++) {
+		for (int x=nx/2; x<nx; x++) {
+			float g=gain->get_value_at(x,y,0);
+			if (g>gainmax || g<gainmin) {
+				float g2=0.0f;
+				int i=0;
+				for (i=0; i<nx/2; i++) {
+					g2=gain->get_value_at(x-i,y-i,0);
+					if (g2<gainmax && g2>gainmin) break;
+				}
+				image->set_value_at_fast(x,y,0,image->get_value_at(x-i,y-i,0)/g2);
+			}
+			else image->mult_value_at_fast(x,y,0,1.0/g);
+		}
+	}
 }
 
 // Looks like this hasn't actually been written yet...

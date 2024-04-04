@@ -248,6 +248,7 @@ class EMStack3D(EMStack):
 			return EMStack3D(self.tensor*tf.math.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+
 class EMStack2D(EMStack):
 	"""This class represents a stack of 2-D Images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
 	- Shape of the array is {N,Y,X}, as EMData, it is a list of N x EMData(X,Y)
@@ -293,14 +294,15 @@ class EMStack2D(EMStack):
 		return(self._data.shape)
 
 	def center_clip(self,size):
-		size=int(size)
-		if size<1: raise Exception("center_clip(size) must be called with a positive integer")
-		shp=(self.shape-size)//2
+		try: size=np.array((int(size),int(size)))
+		except: size=(int(size[0]),int(size[1]))
+		if size[0]<1 or size[1]<1: raise Exception("center_clip(size) must be called with a positive integer")
+		shp=(self.shape[1:]-size)//2
 		if isinstance(self._data,list):
-			newlst=[im.get_clip(Region(int(shp[1]),int(shp[2]),size,size)) for im in self._data]
+			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
 			return EMStack2D(newlst)
 		elif isinstance(self._data,np.ndarray) or isinstance(self._data,tf.Tensor):
-			newary=self._data[:,shp[1]:shp[1]+size,shp[2]:shp[2]+size]
+			newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
 			return EMStack2D(newary)
 
 	def do_fft(self,keep_type=False):
@@ -337,6 +339,16 @@ class EMStack2D(EMStack):
 			elif isinstance(target,tf.Tensor) and offset==0:
 				return EMStack2D(self.tensor*tf.math.conj(target))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
+	def convolve(self,target):
+		"""Compute the convolution between each image in the stack and target, which may be a single image or another EMStack of the same size"""
+
+		if isinstance(target,EMStack2D):
+			return EMStack2D(self.tensor*target.tensor)
+		elif isinstance(target,tf.Tensor):
+			return EMStack2D(self.tensor*target)
+		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
 
 	def write_images(self,fsp=None):
 		self.coerce_emdata()

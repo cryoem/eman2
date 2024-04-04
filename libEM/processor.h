@@ -4176,6 +4176,52 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		float slice_value;
 	};
 
+	/**Using a gain image (ideally calculated by computing the average of a large number of movie frames) this
+	 * processor will attempt to gain correct the image by dividing by the gain image. Gain values > mean+gainlim*sigma or < mean-gainlim*sigma
+	 * will, instead, be adjusted to a nearby corrected value. This is a form of automatic defect correction. This processor
+	 * is designed for use with counting mode images where the background is zero, and the values in the raw image should be pure
+	 * uncorrected counts.
+	 */
+	class FixGainCountingProcessor:public Processor
+	{
+	public:
+		string get_name() const
+		{
+			return NAME;
+		}
+
+		void process_inplace(EMData *image);
+
+		static Processor *NEW()
+		{
+			return new FixGainCountingProcessor();
+		}
+
+		virtual TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("gain", EMObject::EMDATA, "image will be divided by gain image with caveats");
+			d.put("gainmax", EMObject::FLOAT, "values in the gain image >mean+gainmax*sigma will be replaced with a nearby value (default=2.0)");
+			d.put("gainmin", EMObject::FLOAT, "values in the gain image <mean-gainmin*sigma will be replaced with a nearby value (default=2.0)");
+			return d;
+		}
+
+		string get_desc() const
+		{
+			return "Using a gain image (ideally calculated by computing the average of a large number of movie frames) this \\
+			* processor will attempt to gain correct the image by dividing by the gain image. To avoid significantly changing \\
+			* the meaning of absolute counts, suggest dividing the gain image by its own mean prior to use. \\
+			* Any gain values > mean+gainmax*sigma or < mean-gainmin*sigma \\
+			* will, instead, be adjusted to a nearby corrected value. This is a form of automatic defect correction. This processor \\
+			* is designed for use with counting mode images where the background is zero, and the values in the raw image should be pure \\
+			* uncorrected counts.";
+		}
+
+		static const string NAME;
+
+
+	};
+
 	/**Multiplies image by a 'linear pyramid'
        1-(|x-xsize/2|*|y-ysize/2|*4/(xsize*ysize))
        This is useful in averaging together boxed out regions with 50% overlap.
