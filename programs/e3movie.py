@@ -46,6 +46,7 @@ At the moment this program provides only an option for estimating the gain image
 	parser.add_argument("--alignbyacfccf",action="store_true",default=False,help="Performs movie alignment via progressive ")
 	parser.add_argument("--align_gain",type=str,help="Gain image for correcting movie images before alignment. Applied correction is to divide by the gain image.",default=None)
 	parser.add_argument("--clip",type=str,default=None,help="nx,ny output image size. Trims both edges equally as necessary")
+	parser.add_argument("--frames",type=str,default=None,help="<first>,<last+1> movie frames to use, first frame is 0, '0,3' will use frames 0,1,2")
 	parser.add_argument("--acftest",action="store_true",default=False,help="compute ACF images for input stack")
 	parser.add_argument("--ccftest",action="store_true",default=False,help="compute CCF between each image and the middle image in the movie")
 	parser.add_argument("--ccfdtest",action="store_true",default=False,help="compute the CCT between each image and the next image in the movie, length n-1")
@@ -58,6 +59,8 @@ At the moment this program provides only an option for estimating the gain image
 	nmov=len(args)
 	if options.clip is not None: clip=(int(options.clip.split(",")[0]),int(options.clip.split(",")[1]))
 	else: clip=None
+	if options.frames is not None: frames=(int(options.frames.split(",")[0]),int(options.frames.split(",")[1]))
+	else: frames=None
 
 	if options.est_gain is not None:
 
@@ -82,12 +85,13 @@ At the moment this program provides only an option for estimating the gain image
 
 	if options.alignbyccf :
 		rsz=128				# 1/2 the size of the CCF regions to correlate
+		gain=EMData(options.align_gain,0)
 		for mi in range(nmov):
 			base=base_name(args[mi])
 			nimg=EMUtil.get_image_count(args[mi])
-			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:0:{min(32,nimg)}"))
+			if options.frames is None: frames=(0,nimg)
+			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
 			if options.align_gain is not None:
-				gain=EMData(options.align_gain,0)
 				for i in imgs.emdata: i.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
 			for i in imgs.emdata: i.process_inplace("normalize.edgemean")
 			imgs_clip=imgs.center_clip(3072)	# this should fit the dimensions of pretty much any currently used movie mode sensor, and still use enough of the image
@@ -135,29 +139,35 @@ At the moment this program provides only an option for estimating the gain image
 
 			avgorig=Averagers.get("mean")
 			avgali=Averagers.get("mean")
-			for i in range(min(32,nimg)):
+			for i in range(frames[0],frames[1]):
 				im=EMData(f"{args[mi]}",i)
-				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
 				if options.align_gain is not None:
 					im.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
+				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
 				avgorig.add_image(im)
-				im.translate(int(seqoff[1][i]),int(seqoff[0][i]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
+				im.translate(int(seqoff[1][i-frames[0]]),int(seqoff[0][i-frames[0]]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
 				avgali.add_image(im)
 
-			avgorig.finish().write_image(f"micrographs/{base}_unali.hdf:6")
-			avgali.finish().write_image(f"micrographs/{base}.hdf:6")
+			avgorig.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
+			avgali.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
+			js=js_open_dict(info_name(args[mi]))
+			js["movie_frames"]=frames
+			js["movie_align_x"]=seqoff[1]
+			js["movie_align_y"]=seqoff[0]
+			js=None
 	#		for i in ccfacfr.tensor: print(tf.math.argmax(tf.reshape(i,[rsz*2*rsz*2])))
 	#		for im in ccfacfr.numpy: im/=np.std(im)
 	#		ccfacfr.write_images("ccfacfs.hdf")
 
 	if options.alignbyacfccf :
 		rsz=128				# 1/2 the size of the CCF regions to correlate
+		gain=EMData(options.align_gain,0)
 		for mi in range(nmov):
 			base=base_name(args[mi])
 			nimg=EMUtil.get_image_count(args[mi])
-			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:0:{min(32,nimg)}"))
+			if options.frames is None: frames=(0,nimg)
+			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
 			if options.align_gain is not None:
-				gain=EMData(options.align_gain,0)
 				for i in imgs.emdata: i.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
 			for i in imgs.emdata: i.process_inplace("normalize.edgemean")
 			imgs_clip=imgs.center_clip(3072)	# this should fit the dimensions of pretty much any currently used movie mode sensor, and still use enough of the image
@@ -224,17 +234,22 @@ At the moment this program provides only an option for estimating the gain image
 
 			avgorig=Averagers.get("mean")
 			avgali=Averagers.get("mean")
-			for i in range(min(32,nimg)):
+			for i in range(frames[0],frames[1]):
 				im=EMData(f"{args[mi]}",i)
-				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
 				if options.align_gain is not None:
 					im.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
+				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
 				avgorig.add_image(im)
-				im.translate(int(seqoff[1][i]),int(seqoff[0][i]),0)
+				im.translate(int(seqoff[1][i-frames[0]]),int(seqoff[0][i-frames[0]]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
 				avgali.add_image(im)
 
-			avgorig.finish().write_image(f"micrographs/{base}_unali.hdf:6")
-			avgali.finish().write_image(f"micrographs/{base}.hdf:6")
+			avgorig.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
+			avgali.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
+			js=js_open_dict(info_name(args[mi]))
+			js["movie_frames"]=frames
+			js["movie_align_x"]=seqoff[1]
+			js["movie_align_y"]=seqoff[0]
+			js=None
 	#		for i in ccfacfr.tensor: print(tf.math.argmax(tf.reshape(i,[rsz*2*rsz*2])))
 	#		for im in ccfacfr.numpy: im/=np.std(im)
 	#		ccfacfr.write_images("ccfacfs.hdf")
