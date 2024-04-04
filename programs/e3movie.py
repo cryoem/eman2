@@ -165,7 +165,7 @@ At the moment this program provides only an option for estimating the gain image
 		for mi in range(nmov):
 			base=base_name(args[mi])
 			nimg=EMUtil.get_image_count(args[mi])
-			frames=(options.frames[0],min(options.frames[1],nimg)
+			frames=(options.frames[0],min(options.frames[1],nimg))
 			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
 			if options.align_gain is not None:
 				for i in imgs.emdata: i.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
