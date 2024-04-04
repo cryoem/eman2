@@ -204,7 +204,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			del seg_out
 			seg_item = QtWidgets.QTreeWidgetItem()
 			try:
-				self.tomo_tree.currentItem().addChild(seg_item)
+				self.tomo_tree.topLevelItem(0).addChild(seg_item)
 				seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
 
 				#seg_item.setCheckState(0,0)
@@ -212,7 +212,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 				seg_button.setChecked(True)
 				self.tomo_tree.setItemWidget(seg_item,0,seg_button)
-			except:
+			except Exception as e:
+				print("EXCEPTION when add child", e)
 				pass
 
 		self.seg_path = seg_path
@@ -449,7 +450,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.bxlay.setColumnStretch(70,70)
 
 
-		self.random_bx_bt = QtWidgets.QPushButton("Create Random Boxes")
+		self.random_bx_bt = QtWidgets.QPushButton("Random Bg Box")
 		self.random_sparse_checkbox = QtWidgets.QCheckBox("Sparse")
 		self.random_sparse_checkbox.setChecked(True)
 
@@ -853,10 +854,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# 	print("Except")
 		# 	pass
 
-
-
-
-
 	def z_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
 		try:
@@ -869,42 +866,18 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 		self.reset_morp_params(reset_vs=False)
 
+
 	def show_3D_region(self):
-		print("SHOW 3D")
-		if self.zt_spinbox.value() == 0:
-			print("Cannot show 3D region of 2D slice. Set zthick spinbox to non-zero value to continue")
-			return
-		self.view = EMScene3D()
-		## slice through the original tomogram
-		print(self.cur_region)
-		#tomo = self.get_full_data_from_file().get_clip(self.cur_region)
-		#tomo = EMData(self.data_file, 0, False, self.cur_region)
-		tomo = self.get_data()
-		tomo_di = EMDataItem3D(tomo, transform=Transform())
-		self.view.insertNewNode('Data', tomo_di, parentnode=self.view)
-		volslice = EMSliceItem3D(tomo_di, transform=Transform())
-		#volslice = EMSliceItem3D(tomo_di, transform=self.img_view.get_xform())
-		self.view.insertNewNode("Slice", volslice, parentnode=tomo_di)
-		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
-		self.view.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
-
-		# #isosurface of reconstituted particles
-		# try:
-		# 	self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-		# except:
+		# if self.view is None:
+		# 	self.view = CustomScene3D(target=self)
+		# 	print("Init a new 3Dscene")
+		# else:
 		# 	pass
-		# annotate = EMData(self.seg_path, 0, False, self.cur_region)
-		annotate = self.get_annotation()
-		annotate_di = EMDataItem3D(annotate, transform=Transform())
-		self.view.insertNewNode('Annotate', annotate_di, parentnode=self.view)
-		isosurface = EMIsosurface(annotate_di, transform=Transform())
-
-		self.view.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		self.view = CustomScene3D(target=self)
+		self.view.show_3D_region()
 		self.view.show()
 		try: self.view.raise_()
 		except: pass
-
-		return
 
 
 	def test_drawing_function(self):
@@ -1743,32 +1716,27 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 	def random_bx_bt_clicked(self):
-
 		try:
 			no_box = int(self.random_bx_sb.getValue())
 		except:
 			print("Number of boxes needed to be integer")
 			return
-		pos_annotate = self.get_segtab().get_selected_annotate().process("threshold.binary",{"value":0.1})
-		#Dilating selected so that the background is not overlapped.
-		pos_np_dilated = ndi.binary_dilation(to_numpy(pos_annotate),iterations=self.bsz_vs.value//2+25)
-		#self.img_view.set_data(self.get_annotation(),from_numpy(pos_np_dilated))
-		possible_boxes = list(zip(*np.where(pos_np_dilated==0)))
+		try:
+			pos_annotate = self.get_segtab().get_selected_annotate().process("threshold.binary",{"value":0.1})
+			pos_np_dilated = ndi.binary_dilation(to_numpy(pos_annotate),iterations=self.bsz_vs.value//2+25)
+			possible_boxes = list(zip(*np.where(pos_np_dilated==0)))
+		except:
+			temp_dim=np.zeros([self.img_view.get_data_dims()[0],self.img_view.get_data_dims()[1]])
+			possible_boxes = list(zip(*np.where(temp_dim==0)))
 
-		#ind = np.random.randint(0, len(possible_boxes), no_box)
 		if self.random_sparse_checkbox.isChecked():
 			ind = np.random.randint(0, len(possible_boxes)//100, no_box)*100
 		else:
 			ind = np.random.randint(0, len(possible_boxes), no_box)
-
-		# xs = np.random.randint(self.bsz_vs.value//2,self.img_view.get_data_dims()[0]-self.bsz_vs.value//2,no_box)
-		# ys = np.random.randint(self.bsz_vs.value//2,self.img_view.get_data_dims()[1]-self.bsz_vs.value//2,no_box)
 		box_index = self.current_box_index_sp.value()
 		for i in ind:
 			self.boxes.append([possible_boxes[i][1],possible_boxes[i][0],self.get_zpos(),1,box_index])
-			#self.boxes.append([xs[i],ys[i],self.get_zpos(),1,box_index])
 		self.add_boxes(size=int(self.bsz_vs.value))
-		#self.img_view.updateGL()
 
 
 	def clear_bx_bt_clicked(self):
@@ -1975,12 +1943,51 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		for widget in self.popwidgets:
 			print("Closing",widget)
 			widget.close()
-		if self.view:
-			self.view.close()
+		# if self.view:
+		# 	self.view.close()
 
 		#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		self.close()
 
+class CustomScene3D(EMScene3D):
+	def __init__(self,target = None):
+		super().__init__()
+		self.target=target
+
+	def show_3D_region(self):
+		print("SHOW 3D")
+		if self.target.zt_spinbox.value() == 0:
+			print("Cannot show 3D region of 2D slice. Set zthick spinbox to non-zero value to continue")
+			return
+		reg = Region()
+		reg.set_origin(self.target.cur_region.get_origin())
+		reg.set_width(self.target.cur_region.get_width()+2)
+		reg.set_height(self.target.cur_region.get_height()+2)
+		reg.set_depth(self.target.cur_region.get_depth())
+		print("Reg", reg)
+
+		tomo = self.target.get_data().get_clip(reg)
+		tomo_di = EMDataItem3D(tomo, transform=Transform())
+		self.insertNewNode('Data', tomo_di, parentnode=self)
+		volslice = EMSliceItem3D(tomo_di, transform=Transform())
+		#volslice = EMSliceItem3D(tomo_di, transform=self.img_view.get_xform())
+		self.insertNewNode("Slice", volslice, parentnode=tomo_di)
+		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
+		self.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
+
+		# #isosurface of reconstituted particles
+		# try:
+		# 	self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+		# except:
+		# 	pass
+		# annotate = EMData(self.seg_path, 0, False, self.cur_region)
+		annotate = self.target.get_annotation().get_clip(reg)
+		print("annotate size",annotate.get_sizes())
+		annotate_di = EMDataItem3D(annotate, transform=Transform())
+		self.insertNewNode('Annotate', annotate_di, parentnode=self)
+		isosurface = EMIsosurface(annotate_di, transform=Transform())
+		self.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		return
 
 
 
@@ -3157,10 +3164,6 @@ class Boxer_Widget(QtWidgets.QWidget):
 		except Exception as e:
 			print("Cannot extract box due to error", e, "while writing annotation to segs file. Abort")
 			return
-
-		# if not os.path.exists("./trainset"):
-		# 	os.mkdir("./trainset")
-
 		print("Extract image and label patches of size",self.target.bsz_vs.value) #"at positions:",self.target.boxes)
 		outfile_trainset = self.extract_train_le.text()
 		tentative_seg = self.get_seg_file_name()
@@ -3178,33 +3181,20 @@ class Boxer_Widget(QtWidgets.QWidget):
 			nz = self.target.get_nz()//2
 			x,y,z = int(self.target.boxes[i][0]),int(self.target.boxes[i][1]),int(self.target.boxes[i][2]+nz)
 			bs = self.target.bsz_vs.value
-			target_data =  self.target.get_full_data_from_file()
-			target_annotation = self.target.get_full_annotation_from_file()
-			#if self.boxes[i][3] == 1:
-			# if self.target.boxes[i][3] != 1:
-			# 	pass
-			# else:
 			box_region = Region(x-bs//2,y-bs//2,z,bs,bs,1)
-			r = target_data.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-			l = target_annotation.get_clip(Region(x-bs//2,y-bs//2,z,bs,bs,1))
-
+			r = EMData(self.target.data_file, 0, False, box_region)
+			l = EMData(self.target.seg_path, 0, False, box_region)
 			try:
 				r.write_image(outfile_raw,-1)
 				l.write_image(outfile_seg,-1)
-
 			except Exception as e:
 				print("Trainset file is not correctly formatted. Abort")
 				print(e)
 				return
 			sys.stdout.write("\r{}/{} boxes written".format(i+1,len(self.target.boxes)))
 			sys.stdout.flush()
-
 		print("\nBuilding trainset")
 		os.system("e2tomoseg_buildtrainset.py --buildset --particles_raw={} --particles_label={} --ncopy={} --trainset_output={} --validset=0.0".format(outfile_raw,outfile_seg,str(self.extract_train_ncopy_sb.value()),outfile_trainset))
-		try:
-			del target_data, target_annotation
-		except:
-			pass
 		self.target.clear_shapes()
 		return
 
@@ -3441,7 +3431,7 @@ class NNet_Tab(QtWidgets.QWidget):
 			for pair in cent_mass:
 				reg_list.append([pair[1],pair[0],i])
 
-		print(reg_list)
+		#print(reg_list)
 		return reg_list
 
 	def get_selected_item(self):
@@ -3752,14 +3742,7 @@ class Morp_Tab(QtWidgets.QWidget):
 			xrot, yrot, zrot = self.target.img_view.reverse_transform_point([center[0],center[1],self.target.img_view.nz//2+center[2]], self.target.img_view.get_xform())
 			xform=Transform({"type":"eman","alt":self.target.img_view.alt,"az":self.target.img_view.az,"tx":self.target.img_view.nx//2+xrot,"ty":self.target.img_view.ny//2+yrot,"tz":self.target.img_view.nz//2+zrot})
 			subvol=self.target.img_view.get_full_annotation().get_rotated_clip(xform,(side_length,side_length,side_length),0)
-
-
-			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
-			#subvol.process_inplace("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
 			self.target,img_view.full_annotation.set_rotated_clip(xform,from_numpy(np.where(fill_vol>0,val,to_numpy(subvol))))
-			#self.img_view.full_annotation.set_rotated_clip(xform,subvol*2)
-			# full_vol=from_numpy(np.where(fill_vol>0,value,to_numpy(self.img_view.full_annotation)))
-			# self.img_view.full_annotation = full_vol.process("xform",{"transform":self.img_view.xform})
 		self.target.img_view.force_display_update()
 		self.target.img_view.updateGL()
 
@@ -3870,14 +3853,6 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 		self.target = target
 		ext_gbl = QtWidgets.QGridLayout(self)
 		self.current_z = self.target.zc_spinbox.value()
-		# self.rf_path_text = QtWidgets.QLineEdit()
-		# self.vol_path_text = QtWidgets.QLineEdit()
-		#
-		# self.vol_browser_bt = QtWidgets.QPushButton("Browse")
-		# self.map_ptcls_bt = QtWidgets.QPushButton("Map ptcls to tomogram")
-		# self.show_ptcls_bt = QtWidgets.QPushButton("Show ptcls on tomogram")
-		# self.show_ptcls_vs = ValSlider(value=0.5,rng=(0.001,5),rounding=2,label= "Thres")
-		#
 		self.ext_class_bt = QtWidgets.QPushButton("Extrapolate Class")
 		self.ext_all_bt = QtWidgets.QPushButton("Extrapolate All")
 		self.ext_from_spinbox = QtWidgets.QSpinBox()
@@ -3885,10 +3860,6 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 		self.ext_from_spinbox.setMinimum(-self.target.get_nz())
 		self.ext_from_spinbox.setValue(0)
 
-
-
-		# self.n_iters_spinbox.setMinimum(1)
-		# self.annotate_ori=None
 
 		ext_gbl.addWidget(QtWidgets.QLabel("Apply to 2D slice. Z-thick set to 0"),0,0,1,2)
 		ext_gbl.addWidget(self.ext_class_bt,1,0,1,1)
@@ -3910,9 +3881,6 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 			for item in self.target.get_segtab().get_whole_branch(sel):
 				sels.append(item)
 
-		# if len(sels) == 0:
-		# 	print("Select a single class or grouping before extrapolate operation")
-		# 	return 0,None
 
 		return sels
 
@@ -4010,14 +3978,10 @@ class Binary_Tab(QtWidgets.QWidget):
 
 	def bin_detect_bt_clicked(self):
 		self.target.save_current_state()
-
 		sel = self.get_selected_item()
 		if not sel:
 			print("Choose only one class for detect feature")
 			return
-		# if len(sel) == 0:
-		# 	print("Please select the class feature to detect")
-		# 	return
 
 
 		self.target.get_segtab().get_whole_annotate(sel).write_image("ori_detect.hdf")
@@ -4082,7 +4046,6 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
 		templ_gbl.addWidget(self.template_match_bt,1,2,1,2)
 		templ_gbl.addWidget(self.tplt_threshold_vs,2,0,1,4)
-		#templ_gbl.addWidget(self.tplt_low_pass_vs,3,0,1,4)
 		self.setLayout(templ_gbl)
 
 		self.tplt_match_launcher = QtWidgets.QWidget()
@@ -4101,8 +4064,6 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		self.create_template_bt.clicked[bool].connect(self.create_tplt)
 		self.tplt_launch_bt.clicked[bool].connect(self.tplt_match_launched)
 		self.tplt_threshold_vs.valueChanged.connect(self.binarize_tplt_match)
-
-
 
 
 	def load_template(self):
@@ -4130,7 +4091,6 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		except:
 			pass
 		os.system("e2proc3d.py tmp_ccc.hdf tmp_ccc_inv.hdf --mult=-1")
-		#tplt_match_map = EMData("tmp_ccc_inv.hdf")
 		self.tplt_threshold_vs.setValue(0.81)
 		return
 
@@ -4161,10 +4121,6 @@ class Cmd_Launcher(QtWidgets.QWidget):
 
 	def get_cmd():
 		return self.cmd
-
-
-
-
 
 
 class Fila_Tab(QtWidgets.QWidget):
@@ -4211,9 +4167,6 @@ class Fila_Tab(QtWidgets.QWidget):
 		self.t_button.clicked[bool].connect(self.t_button_clicked)
 		self.p_button.clicked[bool].connect(self.p_button_clicked)
 		self.c_button.clicked[bool].connect(self.c_button_clicked)
-
-
-
 
 	def tree_to_dict(self,parent):
 		childCount = parent.childCount()
@@ -4529,7 +4482,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.target.save_current_state()
 		self.target.activateWindow()
 		self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-		# 	# 	self.target.annotate += val*from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
 		self.labeled_ann,self.num = ndi.label(to_numpy(raw_mask))
 		self.loc=ndi.find_objects(self.labeled_ann,self.num)
 		t_mask = np.zeros(self.labeled_ann.shape)
@@ -4546,7 +4498,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 			name = sel.text(1)
 			self.target.get_segtab().add_child(child_l=[str(ind),name+"_"+str(i),"-1"])
 			self.target.get_segtab().update_sets()
-			#self.target.annotate += ind*(raw_mask)
 			t_mask += np.where(self.labeled_ann==i,ind,0)
 		self.target.annotate += from_numpy(t_mask)
 		print("number of object detected:", self.num)
@@ -4555,110 +4506,11 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.n_objects_text.setText(str(count))
 
 
-	# def count_objs(self):
-	# 	thres=self.n_obj_thres_vs.value
-	# 	#n_iters = int(self.morp_n_iters_sp.value())
-	# 	sel = self.get_selected_item()
-	# 	#self.counted_item.append(sel)
-	# 	#val,raw_mask = self.get_target_selected()
-	# 	if sel:
-	# 		val = int(sel.text(0))
-	# 		raw_mask = self.target.get_segtab().get_whole_annotate(sel)
-	# 	else:
-	# 		print("Select a class to count")
-	# 		return
-	#
-	# 	# if raw_mask:
-	# 	self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
-	# 	# 	self.target.annotate += val*from_numpy(ndi.binary_opening(to_numpy(mask),iterations=n_iters))
-	# 	# mask, num = ndi.label(to_numpy(self.target.get_annotation()))
-	# 	self.labeled_ann,self.num = ndi.label(to_numpy(raw_mask))
-	# 	self.loc=ndi.find_objects(self.labeled_ann,self.num)
-	# 	t_mask = np.zeros(self.labeled_ann.shape)
-	# 	count = 0
-	# 	self.area_vol = []
-	# 	self.objs = []
-	# 	open_lab=to_numpy(raw_mask)
-	# 	# current_item = self.target.get_segtab().tree_set.currentItem()
-	# 	# current_item.takeChildren()
-	#
-	# 	for i in range(1,self.num+1):
-	# 		#area_temp=len(np.where(open_lab[self.loc[i-1]]>0)[0])
-	# 		area_temp=len(np.where(open_lab[self.loc[i-1]]>0)[0])
-	# 		#print(open_lab[loc[i]].shape[0],open_lab[loc[i]].shape[1])
-	# 		if area_temp >= thres:
-	# 			count = count+1
-	# 			self.area_vol.append(area_temp)
-	# 			self.objs.append(open_lab[self.loc[i-1]])
-	# 			ind = self.target.get_segtab().get_unused_index()
-	# 			name = current_item.text(1)
-	# 			self.target.get_segtab().add_child(child_l=[str(ind),name+"_"+str(i),"-1"])
-	# 			self.target.get_segtab().update_sets()
-	# 	#self.target.annotate += *(raw_mask)
-	# 			t_mask += np.where(self.labeled_ann==i,ind,0)
-	#
-	# 	self.target.annotate += from_numpy(t_mask)
-	# 	print("number of object detected:", self.num)
-	# 	self.target.img_view.set_data(self.target.data, self.target.annotate)
-	# 	del t_mask
-	# 	self.n_objects_text.setText(str(count))
-
-
-
-	# def calc_convex_hull(self):
-	# 	def is_point_in_polygon(point,vertices):
-	# 		points = np.array([[x[0],x[1]] for x in vertices])
-	# 		poly_path = mplPath.Path(points)
-	# 		return poly_path.contains_point(point)
-	# 	def polygon(points):
-	# 		min_r = int(min([x[0] for x in points]))
-	# 		max_r = int(max([x[0] for x in points]))
-	# 		min_c = int(min([x[1] for x in points]))
-	# 		max_c = int(max([x[1] for x in points]))
-	# 		rr = []
-	# 		cc = []
-	# 		for r in range(min_r,max_r+1):
-	# 			for c in range(min_c,max_c+1):
-	# 				if is_point_in_polygon([r,c],points):
-	# 					rr.append(r)
-	# 					cc.append(c)
-	# 		return np.array(rr), np.array(cc)
-	#
-	#
-	#
-	# 	open_lab=ndi.binary_opening(to_numpy(img),iterations=1)
-	# 	labeled,num = ndi.label(open_lab>0.5)
-	#
-	# 	for i in range(1,num+1):
-	# 		o1 = np.ma.masked_where(labeled!=i,labeled)
-	# 		p1 = np.nonzero(o1)
-	# 		points = np.stack((p1[0], p1[1]), axis=-1)
-	# 		hull = ConvexHull(points=points,qhull_options='QG4')
-	# 		pts = []
-	# 		for simplex in hull.vertices:
-	# 			pts.append([points[simplex,0],points[simplex,1]])
-	# 		rr,cc = polygon(pts)
-	# 		labeled[rr,cc]=i
-	# 	return labeled
-	#
-	# def show_convex_hull(self):
-	# 	sel = self.get_selected_item()
-	# 	if sel not in self.counted_item:
-	# 		self.count_objs()
-	# 	convex = self.calc_convex_hull(img=self.target.annotate)
-	# 	self.target.img_view.set_data(self.target.data, from_numpy(convex))
-	# 	del convex
-
 
 
 	def calc_stat(self):
 		apix = self.apix_vs.value
 		sel = self.get_selected_item()
-		#if sel not in self.counted_item:
-		#val = int(sel.text(0))
-		#raw_mask = self.target.get_segtab().get_whole_annotate(sel)
-
-		#if len(self.target.get_segtab().get_whole_branch(sel))==1:
 		self.label_objs(ask_user=False)
 		if (self.stat_combo.currentText() == "Center of Mass"):
 			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(self.objs))])
@@ -4680,7 +4532,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 					print("Largest Area of Obj",i,":", str(self.area_vol[-i]),"pixels")
 					print("Largest Area of Obj",i,":", str(self.area_vol[-i]*apix*apix)," A^2")
 			else:
-				#self.projs = [from_numpy(obj).process("xform",{"transform":Transform()}).process("misc.directional_sum",{"axis":"z"}) for obj in self.objs]
 				for i in range(1,len(self.objs)+1):
 					obj = self.objs[-i]
 					a = from_numpy(obj)
@@ -4699,15 +4550,10 @@ class Statistics_Tab(QtWidgets.QWidget):
 					a = from_numpy(obj)
 					proj = a.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1})
 					im = proj.numpy()
-				# sx = ndi.sobel(im, axis=0, mode='constant')
-				# sy = ndi.sobel(im, axis=1, mode='constant')
-				# sob = np.hypot(sx, sy)
-				# from_numpy(sob).write_image('peri_temp_2.hdf')
 				peri_temp = self.calc_perimeter(im)
 				print("Largest Perimeter of Obj",i,":", peri_temp, "pixel")
 				print("Largest Perimeter of Obj",i,":", peri_temp*apix,"A")
-				#[data.process("xform",{"transform":xform}).process("misc.directional_sum",{"first":nz//2-layers,"last":nz//2+layers,"axis":"z"}) for data in self.datalist]
-			#self.projs = [data.process("xform",{"transform":Transform()}).process("misc.directional_sum",{"first":nz//2-layers,"last":nz//2+layers,"axis":"z"}) for data in self.datalist]
+
 		else:
 			return
 
@@ -4725,8 +4571,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 				if cond:
 					newdata[i, j] = 0
 		return np.count_nonzero(newdata)
-
-
 
 
 class Specific_Tab(QtWidgets.QWidget):
@@ -4761,7 +4605,6 @@ class Specific_Tab(QtWidgets.QWidget):
 		self.detect_plane_bt.clicked[bool].connect(self.detect_plane)
 		self.select_anchors_bt.clicked[bool].connect(self.select_anchors_bt_clicked)
 
-
 		self.gra_tab = QtWidgets.QWidget()
 		self.gtlay = QtWidgets.QVBoxLayout(self.gra_tab)
 		self.dark_gra_button = QtWidgets.QPushButton("Dark granule")
@@ -4792,7 +4635,6 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
-		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")

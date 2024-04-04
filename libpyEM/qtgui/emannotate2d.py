@@ -57,6 +57,7 @@ from libpyGLUtils2 import *
 
 from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
 from eman2_gui.emapplication import get_application, EMGLWidget
+from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimageutil import EMMetaDataTable
 from eman2_gui.embrowser import EMBrowserWidget
 from eman2_gui.empmwidgets import *
@@ -64,7 +65,6 @@ from eman2_gui.emanimationutil import SingleValueIncrementAnimation, LineAnimati
 import json
 import platform
 from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
-
 
 class EMAnnotate2DWidget(EMGLWidget):
 	"""
@@ -1301,11 +1301,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		for k,s in list(self.shapes.items()):
 			try:
 				if s.shape[0][:3]=="scr":
-#					print "shape",s.shape
-#					GL.glPushMatrix()		# The push/pop here breaks the 'scr*' shapes !
 					s.draw()		# No need for coordinate transform any more
-#					GL.glPopMatrix()
-#					GLUtil.colored_rectangle(s.shape[1:8],alpha)
 			except: pass
 
 
@@ -1467,7 +1463,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		except:pass
 
 	def del_shapes(self,k=None):
-		#print(self.shapes)
 		if k:
 			try:
 				for i in k:
@@ -1485,11 +1480,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		try: img_coords = (((v0+origin_x)/self.scale), ((self.height()-(v1-origin_y))/self.scale) )
 		except:	img_coords = (((v0[0]+origin_x)/self.scale),((self.height()-(v0[1]-origin_y))/self.scale))
-
-#		print "Screen:", v0, v1
-#		print "Img:", img_coords
-#		print "Screen:", self.img_to_scr(img_coords)
-
 		return img_coords
 
 	def img_to_scr(self,v0,v1=None):
@@ -1508,14 +1498,11 @@ class EMAnnotate2DWidget(EMGLWidget):
 			os.rmdir('./segs/temp')
 		except:
 			pass
-
 		try:
 			for w in self.inspector.pspecwins: w.close()
 		except: pass
 
 	def dragEnterEvent(self,event):
-
-
 		if event.mimeData().hasFormat("application/x-eman"):
 			event.setDropAction(Qt.CopyAction)
 			event.accept()
@@ -1558,8 +1545,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 		trans_rot = Transform(xform.get_rotation()).transpose()
 		xlate_vec = xform.get_trans()
 		untrans_point = [point[0]-xlate_vec[0],point[1]-xlate_vec[1],point[2]-self.nz//2]
-		#untrans_point=[point[0]-xlate_vec[0],point[1]-xlate_vec[1],point[2]-self.nz//2]
-		#print("UP",untrans_point)
 		return self.transform_point(untrans_point,trans_rot)
 
 
@@ -1588,7 +1573,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 				if event.buttons()&Qt.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
-		#			self.del_shape("MEASL")
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
 					self.updateGL()
@@ -1608,76 +1592,29 @@ class EMAnnotate2DWidget(EMGLWidget):
 			elif self.mouse_mode_dict[self.mouse_mode]=="seg":
 				if event.buttons()&Qt.LeftButton:
 					inspector = self.get_inspector()
-					#inspector.show()
 					lc=self.scr_to_img(event.x(),event.y())
-					#current_class = self.current_class
 					if inspector:
 						self.mousedown.emit(event, lc)
 						current_class = inspector.seg_tab.get_current_class()
 						pen_width = inspector.seg_tab.get_pen_width()
-
-							#self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-
-						#2D rotated brush
-						if self.brush_mode ==0:
-							self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-							self.force_display_update(set_clip=True)
-						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
-
-
+						xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
+						xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
+						if self.brush_mode ==0 or self.nz==1:
+							subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,1),0)
 						else:
-							# xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
-							#
-							# xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
-							# subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,2*pen_width))
-							#
-							# #self.full_annotation.set_rotated_clip(xform,EMData(60,60,60))
-							# subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
-							# #sphere_msk = self.create_sphere_vol(pen_width)
-							# #insert_vol = subvol*(1-subvol.process("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":1,"r2":pen_width,"v2":0}))
-							# #self.full_annotation.set_rotated_clip(xform,subvol.process("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class}))
-							# self.full_annotation.set_rotated_clip(xform,subvol)
-							# #self.full_annotation.set_rotated_clip(xform,insert_vol+subvol.process("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0}))
-							# self.force_display_update()
-						#3D brush
-						#self.full_annotation = self.get_full_annotation().process("xform",{"transform":self.xform})
-						# try:
-						# 	#self.get_full_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":self.get_full_data()["nz"]//2+self.zpos,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-						# 	#self.full_annotation = self.get_full_annotation().process("mask.paint",{"x":lc[0],"y":lc[1],"z":self.get_full_data()["nz"]//2+self.zpos,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-						#
-						# 	self.get_full_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":self.get_full_data()["nz"]//2+self.zpos,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0}) #.process_inplace("xform",{"transform":self.get_reverse_xform()})
-						# 	#self.temp_annotation += self.get_full_annotation().process("mask.paint",{"x":lc[0],"y":lc[1],"z":self.get_full_data()["nz"]//2+self.zpos,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0}) #.process("xform",{"transform":self.get_reverse_xform()})
-						#
-						# except:
-						# 	pass
-						# #self.full_annotation.process_inplace("xform",{"transform":self.xform})
-						#xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
-							xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
-							xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
 							subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,2*pen_width),0)
-
-							#self.full_annotation.set_rotated_clip(xform,EMData(60,60,60))
-							subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
-							self.full_annotation.set_rotated_clip(xform,subvol)
-							self.force_display_update()
-
-							# xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
-							# self.full_annotation = self.get_full_annotation().process("mask.paint",{"x":self.nx//2+xrot,"y":self.ny//2+yrot,"z":self.nz//2+zrot,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-							# self.force_display_update()
-						self.updateGL()
-						# self.mousedown.emit(event, lc)
-
+						subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
+						self.full_annotation.set_rotated_clip(xform,subvol)
+						self.force_display_update()
+					self.updateGL()
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
-
 		if self.rmousedrag:
 			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
 			if event.buttons()&Qt.RightButton:
 				self.mousedrag.emit(event, lc)
-				#print("Rmousedrag:",self.rmousedrag)
-			#self.emit(QtCore.SIGNAL("origin_update"),self.origin)
 			try: self.updateGL()
 			except: pass
 		else:
@@ -1696,7 +1633,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 					lc=self.scr_to_img(event.x(),event.y())
 					current_shapes = self.get_shapes()
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
-
 					dx=lc[0]-current_shapes["MEAS"].shape[4]
 					dy=lc[1]-current_shapes["MEAS"].shape[5]
 
@@ -1714,9 +1650,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 							idx=inspector.target().zpos
 							inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
 						inspector.mtshowval2.setText("  ")
-
-						#except: pass
-
 					self.update_inspector_texture()
 					self.updateGL()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
@@ -1727,77 +1660,20 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.updateGL()
 
 			elif self.mouse_mode_dict[self.mouse_mode] =="seg":
-
 				if event.buttons()&Qt.LeftButton:
 					inspector = self.get_inspector()
-					#inspector.show()
-					#lc=self.scr_to_img(event.x(),event.y())
-					#current_class = self.current_class
-					#if inspector:
 					current_class = inspector.seg_tab.get_current_class()
 					pen_width = inspector.seg_tab.get_pen_width()
-						#print("Seg:", lc)
-						#NEED TO DO SOMETHING HERE???
-						#print(self.get_annotation()[int(lc[0]),int(lc[1])])
-						#print(self.get_annotation())
-						#a = to_numpy(self.get_annotation())
-						#for i in range(int(lc[0])-20,int(lc[0])+20):
-							#for j in range(int(lc[1])-20,int(lc[1])+20):
-						#self.get_annotation().process_inplace("mask.sharp",{"dx":lc[0],"dy":lc[1],"dz":0,"inner_radius":0,"outer_radius":10,"value":2})
-
-					#2D rotated brush
-					if self.brush_mode == 0:
-						self.get_annotation().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-						self.force_display_update(set_clip=True)
-
-
-
-					#3D brush
+					xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
+					xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
+					if self.brush_mode ==0 or self.nz==1:
+						subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,1),0)
 					else:
-						xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
-						xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":self.nx//2+xrot,"ty":self.ny//2+yrot,"tz":self.nz//2+zrot})
 						subvol=self.get_full_annotation().get_rotated_clip(xform,(2*pen_width,2*pen_width,2*pen_width),0)
-						#self.full_annotation.set_rotated_clip(xform,EMData(60,60,60))
-						subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
-						self.full_annotation.set_rotated_clip(xform,subvol)
-						self.force_display_update()
-
-						# try:
-						# 	xrot, yrot, zrot = self.reverse_transform_point([lc[0],lc[1],self.nz//2+self.zpos], self.get_xform())
-						# 	self.full_annotation = self.get_full_annotation().process("mask.paint",{"x":self.nx//2+xrot,"y":self.ny//2+yrot,"z":self.nz//2+zrot,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})
-						# except Exception as e:
-						# 	print(e)
-						# 	pass
-						# self.force_display_update()
-
-						# # ###square brush in subvol.
-						# xform=Transform({"type":"eman","alt":self.alt,"az":self.az,"tx":lc[0]-pen_width,"ty":lc[1]-pen_width,"tz":self.full_data["nz"]//2+self.zpos})
-						# subvol=self.get_full_annotation().get_rotated_clip(self.xform,(2*pen_width+1,2*pen_width+1,2*pen_width+1))
-						# #sphere_msk = self.create_sphere_vol(pen_width)
-						# bgvol = subvol*(1-subvol.process("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":1,"r2":pen_width,"v2":0}))
-						#
-						# self.full_annotation.set_rotated_clip(xform,bgvol+(subvol.process("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":0})))
-						# self.force_display_update()
-
-						#print("Turn point", int(lc[0]),int(lc[1]),"to 2")
-					#self.force_display_update(set_clip=1)
-
-					self.updateGL()
-
-	# def create_sphere_vol(self,r):
-	# 	#Create a 3D numpy array of zeros with dimension (2r, 2r, 2r)
-	# 	vol = np.zeros((2*r+1, 2*r+1, 2*r+1))
-	#
-	# 	# Iterate through each element in the array
-	# 	for x in range(2*r):
-	# 		for y in range(2*r):
-	# 			for z in range(2*r):
-	# 		# Calculate the distance from the center (r, r, r)
-	# 				distance = np.sqrt((x - r)**2 + (y - r)**2 + (z - r)**2)
-	# 				# If the distance is less than or equal to r, set the element to 1
-	# 				if distance < r:
-	# 					vol[x, y, z] = 1
-	# 	return from_numpy(1-vol)
+					subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
+					self.full_annotation.set_rotated_clip(xform,subvol)
+					self.force_display_update()
+				self.updateGL()
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1818,17 +1694,6 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.updateGL()
 			elif self.mouse_mode_dict[self.mouse_mode] == "seg":
 				if event.button()==Qt.LeftButton:
-
-					# self.temp_annotation.write_image("./temp_anno.hdf")
-					# print("Mouse Release, writing temp_annotation")
-					#
-					# self.full_annotation += self.temp_annotation.process("xform",{"transform":self.xform})
-					# self.temp_annotation.to_zero()
-
-
-					#self.full_annotation = self.get_full_annotation().process("xform",{"transform":self.get_reverse_xform()})
-
-					#self.force_display_update(set_clip=True)
 					self.force_display_update()
 					self.updateGL()
 					self.mouseup.emit(event, lc)
@@ -2738,7 +2603,6 @@ class CustomTreeSet(QtWidgets.QTreeWidget):
 	def __init__(self, target = None):
 		super().__init__()
 		self.target = target
-
 	def dropEvent(self,event):
 
 		super().dropEvent(event)
@@ -2767,12 +2631,6 @@ class GroupTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 			return nodes.reverse()
 		else:
 			return nodes
-
-
-
-
-
-		#
 
 
 class EMSegTab(QtWidgets.QWidget):
@@ -2817,19 +2675,6 @@ class EMSegTab(QtWidgets.QWidget):
 		self.tree_set.setDragEnabled(True)
 		self.tree_set.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
 		self.tree_root = self.tree_set.invisibleRootItem()
-		# self.tree_set.setColumnWidth(0,60)
-		# self.tree_set.setColumnWidth(1,120)
-		# self.tree_set.setColumnWidth(2,60)
-
-		#REMOVE TABLE_SET
-		# self.table_set=QtWidgets.QTableWidget(0, 3, self)
-		# #self.table_set=QtWidgets.QTreeWidget(self)
-		# self.table_set.setColumnWidth(0,60)
-		# self.table_set.setColumnWidth(1,120)
-		# self.table_set.setColumnWidth(2,60)
-		# self.table_set.setHorizontalHeaderLabels(['Index','Class Name','Group'])
-		# for i in range(3):
-		# 	self.table_set.horizontalHeaderItem(i).setTextAlignment(Qt.AlignLeft)
 
 
 		#self.itemflags = Qt.ItemFlags(Qt.ItemIsEditable)|Qt.ItemFlags(Qt.ItemIsSelectable)|Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable)
@@ -2841,7 +2686,6 @@ class EMSegTab(QtWidgets.QWidget):
 		#self.colors = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080', '#ffffff', '#000000']
 		self.colors = self.target.get_color_palette()
 
-		#self.read_header(self.target.get_full_annotation())
 
 
 
@@ -3701,11 +3545,34 @@ class EMSegTab(QtWidgets.QWidget):
 		#Save the current annotation to disk as a multiclass annotation file.
 		out_name,ok=QtWidgets.QInputDialog.getText( self, "Save Full Annotation", "Save full annotation to:")
 		if not ok : return
+
+		# nums = [int(self.table_set.item(row,0).text()) for row in range(self.table_set.rowCount())]
+		# names = [str(self.table_set.item(row,1).text()) for row in range(self.table_set.rowCount())]
+		# group_id = [int(self.table_set.item(row,2).text()) for row in range(self.table_set.rowCount())]
+		# #name_str=names[0]+""
+		# #for i in range(1,len(names)):
+		# 	#name_str = name_str + "," + names[i]
+		#
+		# #TOREAD
+		# # self.xform = Transform({"type":"eman","tx":self.full_data["nx"]//2,"ty":self.full_data["ny"]//2,"tz":self.full_data["nz"]//2+self.zpos})
+		# # self.full_data.set_rotated_clip(self.xform, self.data)
+		# # self.full_annotation.set_rotated_clip(self.xform, self.annotation)
+		#
+		# #self.target.get_full_annotation()["ann_name"] = name_str
+		# serialize_name = json.dumps(names, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+		# self.target.get_full_annotation()["ann_name"] = serialize_name
+		# self.target.get_full_annotation()["ann_num"] = nums
+		# self.target.get_full_annotation()["ann_group"] = group_id
 		self.target.get_full_annotation().write_image(out_name)
 		print("Annotation is really saved to", out_name)
 		return
 
 	def update_sets(self):
+
+
+		#self.target.need_new_RGB = 0
+
+		#print("NEED NEW RGB", self.target.need_new_RGB)
 		it = QtWidgets.QTreeWidgetItemIterator(self.tree_set)
 		self.used_index = [0]
 		while it.value():
@@ -3726,8 +3593,46 @@ class EMSegTab(QtWidgets.QWidget):
 
 			self.color_tree_item(item)
 			it += 1
+			# key = int(self.tree_set.topLevelItem(i).text(0))
+			# self.tree_set.topLevelItem(i).setFlags(self.itemflags)
+			# self.tree_set.topLevelItem(i).setForeground(0,self.colors[key])
+			# self.tree_set.topLevelItem(i).setForeground(1,self.colors[key])
 
+
+
+			#group_key = int(self.tree_set.item(i,2).text())
+			#if group_key != -1:
+			# 		self.table_set.item(i,1).setForeground(self.colors[group_key+100])
+			# 		self.table_set.item(i,2).setForeground(self.colors[group_key+100])
+			# 	else:
+			# 		self.table_set.item(i,1).setForeground(self.colors[key])
+			# 		self.table_set.item(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
+
+		#Set the colors and flags of table set items
+		# for i in range(self.table_set.rowCount()):
+		# 	key = int(self.table_set.item(i,0).text())
+		#
+		# 	self.table_set.item(i,0).setFlags(self.indexflags)
+		# 	self.table_set.item(i,1).setFlags(self.itemflags)
+		# 	self.table_set.item(i,0).setForeground(self.colors[key])
+		# 	#self.table_set.item(i,1).setForeground(self.colors[key])
+		# 	group_key = int(self.table_set.item(i,2).text())
+		# 	self.table_set.item(i,2).setFlags(self.indexflags)
+		# 	if group_key != -1:
+		# 		self.table_set.item(i,1).setForeground(self.colors[group_key+100])
+		# 		self.table_set.item(i,2).setForeground(self.colors[group_key+100])
+		# 	else:
+		# 		self.table_set.item(i,1).setForeground(self.colors[key])
+		# 		self.table_set.item(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
+
+				# self.tree_set.itemAt(i,1).setForeground(self.colors[key])
+				# self.tree_set.itemAt(i,2).setForeground(QtGui.QColor.fromRgb(120,120,120))
 	def color_tree_item(self,item):
+
+		#item.setFlags(self.itemflags)
+		# key = int(item.text(0))
+		# item.setForeground(0,self.colors[key])
+
 		try:
 			key = int(item.text(0))
 			item.setForeground(0,self.colors[key])
@@ -3769,9 +3674,15 @@ class EMSegTab(QtWidgets.QWidget):
 			if ret:
 				return item_dict
 			else:
+				# for key, value in item_dict.items():
+				# 	self.add_new_row(key,value)
 				if len(group_ids)>0:
 					for i in range(len(keys)):
 						self.add_new_row(keys[i],values[i],group_ids[i])
+					# if len(self.nodes)==0:
+					# 	self.make_nodes()
+					# print("nodes",[node.get_value() for node in (self.nodes.values())])
+					# print("rowCount",self.table_set.rowCount())
 					for row in range(self.table_set.rowCount()):
 						print(int(self.table_set.item(row,0).text()))
 						if int(self.table_set.item(row,2).text()) != -1:
@@ -3794,9 +3705,13 @@ class EMSegTab(QtWidgets.QWidget):
 			#print("Trouble reading headers information. Continue...")
 			pass
 
+
 	def reset(self):
 		#reset seg tab when set new data
 		return
+
+
+
 
 	def add_new_row(self,num,name,group_num=-1,group_node=False):
 
@@ -3860,10 +3775,12 @@ class EMSegTab(QtWidgets.QWidget):
 					new_item(item, text, val)
 			else:
 				new_item(item, str(value))
+		#js=js_open_dict("./test_json.json")
 		js=js_open_dict(json_file)
 		json_str = js['tree_dict']
 		self.tree_set.clear()
 		fill_item(self.tree_set.invisibleRootItem(),json_str)
+
 
 def main():
 	from eman2_gui.emapplication import EMApp

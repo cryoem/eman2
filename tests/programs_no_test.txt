@@ -16,3 +16,5 @@
  e2gmm_model_refine.py
  e2gmm_model_compile.py
  e2gmm_model_fit.py
+ e2gmm_model_multi.py
+ e2spa_make3d_gpu.py

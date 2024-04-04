@@ -100,11 +100,6 @@ class EMStack():
 	def __setitem__(self,key,value):
 		raise Exception("Cannot set individual elements")
 
-	def update(self):
-		"""Call this if any of the contained EMData objects are altered (image values) to trigger regeneration of the tensor upon next use. Not necessary
-	to call this if you alter which image objects are contained in the stack."""
-		self._tensor=None
-
 	@property
 	def tensor(self):
 		self.coerce_tensor()
@@ -157,17 +152,19 @@ class EMStack():
 	def coerce_tensor(self):
 		if isinstance(self._data,tf.Tensor): return
 		elif isinstance(self._data,list): self._data=to_tf(self._data)
-		elif isinstance(self._data,np.ndarray): self._data=self._data.numpy()
+		elif isinstance(self._data,np.ndarray): self._data=tf.constant(self._data)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 
-	# TODO - implement keep_type
+	def center_clip(self,size):
+		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
+
 	def do_fft(self,keep_type=False):
 		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
 
 	def do_ift(self,keep_type=False):
 		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
 
-	def calc_ccf(self,target):
+	def calc_ccf(self,target,offset=0):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size"""
 
 		if isinstance(target,EMStack3D):
@@ -214,10 +211,20 @@ class EMStack3D(EMStack):
 	@property
 	def shape(self):
 		# note that the returned shape is N,Z,Y,X regardless of representation
-		if isinstance(self._data,list): return((len(self._data),self._data[0]["nz"],self._data[0]["ny"],self._data[0]["nx"]))
+		if isinstance(self._data,list): return(np.array((len(self._data),self._data[0]["nz"],self._data[0]["ny"],self._data[0]["nx"])))
 		return(self._data.shape)
 
-	# TODO - implement keep_type
+	def center_clip(self,size):
+		size=int(size)
+		if size<1: raise Exception("center_clip(size) must be called with a positive integer")
+		shp=(self.shape-size)//2
+		if isinstance(self._data,list):
+			newlst=[im.get_clip(Region(int(shp[1]),int(shp[2]),int(shp[2]),size,size,size)) for im in self._data]
+			return EMStack2D(newlst)
+		elif isinstance(self._data,np.ndarray) or isinstance(self._data,tf.Tensor):
+			newary=self._data[:,shp[1]:shp[1]+size,shp[2]:shp[2]+size,shp[3]:shp[3]+size]
+			return EMStack2D(newary)
+
 	def do_fft(self,keep_type=False):
 		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
@@ -240,6 +247,7 @@ class EMStack3D(EMStack):
 		elif isinstance(target,tf.Tensor):
 			return EMStack3D(self.tensor*tf.math.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
 
 class EMStack2D(EMStack):
 	"""This class represents a stack of 2-D Images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
@@ -281,11 +289,22 @@ class EMStack2D(EMStack):
 
 	@property
 	def shape(self):
-		# note that the returned shape is N,Z,Y,X regardless of representation
-		if isinstance(self._data,list): return((len(self._data),self._data[0]["ny"],self._data[0]["nx"]))
+		# note that the returned shape is N,Y,X regardless of representation
+		if isinstance(self._data,list): return(np.array((len(self._data),self._data[0]["ny"],self._data[0]["nx"])))
 		return(self._data.shape)
 
-	# TODO - implement keep_type
+	def center_clip(self,size):
+		try: size=np.array((int(size),int(size)))
+		except: size=(int(size[0]),int(size[1]))
+		if size[0]<1 or size[1]<1: raise Exception("center_clip(size) must be called with a positive integer")
+		shp=(self.shape[1:]-size)//2
+		if isinstance(self._data,list):
+			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
+			return EMStack2D(newlst)
+		elif isinstance(self._data,np.ndarray) or isinstance(self._data,tf.Tensor):
+			newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
+			return EMStack2D(newary)
+
 	def do_fft(self,keep_type=False):
 		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
@@ -300,23 +319,40 @@ class EMStack2D(EMStack):
 
 		return EMStack2D(tf_ift2d(self._data))
 
-	def calc_ccf(self,target,center=True):
+	def calc_ccf(self,target,center=True,offset=0):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size.
 	If center is True, will shift the phase origin so zero shift corresponds to the middle of the image"""
 
 		if center:
-			if isinstance(target,EMStack2D):
+			if isinstance(target,EMStack2D) and offset!=0:
+				return EMStack2D(tf_phaseorigin2d(self.tensor[:-offset]*tf.math.conj(target.tensor[offset:])))
+			elif isinstance(target,EMStack2D):
 				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target.tensor)))
-			elif isinstance(target,tf.Tensor):
+			elif isinstance(target,tf.Tensor) and offset==0:
 				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target)))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 		else:
-			if isinstance(target,EMStack2D):
+			if isinstance(target,EMStack2D) and offset!=0:
+				return EMStack2D(self.tensor[:-offset]*tf.math.conj(target.tensor[offset:]))
+			elif isinstance(target,EMStack2D):
 				return EMStack2D(self.tensor*tf.math.conj(target.tensor))
-			elif isinstance(target,tf.Tensor):
+			elif isinstance(target,tf.Tensor) and offset==0:
 				return EMStack2D(self.tensor*tf.math.conj(target))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+	def convolve(self,target):
+		"""Compute the convolution between each image in the stack and target, which may be a single image or another EMStack of the same size"""
+
+		if isinstance(target,EMStack2D):
+			return EMStack2D(self.tensor*target.tensor)
+		elif isinstance(target,tf.Tensor):
+			return EMStack2D(self.tensor*target)
+		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
+
+	def write_images(self,fsp=None):
+		self.coerce_emdata()
+		EMData.write_images(fsp,self._data)
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount

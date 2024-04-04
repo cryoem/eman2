@@ -436,17 +436,8 @@ class ImgHistogram(QtWidgets.QWidget):
 		p.eraseRect(0,0,self.width(),self.height())
 		p.setPen(Qt.darkGray)
 		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-int(j*126/self.norm))
+			p.drawLine(i,127,i,clamp(0,127-int(j*126/self.norm),127))
 		
-		if self.histdata is None: return
-		p=QtGui.QPainter()
-		p.begin(self)
-		p.setBackground(QtGui.QColor(16,16,16))
-		p.eraseRect(0,0,self.width(),self.height())
-		p.setPen(Qt.darkGray)
-		for i,j in enumerate(self.histdata):
-			p.drawLine(i,127,i,127-int(j*126/self.norm))
-
 		# If the user has dragged, we need to show a value
 
 		if (self.probe) and (self.volume == False):

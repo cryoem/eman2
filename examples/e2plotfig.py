@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
+Author: Jesus G. Galaz-Montoya - 2017, Last update: 98/Sep/2023
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -32,7 +32,7 @@ Author: Jesus Galaz-Montoya - 2017, Last update: 12/Sep/2017
 from past.utils import old_div
 from builtins import range
 import matplotlib
-matplotlib.use('Agg',warn=False)
+#matplotlib.use('Agg',warn=False)
 
 import matplotlib.pyplot as plt
 import pylab
@@ -45,6 +45,7 @@ import colorsys
 import sys, os
 
 from EMAN2 import *
+from EMAN2_utils import makepath
 
 
 def main():
@@ -72,11 +73,20 @@ def main():
 		
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	
+	parser.add_argument("--average", action='store_true', default=False, help="""default=False. If on, this option will average all the curves suplied through txt files.""")
+
 	parser.add_argument("--binwidth", type=float, default=0.0, help="""default=0.0 (not used). requires --histogram. Y axes. Enforce this value for the width of histogram bins (it will be used to calculate --nbins)""")
 
 	parser.add_argument("--data", type=str, default='', help="""default=None (not used). Text file(s) with two column of values meant to be plotted on the X and Y axes. If supplying multiple files, separate them by commas.""")
 	parser.add_argument("--datax", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the X axis. If not provided, the X axis will go from 0 to n, where n is the number of values in --datay. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
+	parser.add_argument("--datax_err", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted as sigma or error bars for each x value.""")
+	parser.add_argument("--dataxmult", type=float, default=1.0, help="""default=1.0 (not used). Factor to multiply datax by. To divide, multiply by a decimal. For example, division by 10 would require --dataxmult=0.1.""")
 	parser.add_argument("--datay", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted on the  Y axis. If not provided, the Y axis will go from 0 to n, where n is the number of values in --datax. If supplying multiple files, separate them by commas (the number of files for --datax and --datay must be the same).""")
+	parser.add_argument("--datay_err", type=str, default='', help="""default=None (not used). Text file(s) with a single column of values meant to be plotted as sigma or error bars for each y value..""")
+	parser.add_argument("--dataymult", type=float, default=1.0, help="""default=1.0 (not used). Factor to multiply datay by. To divide, multiply by a decimal. For example, division by 10 would require --dataxmult=0.1.""")
+
+	#parser.add_argument("--dropmax", type=int, default=None, help="""default=None. Number of elements from the heighest values to exclide.""")
+	#parser.add_argument("--dropmin", type=int, default=None, help="""default=None. Number of elements from the lowest values to exclide.""")
 
 	parser.add_argument("--highresolution", action='store_true', default=False, help="""default=False. If on, this option will enforce writing high-resolution plots (dpi 300), ready for publication, as opposed to lower resolution plots which take up less space on your computer (dpi 150).""")
 	parser.add_argument("--histogram", action='store_true', default=False, help="""default=False. If on, this will make the resulting plot a histogram. If --nbins not supplied, the parameter will be automatically calculated.""")
@@ -110,8 +120,10 @@ def main():
 
 	parser.add_argument("--scaleaxes", action='store_true', default=False, help="""Default=False. This will force the axes to be on the same scale.""") 
 
-	parser.add_argument("--unitsx", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the x axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A') will be replaced by the appropriate symbol. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
-	parser.add_argument("--unitsy", type=str,default='AU',help="""Default=AU (arbitrary units). Units for the y axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A')  will be replaced by the appropriate symbol. You can provide any string without spaces; if you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
+	parser.add_argument("--unitsx", type=str,default='',help="""Default=None. Units for the x axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A') will be replaced by the appropriate symbol. You can provide any string without spaces, such as 'AU' for (arbitrary units). 
+				If you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
+	parser.add_argument("--unitsy", type=str,default='',help="""Default=None. Units for the y axis.'microns' or 'mu' and 'angstroms' or 'A' (and '1/angstroms' or '1/A')  will be replaced by the appropriate symbol. You can provide any string without spaces, such as 'AU' for (arbitrary units).  
+				If you need spaces, add an underscore instead and the program will replace the underscore with a space; for exampe 'GPU_h' will appear as 'GPU h'.""")
 	
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness.")
 
@@ -153,6 +165,8 @@ def main():
 
 	xaxes={}
 	yaxes={}
+	xerrs={}
+	yerrs={}
 	datadict={}
 
 	lines=[]
@@ -177,8 +191,8 @@ def main():
 	
 				if lines:
 					lines = fixlines(lines)
-					xaxis = [ float(line.replace('\n','').split()[0]) for line in lines ]
-					yaxis = [ float(line.replace('\n','').split()[1]) for line in lines ]
+					xaxis = [ float(line.replace('\n','').split()[0])*options.dataxmult for line in lines ]
+					yaxis = [ float(line.replace('\n','').split()[1])*options.dataymult for line in lines ]
 				else:
 					print("\nERROR: source file {} seems empty; no lines read".format(f))	
 					sys.exit(1)
@@ -189,10 +203,10 @@ def main():
 				#if xaxis and yaxis:
 				xaxes.update({k:xaxis})
 				yaxes.update({k:yaxis})
-				datadict.update({k:[xaxis,yaxis]})
+				datadict.update({k:[xaxis,yaxis,None,None]})
 				
 				k+=1
-
+		#print(f"\nread-in data is datadict={datadict}")
 
 	elif not options.data:
 		if options.datax:
@@ -211,7 +225,7 @@ def main():
 			for fx in dataxfiles:
 				with open( fx ) as dataxfile: 
 					lines=dataxfile.readlines()
-					xaxis = [ float(line.replace('\n','').split()[0]) for line in lines ]
+					xaxis = [ float(line.replace('\n','').split()[0])*options.dataxmult for line in lines ]
 					xaxes.update({k:xaxis})
 					if not options.datay:
 						yaxis = list(range(len(xaxis)))
@@ -220,8 +234,28 @@ def main():
 						if options.normalize:
 							xaxis = normalize(xaxis)
 
-						datadict.update({k:[xaxis,yaxis]})
+						datadict.update({k:[xaxis,yaxis,None,None]})
 					k+=1
+
+			if options.datax_err:
+				xerrfiles = options.datax_err.split(',')
+
+				if len(xerrfiles) < 2:
+					options.individualplots = True
+
+				if len(dataxfiles) != len(xerrfiles):
+					print("\n(e2plotfig)(main) ERROR: --datax and --datax_err must contain the same number of files. Now, nx files=%d, nxerr files=%d".format(len(dataxfiles),len(xerrfiles)))
+					sys.exit(1)
+
+
+				k=0
+				for ex in xerrfiles:
+					with open( ex ) as xerrfile: 
+						lines=xerrfile.readlines()
+						xerr = [ float(line.replace('\n','').split()[0])*options.dataxmult for line in lines ]
+						xerrs.update({k:xerr})
+						datadict.update({k:[xaxes[k],yaxes[k],xerr,None]})
+						k+=1
 
 
 		lines=[]
@@ -231,7 +265,7 @@ def main():
 			for fy in datayfiles:
 				with open( fy ) as datayfile: 
 					lines=datayfile.readlines()
-					yaxis = [ float(line.replace('\n','').split()[1]) for line in lines ]
+					yaxis = [ float(line.replace('\n','').split()[0])*options.dataymult for line in lines ]
 					yaxes.update({k:yaxis})
 
 					if options.normalize:
@@ -241,10 +275,42 @@ def main():
 						xaxis = list(range(len(yaxis)))
 						xaxes.update({k:xaxis})
 
-						datadict.update({k:[xaxis,yaxis]})
+						datadict.update({k:[xaxis,yaxis,None,None]})
+					else:
+						if options.datax_err:
+							datadict.update({k:[xaxes[k],yaxis,xerrs[k],None]})
+						else:
+							datadict.update({k:[xaxes[k],yaxis,None,None]})
+
 					k+=1
 
-	from EMAN2_utils import makepath
+
+			if options.datay_err:
+				yerrfiles = options.datay_err.split(',')
+
+				if len(yerrfiles) < 2:
+					options.individualplots = True
+
+				if len(datayfiles) != len(yerrfiles):
+					print("\n(e2plotfig)(main) ERROR: --datay and --datay_err must contain the same number of files. Now, ny files=%d, nyerr files=%d".format(len(datayfiles),len(yerrfiles)))
+					sys.exit(1)
+
+
+				k=0
+				for ey in yerrfiles:
+					with open( ey ) as yerrfile: 
+						lines=yerrfile.readlines()
+						yerr = [ float(line.replace('\n','').split()[0])*options.dataymult for line in lines ]
+						yerrs.update({k:yerr})
+						if not options.datax:
+							datadict.update({k:[xaxes[k],yaxes[k],None,yerr]})
+						k+=1
+
+
+
+	if options.verbose > 8:
+		print(f"\nread-in data is datadict={datadict}")
+
 	options = makepath(options)
 
 	fig,ax=resetplot()
@@ -340,6 +406,11 @@ def plotdata( options, data ):
 	ndata = len(data)
 
 	print("\nllllllen(data) {}".format(len(data)))
+
+	for kk in range(len(data)):
+		print("\nlen(data[{}]) is {}".format(kk,len(data[kk])))
+
+
 	#colorbar = False
 	#altxaxis = None
 	#colorstart = options.lowestangle
@@ -383,7 +454,7 @@ def plotdata( options, data ):
 				print("color is {}".format(color))
 				print("marker is {}".format(marker))
 			
-			plotfig( options, fig, ax, data[k][0], data[k][1], k, color, marker, transparent )
+			plotfig( options, fig, ax, data[k][0], data[k][1], data[k][2], data[k][3], k, color, marker, transparent )
 			
 			areay = round(sum(data[k][1]),2)	
 			with open(options.path + '/' + options.outputtag + '_areas.txt','a') as areasfile:
@@ -403,7 +474,7 @@ def plotdata( options, data ):
 			#colorbar=False
 			fig,ax = resetplot()
 			print("\n(e2plotfig)(plotdata) plotting individual plot for dataset n = {}".format(k))
-			plotfig( options, fig, ax, data[k][0], data[k][1], k )
+			plotfig( options, fig, ax, data[k][0], data[k][1], data[k][2], data[k][3], k )
 			
 			filetosave = options.path + '/' + options.outputtag +'.png'
 			if len(data) > 1:	
@@ -415,8 +486,8 @@ def plotdata( options, data ):
 	return
 
 
-def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis='', transparent=False )	:
-	
+def plotfig( options, fig, ax, datax, datay, datax_err, datay_err, count, colorthis='k', markerthis='', transparent=False )	:
+	#print(f"\nplotfig function received datax={datax} datay={datay}")
 	if options.verbose > 9:
 		print('\ndatax={}, datay={}'.format(datax,datay))
 	alphaval=1.0
@@ -454,13 +525,27 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 		linewidth=0
 	
 	if not options.histogram:
-		ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
-	elif options.histogram:
-		nbins = calcbins(options,datay)
-		print("\ndatay is",datay)
-		n, bins, patches = plt.hist(datay, nbins, label=label, histtype='bar', edgecolor='black', linewidth=2.0, alpha=alphaval)#, facecolor=colorthis,normed=1)
+		if not datax_err and not datay_err:
+			ax.plot( datax, datay, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
+		if datax_err and datay_err:
+			ax.errorbar( datax, datay, xerr=datax_err, yerr=datay_err, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
+		if datax_err and not datay_err:
+			ax.errorbar( datax, datay, xerr=datax_err, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
+		if datay_err and not datax_err:
+			ax.errorbar( datax, datay, yerr=datay_err, linestyle=linestyle, linewidth=linewidth, marker=markerthis, markersize=10, markeredgewidth=5, color=colorthis, label=label, alpha=alphaval)
 
-	print("\noptions.miny is {}".format(options.miny))
+	elif options.histogram:
+		if options.datax and not options.datay:
+			nbins = calcbins(options,datax)
+			print("\ndatay is",datax)
+			n, bins, patches = plt.hist(datax, nbins, label=label, histtype='bar', edgecolor='black', linewidth=2.0, alpha=alphaval)#, facecolor=colorthis,normed=1)
+
+		if options.datay and not options.datax:
+			nbins = calcbins(options,datay)
+			print("\ndatay is",datay)
+			n, bins, patches = plt.hist(datay, nbins, label=label, histtype='bar', edgecolor='black', linewidth=2.0, alpha=alphaval)#, facecolor=colorthis,normed=1)
+
+	#print("\noptions.miny is {}".format(options.miny))
 	if options.miny != None or options.maxy != None:
 		miny=min(datay)
 		maxy=max(datay)
@@ -479,17 +564,22 @@ def plotfig( options, fig, ax, datax, datay, count, colorthis='k', markerthis=''
 			maxx=options.maxx
 		ax.set_xlim( minx, maxx )
 
-	#plt.axis('scaled')
-	#plt.axis('equal')
+
+
 	if options.scaleaxes:
+		plt.axis('scaled')
+		#plt.axis('equal')
+		plt.axis('square')
 		plt.gca().set_aspect('equal', adjustable='box')
 
-	handles, labels = ax.get_legend_handles_labels()
+	#LEGENDS
+	#handles, labels = ax.get_legend_handles_labels()
+	#plt.legend(frameon=False, bbox_to_anchor=(1.05,1), loc="upper right", borderaxespad=0)
+
 	
-	#ax.legend(handles, labels, loc='center right', bbox_to_anchor=(1.3, 0.5))
-	
-	#plt.legend()
-	plt.legend(frameon=False, bbox_to_anchor=(1.05,1), loc="upper left", borderaxespad=0)
+	#c:old. ax.legend(handles, labels, loc='center right', bbox_to_anchor=(1.3, 0.5))
+	#c:old. plt.legend()
+
 	
 	#if errors:
 	#	lines = {'linestyle': 'None'}

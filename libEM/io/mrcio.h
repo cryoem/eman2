@@ -82,6 +82,7 @@ namespace EMAN
 		};
 
 		/* updated to MRC Image2000 format which is compatible with CCP4 format */
+		/* https://www.ccpem.ac.uk/mrc_format/mrc2014.php */
 		struct MrcHeader
 		{
 			int nx;				/* 0 - number of columns */
@@ -118,13 +119,39 @@ namespace EMAN
 
 			int ispg;			/* 22 - Space group number (0 for images). */
 
-			int nsymbt;			/* 23 - Number of chars used for storing symmetry operators. */
+			int nsymbt;			/* 23 - Number of bytes in extended header. */
 
-			int user1[15];			// 24 - 38
-			int imod_flags;			/* 39 - bit flags used by IMOD - >= 16 for 8 bit packed */
-			int user2[9];
+			/* https://bio3d.colorado.edu/imod/doc/libhelp/mrcfiles.html */
+			short creatid;
+			char blank[6];
 
-			float xorigin;		/* 40 - X origin. */
+			/* https://www.ccpem.ac.uk/mrc_format/mrc2014.php */
+			char exttyp[4];
+			int nversion;
+			char blank2[16];
+
+			/* https://bio3d.colorado.edu/imod/doc/libhelp/mrcfiles.html */
+			short nint;
+			short nreal;
+
+			short sub;
+			short zfac;
+			float min2;
+			float max2;
+			float min3;
+			float max3;
+			char imod_stamp[4]; // 1146047817 if int or 'IMOD' if char[4] indicates that file was created by IMOD or
+			                    // other software that uses bit flags in the following field
+			int imod_flags;			/* bit flags used by IMOD - >= 16 for 8 bit packed */
+			short idtype;
+			short lens;
+			short nd1;
+			short nd2;
+			short vd1;
+			short vd2;
+			float tiltangles[6];
+
+			float xorigin;		/* X origin. */
 			float yorigin;		/* Y origin. */
 			float zorigin;		/* Z origin. */
 
@@ -139,124 +166,160 @@ namespace EMAN
 			char labels[MRC_NUM_LABELS][MRC_LABEL_SIZE];
 		};
 
-		/** Extended MRC format for tomography
-		 * As used by Fei; original definition of extended header by Dave Agard and Bram Koster
-		 * Contact Dustin Morado <Dustin.Morado@uth.tmc.edu> for details.
-		 *
-		 * The extended MRC format consists of three parts:
-		 * 1. the header (same as in the original MRC format definition)
-		 * 2. the extended header
-		 * 3. the data
-		 * The MRC file is in little-endian (PC) format (IMOD can handle this). If you need to swap
-		 * to big-endian (UNIX or Mac), all data must be swapped according to their data format.
-		 *
-		 * All image data will be 2-byte integer. */
-		struct FeiMrcHeader
-		{
-			int nx;				/* The number of pixels in the x direction of the image */
-			int ny;				/* The number of pixels in the y direction of the image */
-			int nz;				/* The number of pixels in the z direction of the image
-			 	 	 	 	 	 Effectively in the tomography tilt series this means the
-			 	 	 	 	 	 number of images in the tilt series. */
-
-			int mode;			/* Defines the data type. Should always be 1 (2-byte integer)
-			 	 	 	 	 	 in the case of tomography*/
-
-			int nxstart;		/* set to 0: not used; lower bound of columns */
-			int nystart;		/* set to 0: not used; lower bound of rows */
-			int nzstart;		/* set to 0: not used; lower bound of sections */
-
-			int mx;				/* set to nx: not used; grid size x */
-			int my;				/* set to ny: not used; grid size y */
-			int mz;				/* set to nz: not used; grid size z */
-
-			float xlen;			/* set to mx: not used; cell size in x Angstroms (pixel spacing=3Dxlen/mx) */
-			float ylen;			/* set to mx: not used; cell size in y Angstroms (pixel spacing=3Dxlen/my) */
-			float zlen;			/* set to mx: not used; cell size in z Angstroms (pixel spacing=3Dxlen/mz) */
-
-			float alpha;		/* set to 90: not used; cell angles in degrees */
-			float beta;			/* set to 90: not used; cell angles in degrees */
-			float gamma;		/* set to 90: not used; cell angles in degrees */
-
-			/* axis X => 1, Y => 2, Z => 3 */
-			int mapc;			/* set to 1: not used; mapping columns, rows, sections on axis (x=3D1, y=3D2, z=3D3) */
-			int mapr;			/* set to 2: not used; mapping columns, rows, sections on axis (x=3D1, y=3D2, z=3D3)     */
-			int maps;			/* set to 3: not used; mapping columns, rows, sections on axis (x=3D1, y=3D2, z=3D3) */
-
-			float amin;			/* minimum pixel value of all images in file */
-			float amax;			/* maximum pixel value of all images in file */
-			float amean;		/* mean pixel value of all images in file */
-
-			short ispg;			/* set to 0: not used; space group number (0 for images) */
-
-			short nsymbt;			/* set to 0: not used; number of bytes used for storing symmetry operators */
-
-			int	next;			/* This value gives the offset (in bytes) from the end
-								of the file header to the first dataset (image).
-								Thus you will find the first image at 1024 + next bytes. */
-			short dvid;			/* set to 0: not used; creator id */
-			char extra[30];		/* set to 0: not used, extra 30 bytes data */
-			short numintegers;	/* set to 0: not used */
-			short numfloats;	/* set to 32; we always expect a extended header of 32 floats */
-
-			short sub;
-			short zfac;
-			float min2;
-			float max2;
-			float min3;
-			float max3;
-			float min4;
-			float max4;
-			short idtype;
-			short lens;
-			short nd1;
-			short nd2;
-			short vd1;
-			short vd2;
-			float tiltangles[9];	/* set to 0; not used; used to rotate model to match rotated image */
-
-			float zorg;			/* set to 0: not used; origin of image */
-			float xorg;
-			float yorg;
-
-			int nlabl;			/* number of labels */
-			char labl[MRC_NUM_LABELS][MRC_LABEL_SIZE]; 	/* Arrays of characters that can be used for description.
-			 	 	 	 	 	 	 	 	 	 	 	 	 Label0 is used for copyright information, always start with "Fei"*/
-		};
-
 		/** The extended header used by Fei MRC image. It contains the information about a maximum of 1024 images.
 		 * Each section is 128 bytes long. The extended header is thus 1024*128 bytes (always the same length,
 		 * reagrdless of how many images are present.)
 		 * Not always 1024*128 bytes, but at least 128*nz. the length of extended header is defined in the regular header field "next" */
+		/* https://www.ccpem.ac.uk/downloads/EPU_MRC2014_File_Image_Format_Specification_-_306687.pdf */
 		struct FeiMrcExtHeader
 		{
-			float a_tilt;		/* Alpha tilt, in degrees */
-			float b_tilt;		/* beta tilt, in degrees */
+//			Image, System and Application
+			int metadata_size;
+			int metadata_version;
+			unsigned int bitmask_1;
+			double timestamp;
+			char microscope_type[16];
+			char d_number[16];
+			char application[16];
+			char application_version[16];
 
-			float x_stage;		/* Stage x position. Normally in SI units (meters), but some older files may be
-			 	 	 	 	 	 in micrometers. Check by looking at values for x,y,z. If one of these exceeds 1,
-			 	 	 	 	 	 it will be micrometers. */
-			float y_stage;		/* Stage y position. For testing of units see x_stage */
-			float z_stage;		/* Stage z position. For testing of units see x_stage */
+//			Gun
+			double ht;
+			double dose;
 
-			float x_shift;		/* Image shift x. For testing of units see x_stage */
-			float y_shift;		/* Image shift y. For testing of units see x_stage */
+//			Stage
+			double alpha_tilt;
+			double beta_tilt;
 
-			float defocus;		/* Defocus as read from microscope. For testing of units see x_stage */
-			float exp_time;		/* Exposure time in seconds */
-			float mean_int;		/* Mean value of image */
+			double x_stage;
+			double y_stage;
+			double z_stage;
 
-			float tilt_axis;	/* The orientation of the tilt axis in the image in degrees.
-			 	 	 	 	 	 Vertical to the top is 0=B0, the direction of positive rotation is anti-clockwise */
-			float pixel_size;	/* The pixel size of the images in SI units (meters) */
-			float magnification;	/*The magnification used in SI units (volts) */
-			float ht;			/* Value of the high tension in SI units (volts) */
-			float binning;		/* The binning of the CCD or STEM acquisition */
-			float appliedDefocus;	/* The intended application defocus in SI units (meters),
-			 	 	 	 	 	 as defined for example in the tomography parameters view. */
+			double tilt_axis_angle;
 
-			float remainder[16];	/* not used */
-		};
+			double dual_axis_rotation;
+
+//			Pixel Size
+			double pixel_size_x;
+			double pixel_size_y;
+
+			char unused[48];
+
+//			Optics
+			double defocus;
+			double stem_defocus;
+			double applied_defocus;
+			int instrument_mode;
+			int projection_mode;
+			char objective_lens_mode[16];
+			char high_magnification_mode[16];
+			int probe_mode;
+			bool eftem_on;
+			double magnification;	/*The magnification used in SI units (volts) */
+			unsigned int bitmask_2;
+			double camera_length;
+			int spot_index;
+			double illuminated_area;
+			double intensity;
+			double convergence_angle;
+			char illumination_mode[16];
+			bool wide_convergence_angle_range;
+
+//			EFTEM Imaging
+			bool slit_inserted;
+			double slit_width;
+			double acceleration_voltage_offset;
+			double drift_tube_voltage;
+			double energy_shift;
+
+//			Image Shifts
+			double shift_offset_x;
+			double shift_offset_y;
+			double shift_x;
+			double shift_y;
+
+//			Camera
+			double integration_time;
+			int binning_width;
+			int binning_height;
+			char camera_name[16];
+			int readout_area_left;
+			int readout_area_top;
+			int readout_area_right;
+			int readout_area_bottom;
+			bool ceta_noise_reduction;
+			int ceta_frames_summed;
+			bool direct_detector_electron_counting;
+			bool direct_detector_align_frames;
+			int camera_param_reserved_0;
+			int camera_param_reserved_1;
+			int camera_param_reserved_2;
+			int camera_param_reserved_3;
+			unsigned int bitmask_3;
+			int camera_param_reserved_4;
+			int camera_param_reserved_5;
+			int camera_param_reserved_6;
+			int camera_param_reserved_7;
+			int camera_param_reserved_8;
+			int camera_param_reserved_9;
+			bool phase_plate;
+
+//			STEM
+			char stem_detector_name[16];
+			double gain;
+			double offset;
+			int stem_param_reserved_0;
+			int stem_param_reserved_1;
+			int stem_param_reserved_2;
+			int stem_param_reserved_3;
+			int stem_param_reserved_4;
+
+//			Scan settings
+			double dwell_time;
+			double frame_time;
+			int scan_size_left;
+			int scan_size_top;
+			int scan_size_right;
+			int scan_size_bottom;
+			double full_scan_fov_x;
+			double full_scan_fov_y;
+
+//			EDX Elemental maps
+			char element[16];
+			double energy_interval_lower;
+			double energy_interval_higher;
+			int method;
+
+//			Dose fractions
+			bool is_dose_fraction;
+			int fraction_number;
+			int start_frame;
+			int end_frame;
+
+//			Reconstruction
+			char input_stack_filename[80];
+			unsigned int bitmask_4;
+			double alpha_tilt_min;
+			double alpha_tilt_max;
+
+//			FEI2 Version 2 Extension to the Extended Header Specification
+			double scan_rotation;
+			double diffraction_pattern_rotation;
+			double image_rotation;
+			int scan_mode_enumeration;
+			long acquisition_time_stamp;
+			char detector_commercial_name[16];
+			double start_tilt_angle;
+			double end_tilt_angle;
+			double tilt_per_image;
+			double tilt_speed;
+			int beam_center_x_pixel;
+			int beam_center_y_pixel;
+			long cfeg_flash_timestamp;
+			int phase_plate_position_index;
+			char objective_aperture_name[16];
+
+		} __attribute__((packed));
 
 		static const char *CTF_MAGIC;
 		static const char *SHORT_CTF_MAGIC;
@@ -264,10 +327,7 @@ namespace EMAN
 	private:
 		int mode_size;
 
-		union {
-			MrcHeader mrch;
-			FeiMrcHeader feimrch;
-		};
+		MrcHeader mrch;
 
 		/* the extended MRC format for tomography, used by FEI */
 		bool isFEI;
@@ -303,7 +363,7 @@ namespace EMAN
 		int read_mrc_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
 		int read_fei_header(Dict & dict, int image_index = 0, const Region * area = 0, bool is_3d = false);
 
-		//utility funciton to tranpose x and y dimension in case the source mrc image is mapc=2,mapr=1
+		//utility function to transpose x and y dimension in case the source mrc image is mapc=2,mapr=1
 		int transpose(float *data, int nx, int ny, int nz) const;
 
 		template<class T>

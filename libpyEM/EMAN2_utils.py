@@ -703,6 +703,7 @@ def checkinput(options):
 
 	else:
 		options.input = options.input.split(',')
+
 		if options.verbose:	
 			print("\n(EMAN2_utils)(checkinput) found these many input files n={}".format(len(options.input)))
 		
@@ -719,6 +720,9 @@ def checkinput(options):
 					sys.exit(1)
 			else:
 				print("\n(EMAN2_utils)(checkinput) WARNING: skipping file f={} with invalid extension ext={}".format(i,ext))
+
+		if len(options.input) == 1:
+			options.input = options.input[0]
 
 	return options,inputs
 	
