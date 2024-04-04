@@ -108,8 +108,9 @@ def main():
 	parser.add_argument("--map", type=str,help="map file for model fitting.", default=None)
 	parser.add_argument("--resolution", type=float,help="target resolution.", default=4.)
 	parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
-	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 32", default=32)
+	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 64", default=64)
 	parser.add_argument("--batchsz", type=int,help="batch size. default is 16", default=16)
+	parser.add_argument("--niter", type=int,help="number of iterations. default is 20", default=20)
 	parser.add_argument("--rebuild_rotamer", action="store_true", default=False ,help="rebuild all rotamers. slow. require high resolution map.")
 	parser.add_argument("--writetxt", action="store_true", default=False ,help="write txt for model in addtion to pdb.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -189,7 +190,9 @@ def main():
 	for i in range(options.npatch):
 		ii=np.where(km.labels_==i)[0]
 		icls[np.isin(caidx, ii)]=i
-
+		# print(i, len(ii), np.sum(np.isin(caidx, ii)))
+	
+	# print(np.unique(icls, return_counts=True))
 	##########################################
 	gen_model=build_decoder_anchor(pts[None,...], icls)
 	conf=tf.zeros((2,4), dtype=floattype)+1.
@@ -213,7 +216,7 @@ def main():
 	etc=""
 	print("Large scale model morphing...")
 	wts=gen_model.trainable_variables
-	for itr in range(20):
+	for itr in range(options.niter):
 		cost=[]
 		costetc=[]
 		for pjr,pji,xf in trainset:
@@ -279,8 +282,9 @@ def main():
 	wts=gen_model.trainable_variables
 	wts+=gen_model_ca.trainable_variables
 	weight_model=1e-4
-	
-	for itr in range(20):
+	# weight_model=0
+	nstd=6.
+	for itr in range(options.niter):
 		cost=[]
 		costetc=[]
 		for pjr,pji,xf in trainset:
@@ -301,13 +305,13 @@ def main():
 
 				bond_len=calc_bond(atom_pos, bonds[:,:2].astype(int))
 				bond_df=(bond_len-bonds[:,2])/bonds[:,3]
-				bond_outlier=tf.maximum(abs(bond_df)-4, 0)
+				bond_outlier=tf.maximum(abs(bond_df)-nstd, 0)
 				bond_outlier=tf.reduce_mean(bond_outlier)*1000*20
 
 
 				ang_val=calc_angle(atom_pos, angle[:,:3].astype(int))
 				ang_df=(ang_val-angle[:,3])/angle[:,4]
-				ang_outlier=tf.maximum(abs(ang_df)-4, 0)
+				ang_outlier=tf.maximum(abs(ang_df)-nstd, 0)
 				ang_outlier=tf.reduce_mean(ang_outlier)*1000*20
 
 				clash=find_clash(atom_pos, options)
@@ -338,7 +342,6 @@ def main():
 		print("iter {}, loss : {:.4f},  {} ".format(itr, np.mean(cost),etc))
 		
 	save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_01")
-	
 	
 	##########################################
 	print("Compiling rotamers...")
@@ -540,7 +543,7 @@ def main():
 	opt=tf.keras.optimizers.Adam(learning_rate=1e-3) 
 	wts=tf_theta
 	
-	for itr in range(20):
+	for itr in range(options.niter):
 		if itr==10:
 			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 			wts=tf_theta

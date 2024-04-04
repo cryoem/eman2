@@ -23,7 +23,7 @@ import tensorflow as tf
 emdir=e2getinstalldir()
 sys.path.insert(0,os.path.join(emdir,'bin'))
 from e2gmm_refine_new import set_indices_boxsz, load_particles, pts2img, calc_frc, get_clip, make_mask_gmm
-from e2gmm_model_refine import calc_clashid, calc_bond, calc_angle, find_clash, compile_chi_matrix, get_rotamer_angle, rotate_sidechain, get_info, calc_dihedral_tf, eval_rama, get_rama_types, compile_hydrogen, add_h, get_h_rotation_axis, optimize_h
+from e2gmm_model_refine import calc_clashid, calc_bond, calc_angle, compile_chi_matrix, get_rotamer_angle, rotate_sidechain, get_info, calc_dihedral_tf, eval_rama, get_rama_types, compile_hydrogen, add_h, get_h_rotation_axis, optimize_h
 from e2gmm_model_fit import build_decoder_anchor
 
 #### slightly different version than the one in e2gmm_model_refine
@@ -172,10 +172,11 @@ def main():
 	parser.add_argument("--mask", type=str,help="mask for the focused region of heterogeneity analysis.", default=None)
 	parser.add_argument("--resolution", type=float,help="target resolution.", default=8.)
 	# parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
-	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 128", default=128)
+	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 64", default=64)
 	parser.add_argument("--ndim", type=int,help="number of dimension of the input movement. Currently only support: 1 -> linear trajectory, 2 -> circular trajectory", default=2)
-	parser.add_argument("--batchsz", type=int,help="batch size. default is 8", default=8)
+	parser.add_argument("--batchsz", type=int,help="batch size. default is 16", default=16)
 	parser.add_argument("--load", action="store_true", default=False ,help="load existing networks")
+	parser.add_argument("--evalmodel", type=int, help="Skip training and only generate models. Specify the number of frame here.",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -183,11 +184,14 @@ def main():
 	
 	path=options.path
 	niter=[int(i) for i in options.niter.split(',')]
+	if options.evalmodel>0: 
+		niter=[0,0,0]
+		options.load=True
 	if len(niter)!=3:
 		print("require 3 numbers for --niter")
 		exit()
 		
-	if (niter[0]==0 or niter[1]==0) and options.load==False:
+	if (niter[0]==0 or (niter[1]==0 and niter[2]>0)) and options.load==False:
 		print("need --load when there are 0 in --niter")
 		exit()
 	print(niter)
@@ -281,12 +285,27 @@ def main():
 	imsk=make_mask_gmm(options.mask, pts)
 	
 	##############
-	resid=[get_info(a, True) for a in atoms]
-	resid, caidx=np.unique(resid, return_inverse=True)
+	resid0=[get_info(a, True) for a in atoms]
+	resid, caidx=np.unique(resid0, return_inverse=True)
 	capos=np.array([np.mean(pts[caidx==i], axis=0) for i in range(np.max(caidx)+1)])
 	res_atom_dict={r:np.where(caidx==i)[0] for i,r in enumerate(resid)}
 	print("Shape of CA model: ",capos.shape)
 	
+	#### force different chains to be in different classes
+	## is this a good idea?
+	cid=[r.split('_')[0] for r in resid0]
+	rid=[r.split('_')[-1] for r in resid0]
+	# print(rid)
+	for i,r in enumerate(rid):
+		if r in ["A","T","C","G","U","I","DA","DT","DC","DG","DU","DI"]:
+			cid[i]="XNA"
+	
+	c,cid=np.unique(cid, return_inverse=True)
+	print("{} chains".format(len(c)))
+	# print(c)
+	
+	pcls=pts[:,:4].copy()
+	pcls[:,3]=cid
 	
 	## anchor points for large scale movement
 	afile=f"{path}/model_00_anchor.txt"
@@ -299,7 +318,7 @@ def main():
 			
 			pn=options.npatch
 			km=KMeans(pn,max_iter=30)
-			km.fit(pts[imsk>.1,:3])
+			km.fit(pcls)
 			pcnt=km.cluster_centers_
 
 			
@@ -307,12 +326,12 @@ def main():
 			## when there is a mask, sample more anchor points inside mask
 			pn=32
 			km=KMeans(pn,max_iter=30)
-			km.fit(pts[imsk<.1,:3])
+			km.fit(pcls[imsk<.1])
 			pc0=km.cluster_centers_
 
 			pn=options.npatch-pn
 			km=KMeans(pn,max_iter=30)
-			km.fit(pts[imsk>.1,:3])
+			km.fit(pcls[imsk>.1])
 			pc1=km.cluster_centers_
 
 			pcnt=np.vstack([pc0,pc1])
@@ -321,16 +340,19 @@ def main():
 		np.savetxt(afile, pcnt)
 		print(f"Anchor points saved to {afile}")
 		
-	# print(pts.shape, pcnt.shape)
-	d=scipydist.cdist(pts[:,:3], pcnt)
-	klb=np.argmin(d, axis=1)	
-	options.learnrate=1e-4
+	d=scipydist.cdist(pcls, pcnt)
+	klb=np.argmin(d, axis=1)
+	options.learnrate=1e-5
 	icls=np.zeros(len(pts), dtype=int)
-	options.batchsz=16
+	# options.batchsz=16
 	for i in range(options.npatch):
 		ii=np.where(klb==i)[0]
+		ii=caidx[ii]
+		# print(i, len(ii), np.sum(np.isin(caidx, ii)))
 		icls[np.isin(caidx, ii)]=i
-
+	
+	# print(np.unique(icls, return_counts=True))
+	
 	##########################################
 	## first model for large scale morphing
 	options.nmid=4
@@ -346,10 +368,12 @@ def main():
 	
 	#### latent space input. currently only linear or circular path
 	n=EMUtil.get_image_count(options.maps)
+		
 	if options.ndim==1:
 		a=np.arange(n)/(n-1)*2-1
 		mid00=np.repeat(a[:,None], 4, axis=1)
-		mid2=mid00[::2].copy()
+		mid2=mid00.copy()
+		print(mid2)
 		
 	if options.ndim==2:
 		rr=1.0
@@ -362,16 +386,18 @@ def main():
 	midii=np.arange(nptcl)//(nptcl/n)
 	midpos=mid00[midii.astype(int)].astype(floattype)
 	
-	
-	##############
-	## first train morphing model
-	if niter[0]>0:
+	if niter[0]>0 or niter[1]>0:
 		trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp, midpos))
 		trainset=trainset.shuffle(5000).batch(options.batchsz)
 		
 		options.minpx=4
 		options.maxpx=maxboxsz//2
 		nbatch=int(trainset.cardinality())
+		
+	##############
+	## first train morphing model
+	if niter[0]>0:
+		print("Large scale model morphing...")
 		opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 		wts=gen_model.trainable_variables
 		
@@ -379,7 +405,7 @@ def main():
 			options.maxpx=maxboxsz//bxn
 			##########################################
 			etc=""
-			print("Large scale model morphing...")
+			print("  Max resolution {:.1f}".format(options.resolution*bxn/2))
 			
 			for itr in range(niter[0]):
 				cost=[]
@@ -457,6 +483,8 @@ def main():
 
 	clash=find_clash(atom_pos, options)
 
+	#### TODO H-bonds for DNA/RNAs...
+
 	if niter[1]>0:
 		wts=gen_model_ca.trainable_variables	
 		options.learnrate=1e-5
@@ -474,6 +502,7 @@ def main():
 				with tf.GradientTape() as gt:
 
 					conf=md
+					# print(conf.shape)
 					conf+=0.02*tf.random.normal(conf.shape)
 					pout=gen_model(conf, training=True)
 					pout=pout+gen_model_ca(conf, training=True)
@@ -493,8 +522,8 @@ def main():
 					bond_outlier=tf.reduce_mean(bond_outlier)*1000*20
 
 
-					ang_val=calc_angle(atom_pos, angle[:,:3].astype(int))
-					ang_df=(ang_val-angle[:,3])/angle[:,4]
+					ang_val=calc_angle(atom_pos, options.angle[:,:3].astype(int))
+					ang_df=(ang_val-options.angle[:,3])/options.angle[:,4]
 					ang_outlier=tf.maximum(abs(ang_df)-4, 0)
 					ang_outlier=tf.reduce_mean(ang_outlier)*1000*20
 
@@ -537,6 +566,48 @@ def main():
 		
 		if os.path.isfile(wfile1): os.remove(wfile1)
 		gen_model_ca.save_weights(wfile1)
+	
+	##############
+	#### make models with a relatively even spacing 
+	if options.evalmodel>0:
+		gen_model_full=build_decoder_full(pts, options)
+		gen_model_full.load_weights(wfile2)
+			
+		n=options.evalmodel
+		a=np.arange(n)/(n-1)
+		
+		for ie in range(7):
+			if options.ndim==1:
+				a=a*2-1
+				conf=np.repeat(a[:,None], 4, axis=1)
+			if options.ndim==2:
+				a=a*np.pi*2
+				conf=rr*np.vstack([np.cos(a), np.cos(a), np.sin(a), np.sin(a)]).T
+				
+			# print("########\n",a)
+			pout=gen_model(conf, training=False)
+			pout=pout+gen_model_ca(conf, training=False)
+			pout=pout*imsk[None,:,None]
+			pout=pout+gen_model_full(conf, training=False)    
+			pout+=pts
+			
+			df=np.diff(pout[:,:,:3], axis=0)
+			df=np.linalg.norm(df, axis=2)
+			
+			df=np.max(df, axis=1)
+			# print(df)
+			
+			a=np.append(0,np.cumsum(np.diff(a)/df))
+			a=a/a[-1]
+		
+		
+		atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
+		# atom_pos_h=add_h(atom_pos, options.h_info)
+		
+		for i,pp in enumerate(atom_pos):
+			save_model_pdb(pp[None,:], options, f"{path}/fit01_flex3_{i:02d}")
+		
+			
 	
 	if niter[2]==0:
 		E2end(logid)
@@ -610,8 +681,14 @@ def main():
 	bd=bonds_h[:,:2].astype(int)
 	bonds_matrix=scipysparse.csr_matrix((np.ones(len(bd)), (bd[:,0], bd[:,1])), shape=(npt,npt))
 
-	d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen)
-	options.connect_all=[np.where(i<=maxlen)[0] for i in d]
+	#### since dijkstra return full matrix, we do this piece by piece to avoid CPU memory issues
+	options.connect_all=[]
+	for i in range(0,npt, 5000):
+		d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen, indices=np.arange(i,min(i+5000, npt)))
+		options.connect_all.extend([np.where(i<=maxlen)[0] for i in d])
+		print(len(options.connect_all),npt, end='\r')	
+	
+	print()
 	
 	if options.load and os.path.isfile(wfile2):
 		gen_model_full.load_weights(wfile2)
@@ -643,7 +720,7 @@ def main():
 	pts_sub=np.where(m2>0)[0]
 	
 	print("Starting full model refinement...")
-	niter=15000
+	niter=5000*niter[2]
 	checkpoint=[0, 500, 2000, 8000]
 	c0=len(cost)+niter
 	for itr in range(niter):
@@ -661,30 +738,41 @@ def main():
 			
 			print("\nClash indices for full model")
 			clashid0, vdwr0, omask0=calc_clashid_multi(atom_pos_h, options)
-
-			print("Clash indices for moving domain")	
-			clashid1, vdwr1, omask1=calc_clashid_multi(atom_pos_h, options, nnb=128*3, subset=pts_sub)
-
-			print("conf, clash0, clash1")
-			for i in range(8):
-				clash=find_clash(atom_pos_h[i][None,:], options, clashid=clashid0, subset=[], clashomask=omask0, vdw=vdwr0)
-				nclash=np.sum(clash.numpy()>0)//clash.shape[0]
-				
-				clash1=find_clash(atom_pos_h[i][None,:], options, clashid=clashid1, subset=pts_sub, clashomask=omask1, vdw=vdwr1)
-				nclash1=np.sum(clash1.numpy()>0)//clash1.shape[0]
-				print(i, nclash, nclash1)
+			
+			if options.mask!=None:
+				print("Clash indices for moving domain")	
+				clashid1, vdwr1, omask1=calc_clashid_multi(atom_pos_h, options, nnb=128*3, subset=pts_sub)
+# 
+# 			print("conf, clash0, clash1")
+# 			nclash1=0
+# 			for i in range(len(mid2)):
+# 				clash=find_clash(atom_pos_h[i][None,:], options, clashid=clashid0, subset=[], clashomask=omask0, vdw=vdwr0)
+# 				nclash=np.sum(clash.numpy()>0)//clash.shape[0]
+# 				
+# 				if options.mask!=None:
+# 					clash1=find_clash(atom_pos_h[i][None,:], options, clashid=clashid1, subset=pts_sub, clashomask=omask1, vdw=vdwr1)
+# 					nclash1=np.sum(clash1.numpy()>0)//clash1.shape[0]
+# 					
+# 				print(i, nclash, nclash1)
 
 		
 		with tf.GradientTape() as gt:
-			r=mid2[0,0]
-			a=tf.random.uniform((8,1))*np.pi*2
-			conf=r*tf.concat([tf.sin(a), tf.sin(a), tf.cos(a), tf.cos(a)],axis=1)
+			
+			if options.ndim==1:
+				a=tf.random.uniform((options.batchsz,1))*2-1
+				a*=np.max(mid2)
+				conf=tf.repeat(a,4,axis=1)
+				
+			elif options.ndim==2:
+				r=mid2[0,0]
+				a=tf.random.uniform((options.batchsz,1))*np.pi*2
+				conf=r*tf.concat([tf.sin(a), tf.sin(a), tf.cos(a), tf.cos(a)],axis=1)
 			
 			pout=gen_model(conf, training=False)
 			pout=pout+gen_model_ca(conf, training=False)
 			
 			pout=pout*imsk[None,:,None]
-			
+			# print(conf.shape, pout.shape)
 			# pout=pout+gen_model_full(conf, training=False)
 			pout=pout+gen_model_full(conf, training=True)       
 			pout+=pts
@@ -770,12 +858,13 @@ def main():
 
 
 			atom_pos_h=add_h(atom_pos, options.h_info)
-			
-			clash0=find_clash(atom_pos_h[i][None,:], options, clashid=clashid0, subset=[], clashomask=omask0, vdw=vdwr0)
-			clash1=find_clash(atom_pos_h[i][None,:], options, clashid=clashid1, subset=pts_sub, clashomask=omask1, vdw=vdwr1)
-			
+			clash0=find_clash(atom_pos_h, options, clashid=clashid0, subset=[], clashomask=omask0, vdw=vdwr0)			
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0))/conf.shape[0]/2.*5.
-			clash_score+=tf.reduce_sum(clash1)/conf.shape[0]/2.*5.
+			
+			if options.mask!=None:
+				clash1=find_clash(atom_pos_h, options, clashid=clashid1, subset=pts_sub, clashomask=omask1, vdw=vdwr1)
+			
+				clash_score+=tf.reduce_sum(clash1)/conf.shape[0]/2.*5.
 			# nclash1=np.sum(clash1.numpy()>0)//clash1.shape[0]
 			
 			lossetc+=clash_score
@@ -784,7 +873,7 @@ def main():
 
 		assert np.isnan(l.numpy())==False
 		nclash=np.sum(clash0.numpy()>0)//conf.shape[0]
-		nclash+=np.sum(clash1.numpy()>0)//conf.shape[0]
+		if options.mask!=None: nclash+=np.sum(clash1.numpy()>0)//conf.shape[0]
 
 		grad=gt.gradient(l, wts)
 		optimizer.apply_gradients(zip(grad, wts))

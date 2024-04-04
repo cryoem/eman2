@@ -18,7 +18,7 @@ import tensorflow as tf
 
 def get_info(atom, getstr=False, include_id=False):
 	if getstr:
-		ret="{}_{:05d}_{}".format(*get_info(atom, getstr=False, include_id=include_id))
+		ret="{}_{:06d}_{}".format(*get_info(atom, getstr=False, include_id=include_id))
 	else:
 		ret=(atom.parent.parent.id, atom.parent.id[1], atom.parent.resname)
 		if include_id:
@@ -735,16 +735,16 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			bond_df=(bond_len-options.bonds[:,2])/options.bonds[:,3]
 			bond_score=tf.reduce_mean(tf.exp(-5*bond_df**2))
 			bond_outlier=tf.reduce_mean(tf.maximum(0,abs(bond_df)-options.nstd_bond))*1000*20
-			lossetc+=bond_score
-			lossetc+=bond_outlier
+			lossetc+=bond_score * options.weight["bond"]
+			lossetc+=bond_outlier * options.weight["bond"]
 
 			######
 			ang_val=calc_angle(atom_pos, options.angle[:,:3].astype(int))
 			ang_df=(ang_val-options.angle[:,3])/options.angle[:,4]
 			ang_score=1-tf.reduce_mean(tf.exp(-8*ang_df**2))
 			ang_outlier=tf.reduce_mean(tf.maximum(0,abs(ang_df)-options.nstd_angle))*1000*20
-			lossetc+=ang_score
-			lossetc+=ang_outlier
+			lossetc+=ang_score * options.weight["bond"]
+			lossetc+=ang_outlier * options.weight["bond"]
 
 			######
 			pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
@@ -754,8 +754,9 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			rama_score=tf.reduce_mean(rama)*.1
 			rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500
 			rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*1
-			lossetc+=rama_score
-			lossetc+=rama_outlier
+			# rama_outlier+=tf.reduce_mean(tf.sign(tf.maximum(0,rama-options.rama_thr1)))*1000
+			lossetc+=rama_score * options.weight["rama"]
+			lossetc+=rama_outlier * options.weight["rama"]
 			
 			##########
 			pt=tf.gather(atom_pos, options.idx_dih_plane, axis=1)
@@ -770,7 +771,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			rot=tf.maximum(0, abs(rot)-options.thr_piptide)
 			plane_score+=tf.reduce_mean(rot)*1000
 			
-			lossetc+=plane_score            
+			lossetc+=plane_score * options.weight["plane"]
 			
 			##########
 			rota_out=[]
@@ -802,8 +803,8 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			rota_outlier=tf.reduce_mean(r1)*5000
 			# rota_outlier+=tf.reduce_mean(r2)*10
 
-			lossetc+=rota_score
-			lossetc+=rota_outlier
+			lossetc+=rota_score * options.weight["rotamer"]
+			lossetc+=rota_outlier * options.weight["rotamer"]
 				
 			atom_pos=add_h(atom_pos,options.h_info)
 			tt=tf.repeat(theta_h[None,:], conf.shape[0], axis=0)
@@ -813,7 +814,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			clash1=tf.maximum(0,clash+options.vdroverlap-0.3)*1e-5
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0+clash1))/conf.shape[0]/2.*5.
 			# c=tf.reduce_sum(tf.sign(clash))
-			lossetc+=clash_score
+			lossetc+=clash_score * options.weight["clash"]
 			l=tf.math.log(lossetc)
 
 
@@ -841,7 +842,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 def save_model_pdb(model, theta_all, theta_h, options, fname):
 	
 	conf=np.zeros((1,options.nmid), dtype=floattype)+1
-	atom_pos=calc_atom_pos(conf, model, theta_all, options, addh=True, theta_h=theta_h)
+	atom_pos=calc_atom_pos(conf, model, theta_all, options, addh=False, theta_h=theta_h)
 
 	if options.model.endswith(".cif"):
 		pdbpar = MMCIFParser( QUIET = True) 
@@ -891,6 +892,7 @@ def main():
 	parser.add_argument("--model", type=str,help="alternative pdb model. default is model_input in path.", default=None)
 	parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
 	parser.add_argument("--niter", type=str, help="number of iteration for loose and tight constraints. default is 5,10",default="5,10")
+	parser.add_argument("--weight", type=str, help="relative weight for (bond/angle, Rama, rotamer, planarity, clash). Default is 1,1,1,1,1.",default="1,1,1,1,1")
 	parser.add_argument("--clash0", type=float,help="starting clashing threshold.", default=0.6)
 	parser.add_argument("--clash1", type=float,help="final clashing threshold.", default=0.35)
 	parser.add_argument("--fixrotamer", action="store_true", default=False ,help="select good rotamer before refinement")
@@ -911,7 +913,9 @@ def main():
 	options.batchsz=32
 	options.nmid=4
 	niter=[int(i) for i in options.niter.split(',')]
-	
+	w=[np.float32(i) for i in options.weight.split(',')]
+	options.weight={"bond":w[0], "rama":w[1], "rotamer":w[2], "plane":w[3], "clash":w[4]}
+	print("Weighting: ", options.weight)
 	
 	if options.model.endswith(".cif"):
 		pdbpar = MMCIFParser( QUIET = True) 
@@ -1031,11 +1035,16 @@ def main():
 	maxlen=3
 	npt=npt_h+npt_noh
 	bd=bonds_h[:,:2].astype(int)
-	bonds_matrix=scipysparse.csr_matrix((np.ones(len(bd)), (bd[:,0], bd[:,1])), shape=(npt,npt))
-
-	d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen)
-	options.connect_all=[np.where(i<=maxlen)[0] for i in d]
+	bonds_matrix=scipysparse.csr_matrix((np.ones(len(bd)), (bd[:,0], bd[:,1])), shape=(npt,npt), dtype=np.float32)
 	
+	#### since dijkstra return full matrix, we do this piece by piece to avoid CPU memory issues
+	options.connect_all=[]
+	for i in range(0,npt, 5000):
+		d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen, indices=np.arange(i,min(i+5000, npt)))
+		options.connect_all.extend([np.where(i<=maxlen)[0] for i in d])
+		print(len(options.connect_all),npt, end='\r')	
+	
+	print()
 	# tree=KDTree(atom_pos[0])
 	clashid=calc_clashid(atom_pos[0].numpy(), options, pad=60)
 	
@@ -1046,8 +1055,8 @@ def main():
 	
 	print("Optimizing H rotation...")
 	conf=np.zeros((1,options.nmid), dtype=floattype)+1
-	atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
-	theta_h=optimize_h(atom_pos, options, npos=24)
+	# atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
+	# theta_h=optimize_h(atom_pos, options, npos=24)
 	
 	etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 	print(etc)
@@ -1083,8 +1092,8 @@ def main():
 	for itr in range(niter[1]):
 		print("iteration ",itr)
 		cost=refine_backbone(gen_model_full, theta_all, theta_h, options, opt, niter=200, training=True)
-		atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
-		theta_h=optimize_h(atom_pos, options, npos=24)
+		# atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
+		# theta_h=optimize_h(atom_pos, options, npos=24)
 		etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 		print(etc)
 

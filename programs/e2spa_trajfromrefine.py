@@ -16,6 +16,8 @@ def main():
 	parser.add_argument("--baseali", type=str,help="first particle alignment file", default=None)
 	parser.add_argument("--nframe", type=int,help="number of frames in the trajectory", default=5)
 	parser.add_argument("--nbasis", type=int,help="number of pca basis. default is 2", default=2)
+	parser.add_argument("--nptcls", type=int,help="number of particles in each reconstruction. Default will use all particles.", default=-1)
+	parser.add_argument("--transonly", type=int,help="use only translation/rotation. default is -1 that uses everything. 0 for translation and 1 for rotation", default=-1)
 	parser.add_argument("--res", type=float,help="Filter final maps to resolution. default is 5", default=5)
 	parser.add_argument("--threads", type=int,help="threads", default=32)
 
@@ -47,6 +49,12 @@ def main():
 	np.savetxt(pmfile, params)
 	print("Refine stats saved to {}".format(pmfile))
 
+	if options.transonly==0:
+		params=params[:,3:]
+	elif options.transonly==1:
+		params=params[:,:3]
+	print(params.shape)
+	
 	print("Generating eigen-trajectory...")
 	
 	mean=np.mean(params,0)
@@ -67,9 +75,22 @@ def main():
 	ncls=options.nframe
 	
 	for ie in range(options.nbasis): 
+		
 		srt=np.argsort(np.argsort(pfit[:,ie]))
 		srt=srt/np.max(srt+1)*ncls
-		srt=np.floor(srt).astype(int)
+		
+		if options.nptcls<0:
+			srt=np.floor(srt).astype(int)
+		else:
+			clsi=np.zeros(len(srt), dtype=int)-1
+			print(srt)
+			for i in range(ncls):
+				d=abs(srt-i)
+				di=np.argsort(d)[:options.nptcls]
+				clsi[di]=i
+				
+			print(clsi)
+			srt=clsi.copy()
 
 		lout=[]
 		for i,l in enumerate(lst0):

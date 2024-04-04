@@ -1615,7 +1615,7 @@ def make_mask_gmm(selgauss, pts):
 	
 	else:
 		## read from a list of points starting from 1
-		i=np.loadtxt(selgauss).astype(int).flatten()
+		i=np.loadtxt(selgauss).astype(int).flatten()-1
 		m=np.zeros(len(pts), dtype=floattype)
 		m[i]=1
 		imsk=tf.constant(m)
@@ -1820,40 +1820,48 @@ def main():
 			anchor=np.loadtxt(options.anchor)[:,:3]
 			anchor=tf.constant(anchor,dtype=floattype)
 		else:
-			pn=32
-			km=KMeans(pn,max_iter=30)
-			pp=pts[:,:3].copy()
-			km.fit(pp)
-			pc=km.cluster_centers_
 			
-			emmask=True
-			try:
-				msk=EMData(options.selgauss)
-			except:
-				emmask=False
+			pn=32
+			pp=pts[:,:3].copy()
+			
+			if options.selgauss==None:
+				imsk=np.ones(len(pp), dtype=float)
+				pn*=2
 				
-			if emmask:
+			elif options.selgauss.endswith(".hdf") or options.selgauss.endswith(".mrc"):
 				## read selected Gaussian from mask file
 				m=msk.numpy().copy()
 				p=pp.copy()
 				p=p[:,::-1]
 				p[:,:2]*=-1
 				p=(p+.5)*msk["nx"]
-
 				o=np.round(p).astype(int)
 				v=m[o[:,0], o[:,1], o[:,2]]
-				imsk=v.astype(float)
-			else:
+				imsk=v.astype(float)				
+				
+			elif options.selgauss.endswith(".txt"):
 				i=np.loadtxt(options.selgauss).astype(int).flatten()
 				imsk=np.zeros(len(pp), dtype=float)
 				imsk[i]=1
 			
-			pm=pp[imsk>.1]
+			else:
+				print("something wrong with --selgauss...")
+				exit()
+		
 			km=KMeans(pn,max_iter=30)
-			km.fit(pm)
-			pc2=km.cluster_centers_
+			km.fit(pp)
+			pc=km.cluster_centers_
 			
-			anchor=np.vstack([pc, pc2])
+			if options.selgauss:
+				pm=pp[imsk>.1]
+				km=KMeans(pn,max_iter=30)
+				km.fit(pm)
+				pc2=km.cluster_centers_
+				
+				anchor=np.vstack([pc, pc2])
+			else:
+				anchor=pc
+				
 			np.savetxt(options.anchor, anchor)
 			print(f"Saving anchor points to {options.anchor}")
 			anchor=tf.constant(anchor,dtype=floattype)

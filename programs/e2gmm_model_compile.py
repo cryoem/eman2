@@ -23,6 +23,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path for writing output", default=None)
 	parser.add_argument("--model", type=str,help="load model from pdb file", default="")
+	parser.add_argument("--writecif", action="store_true", default=False ,help="write cif instead of pdb.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -59,7 +60,7 @@ def main():
 	else:
 		path=options.path
 		
-	if options.model.endswith(".cif"):
+	if options.model.endswith(".cif") or options.writecif:
 		io=MMCIFIO()
 		io.set_structure(pdb)
 		io.save(f"{path}/model_input.cif")
@@ -80,10 +81,12 @@ def main():
 	bonds0=[] # intra-residue bonds
 	bonds1=[] # peptide bonds
 	bonds2=[] # S-S bonds
+	bonds3=[] # bonds between DNA/RNA base paris 
 	sgid=np.array([i for i,a in enumerate(atoms) if a.get_id()=='SG'])
 
-	ncbond=[1.33, 0.017] ## peptide bonds length and std
-	ssbond=[2.034, 0.04] ## S-S bonds length and std
+	ncbond=[1.336, 0.023] ## peptide bonds length and std
+	ssbond=[2.033, 0.04] ## S-S bonds length and std
+	dnabond=[1.601, 0.012] ## peptide bonds length and std
 	for ai,at in enumerate(atoms):
 		idx_res=(atom_chn==atom_chn[ai])*(atom_res==atom_res[ai])
 		idx_res=np.where(idx_res)[0]
@@ -114,13 +117,22 @@ def main():
 			i2=sgid[i2]
 			if dp<.1 and i2>ai:
 				bonds2.append([ai, i2, ssbond[0], ssbond[1]])
+				
+		if atname=="O3'":
+			idx_res=(atom_chn==atom_chn[ai])*(atom_res==atom_res[ai]+1)
+			idx_res=np.where(idx_res)[0]
+			idx_res=[i for i in idx_res if atoms[i].get_id()=='P']
+			if len(idx_res)==0: continue
+			i2=idx_res[0]
+			bonds3.append([ai, i2, ncbond[0], ncbond[1]])
 			
 	bonds0=np.array(bonds0).reshape(-1,4)
 	bonds1=np.array(bonds1).reshape(-1,4)
 	bonds2=np.array(bonds2).reshape(-1,4)
-	print("  {} intra-residue bonds, {} peptide bonds, and {} S-S bonds.".format(len(bonds0), len(bonds1), len(bonds2)))
+	bonds3=np.array(bonds3).reshape(-1,4)
+	print("  {} intra-residue bonds, {} peptide bonds, {} DNA/RNA bonds, and {} S-S bonds.".format(len(bonds0), len(bonds1), len(bonds3), len(bonds2)))
 
-	bonds=np.concatenate([bonds0, bonds1, bonds2], axis=0)
+	bonds=np.concatenate([bonds0, bonds1, bonds2, bonds3], axis=0)
 	print("  {} bonds total.".format(len(bonds)))
 	
 	bond_len=calc_bond(atom_pos[None,:,:], bonds[:,:2].astype(int))
@@ -158,12 +170,16 @@ def main():
 				sc=e2pc.bond_angle_std[ky]
 				angs.append([i0,ai,i1, sc[0], sc[1]])
 			else:
-				ky1='-'.join([atoms[i].get_id() for i in [i1,ai,i0]])
-				kyr='-'.join([resname, ky1])
+				ky1='_'.join([atoms[i].get_id() for i in [i1,ai,i0]])
+				kyr='_'.join([resname, ky1])
 				if not kyr in e2pc.bond_angle_std:
 					skip.append(ky)
 		
 	angs=np.array(angs)
+	if len(skip)>0:
+		print("Skipping following angles:")
+		for k in skip:
+			print(k)
 	
 	ang_val=calc_angle(atom_pos[None,:,:], angs[:,:3].astype(int))
 	ang_df=(ang_val-angs[:,3])/angs[:,4]
