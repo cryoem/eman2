@@ -516,15 +516,16 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.subtom_tab = Subtom_Tab(target=self)
 
 
-		self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
+
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"UNet")
 		self.assisted_tab.addTab(self.snn_tab,"EMAN2NNet")
-		self.assisted_tab.addTab(self.templ_tab,"Template")
 		self.assisted_tab.addTab(self.stat_tab,"Statistics")
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 		self.assisted_tab.addTab(self.subtom_tab,"SubTomogram")
+		self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
+		self.assisted_tab.addTab(self.templ_tab,"Template")
 
 		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
 
@@ -879,6 +880,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		try: self.view.raise_()
 		except: pass
 
+
+	def showerror(self,msg,parent=None):
+		QtWidgets.QMessageBox.warning(parent,"ERROR",msg)
 
 	def test_drawing_function(self):
 		self.save_current_state()
@@ -1396,6 +1400,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.updateGL()
 
 
+
+
 	def interp_bt_clicked(self):
 
 		nppts=np.array(self.curve.points)
@@ -1472,6 +1478,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nz=hdr["nz"]
 		#print("get_nz", self.nz)
 		return self.nz
+
+	def get_ori_xy(self):
+		hdr=EMData(self.data_file, 0,True)
+		self.nx=hdr["nx"]
+		self.ny=hdr["ny"]
+		return self.nx, self.ny
 
 	def get_boxsize(self):
 		return int(self.bsz_vs.value)
@@ -1716,6 +1728,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 	def random_bx_bt_clicked(self):
+		if self.img_view.get_data_dims()[2] > 1:
+			print("Only work on 2D data")
+			return
 		try:
 			no_box = int(self.random_bx_sb.getValue())
 		except:
@@ -1941,8 +1956,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.tomo_list_panel.close()
 
 		for widget in self.popwidgets:
-			print("Closing",widget)
-			widget.close()
+			if widget:
+				widget.close()
 		# if self.view:
 		# 	self.view.close()
 
@@ -2764,9 +2779,7 @@ class UNet():
 class Simple_NNet_Tab(QtWidgets.QWidget):
 	def __init__(self,target):
 		QtWidgets.QWidget.__init__(self,None)
-		#self.target=weakref.ref(target)
 		self.target = target
-
 		self.snnet_tab = QtWidgets.QTabWidget()
 		self.snn_data = QtWidgets.QWidget()
 		self.snn_train = QtWidgets.QWidget()
@@ -2784,11 +2797,8 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		self.trainset_sb = StringBox(label="trainset      ")
 		self.trainset_browser_bt = QtWidgets.QPushButton("Browse")
 
-
-
 		self.start_nnet_sb = StringBox(label="from_trained")
 		self.start_nnet_browser_bt = QtWidgets.QPushButton("Browse")
-
 
 		self.train_nnet_sb_list.append(StringBox(label="learnrate",value="0.0003",showenable=-1))
 		self.train_nnet_sb_list.append(StringBox(label="niter  ",value="20",showenable=-1))
@@ -2810,8 +2820,6 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		tnl_layout.addWidget(self.train_nnet_cmd)
 		tnl_layout.addWidget(self.train_nnet_launch_bt)
 		self.train_nnet_launcher.setLayout(tnl_layout)
-
-
 
 		self.trained_nnet_sb = StringBox(label="nnet")
 		self.trained_nnet_browser_bt = QtWidgets.QPushButton("Browse")
@@ -2837,14 +2845,8 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		self.prob_maps_browser_bt = QtWidgets.QPushButton("Browse")
 		self.merger_tool_bt = QtWidgets.QPushButton("Merger Tool")
 
-
 		gbl = QtWidgets.QGridLayout(self)
-		# gbl.addWidget(self.segment_box_bt,0,0,1,4)
-		# gbl.addWidget(self.prob_maps_sb,1,0,1,3)
-		# gbl.addWidget(self.prob_maps_browser_bt,1,3,1,1)
-		# gbl.addWidget(self.merger_tool_bt,2,0,1,4)
 		gbl.addWidget(self.snnet_tab,0,0,1,4)
-
 
 		data_gbl = QtWidgets.QGridLayout(self.snn_data)
 		data_gbl.addWidget(self.box_training_bt,0,0,1,3)
@@ -2857,9 +2859,7 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 			train_gbl.addWidget(self.train_nnet_sb_list[i],2+i//2,0,1,2)
 			train_gbl.addWidget(self.train_nnet_sb_list[i+1],2+i//2,2,1,2)
 
-
 		train_gbl.addWidget(self.train_nnet_bt,6,0,1,4)
-
 
 		apply_gbl = QtWidgets.QGridLayout(self.snn_apply)
 		apply_gbl.addWidget(self.trained_nnet_sb,0,0,1,3)
@@ -2868,13 +2868,9 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		apply_gbl.addWidget(self.apply_nnet_bt,1,3,1,1)
 		apply_gbl.addWidget(self.apply_outtag_sb,1,1,1,2)
 
-
 		apply_gbl.addWidget(self.prob_maps_sb,2,0,1,3)
 		apply_gbl.addWidget(self.prob_maps_browser_bt,2,3,1,1)
 		apply_gbl.addWidget(self.merger_tool_bt,3,0,1,4)
-
-
-
 
 		self.trainset_browser_bt.clicked[bool].connect(self.load_trainset)
 		self.start_nnet_browser_bt.clicked[bool].connect(self.load_start_nnet)
@@ -2956,11 +2952,15 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		self.target.popwidgets.append(self.boxer_widget)
 
 	def box_training_bt_clicked(self):
+		x_reg,y_reg = self.target.img_view.get_data_dims()[0],self.target.img_view.get_data_dims()[1]
+		x_file,y_file = self.target.get_ori_xy()[0],self.target.get_ori_xy()[1]
+		if x_reg != x_file or y_reg != y_file:
+			self.target.showerror("Region sizes is smaller than original size of the image. Will cause mismatches for EMAN2Boxer.\nClose and reopen the program with region_sz=-1 to proceed with this unit")
+			return
 		self.boxer_widget = Boxer_Widget(target=self.target)
 		self.target.popwidgets.append(self.boxer_widget)
 
 	def train_nnet_bt_clicked(self):
-
 		cmd_l = [self.trainset_sb.getValue()]
 		for sb in self.train_nnet_sb_list:
 			cmd_l.append(sb.getValue())
@@ -2979,13 +2979,10 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		except Exception as e:
 			print(e)
 			pass
-		#tplt_match_map = EMData("tmp_ccc_inv.hdf")
 		return
 
 	def apply_nnet_bt_clicked(self):
-
 		self.ann_cmd = "e2tomoseg_convnet.py --nnet={} --tomograms={} --applying --outtag={} --threads={} --device=cpu".format(self.trained_nnet_sb.getValue(),self.target.data_file,self.apply_outtag_sb.getValue(),self.apply_eman2_thread_sb.getValue())
-		#print(self.ann_cmd)
 		self.apply_nnet_cmd.setText(self.ann_cmd)
 		self.apply_nnet_launcher.show()
 		return
@@ -3187,6 +3184,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 			try:
 				r.write_image(outfile_raw,-1)
 				l.write_image(outfile_seg,-1)
+
 			except Exception as e:
 				print("Trainset file is not correctly formatted. Abort")
 				print(e)
@@ -3212,8 +3210,6 @@ class Boxer_Widget(QtWidgets.QWidget):
 	def browse_seg_bt_clicked(self):
 		self.visualize_seg_browser.show()
 		return
-
-	#self.visualize_seg_browser = EMBrowserWidget(withmodal=True,multiselect=False,startpath='./particles')
 
 	def visualize_seg_browser_ok(self):
 		self.vis_seg_browser_ret = self.visualize_seg_browser.getResult()
@@ -3247,7 +3243,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 	def closeEvent(self,event):
 
 		self.target.clear_shapes()
-		self.close()
+		self.hide()
 
 	# def add_boxes(self, size = 64):
 	# 	sz = size
@@ -3742,7 +3738,14 @@ class Morp_Tab(QtWidgets.QWidget):
 			xrot, yrot, zrot = self.target.img_view.reverse_transform_point([center[0],center[1],self.target.img_view.nz//2+center[2]], self.target.img_view.get_xform())
 			xform=Transform({"type":"eman","alt":self.target.img_view.alt,"az":self.target.img_view.az,"tx":self.target.img_view.nx//2+xrot,"ty":self.target.img_view.ny//2+yrot,"tz":self.target.img_view.nz//2+zrot})
 			subvol=self.target.img_view.get_full_annotation().get_rotated_clip(xform,(side_length,side_length,side_length),0)
+
+
+			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+			#subvol.process_inplace("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
 			self.target,img_view.full_annotation.set_rotated_clip(xform,from_numpy(np.where(fill_vol>0,val,to_numpy(subvol))))
+			#self.img_view.full_annotation.set_rotated_clip(xform,subvol*2)
+			# full_vol=from_numpy(np.where(fill_vol>0,value,to_numpy(self.img_view.full_annotation)))
+			# self.img_view.full_annotation = full_vol.process("xform",{"transform":self.img_view.xform})
 		self.target.img_view.force_display_update()
 		self.target.img_view.updateGL()
 
@@ -3853,6 +3856,14 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 		self.target = target
 		ext_gbl = QtWidgets.QGridLayout(self)
 		self.current_z = self.target.zc_spinbox.value()
+		# self.rf_path_text = QtWidgets.QLineEdit()
+		# self.vol_path_text = QtWidgets.QLineEdit()
+		#
+		# self.vol_browser_bt = QtWidgets.QPushButton("Browse")
+		# self.map_ptcls_bt = QtWidgets.QPushButton("Map ptcls to tomogram")
+		# self.show_ptcls_bt = QtWidgets.QPushButton("Show ptcls on tomogram")
+		# self.show_ptcls_vs = ValSlider(value=0.5,rng=(0.001,5),rounding=2,label= "Thres")
+		#
 		self.ext_class_bt = QtWidgets.QPushButton("Extrapolate Class")
 		self.ext_all_bt = QtWidgets.QPushButton("Extrapolate All")
 		self.ext_from_spinbox = QtWidgets.QSpinBox()
@@ -3860,6 +3871,10 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 		self.ext_from_spinbox.setMinimum(-self.target.get_nz())
 		self.ext_from_spinbox.setValue(0)
 
+
+
+		# self.n_iters_spinbox.setMinimum(1)
+		# self.annotate_ori=None
 
 		ext_gbl.addWidget(QtWidgets.QLabel("Apply to 2D slice. Z-thick set to 0"),0,0,1,2)
 		ext_gbl.addWidget(self.ext_class_bt,1,0,1,1)
@@ -3881,6 +3896,9 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 			for item in self.target.get_segtab().get_whole_branch(sel):
 				sels.append(item)
 
+		# if len(sels) == 0:
+		# 	print("Select a single class or grouping before extrapolate operation")
+		# 	return 0,None
 
 		return sels
 
@@ -3978,10 +3996,14 @@ class Binary_Tab(QtWidgets.QWidget):
 
 	def bin_detect_bt_clicked(self):
 		self.target.save_current_state()
+
 		sel = self.get_selected_item()
 		if not sel:
 			print("Choose only one class for detect feature")
 			return
+		# if len(sel) == 0:
+		# 	print("Please select the class feature to detect")
+		# 	return
 
 
 		self.target.get_segtab().get_whole_annotate(sel).write_image("ori_detect.hdf")
@@ -4046,6 +4068,7 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
 		templ_gbl.addWidget(self.template_match_bt,1,2,1,2)
 		templ_gbl.addWidget(self.tplt_threshold_vs,2,0,1,4)
+		#templ_gbl.addWidget(self.tplt_low_pass_vs,3,0,1,4)
 		self.setLayout(templ_gbl)
 
 		self.tplt_match_launcher = QtWidgets.QWidget()
@@ -4064,6 +4087,8 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		self.create_template_bt.clicked[bool].connect(self.create_tplt)
 		self.tplt_launch_bt.clicked[bool].connect(self.tplt_match_launched)
 		self.tplt_threshold_vs.valueChanged.connect(self.binarize_tplt_match)
+
+
 
 
 	def load_template(self):
@@ -4091,6 +4116,7 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		except:
 			pass
 		os.system("e2proc3d.py tmp_ccc.hdf tmp_ccc_inv.hdf --mult=-1")
+		#tplt_match_map = EMData("tmp_ccc_inv.hdf")
 		self.tplt_threshold_vs.setValue(0.81)
 		return
 
@@ -4121,6 +4147,10 @@ class Cmd_Launcher(QtWidgets.QWidget):
 
 	def get_cmd():
 		return self.cmd
+
+
+
+
 
 
 class Fila_Tab(QtWidgets.QWidget):
@@ -4167,6 +4197,9 @@ class Fila_Tab(QtWidgets.QWidget):
 		self.t_button.clicked[bool].connect(self.t_button_clicked)
 		self.p_button.clicked[bool].connect(self.p_button_clicked)
 		self.c_button.clicked[bool].connect(self.c_button_clicked)
+
+
+
 
 	def tree_to_dict(self,parent):
 		childCount = parent.childCount()
@@ -4378,7 +4411,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 		stat_gbl.addWidget(self.stat_tab)
 
 		self.stat_bt.clicked[bool].connect(self.calc_stat)
-
 		#self.convex_bt.clicked[bool].connect(self.show_convex_hull)
 		self.n_obj_thres_vs.valueChanged.connect(self.thres_vs_changed)
 		self.label_objs_bt.clicked[bool].connect(self.label_objs)
@@ -4390,9 +4422,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 			print("Select a single class or group before quantification")
 			return None
 		return sels[0]
-		#return self.target.get_segtab().get_whole_branch(sels[0])
-
-
 
 	def do_morp_close(self):
 		n_iters = int(self.morp_n_iters_sp.value())
@@ -4445,7 +4474,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 				total += num
 				self.target.annotate += val*from_numpy(remove_small)
 				del raw_mask, mask_op, labeled, num, areas, mask
-				#self.target.annotate *= from_numpy(raw_mask-remove_small)
 		self.n_objects_text.setText(str(total))
 		self.target.img_view.set_data(self.target.data, self.target.annotate)
 
@@ -4479,6 +4507,7 @@ class Statistics_Tab(QtWidgets.QWidget):
 			self.target.annotate += val*raw_mask
 			sel.takeChildren()
 			self.target.get_segtab().update_sets()
+			self.objs=[]
 		self.target.save_current_state()
 		self.target.activateWindow()
 		self.target.get_annotation().process_inplace("threshold.rangetozero",{"maxval":(val+0.1),"minval":(val-0.1)})
@@ -4486,92 +4515,128 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.loc=ndi.find_objects(self.labeled_ann,self.num)
 		t_mask = np.zeros(self.labeled_ann.shape)
 		count = 0
-		self.area_vol = []
-		self.objs = []
-		open_lab=to_numpy(raw_mask)
+		objs=[]
+		lab=to_numpy(raw_mask)
 		for i in range(1,self.num+1):
-			area_temp=len(np.where(open_lab[self.loc[i-1]]>0)[0])
-			count = count+1
-			self.area_vol.append(area_temp)
-			self.objs.append(open_lab[self.loc[i-1]])
+			vol_temp=len(np.where(lab[self.loc[i-1]]>0)[0])
+			if vol_temp>= self.n_obj_thres_vs.value:
+				count = count+1
+			else:
+				continue
 			ind = self.target.get_segtab().get_unused_index()
-			name = sel.text(1)
-			self.target.get_segtab().add_child(child_l=[str(ind),name+"_"+str(i),"-1"])
+			obj_name = sel.text(1)+"_"+str(i)
+			obj = Obj(ind,obj_name,lab[self.loc[i-1]],self.apix_vs.value)
+			obj.set_vol(vol_temp)
+			objs.append(obj)
+			self.target.get_segtab().add_child(child_l=[str(ind),obj_name,"-1"])
 			self.target.get_segtab().update_sets()
 			t_mask += np.where(self.labeled_ann==i,ind,0)
+		# print("Objs",len(self.objs),[obj.shape for obj in self.objs])
+		# print(self.objs[0])
 		self.target.annotate += from_numpy(t_mask)
+		#self.target.annotate.numpy() += t_mask
 		print("number of object detected:", self.num)
 		self.target.img_view.set_data(self.target.data, self.target.annotate)
 		del t_mask
 		self.n_objects_text.setText(str(count))
-
-
-
+		return objs
 
 	def calc_stat(self):
-		apix = self.apix_vs.value
 		sel = self.get_selected_item()
-		self.label_objs(ask_user=False)
+		objs = self.label_objs(ask_user=False)
 		if (self.stat_combo.currentText() == "Center of Mass"):
-			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(self.objs))])
+			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(objs))])
 			self.cent_mass_em = []
 			for pair in self.cent_mass:
 				if len(pair) == 3:
 					self.cent_mass_em.append([pair[2],pair[1],pair[0]])
 				elif len(pair) == 2:
 					self.cent_mass_em.append([pair[1],pair[0]])
-			for  i in range(1,len(self.cent_mass_em)+1):
-				print("Center of Mass of Obj",i,":", str(self.cent_mass_em[-i]))
-		elif (self.stat_combo.currentText() == "Volume/Area"):
-			for  i in range(1,len(self.area_vol)+1):
-				print("Volume/Area of Obj",i,":", str(self.area_vol[-i]),"pixels/voxels")
-				#print("Largest Perimeter of Obj",i,":", peri_temp*apix,"A")
-		elif (self.stat_combo.currentText() == "Largest Area"):
-			if  len(self.objs[0].shape)== 2:
-				for  i in range(1,len(self.area_vol)+1):
-					print("Largest Area of Obj",i,":", str(self.area_vol[-i]),"pixels")
-					print("Largest Area of Obj",i,":", str(self.area_vol[-i]*apix*apix)," A^2")
+			for  i in range(len(self.cent_mass_em)):
+				cmass =[f"{loc:.1f}" for loc in self.cent_mass_em[i]]
+				name = objs[i].name
+				print(f"Center of Mass of Obj {name}:",",".join(cmass))
+			return
+		else:
+			stat_txt = self.stat_combo.currentText()
+			unit = "Pixel"
+			a_unit = "A^2"
+			if stat_txt == "Volume/Area":
+				stats = [obj.vol for obj in objs]
+				a_stats = [obj.a_vol for obj in objs]
+				if objs[0].dims == 3:
+					unit = "Voxel"
+					a_unit = "A^3"
+			elif stat_txt == "Largest Perimeter":
+				a_unit = "A"
+				stats = [obj.p_peri for obj in objs]
+				a_stats = [obj.a_p_peri for obj in objs]
 			else:
-				for i in range(1,len(self.objs)+1):
-					obj = self.objs[-i]
-					a = from_numpy(obj)
-					proj = a.process("misc.directional_sum",{"axis":"z"}).numpy()
-					area_temp=len(np.where(proj>0)[0])
-					print("Largest Area of Obj",i,":", area_temp,"pixel")
-					print("Largest Area of Obj",i,":", area_temp*apix*apix,"A^2")
+				stats = [obj.p_area for obj in objs]
+				a_stats = [obj.a_p_area for obj in objs]
+			for i,obj in enumerate(objs):
+				o_name = obj.name
+				stat = stats[i]
+				a_stat = a_stats[i]
+				apix = self.apix_vs.value
+				print(f"{stat_txt} of object {o_name}:{stat} {unit}. \nAt apix {apix:.2f}, equivalent to {a_stat:.2f} {a_unit}")
 
-		elif self.stat_combo.currentText() == "Largest Perimeter":
+class Obj():
+	def __init__(self, i,name,arr,apix) :
+		self.index = i
+		self.arr = arr
+		self.apix = apix
+		self.name = name
+		if len(self.arr.shape) == 3 and self.arr.shape[0] != 1:
+			self.dims = 3
+		else:
+			self.dims = 2
+		self.vol, self.a_vol = self.calc_vol()
+		self.p_area, self.a_p_area = self.calc_proj_stats("area")
+		self.p_peri, self.a_p_peri = self.calc_proj_stats("peri")
 
-			for i in range(1,len(self.objs)+1):
-				obj = self.objs[-i]
-				if len(obj.shape) == 2:
-					im = obj
-				else:
-					a = from_numpy(obj)
-					proj = a.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1})
-					im = proj.numpy()
-				peri_temp = self.calc_perimeter(im)
-				print("Largest Perimeter of Obj",i,":", peri_temp, "pixel")
-				print("Largest Perimeter of Obj",i,":", peri_temp*apix,"A")
+	def set_loc(self,loc):
+		self.loc = loc
 
+	def set_vol(self,vol):
+		self.vol = vol
+
+	def calc_vol(self):
+		n_vox =  np.count_nonzero(self.arr)
+		if self.dims==2:
+			fac = self.apix*self.apix
+		else:
+			fac = self.apix*self.apix*self.apix
+		return n_vox,n_vox*fac
+
+	def calc_proj_stats(self,stat="area",u="pix"):
+		def calc_perimeter(im):
+			(w, h) = im.shape
+			data = np.zeros((w + 2, h + 2), dtype=im.dtype)
+			data[1:-1, 1:-1] = im
+			newdata = data.copy()
+			for i in range(1, w + 1):
+				for j in range(1, h + 1):
+					cond = data[i, j] == data[i, j + 1] and \
+							data[i, j] == data[i, j - 1] and \
+							data[i, j] == data[i + 1, j] and \
+							data[i, j] == data[i - 1, j]
+					if cond:
+						newdata[i, j] = 0
+			return np.count_nonzero(newdata)
+		if self.dims == 2:
+			proj = self.arr.copy()
+		else:
+			em_obj = from_numpy(self.arr.copy())
+			proj = em_obj.process("misc.directional_sum",{"axis":"z"}).process("threshold.binary",{"value":0.1}).numpy()
+		if stat=="area":
+			n_pix = np.count_nonzero(proj)
+			return n_pix,n_pix*self.apix*self.apix
+		elif stat =="peri":
+			n_pix = calc_perimeter(proj.squeeze())
+			return n_pix,n_pix*self.apix
 		else:
 			return
-
-	def calc_perimeter(self,image):
-		(w, h) = image.shape
-		data = np.zeros((w + 2, h + 2), dtype=image.dtype)
-		data[1:-1, 1:-1] = image
-		newdata = np.copy(data)
-		for i in range(1, w + 1):
-			for j in range(1, h + 1):
-				cond = data[i, j] == data[i, j + 1] and \
-						data[i, j] == data[i, j - 1] and \
-						data[i, j] == data[i + 1, j] and \
-						data[i, j] == data[i - 1, j]
-				if cond:
-					newdata[i, j] = 0
-		return np.count_nonzero(newdata)
-
 
 class Specific_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
@@ -4604,6 +4669,7 @@ class Specific_Tab(QtWidgets.QWidget):
 
 		self.detect_plane_bt.clicked[bool].connect(self.detect_plane)
 		self.select_anchors_bt.clicked[bool].connect(self.select_anchors_bt_clicked)
+
 
 		self.gra_tab = QtWidgets.QWidget()
 		self.gtlay = QtWidgets.QVBoxLayout(self.gra_tab)
