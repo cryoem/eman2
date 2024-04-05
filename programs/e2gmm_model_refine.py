@@ -842,7 +842,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 def save_model_pdb(model, theta_all, theta_h, options, fname):
 	
 	conf=np.zeros((1,options.nmid), dtype=floattype)+1
-	atom_pos=calc_atom_pos(conf, model, theta_all, options, addh=False, theta_h=theta_h)
+	atom_pos=calc_atom_pos(conf, model, theta_all, options, addh=options.writeh, theta_h=theta_h)
 
 	if options.model.endswith(".cif"):
 		pdbpar = MMCIFParser( QUIET = True) 
@@ -860,14 +860,15 @@ def save_model_pdb(model, theta_all, theta_h, options, fname):
 	atoms0=list(pdbh.get_atoms())
 	for i,a in enumerate(atoms0):
 		a.set_coord(atom_pos[0,i].numpy())
-
-	res1=list(pdbh.get_residues())
-	h=atom_pos[0, options.npt_noh:].numpy()
-	for ii,hl in enumerate(options.h_info[0]):
-		a=Atom.Atom(hl[0], h[ii], 50, 1, ' ', hl[0], atoms0[-1].serial_number+ii+1, element='H')
-		i=hl[2]
-		a.set_parent(res1[i])
-		res1[i].add(a)
+	
+	if options.writeh:
+		res1=list(pdbh.get_residues())
+		h=atom_pos[0, options.npt_noh:].numpy()
+		for ii,hl in enumerate(options.h_info[0]):
+			a=Atom.Atom(hl[0], h[ii], 50, 1, ' ', hl[0], atoms0[-1].serial_number+ii+1, element='H')
+			i=hl[2]
+			a.set_parent(res1[i])
+			res1[i].add(a)
 		
 		
 	if options.model.endswith(".cif"):
@@ -896,6 +897,7 @@ def main():
 	parser.add_argument("--clash0", type=float,help="starting clashing threshold.", default=0.6)
 	parser.add_argument("--clash1", type=float,help="final clashing threshold.", default=0.35)
 	parser.add_argument("--fixrotamer", action="store_true", default=False ,help="select good rotamer before refinement")
+	parser.add_argument("--writeh", action="store_true", default=False ,help="write H atoms in the output file")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
