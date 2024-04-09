@@ -2464,7 +2464,7 @@ class Contour(EMShape):
 				p1=pts[(i+1)%len(pts)]
 				area+=p0[0]*p1[1]-p0[1]*p1[0]
 			area=abs(area/2.)
-			print("Contour {:d}, area {:.1f} px^2".format(int(ci), area))
+			#print("Contour {:d}, area {:.1f} px^2".format(int(ci), area))
 
 			glColor3f( 1, .3, .3 );
 			glLineWidth(3.)
@@ -4390,6 +4390,7 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.stat_combo.addItem('Volume/Area')
 		self.stat_combo.addItem('Largest Area')
 		self.stat_combo.addItem('Largest Perimeter')
+		self.stat_combo.addItem('Circularity')
 		self.stat_combo.addItem('Custom')
 
 		bltlay.addWidget(self.n_obj_thres_vs,0,0,1,3)
@@ -4571,15 +4572,22 @@ class Statistics_Tab(QtWidgets.QWidget):
 				a_unit = "A"
 				stats = [obj.p_peri for obj in objs]
 				a_stats = [obj.a_p_peri for obj in objs]
-			else:
+			elif stat_txt == "Largest Area":
 				stats = [obj.p_area for obj in objs]
 				a_stats = [obj.a_p_area for obj in objs]
+			elif stat_txt == "Circularity":
+				stats = [obj.circularity for obj in objs]
+				a_stats = []
+				unit = ""
+
 			for i,obj in enumerate(objs):
 				o_name = obj.name
 				stat = stats[i]
-				a_stat = a_stats[i]
 				apix = self.apix_vs.value
-				print(f"{stat_txt} of object {o_name}:{stat} {unit}. \nAt apix {apix:.2f}, equivalent to {a_stat:.2f} {a_unit}")
+				print(f"{stat_txt} of object {o_name}:{stat:.2f} {unit}")
+				if len(a_stats) > 0:
+					a_stat = a_stats[i]
+					print(f"At apix {apix:.2f}, equivalent to {a_stat:.2f} {a_unit}")
 
 class Obj():
 	def __init__(self, i,name,arr,apix) :
@@ -4594,6 +4602,7 @@ class Obj():
 		self.vol, self.a_vol = self.calc_vol()
 		self.p_area, self.a_p_area = self.calc_proj_stats("area")
 		self.p_peri, self.a_p_peri = self.calc_proj_stats("peri")
+		self.circularity = 4*pi*self.p_area/(self.p_peri*self.p_peri)
 
 	def set_loc(self,loc):
 		self.loc = loc
@@ -4609,21 +4618,25 @@ class Obj():
 			fac = self.apix*self.apix*self.apix
 		return n_vox,n_vox*fac
 
+	def get_boundary(self, label):
+		label = label.astype(int)
+		label = label.squeeze()
+		#print("Label shape", label.shape)
+		k = np.zeros((3,3),dtype=int); k[1] = 1; k[:,1] = 1
+		boundary = label-ndi.binary_erosion(label,k)
+		corner_k = np.ones((3,3),dtype=int); corner_k[1] = 0; corner_k[:,1] = 0; corner_k[1,1] = 1
+		corner_count = ndi.convolve(label,corner_k,mode="constant",cval=0)
+		diag_k = k.copy();k[1,1]=0
+		diag_count = ndi.convolve(label,diag_k,mode="constant",cval=0)
+		return boundary, corner_count, diag_count
+
+	def calc_perimeter(self, label):
+		bdr, corn_b, diag_b = self.get_boundary(label)
+		n_corners = np.count_nonzero(corn_b*bdr==2)
+		n_diag = np.count_nonzero(diag_b*bdr==3) - n_corners
+		return np.count_nonzero(bdr)  + n_corners + n_diag*(np.sqrt(2)-1)
+
 	def calc_proj_stats(self,stat="area",u="pix"):
-		def calc_perimeter(im):
-			(w, h) = im.shape
-			data = np.zeros((w + 2, h + 2), dtype=im.dtype)
-			data[1:-1, 1:-1] = im
-			newdata = data.copy()
-			for i in range(1, w + 1):
-				for j in range(1, h + 1):
-					cond = data[i, j] == data[i, j + 1] and \
-							data[i, j] == data[i, j - 1] and \
-							data[i, j] == data[i + 1, j] and \
-							data[i, j] == data[i - 1, j]
-					if cond:
-						newdata[i, j] = 0
-			return np.count_nonzero(newdata)
 		if self.dims == 2:
 			proj = self.arr.copy()
 		else:
@@ -4633,8 +4646,9 @@ class Obj():
 			n_pix = np.count_nonzero(proj)
 			return n_pix,n_pix*self.apix*self.apix
 		elif stat =="peri":
-			n_pix = calc_perimeter(proj.squeeze())
-			return n_pix,n_pix*self.apix
+			#n_pix = calc_perimeter(proj.squeeze())
+			peri = self.calc_perimeter(proj.squeeze())
+			return peri,peri*self.apix
 		else:
 			return
 
@@ -4701,6 +4715,7 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
+		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")
