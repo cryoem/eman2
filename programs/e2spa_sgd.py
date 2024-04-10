@@ -16,6 +16,7 @@ def main():
 	parser.add_argument("--ncls", type=int,help="number of classes", default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--curve", action="store_true", default=False ,help="curve mode")
+	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start alignment from scratch even if the lst input contains orientation")
 	parser.add_argument("--skipali", action="store_true", default=False ,help="load transform from image header and skip alignment here")
 
 	(options, args) = parser.parse_args()
@@ -57,7 +58,7 @@ def main():
 	for ii,xf in zip(idx,xfs):
 		i2d=ptcls[ii]
 		d={"src":i2d["src"],"idx":i2d["idx"]}
-		if "xform.projection" in i2d:
+		if options.fromscratch==False and ("xform.projection" in i2d):
 			d["xform.projection"]=i2d["xform.projection"]
 		else:
 			d["xform.projection"]=xf

@@ -1028,17 +1028,31 @@ def translate_image(img, trans):
 	idxft=params["idxft"]
 	s=idxft[0]*trans[:,0,None,None]+idxft[1]*trans[:,1,None,None]
 	s*=-2*np.pi
-	imgs_real1=imgs_real*np.cos(s)-imgs_imag*np.sin(s)
-	imgs_imag1=imgs_imag*np.cos(s)+imgs_real*np.sin(s)
+	imgs_real1=imgs_real*tf.math.cos(s)-imgs_imag*tf.math.sin(s)
+	imgs_imag1=imgs_imag*tf.math.cos(s)+imgs_real*tf.math.sin(s)
 	return(imgs_real1, imgs_imag1)
 
+def do_coarse_align_one(args):
+	# d0=tf.repeat(args[0][None,...], len(projs_cpx_global[0]), axis=0)
+	# d1=tf.repeat(args[1][None,...], len(projs_cpx_global[0]), axis=0)
+	dc=list([tf.repeat(a[None,...], len(projs_cpx_global[0]), axis=0) for a in args])
+	ts=ccf_trans(dc, projs_cpx_global)
+	dtrans=translate_image(dc,ts)
+	frcs=calc_frc(dtrans, projs_cpx_global, params["rings"], minpx=2, maxpx=-1)
+	return frcs, ts
+
+@tf.function()
+def do_coarse_align(dc): 
+	frc, ts=tf.vectorized_map(do_coarse_align_one, dc)
+	return frc,ts
+		
+		
 def coarse_align(dcpx, pts, options):
+	t0=time.time()
 	print("coarse aligning particles")
 	astep=7.4
 	npt=len(dcpx[0])
 	symmetry=Symmetries.get(options.sym)
-	#xfs=symmetry.gen_orientations("rand", {"n":npt,"phitoo":1,"inc_mirror":1})
-	
 	
 	xfs=symmetry.gen_orientations("eman", {"delta":astep,"phitoo":astep,"inc_mirror":1})
 	xfs=[x.get_params("eman") for x in xfs]
@@ -1047,28 +1061,35 @@ def coarse_align(dcpx, pts, options):
 	#return [xfsnp]
 	
 	bsz=len(xfsnp)#//4
-	allfrcs=np.zeros((npt, len(xfsnp)))
-	alltrans=np.zeros((npt, len(xfsnp), 2))
-	niter=len(xfsnp)//bsz
-	for ii in range(niter):
-		xx=xfsnp[ii*bsz:(ii+1)*bsz]
-		pt=tf.Variable(tf.repeat(pts[None,:,:], xx.shape[0], axis=0))
-		#print(pt.shape, xx.shape)
-		projs_cpx=pts2img(pt, xx)
+	allfrcs=tf.zeros((npt, len(xfsnp)))
+	alltrans=tf.zeros((npt, len(xfsnp), 2))
+	# niter=len(xfsnp)//bsz
+	psz=10
+	global projs_cpx_global
+	# for ii in range(niter):
+	xx=xfsnp#[ii*bsz:(ii+1)*bsz]
+	pt=tf.Variable(tf.repeat(pts[None,:,:], xx.shape[0], axis=0))
+	#print(pt.shape, xx.shape)
+	
+	projs_cpx_global=pts2img(pt, xx)
+	rg=np.arange(dcpx[0].shape[0])
+	dataset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], rg))
+	dataset=dataset.batch(10)
+	for dc in dataset:
+		d0,d1,ii=dc
+		frc, ts=do_coarse_align([d0, d1])
 		
-		for idt in range(npt):
-			dc=list(tf.repeat(d[idt:idt+1], len(xx), axis=0) for d in dcpx)
-			ts=ccf_trans(dc, projs_cpx)
-			dtrans=translate_image(dc,ts)
-			frcs=calc_frc(dtrans, projs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
-			#mxxfs.append(np.argmax(frcs))
-			allfrcs[idt,ii*bsz:(ii+1)*bsz]=frcs
-			alltrans[idt,ii*bsz:(ii+1)*bsz]=ts
-
-			sys.stdout.write("\r projs: {}/{}, data: {}/{}	".format(ii+1, niter, idt+1, npt))
-			sys.stdout.flush()
+		allfrcs=tf.tensor_scatter_nd_add(allfrcs, ii[:,None], frc)
+		alltrans=tf.tensor_scatter_nd_add(alltrans, ii[:,None], ts)
+		sys.stdout.write("\r projs: {}/{}, data: {}/{}	".format(1, 1, ii[0], npt))
+		sys.stdout.flush()
+		
+	
+	allfrcs=allfrcs.numpy()
+	alltrans=alltrans.numpy()
+		
 	xfs=[]
-	for ii in range(8):
+	for ii in range(4):
 		fid=np.argmax(allfrcs, axis=1)
 		xf=xfsnp[fid]
 		ts=alltrans[np.arange(npt),fid]
@@ -1077,6 +1098,8 @@ def coarse_align(dcpx, pts, options):
 		allfrcs[np.arange(npt),fid]=-1
 	
 	print()
+	print(time.time()-t0)
+	# exit()
 	#print(dtrans[0].shape, projs_cpx[0].shape, params["rings"].shape)
 	return xfs
 
