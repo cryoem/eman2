@@ -406,10 +406,10 @@ def main():
 		print("Current hand is better than the flipped hand in {:.1f}% tilt images".format(scr*100))
 		
 		if scr>.5:
-			print("{}: The handedness (--tltax={:.1f}) seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.".format(args[0],-rot))
+			print("{}: Result: the handedness (--tltax={:.1f}) seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.".format(args[0],-rot))
 			open("goodtilt.txt","a").write(f"{-rot}\t{scr}\t# {args[0].split('/')[-1]}\n")
 		else:
-			print("{}: The handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(args[0],-((180+rot)%360)))
+			print("{}: Result: the handedness seems to be flipped. Consider rerun the tomogram reconstruction with --tltax={:.1f} then rerun the CTF estimation.".format(args[0],-((180+rot)%360)))
 			open("goodtilt.txt","a").write(f"{-((180+rot)%360)}\t{1.0-scr}\t# {args[0].split('/')[-1]}\n")
 
 		if not options.nolog: E2end(logid)

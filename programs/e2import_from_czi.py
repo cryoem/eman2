@@ -9,6 +9,7 @@ from PyQt5.QtCore import Qt
 from EMAN2 import *
 from EMAN2_utils import interp_points, base_name
 from eman2_gui.emapplication import EMApp
+from eman2_gui.valslider import StringBox
 
 try:
 	from cryoet_data_portal import Client, Tomogram, Run
@@ -17,6 +18,7 @@ try:
 except:
 	print("cryoet_data_portal library required to download data from czi database. Install the library in your conda environment using cmd: \npip install -U cryoet-data-portal")
 	sys.exit(0)
+
 
 def main():
 	usage="""a popup app to download tomogram from czi cryoet data portal and import into EMAN2 as correct format for e2tomo_annotate.py
@@ -87,39 +89,81 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 		gbl = QtWidgets.QGridLayout(self)
 		gbl.addWidget(QtWidgets.QLabel("Dataset ID"),0,0,1,1)
-		gbl.addWidget(self.dataset_id_le,0,1,1,1)
+		gbl.addWidget(self.dataset_id_le,0,1,1,2)
 		gbl.addWidget(self.inquire_bt,1,0,1,1)
 		gbl.addWidget(self.data_download_bt,2,0,1,1)
-		gbl.addWidget(self.download_tomo_num,2,1,1,1)
+		gbl.addWidget(self.download_tomo_num,2,1,1,2)
 
+		gbl.addWidget(self.imod_data_cb,3,0,1,1)
 		gbl.addWidget(self.download_tomo_cb,3,1,1,1)
 		gbl.addWidget(self.download_anno_cb,3,2,1,1)
-		gbl.addWidget(self.imod_data_cb,3,0,1,1)
+
 
 		self.import_to_eman2_bt = QtWidgets.QPushButton("Import")
 		gbl.addWidget(self.import_to_eman2_bt,4,0,1,1)
 		self.import_to_eman2_bt.clicked[bool].connect(self.import_data_to_eman)
 
+		self.annotate_eman2_bt = QtWidgets.QPushButton("Segmentation")
+		self.region_sz_sb = StringBox(label="Region Sz",value="500",showenable=-1)
+		self.zthick_sb = StringBox(label="Zthick",value="-1",showenable=-1)
+		self.enable_undo_checkbox = QtWidgets.QCheckBox("Enable Undo")
+		self.enable_undo_checkbox.setChecked(False)
+
+		gbl.addWidget(self.annotate_eman2_bt,5,0,1,1)
+		gbl.addWidget(self.region_sz_sb,6,0,1,1)
+		gbl.addWidget(self.zthick_sb,6,1,1,1)
+		gbl.addWidget(self.enable_undo_checkbox,6,2,1,1)
 
 		self.inquire_bt.clicked[bool].connect(self.inquire_dataset)
 		self.data_download_bt.clicked[bool].connect(self.download_dataset)
 		self.download_tomo_cb.stateChanged[int].connect(self.download_tomo_cb_changed)
 		self.download_anno_cb.stateChanged[int].connect(self.download_anno_cb_changed)
 		self.imod_data_cb.stateChanged[int].connect(self.imod_cb_changed)
+		self.annotate_eman2_bt.clicked[bool].connect(self.launch_e2tomo_annotate)
 
 
-	def create_data_folder(self,set_id):
+	def show_question_box(self,msg):
+		msg = QMessageBox()
+		msg.setIcon(QMessageBox.Question)
+		msg.setText(msg)
+		msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+		return(msg)
+
+
+
+	def create_data_folder(self,set_id, set_params_only=False):
+
 		dataset_fname ="./CZI_data/{}".format(set_id)
 		if not os.path.exists(dataset_fname):
 			os.mkdir(dataset_fname)
 		self.tomo_fname = "./CZI_data/{}/tomos".format(set_id)
+		self.seg_fname = "./CZI_data/{}/segs".format(set_id)
+		if set_params_only:
+			return True
 		if not os.path.exists(self.tomo_fname):
 			os.mkdir(self.tomo_fname)
+		else:
+			if not self.overwrite_folder(self.tomo_fname):
+				return False
 		if self.download_anno:
-			self.seg_fname = "./CZI_data/{}/segs".format(set_id)
 			if not os.path.exists(self.seg_fname):
 				os.mkdir(self.seg_fname)
-			return
+			else:
+				if not self.overwrite_folder(self.seg_fname):
+					return False
+		return True
+
+	def overwrite_folder(self,fname):
+		msg = "Data folder "+fname+" already exists.\nDo you want to overwrite it?"
+		result = QtWidgets.QMessageBox.question(self,"Overwrite",msg,QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
+		if result == QtWidgets.QMessageBox.Yes:
+			os.system(f"rm -rf {fname}")
+			print("%s folder has been removed successfully" %fname)
+			os.mkdir(fname)
+			return True
+		else:
+			print(fname+" is not overwritten. Continue.")
+			return False
 
 	def download_tomo_cb_changed(self,int):
 		self.download_tomo=int
@@ -130,7 +174,9 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 	def download_dataset(self):
 		self.inquire_dataset()
-		self.create_data_folder(self.get_dataset_id())
+		if not self.create_data_folder(self.get_dataset_id()):
+			print("Data already downloaded. Please continue with the pipeline.")
+			return
 		try:
 			self.set_indices = self.download_tomo_num.text()
 		except:
@@ -162,8 +208,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 				continue
 			tomo=self.tomos[index]
 			js_fname = os.path.join(self.tomo_fname,tomo.name[:-4]+".json")
-
-			#if self.download_tomo_cb.isChecked():
 			if self.download_tomo:
 				with open(js_fname, "w") as f:
 					json.dump(tomo.to_dict(), f)
@@ -198,33 +242,46 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 	def get_dataset_id(self):
 		try:
+			#print("LE text", self.dataset_id_le.text())
 			return self.dataset_id_le.text()
 		except:
 			return self.dataset_id
 
 	def import_data_to_eman(self):
-		self.create_data_folder(self.get_dataset_id())
-		eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
-		if not os.path.exists(eman2_tomo_fname):
-			os.mkdir(eman2_tomo_fname)
+		self.create_data_folder(self.get_dataset_id(),set_params_only=True)
+		self.eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
+		if not os.path.exists(self.eman2_tomo_fname):
+			os.mkdir(self.eman2_tomo_fname)
 		else:
-			print("Data folder already exist. Return")
-			self.close()
-			return
+			if not self.overwrite_folder(self.eman2_tomo_fname):
+				return
+			else:
+				pass
+			# msg = "Data folder "+self.eman2_tomo_fname+" already exists.\nDo you want to overwrite it?"
+			# result = QtWidgets.QMessageBox.question(self,"Overwrite",msg,QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
+			# if result == QtWidgets.QMessageBox.Yes:
+			# 	fname = self.eman2_tomo_fname
+			# 	os.system(f"rm -rf {fname}")
+			# 	print("%s folder has been removed successfully" %self.eman2_tomo_fname)
+			# 	os.mkdir(self.eman2_tomo_fname)
+			# else:
+			# 	return
+
 		for tomo_f in os.listdir(self.tomo_fname):
 			if tomo_f.endswith("mrc"):
 				ori_f = os.path.join(self.tomo_fname,tomo_f)
 				print("Importing", tomo_f, "from", ori_f)
-				eman2_f = os.path.join(eman2_tomo_fname,tomo_f[0:-4]+".hdf")
+				eman2_f = os.path.join(self.eman2_tomo_fname,tomo_f[0:-4]+".hdf")
 				if self.imod:
 					imod_import = ":8 --process math.fixmode:byte_utos=1"
 				else:
 					imod_import = ""
 
-				print("e2proc3d.py {} {}{} --process=normalize.maxmin".format(ori_f,eman2_f,imod_import))
 				os.system("e2proc3d.py {} {}{} --process=normalize.maxmin".format(ori_f,eman2_f,imod_import))
+				print(f"Finish importing {tomo_f} to EMAN2 project.")
 
-				ori_seg_fold = os.path.join("./CZI_data/{}/segs".format(self.dataset_id),tomo_f[0:-4])
+				ori_seg_fold = os.path.join("./CZI_data/{}/segs".format(self.get_dataset_id()),tomo_f[0:-4])
+
 				if os.path.exists(ori_seg_fold) and len(os.listdir(ori_seg_fold)) != 0:
 					try:
 						iter = 1
@@ -232,15 +289,25 @@ class CZIDataLoader(QtWidgets.QWidget):
 							if seg_f.endswith("mrc"):
 								ori_seg_f = os.path.join(ori_seg_fold,seg_f)
 								print("Importing segmentations",str(iter),"for",tomo_f[0:-4])
-								eman2_seg_f = os.path.join("./segs/","{}_{}_seg_from_czi.hdf".format(base_name(eman2_f),str(iter)))
+								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),str(iter)))
 								os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
 								iter += 1
 					except Exception as e:
 						print(e)
 						continue
+		print("Finish importing data to EMAN2 project.")
+
+	def launch_e2tomo_annotate(self):
+		self.eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
+		zthick=self.zthick_sb.getValue()
+		reg_sz=self.region_sz_sb.getValue()
+		tomo_fname = self.eman2_tomo_fname
+		if self.enable_undo_checkbox.isChecked():
+			notmp = ""
+		else:
+			notmp = "--no_tmp"
+		os.system(f"e2tomo_annotate.py --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname}")
 		self.close()
-
-
 
 if __name__ == '__main__':
 	main()

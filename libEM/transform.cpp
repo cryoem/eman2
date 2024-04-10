@@ -346,6 +346,13 @@ void Transform::init_permissable_keys()
 	tmp.push_back("omega");
 	permissable_rot_keys["spin"] = tmp;
 
+
+	tmp.clear();
+	tmp.push_back("q0");
+	tmp.push_back("q1");
+	tmp.push_back("q2");
+	permissable_rot_keys["so3"] = tmp;
+
 	tmp.clear();
 	tmp.push_back("n1");
 	tmp.push_back("n2");
@@ -511,6 +518,7 @@ Dict Transform::get_params_inverse(const string& euler_type) const {
 
 	bool mirror = inv.get_mirror();
 	params["mirror"] = mirror;
+	
 
 	return params;
 }
@@ -604,6 +612,21 @@ void Transform::set_rotation(const Dict& rotation)
 			e1 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n1"]/norm;
 			e2 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n2"]/norm;
 			e3 = sin(omega*EMConsts::deg2rad/2.0) * (double)rotation["n3"]/norm;
+		}
+	} else if ( type == "so3" ) {
+// 		validate_and_set_type(THREED);
+		is_quaternion = 1;
+		//omega = (double)rotation["omega"];
+		double lenq012 =Util::hypot3((double)rotation["q0"],(double)rotation["q1"],(double)rotation["q2"]);
+		if (lenq012==0.0) {
+			e0=1.0;
+			e1=e2=e3=0.0;
+		} else {
+			omega = 2.0*M_PI* lenq012;
+			e0 = cos(omega/2.0);
+			e1 = sin(omega/2.0) * (double)rotation["q0"]/lenq012;
+			e2 = sin(omega/2.0) * (double)rotation["q1"]/lenq012;
+			e3 = sin(omega/2.0) * (double)rotation["q2"]/lenq012;
 		}
 	} else if ( type == "sgirot" ) {
 // 		validate_and_set_type(THREED);
@@ -938,7 +961,7 @@ Dict Transform::get_rotation(const string& euler_type) const
 		result["xtilt"]  = xtilt;
 		result["ytilt"]  = ytilt;
 		result["ztilt"]  = ztilt;
-	} else if ((type == "quaternion") || (type == "spin") ||  (type == "sgirot")) {
+	} else if ((type == "quaternion") || (type == "spin") ||  (type == "so3" ||  (type == "sgirot"))) {
 	  
 	      // The cosOover2 is also e0
 //	        double nphi = (az-phi)/2.0;
@@ -1006,6 +1029,14 @@ Dict Transform::get_rotation(const string& euler_type) const
 		    result["n1"] = n1;
 		    result["n2"] = n2;
 		    result["n3"] = n3;
+		}
+
+		if (type == "so3"){
+            double Omega =  asin(sinomega)/(2.0*M_PI);
+            if (cosomega< 0) { Omega = 0.5-Omega;}
+		    result["q0"] = n1*Omega;
+		    result["q1"] = n2*Omega;
+		    result["q2"] = n3*Omega;
 		}
 
 		if (type == "sgirot"){
