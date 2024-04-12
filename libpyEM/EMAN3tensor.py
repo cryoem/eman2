@@ -469,6 +469,31 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 	def _coerce_numpy(self):
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 
+	def init_from_map(self,vol,res,minratio=0.1,apix=None):
+		"""Replace the current set of Gaussians with a set of Gaussians generated from a 3-D map by progressive Gaussian decomposition.
+		The map is filtered to res, then the highest amplitude peak is assigned to the first Gaussian. After subtracting that Gaussian from the
+		map the process is repeated until the ratio of the next amplitude to the first amplitude falls below the minratio limit.
+		vol - a single EMData, numpy or tensorflow volume
+		res - lowpass filter resolution and the FWHM of the Gaussians to be subtracted, specified in A, use apix for non-EMData volumes
+		minratio - minimum peak ratio, >0
+		apix - A/pix override"""
+
+		if isinstance(vol,tf.Tensor): emd=from_tf(vol)
+		elif isinstance(vol,np.ndarray): emd=from_numpy(vol)
+		elif isinstance(vol,EMData): emd=vol
+		else: raise Exception("init_from_map: vol must be EMData, Tensor or NumPy Array")
+
+		if apix is not None: emd["apix_x"],emd["apix_y"],emd["apix_z"]=apix,apix,apix
+
+		# The actual Gaussian segmentation
+		seg=emd.process("segment.gauss",{"minratio":0.1,"width":4,"skipseg":1})
+		amps=np.array(seg["segment_amps"])
+		centers=np.array(seg["segment_centers"]).reshape(len(amps),3)
+		centers/=(emd["nx"],emd["ny"],emd["nz"])
+		centers-=(0.5,0.5,0.5)
+		amps/=max(amps)
+		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps)))))
+
 	def project_simple(self,orts,boxsize,txty=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
 		orts - must be an Orientations object
