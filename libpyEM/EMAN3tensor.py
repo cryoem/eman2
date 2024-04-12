@@ -486,13 +486,13 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		if apix is not None: emd["apix_x"],emd["apix_y"],emd["apix_z"]=apix,apix,apix
 
 		# The actual Gaussian segmentation
-		seg=emd.process("segment.gauss",{"minratio":0.1,"width":4,"skipseg":1})
+		seg=emd.process("segment.gauss",{"minratio":minratio,"width":res,"skipseg":1})
 		amps=np.array(seg["segment_amps"])
 		centers=np.array(seg["segment_centers"]).reshape(len(amps),3)
 		centers/=(emd["nx"],emd["ny"],emd["nz"])
 		centers-=(0.5,0.5,0.5)
 		amps/=max(amps)
-		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps)))))
+		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps))))).transpose()
 
 	def project_simple(self,orts,boxsize,txty=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
