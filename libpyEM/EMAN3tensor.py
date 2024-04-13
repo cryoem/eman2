@@ -263,12 +263,15 @@ class EMStack2D(EMStack):
 
 	def set_data(self,imgs):
 		""" """
+		self._xforms=None
 		if imgs is None:
 			self._data=None
 			self._npy_list=None
 		elif isinstance(imgs,EMData):
 			if imgs.get_ndim()!=2: raise Exception("EMStack2D only supports 2-D data")
 			self._data=[imgs]
+			try: self._xforms=[imgs["xform.projection"]]
+			except: pass
 			self._npy_list=None
 		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
@@ -276,12 +279,16 @@ class EMStack2D(EMStack):
 			self._npy_list=None
 		elif isinstance(imgs,str):
 			self._data=EMData.read_images(imgs)
-			if imgs[0].get_ndim()!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data. {imgs} is {imgs[0].get_ndim()}-D")
+			try: self._xforms=[im["xform.projection"] for im in self._data]
+			except: pass
+			if self._data[0].get_ndim()!=2: raise Exception(f"EMStack2D only supports stacks of 2-D data. {imgs} is {self._data[0].get_ndim()}-D")
 			self._npy_list=None
 		else:
 			try:
 				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
 				self._data=list(imgs)		# copy the list, not the elements of the list
+				try: self._xforms=[im["xform.projection"] for im in self._data]
+				except: pass
 				self._npy_list=None
 			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
 
@@ -292,6 +299,14 @@ class EMStack2D(EMStack):
 		# note that the returned shape is N,Y,X regardless of representation
 		if isinstance(self._data,list): return(np.array((len(self._data),self._data[0]["ny"],self._data[0]["nx"])))
 		return(self._data.shape)
+
+	@property
+	def orientations(self):
+		"""returns an Orientations object for the current images if available or None if not"""
+		if self._xforms is None: return None
+		orts=Orientations()
+		orts.init_from_transforms(self._xforms)
+		return orts
 
 	def center_clip(self,size):
 		try: size=np.array((int(size),int(size)))
@@ -358,10 +373,10 @@ class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
 		which conventionally span a range of ~1.0. This form can be readily interconverted to EMAN2 Transform objects or transformation matrices
-		for use with Gaussians.
+		for use with Gaussians. Note that this object handles only orientation, not translation.
 	"""
 
-	def __init__(self,xyzs):
+	def __init__(self,xyzs=None):
 		"""Initialize with either the number of orientations or a N x 3 matrix"""
 		if isinstance(xyzs,int):
 			if xyzs<=0: self._data=None
@@ -369,6 +384,9 @@ class Orientations():
 		else:
 			try: self._data=np.array(xyzs)
 			except: raise Exception("Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array")
+
+
+	def __len__(self): return len(self._data)
 
 	def __getitem__(self,key):
 		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 4-vector for the i'th Gaussian"""
@@ -387,7 +405,19 @@ class Orientations():
 	def _coerce_numpy(self):
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 
-	def to_mx2d(self):
+	def init_from_transforms(self,xformlist):
+		"""Replaces current contents of Orientations object with a list of Transform objects, ignoring any translation"""
+		self._data=np.zeros((len(xformlist),3))
+		for i,x in enumerate(xformlist):
+			r=x.get_rotation("spinvec")
+			self._data[i]=(r["v1"],r["v2"],r["v3"])
+
+	def transforms(self):
+		"""converts the current orientations to a list of Transform objects"""
+
+		return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2]})]
+
+	def to_mx2d(self,swapxy=False):
 		"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
 		2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
 
@@ -398,6 +428,9 @@ class Orientations():
 		tf.transpose(tf.matmul(mx[:,:,0],tf.transpose(vecs)))
 		or
 		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)
+
+		if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Gaussians are XYZA,
+		but images are YX.
 		"""
 
 		self._coerce_tensor()
@@ -407,11 +440,15 @@ class Orientations():
 		l=tf.norm(self._data,axis=1)+1.0e-37
 
 		w=tf.cos(pi*l)  # cos "real" component of quaternion
-		s=tf.sin(pi*l)/l
+		s=tf.sin(-pi*l)/l
 		q=tf.transpose(self._data)*s		# transpose makes the vectorized math below work properly
 
-		mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
-		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
+		if swapxy :
+			mx=tf.stack(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
+			(1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w)))
+		else:
+			mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
 		return mx
 
 	def to_mx3d(self):
@@ -463,6 +500,8 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		self._coerce_numpy()
 		self._data[key]=value
 
+	def __len__(self): return len(self._data)
+
 	def _coerce_tensor(self):
 		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
 
@@ -508,12 +547,12 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 #		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
 		proj=tf.zeros((boxsize,boxsize))		# projections
 		proj2=[]
-		mx=orts.to_mx2d()
+		mx=orts.to_mx2d(swapxy=True)
 
 		# iterate over projections
 		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 		for j in range(len(orts)):
-			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# rotated Gaussian coordinates for projection j
+			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 			if txty is not None: xfgauss+=txty[:,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
 
@@ -532,7 +571,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 			bposall=tf.concat([xfgaussi,xfgaussi+(1,0),xfgaussi+(1,1),xfgaussi+(0,1)],0) # TODO: this too
 			proj2.append(tf.tensor_scatter_nd_add(proj,bposall,bampall))
 
-		return tf.stack(proj2)
+		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
 def tf_set_device(dev=0,maxmem=4096):
