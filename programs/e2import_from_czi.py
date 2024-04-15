@@ -204,7 +204,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 					json.dump(tomo.to_dict(), f)
 				print("Downloading Tomogram",tomo.name)
 				tomo.download_mrcfile(dest_path=self.tomo_fname)
-			# if self.download_anno_cb.isChecked():
 			if self.download_anno:
 				seg_dest = os.path.join(self.seg_fname,tomo.name)
 				os.mkdir(seg_dest)
@@ -233,7 +232,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 			print("Invalid dataset id or",e,". Abort.")
 			return
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
-		#if print_index:
 		print("Index\t\tName")
 		for i,tomo in enumerate(self.tomos):
 			print("{}\t\t{}".format(str(i),tomo.name))
@@ -278,7 +276,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 			else:
 				pass
 
-		#print(self.tomo_fname,os.listdir(self.tomo_fname))
 		for tomo_f in os.listdir(self.tomo_fname):
 			if self.imod:
 				imod_import = ":8 --process math.fixmode:byte_utos=1"
@@ -329,17 +326,16 @@ class CZIDataLoader(QtWidgets.QWidget):
 	def write_multiclass_annotate(self,annf_l):
 		ann_out = EMData(annf_l[0])
 		json_dict = {}
-		for i,annf in enumerate(annf_l[1:]):
-			ann = EMData(annf)
-			bg_ann = 1-ann.process("threshold.binary",{"value":0.1})
-			ann_out = (i+1)*ann + ann_out*bg_ann
+		for i,annf in enumerate(annf_l):
+			if i>0:
+				ann = EMData(annf)
+				bg_ann = 1-ann.process("threshold.binary",{"value":0.1})
+				ann_out = (i+1)*ann + ann_out*bg_ann
 			sname  = "_".join(base_name(os.path.basename(annf)).split("_")[:-1])
 			text = [str(i+1),sname,"-1"]
 			ser_text =  json.dumps(text, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
 			json_dict[ser_text] =  None
 		return ann_out,json_dict
-
-
 
 	def launch_e2tomo_annotate(self):
 		self.eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
@@ -352,7 +348,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 			notmp = "--no_tmp"
 		os.system(f"e2tomo_annotate.py  --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname} &")
 		self.close()
-		#self.app.exit(0)
+
 
 if __name__ == '__main__':
 	main()
