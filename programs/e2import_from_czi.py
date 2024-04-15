@@ -142,27 +142,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 
 
-	def create_data_folder(self,set_id, set_params_only=False):
 
-		dataset_fname ="./CZI_data/{}".format(set_id)
-		if not os.path.exists(dataset_fname):
-			os.mkdir(dataset_fname)
-		self.tomo_fname = "./CZI_data/{}/tomos".format(set_id)
-		self.seg_fname = "./CZI_data/{}/segs".format(set_id)
-		if set_params_only:
-			return True
-		if not os.path.exists(self.tomo_fname):
-			os.mkdir(self.tomo_fname)
-		else:
-			if not self.overwrite_folder(self.tomo_fname):
-				return False
-		if self.download_anno:
-			if not os.path.exists(self.seg_fname):
-				os.mkdir(self.seg_fname)
-			else:
-				if not self.overwrite_folder(self.seg_fname):
-					return False
-		return True
 
 	def overwrite_folder(self,fname):
 		msg = "Data folder "+fname+" already exists.\nDo you want to overwrite it?"
@@ -228,19 +208,22 @@ class CZIDataLoader(QtWidgets.QWidget):
 			if self.download_anno:
 				seg_dest = os.path.join(self.seg_fname,tomo.name)
 				os.mkdir(seg_dest)
-				print("Downloading Annotation(s) for tomogram",tomo.name)
-				tomo.download_all_annotations(dest_path=seg_dest,shape="SegmentationMask",format="mrc")
+				try:
+					print("Downloading Annotation(s) for tomogram",tomo.name)
+					tomo.download_all_annotations(dest_path=seg_dest,shape="SegmentationMask",format="mrc")
+				except Exception as e:
+					print("Error download annotation(s) for tomogram {} due to {}".format(tomo.name,e))
+
 		print("Finish downloading data")
 
 
 	def inquire_dataset(self):
 		try:
-			if not self.dataset_id:
-				try:
-					self.dataset_id = int(self.dataset_id_le.text())
-				except:
-					print("Please provide a valid set_id")
-					return
+			self.dataset_id = int(self.dataset_id_le.text())
+		except:
+			print("Please provide a valid set_id")
+			return
+		try:
 			client = Client()
 			self.tomos = Tomogram.find(
 			client,
@@ -250,12 +233,39 @@ class CZIDataLoader(QtWidgets.QWidget):
 			print("Invalid dataset id or",e,". Abort.")
 			return
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
+		#if print_index:
+		print("Index\t\tName")
+		for i,tomo in enumerate(self.tomos):
+			print("{}\t\t{}".format(str(i),tomo.name))
 
 	def get_dataset_id(self):
 		try:
 			return self.dataset_id_le.text()
 		except:
 			return self.dataset_id
+
+
+	def create_data_folder(self,set_id, set_params_only=False):
+		dataset_fname ="./CZI_data/{}".format(set_id)
+		if not os.path.exists(dataset_fname):
+			os.mkdir(dataset_fname)
+		self.tomo_fname = "./CZI_data/{}/tomos".format(set_id)
+		self.seg_fname = "./CZI_data/{}/segs".format(set_id)
+		if set_params_only:
+			return
+		if self.download_tomo:
+			if not os.path.exists(self.tomo_fname):
+				os.mkdir(self.tomo_fname)
+			else:
+				if not self.overwrite_folder(self.tomo_fname):
+					return False
+		if self.download_anno:
+			if not os.path.exists(self.seg_fname):
+				os.mkdir(self.seg_fname)
+			else:
+				if not self.overwrite_folder(self.seg_fname):
+					return False
+		return True
 
 	def import_data_to_eman(self):
 		self.create_data_folder(self.get_dataset_id(),set_params_only=True)
@@ -268,6 +278,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 			else:
 				pass
 
+		#print(self.tomo_fname,os.listdir(self.tomo_fname))
 		for tomo_f in os.listdir(self.tomo_fname):
 			if self.imod:
 				imod_import = ":8 --process math.fixmode:byte_utos=1"
@@ -279,9 +290,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 				eman2_f = os.path.join(self.eman2_tomo_fname,tomo_f[0:-4]+".hdf")
 				os.system("e2proc3d.py {} {}{} --process=normalize.maxmin".format(ori_f,eman2_f,imod_import))
 				print(f"Finish importing tomogram {tomo_f} to EMAN2 project.")
-				if not (self.binary_label_checkbox.isChecked() or self.multiclass_label_checkbox.isChecked()):
-					continue
-				else:
+				if (self.binary_label_checkbox.isChecked() or self.multiclass_label_checkbox.isChecked()):
 					ori_seg_fold = os.path.join("./CZI_data/{}/segs".format(self.get_dataset_id()),tomo_f[0:-4])
 					if os.path.exists(ori_seg_fold) and len(os.listdir(ori_seg_fold)) != 0:
 						annf_l = []
@@ -293,34 +302,43 @@ class CZIDataLoader(QtWidgets.QWidget):
 										sname  = "_".join(base_name(seg_f).split("_")[:-1])
 										print("Importing segmentations",sname,"for",tomo_f[0:-4],"as a binary mask")
 										eman2_seg_f = os.path.join("./segs/","{}_{}_czi__seg.hdf".format(base_name(eman2_f),sname))
-										os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
+										json_file = eman2_seg_f[0:-4]+".json"
+										os.system("e2proc3d.py {} {} --compressbits=8".format(ori_seg_f,eman2_seg_f))
+										ser_text =  json.dumps(["1",sname,"-1"], default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+										json_str = {ser_text:None}
+										js=js_open_dict(json_file)
+										js['tree_dict'] = json_str
 									if (self.multiclass_label_checkbox.isChecked()):
 										annf_l.append(ori_seg_f)
 							if len(annf_l) > 0:
-								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),"multi"))
+								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),"000-multi"))
+								print("Generating the multicolor annotation")
 								ann_out, json_str = self.write_multiclass_annotate(annf_l)
-								ann_out.write_image(eman2_seg_f)
+								ann_out.write_compressed(eman2_seg_f,0,8)
 								json_file = eman2_seg_f[0:-4]+".json"
 								js=js_open_dict(json_file)
 								js['tree_dict'] = json_str
-								#print(tree_dict)
 								print("Done importing multiclass segmentations for",tomo_f[0:-4],"as",eman2_seg_f)
 						except Exception as e:
 							print(e)
 							continue
+				else:
+					continue
 		print("Finish importing data to EMAN2 project.")
 
 	def write_multiclass_annotate(self,annf_l):
 		ann_out = EMData(annf_l[0])
 		json_dict = {}
 		for i,annf in enumerate(annf_l[1:]):
-			ann = EMData(annf).process("threshold.binary",{"value":0.1})
-			ann_out += (i+1)*ann
+			ann = EMData(annf)
+			bg_ann = 1-ann.process("threshold.binary",{"value":0.1})
+			ann_out = (i+1)*ann + ann_out*bg_ann
 			sname  = "_".join(base_name(os.path.basename(annf)).split("_")[:-1])
 			text = [str(i+1),sname,"-1"]
 			ser_text =  json.dumps(text, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
 			json_dict[ser_text] =  None
 		return ann_out,json_dict
+
 
 
 	def launch_e2tomo_annotate(self):
@@ -332,7 +350,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 			notmp = ""
 		else:
 			notmp = "--no_tmp"
-		os.system(f"e2tomo_annotate.py --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname}")
+		os.system(f"e2tomo_annotate.py  --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname} &")
 		self.close()
 		#self.app.exit(0)
 
