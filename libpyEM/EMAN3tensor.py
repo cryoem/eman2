@@ -827,7 +827,9 @@ def tf_frc(ima,imb,avg=0):
 		frc.append(cross/tf.sqrt(aprd*bprd))
 
 	if avg>len(frc[0]): avg=-1
-	if avg>0: return tf.math.reduce_mean(frc[:,:avg],1)
+	if avg>0:
+		frc=tf.stack(frc)
+		return tf.math.reduce_mean(frc[:,:avg],1)
 	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
