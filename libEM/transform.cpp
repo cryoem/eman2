@@ -348,9 +348,9 @@ void Transform::init_permissable_keys()
 
 
 	tmp.clear();
-	tmp.push_back("v0");
 	tmp.push_back("v1");
 	tmp.push_back("v2");
+	tmp.push_back("v3");
 	permissable_rot_keys["spinvec"] = tmp;
 
 	tmp.clear();
