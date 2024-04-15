@@ -170,6 +170,11 @@ class EMStack():
 		if isinstance(target,EMStack3D):
 			return self.tensor*tf.math.conj(target)
 
+	def write_images(self,fsp=None):
+		self.coerce_emdata()
+		EMData.write_images(fsp,self._data)
+
+
 class EMStack3D(EMStack):
 	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
 	- Shape of the array is {N,Z,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
@@ -192,7 +197,9 @@ class EMStack3D(EMStack):
 			self._data=[imgs]
 			self._npy_list=None
 		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
-			if len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
+			if len(imgs.shape)==3:
+				imgs=tf.expand_dims(imgs,0)
+			elif len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
 			self._npy_list=None
 		elif isinstance(imgs,str):
@@ -302,11 +309,11 @@ class EMStack2D(EMStack):
 
 	@property
 	def orientations(self):
-		"""returns an Orientations object for the current images if available or None if not"""
+		"""returns an Orientations object and txty array for the current images if available or None if not"""
 		if self._xforms is None: return None
 		orts=Orientations()
-		orts.init_from_transforms(self._xforms)
-		return orts
+		txty=orts.init_from_transforms(self._xforms)
+		return orts,txty
 
 	def center_clip(self,size):
 		try: size=np.array((int(size),int(size)))
@@ -364,11 +371,6 @@ class EMStack2D(EMStack):
 			return EMStack2D(self.tensor*target)
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
-
-	def write_images(self,fsp=None):
-		self.coerce_emdata()
-		EMData.write_images(fsp,self._data)
-
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
@@ -394,23 +396,38 @@ class Orientations():
 
 	def __setitem__(self,key,value):
 		# if the Gaussians are a tensor, we turn it back into numpy for modification
-		self._coerce_numpy()
+		self.coerce_numpy()
 		self._data[key]=value
 
 	def __len__(self): return self._data.shape[0]
 
-	def _coerce_tensor(self):
+	def coerce_tensor(self):
 		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
 
-	def _coerce_numpy(self):
+	def coerce_numpy(self):
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
 
+	@property
+	def tensor(self):
+		self.coerce_tensor()
+		return self._data
+
+	@property
+	def numpy(self):
+		self.coerce_numpy()
+		return self._data
+
 	def init_from_transforms(self,xformlist):
-		"""Replaces current contents of Orientations object with a list of Transform objects, ignoring any translation"""
+		"""Replaces current contents of Orientations object with a list of Transform objects,
+		returns txty array with any translations (not stored within Orientations)"""
 		self._data=np.zeros((len(xformlist),3))
+		txty=[]
 		for i,x in enumerate(xformlist):
 			r=x.get_rotation("spinvec")
 			self._data[i]=(r["v1"],r["v2"],r["v3"])
+			txty.append(tuple(x.get_trans_2d()))
+
+		return(tf.constant(txty))
 
 	def transforms(self):
 		"""converts the current orientations to a list of Transform objects"""
@@ -433,7 +450,7 @@ class Orientations():
 		but images are YX.
 		"""
 
-		self._coerce_tensor()
+		self.coerce_tensor()
 
 		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
 		# it is much slower, and the tiny pertutbation should not significantly impact the math.
@@ -463,7 +480,7 @@ class Orientations():
 		or
 		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)"""
 
-		self._coerce_tensor()
+		self.coerce_tensor()
 
 		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
 		# it is much slower, and the tiny pertutbation should not significantly impact the math.
@@ -497,16 +514,29 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 
 	def __setitem__(self,key,value):
 		# if the Gaussians are a tensor, we turn it back into numpy for modification
-		self._coerce_numpy()
+		self.coerce_numpy()
 		self._data[key]=value
 
 	def __len__(self): return len(self._data)
 
-	def _coerce_tensor(self):
+	def coerce_tensor(self):
 		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
 
-	def _coerce_numpy(self):
+	def coerce_numpy(self):
 		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+
+	def add_tensor(self,tensor):
+		self._data+=tensor
+
+	@property
+	def tensor(self):
+		self.coerce_tensor()
+		return self._data
+
+	@property
+	def numpy(self):
+		self.coerce_numpy()
+		return self._data
 
 	def init_from_map(self,vol,res,minratio=0.1,apix=None):
 		"""Replace the current set of Gaussians with a set of Gaussians generated from a 3-D map by progressive Gaussian decomposition.
@@ -542,7 +572,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 		used for comparisons should be resampled without any "clip" operations.
 		"""
-		self._coerce_tensor()
+		self.coerce_tensor()
 
 #		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
 		proj=tf.zeros((boxsize,boxsize))		# projections
@@ -553,7 +583,9 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 		for j in range(len(orts)):
 			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-			if txty is not None: xfgauss+=txty[:,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+			if txty is not None:
+				#print(xfgauss.shape,txty.shape)
+				xfgauss+=txty[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
 
 			xfgaussf=tf.floor(xfgauss)
@@ -573,6 +605,34 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+
+	def volume(self,boxsize):
+		self.coerce_tensor()
+
+		vol=tf.zeros((boxsize,boxsize,boxsize))		# projections
+
+		xfgauss=tf.reverse((self._data[:,:3]+0.5)*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+
+		xfgaussf=tf.floor(xfgauss)
+		xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
+		xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+		# messy trilinear interpolation
+		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bampall=tf.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
+		bposall=tf.concat([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+		vol=tf.tensor_scatter_nd_add(vol,bposall,bampall)
+
+		return EMStack3D(vol)
+		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+
 
 def tf_set_device(dev=0,maxmem=4096):
 	"""Sets maximum memory for a specific Tensorflow device and returns a device to use with "with:"
@@ -715,8 +775,9 @@ FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containi
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
-def tf_frc(ima,imb,avg=False):
-	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if sum is set, the average"""
+def tf_frc(ima,imb,avg=0):
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
+	then the average of the first 'avg' values. If -1, averages through Nyquist"""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
 	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_fsc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
@@ -765,7 +826,9 @@ def tf_frc(ima,imb,avg=False):
 
 		frc.append(cross/tf.sqrt(aprd*bprd))
 
-	if avg: return tf.math.reduce_mean(frc,1)
+	if avg>frc.shape[1]: avg=-1
+	if avg>0: return tf.math.reduce_mean(frc[:,:avg],1)
+	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
 FSC_REFS={}
