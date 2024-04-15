@@ -52,6 +52,8 @@ def main():
 
 
 
+
+
 class CZIDataLoader(QtWidgets.QWidget):
 	def __init__(self,application,options):
 		super().__init__()
@@ -74,6 +76,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.dataset_id_le= QtWidgets.QLineEdit()
 		if self.dataset_id:
 			self.dataset_id_le.setText(str(self.dataset_id))
+		#self.eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
 		self.inquire_bt= QtWidgets.QPushButton("Inquire")
 		self.download_tomo_cb = QtWidgets.QCheckBox("Tomogram")
 		self.download_anno_cb = QtWidgets.QCheckBox("Annotation")
@@ -100,7 +103,15 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 
 		self.import_to_eman2_bt = QtWidgets.QPushButton("Import")
+		self.binary_label_checkbox = QtWidgets.QCheckBox("Binary")
+		self.multiclass_label_checkbox = QtWidgets.QCheckBox("Multiclass")
+		self.binary_label_checkbox.setChecked(True)
+		self.multiclass_label_checkbox.setChecked(True)
+
+
 		gbl.addWidget(self.import_to_eman2_bt,4,0,1,1)
+		gbl.addWidget(self.binary_label_checkbox,4,1,1,1)
+		gbl.addWidget(self.multiclass_label_checkbox,4,2,1,1)
 		self.import_to_eman2_bt.clicked[bool].connect(self.import_data_to_eman)
 
 		self.annotate_eman2_bt = QtWidgets.QPushButton("Segmentation")
@@ -242,7 +253,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 	def get_dataset_id(self):
 		try:
-			#print("LE text", self.dataset_id_le.text())
 			return self.dataset_id_le.text()
 		except:
 			return self.dataset_id
@@ -257,45 +267,61 @@ class CZIDataLoader(QtWidgets.QWidget):
 				return
 			else:
 				pass
-			# msg = "Data folder "+self.eman2_tomo_fname+" already exists.\nDo you want to overwrite it?"
-			# result = QtWidgets.QMessageBox.question(self,"Overwrite",msg,QtWidgets.QMessageBox.Yes|QtWidgets.QMessageBox.No)
-			# if result == QtWidgets.QMessageBox.Yes:
-			# 	fname = self.eman2_tomo_fname
-			# 	os.system(f"rm -rf {fname}")
-			# 	print("%s folder has been removed successfully" %self.eman2_tomo_fname)
-			# 	os.mkdir(self.eman2_tomo_fname)
-			# else:
-			# 	return
 
 		for tomo_f in os.listdir(self.tomo_fname):
+			if self.imod:
+				imod_import = ":8 --process math.fixmode:byte_utos=1"
+			else:
+				imod_import = ""
 			if tomo_f.endswith("mrc"):
 				ori_f = os.path.join(self.tomo_fname,tomo_f)
 				print("Importing", tomo_f, "from", ori_f)
 				eman2_f = os.path.join(self.eman2_tomo_fname,tomo_f[0:-4]+".hdf")
-				if self.imod:
-					imod_import = ":8 --process math.fixmode:byte_utos=1"
-				else:
-					imod_import = ""
-
 				os.system("e2proc3d.py {} {}{} --process=normalize.maxmin".format(ori_f,eman2_f,imod_import))
-				print(f"Finish importing {tomo_f} to EMAN2 project.")
-
-				ori_seg_fold = os.path.join("./CZI_data/{}/segs".format(self.get_dataset_id()),tomo_f[0:-4])
-
-				if os.path.exists(ori_seg_fold) and len(os.listdir(ori_seg_fold)) != 0:
-					try:
-						iter = 1
-						for seg_f in os.listdir(ori_seg_fold):
-							if seg_f.endswith("mrc"):
-								ori_seg_f = os.path.join(ori_seg_fold,seg_f)
-								print("Importing segmentations",str(iter),"for",tomo_f[0:-4])
-								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),str(iter)))
-								os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
-								iter += 1
-					except Exception as e:
-						print(e)
-						continue
+				print(f"Finish importing tomogram {tomo_f} to EMAN2 project.")
+				if not (self.binary_label_checkbox.isChecked() or self.multiclass_label_checkbox.isChecked()):
+					continue
+				else:
+					ori_seg_fold = os.path.join("./CZI_data/{}/segs".format(self.get_dataset_id()),tomo_f[0:-4])
+					if os.path.exists(ori_seg_fold) and len(os.listdir(ori_seg_fold)) != 0:
+						annf_l = []
+						try:
+							for seg_f in os.listdir(ori_seg_fold):
+								if seg_f.endswith("mrc"):
+									ori_seg_f = os.path.join(ori_seg_fold,seg_f)
+									if (self.binary_label_checkbox.isChecked()):
+										sname  = "_".join(base_name(seg_f).split("_")[:-1])
+										print("Importing segmentations",sname,"for",tomo_f[0:-4],"as a binary mask")
+										eman2_seg_f = os.path.join("./segs/","{}_{}_czi__seg.hdf".format(base_name(eman2_f),sname))
+										os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
+									if (self.multiclass_label_checkbox.isChecked()):
+										annf_l.append(ori_seg_f)
+							if len(annf_l) > 0:
+								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),"multi"))
+								ann_out, json_str = self.write_multiclass_annotate(annf_l)
+								ann_out.write_image(eman2_seg_f)
+								json_file = eman2_seg_f[0:-4]+".json"
+								js=js_open_dict(json_file)
+								js['tree_dict'] = json_str
+								#print(tree_dict)
+								print("Done importing multiclass segmentations for",tomo_f[0:-4],"as",eman2_seg_f)
+						except Exception as e:
+							print(e)
+							continue
 		print("Finish importing data to EMAN2 project.")
+
+	def write_multiclass_annotate(self,annf_l):
+		ann_out = EMData(annf_l[0])
+		json_dict = {}
+		for i,annf in enumerate(annf_l[1:]):
+			ann = EMData(annf).process("threshold.binary",{"value":0.1})
+			ann_out += (i+1)*ann
+			sname  = "_".join(base_name(os.path.basename(annf)).split("_")[:-1])
+			text = [str(i+1),sname,"-1"]
+			ser_text =  json.dumps(text, default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
+			json_dict[ser_text] =  None
+		return ann_out,json_dict
+
 
 	def launch_e2tomo_annotate(self):
 		self.eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
@@ -308,6 +334,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 			notmp = "--no_tmp"
 		os.system(f"e2tomo_annotate.py --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname}")
 		self.close()
+		#self.app.exit(0)
 
 if __name__ == '__main__':
 	main()
