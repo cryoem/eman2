@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # Author: Lan Dang, 02/21/2024 (dlan@bcm.edu)
-
 import sys
 import weakref
 import re
@@ -19,7 +18,6 @@ except:
 	print("cryoet_data_portal library required to download data from czi database. Install the library in your conda environment using cmd: \npip install -U cryoet-data-portal")
 	sys.exit(0)
 
-
 def main():
 	usage="""a popup app to download tomogram from czi cryoet data portal and import into EMAN2 as correct format for e2tomo_annotate.py
 	[prog]
@@ -35,7 +33,6 @@ def main():
 	parser.add_argument("--set_id",type=int, help="Data set ID to download", default=None)
 
 	(options, args) = parser.parse_args()
-
 	em_app = EMApp()
 	czi_loader = CZIDataLoader(em_app, options)
 	if not options.no_gui:
@@ -49,9 +46,6 @@ def main():
 		czi_loader.download_dataset()
 	if options.import_to_eman2:
 		czi_loader.import_data_to_eman()
-
-
-
 
 
 class CZIDataLoader(QtWidgets.QWidget):
@@ -72,12 +66,21 @@ class CZIDataLoader(QtWidgets.QWidget):
 			self.init_gui()
 			return
 
+	def populate_table(self,data_l):
+		self.data_table.setRowCount(0)
+		for i,data_name in enumerate(data_l):
+			self.data_table.insertRow(i)
+			self.data_table.setItem(i,0,QtWidgets.QTableWidgetItem(data_name))
+		print("Finish populating data table")
+
 	def init_gui(self):
 		self.dataset_id_le= QtWidgets.QLineEdit()
 		if self.dataset_id:
 			self.dataset_id_le.setText(str(self.dataset_id))
-		#self.eman2_tomo_fname ="./{}_eman".format(self.get_dataset_id())
 		self.inquire_bt= QtWidgets.QPushButton("Inquire")
+		self.data_table = QtWidgets.QTableWidget(0,1)
+		self.data_table.setHorizontalHeaderLabels(["Tomogram Name"])
+		self.data_table.setColumnWidth(0, 240)
 		self.download_tomo_cb = QtWidgets.QCheckBox("Tomogram")
 		self.download_anno_cb = QtWidgets.QCheckBox("Annotation")
 		self.download_tomo_cb.setChecked(self.options.tomogram)
@@ -89,18 +92,15 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.imod_data_cb.setChecked(self.options.imod)
 		if not os.path.exists("./CZI_data"):
 			os.mkdir("./CZI_data")
-
 		gbl = QtWidgets.QGridLayout(self)
 		gbl.addWidget(QtWidgets.QLabel("Dataset ID"),0,0,1,1)
 		gbl.addWidget(self.dataset_id_le,0,1,1,2)
 		gbl.addWidget(self.inquire_bt,1,0,1,1)
+		gbl.addWidget(self.data_table,1,1,5,2)
 		gbl.addWidget(self.data_download_bt,2,0,1,1)
-		gbl.addWidget(self.download_tomo_num,2,1,1,2)
-
 		gbl.addWidget(self.imod_data_cb,3,0,1,1)
-		gbl.addWidget(self.download_tomo_cb,3,1,1,1)
-		gbl.addWidget(self.download_anno_cb,3,2,1,1)
-
+		gbl.addWidget(self.download_tomo_cb,4,0,1,1)
+		gbl.addWidget(self.download_anno_cb,5,0,1,1)
 
 		self.import_to_eman2_bt = QtWidgets.QPushButton("Import")
 		self.binary_label_checkbox = QtWidgets.QCheckBox("Binary")
@@ -108,10 +108,9 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.binary_label_checkbox.setChecked(True)
 		self.multiclass_label_checkbox.setChecked(True)
 
-
-		gbl.addWidget(self.import_to_eman2_bt,4,0,1,1)
-		gbl.addWidget(self.binary_label_checkbox,4,1,1,1)
-		gbl.addWidget(self.multiclass_label_checkbox,4,2,1,1)
+		gbl.addWidget(self.import_to_eman2_bt,9,0,1,1)
+		gbl.addWidget(self.binary_label_checkbox,9,1,1,1)
+		gbl.addWidget(self.multiclass_label_checkbox,9,2,1,1)
 		self.import_to_eman2_bt.clicked[bool].connect(self.import_data_to_eman)
 
 		self.annotate_eman2_bt = QtWidgets.QPushButton("Segmentation")
@@ -120,10 +119,10 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.enable_undo_checkbox = QtWidgets.QCheckBox("Enable Undo")
 		self.enable_undo_checkbox.setChecked(False)
 
-		gbl.addWidget(self.annotate_eman2_bt,5,0,1,1)
-		gbl.addWidget(self.region_sz_sb,6,0,1,1)
-		gbl.addWidget(self.zthick_sb,6,1,1,1)
-		gbl.addWidget(self.enable_undo_checkbox,6,2,1,1)
+		gbl.addWidget(self.annotate_eman2_bt,10,0,1,1)
+		gbl.addWidget(self.region_sz_sb,11,0,1,1)
+		gbl.addWidget(self.zthick_sb,11,1,1,1)
+		gbl.addWidget(self.enable_undo_checkbox,11,2,1,1)
 
 		self.inquire_bt.clicked[bool].connect(self.inquire_dataset)
 		self.data_download_bt.clicked[bool].connect(self.download_dataset)
@@ -132,17 +131,12 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.imod_data_cb.stateChanged[int].connect(self.imod_cb_changed)
 		self.annotate_eman2_bt.clicked[bool].connect(self.launch_e2tomo_annotate)
 
-
 	def show_question_box(self,msg):
 		msg = QMessageBox()
 		msg.setIcon(QMessageBox.Question)
 		msg.setText(msg)
 		msg.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
 		return(msg)
-
-
-
-
 
 	def overwrite_folder(self,fname):
 		msg = "Data folder "+fname+" already exists.\nDo you want to overwrite it?"
@@ -164,39 +158,41 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.imod=int
 
 	def download_dataset(self):
-		self.inquire_dataset()
+		#self.inquire_dataset()
 		if not self.create_data_folder(self.get_dataset_id()):
 			print("Data already downloaded. Please continue with the pipeline.")
 			return
-		try:
-			self.set_indices = self.download_tomo_num.text()
-		except:
-			print("No set indices provide. Download all tomogram in the dataset")
-			return
-		indices = []
-		tomo_num= self.set_indices
-		if tomo_num =="all":
-			print("Download all tomograms in the current dataset")
-			indices = list(range(len(self.tomos)))
-		elif re.search("[0-9]+(-[0-9]+){0,1}(,[0-9]+(-[0-9]+)*)*",tomo_num).group(0) == tomo_num:
-			for s in tomo_num.split(","):
-				l_small  =sorted([int(index) for index in s.split("-")])
-				if len(l_small) == 1:
-					indices.append(int(l_small[0]))
-					continue
-				else:
-					for i in range(l_small[0],l_small[1]+1):
-						indices.append(i)
-			print("Download tomograms at index", sorted(list(set(indices))))
-		else:
-			print(re.search("[0-9]+(-[0-9]+){0,1}(,[0-9]+(-[0-9]+)*)*",tomo_num).group(0))
-			print("Please provide a valid indices range to download tomograms. \nEx: 1-3,5-7 to download tomogram 1,2,3,5,6,7; or \n 'all' to download the whole dataset")
-			return
+		indices = [item.row() for item in self.data_table.selectedItems()]
+		# try:
+		# 	self.set_indices = self.download_tomo_num.text()
+		# except:
+		# 	print("No set indices provide. Download all tomogram in the dataset")
+		# 	return
+		# indices = []
+		# tomo_num= self.set_indices
+		# if tomo_num =="all":
+		# 	print("Download all tomograms in the current dataset")
+		# 	indices = list(range(len(self.tomos)))
+		# elif re.search("[0-9]+(-[0-9]+){0,1}(,[0-9]+(-[0-9]+)*)*",tomo_num).group(0) == tomo_num:
+		# 	for s in tomo_num.split(","):
+		# 		l_small  =sorted([int(index) for index in s.split("-")])
+		# 		if len(l_small) == 1:
+		# 			indices.append(int(l_small[0]))
+		# 			continue
+		# 		else:
+		# 			for i in range(l_small[0],l_small[1]+1):
+		# 				indices.append(i)
+		# 	print("Download tomograms at index", sorted(list(set(indices))))
+		# else:
+		# 	print(re.search("[0-9]+(-[0-9]+){0,1}(,[0-9]+(-[0-9]+)*)*",tomo_num).group(0))
+		# 	print("Please provide a valid indices range to download tomograms. \nEx: 1-3,5-7 to download tomogram 1,2,3,5,6,7; or \n 'all' to download the whole dataset")
+		# 	return
 
-		for index in sorted(list(set(indices))):
-			if index not in range(len(self.tomos)):
-				print("Index", index, "is out of range. Skip")
-				continue
+		#for index in sorted(list(set(indices))):
+		for index in indices:
+			# if index not in range(len(self.tomos)):
+			# 	print("Index", index, "is out of range. Skip")
+			# 	continue
 			tomo=self.tomos[index]
 			js_fname = os.path.join(self.tomo_fname,tomo.name[:-4]+".json")
 			if self.download_tomo:
@@ -204,6 +200,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 					json.dump(tomo.to_dict(), f)
 				print("Downloading Tomogram",tomo.name)
 				tomo.download_mrcfile(dest_path=self.tomo_fname)
+			# if self.download_anno_cb.isChecked():
 			if self.download_anno:
 				seg_dest = os.path.join(self.seg_fname,tomo.name)
 				os.mkdir(seg_dest)
@@ -214,7 +211,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 					print("Error download annotation(s) for tomogram {} due to {}".format(tomo.name,e))
 
 		print("Finish downloading data")
-
 
 	def inquire_dataset(self):
 		try:
@@ -232,9 +228,9 @@ class CZIDataLoader(QtWidgets.QWidget):
 			print("Invalid dataset id or",e,". Abort.")
 			return
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
-		print("Index\t\tName")
-		for i,tomo in enumerate(self.tomos):
-			print("{}\t\t{}".format(str(i),tomo.name))
+		tomo_l = [tomo.name for tomo in self.tomos]
+		self.populate_table(data_l=tomo_l)
+
 
 	def get_dataset_id(self):
 		try:
@@ -247,17 +243,22 @@ class CZIDataLoader(QtWidgets.QWidget):
 		dataset_fname ="./CZI_data/{}".format(set_id)
 		if not os.path.exists(dataset_fname):
 			os.mkdir(dataset_fname)
+
 		self.tomo_fname = "./CZI_data/{}/tomos".format(set_id)
 		self.seg_fname = "./CZI_data/{}/segs".format(set_id)
 		if set_params_only:
 			return
 		if self.download_tomo:
+			if not os.path.exists(dataset_fname):
+				os.mkdir(dataset_fname)
 			if not os.path.exists(self.tomo_fname):
 				os.mkdir(self.tomo_fname)
 			else:
 				if not self.overwrite_folder(self.tomo_fname):
 					return False
 		if self.download_anno:
+			if not os.path.exists(dataset_fname):
+				os.mkdir(dataset_fname)
 			if not os.path.exists(self.seg_fname):
 				os.mkdir(self.seg_fname)
 			else:
@@ -275,7 +276,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 				return
 			else:
 				pass
-
 		for tomo_f in os.listdir(self.tomo_fname):
 			if self.imod:
 				imod_import = ":8 --process math.fixmode:byte_utos=1"
