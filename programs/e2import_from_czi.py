@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # Author: Lan Dang, 02/21/2024 (dlan@bcm.edu)
+
 import sys
 import weakref
 import re
@@ -18,6 +19,7 @@ except:
 	print("cryoet_data_portal library required to download data from czi database. Install the library in your conda environment using cmd: \npip install -U cryoet-data-portal")
 	sys.exit(0)
 
+
 def main():
 	usage="""a popup app to download tomogram from czi cryoet data portal and import into EMAN2 as correct format for e2tomo_annotate.py
 	[prog]
@@ -33,6 +35,7 @@ def main():
 	parser.add_argument("--set_id",type=int, help="Data set ID to download", default=None)
 
 	(options, args) = parser.parse_args()
+
 	em_app = EMApp()
 	czi_loader = CZIDataLoader(em_app, options)
 	if not options.no_gui:
@@ -46,6 +49,9 @@ def main():
 		czi_loader.download_dataset()
 	if options.import_to_eman2:
 		czi_loader.import_data_to_eman()
+
+
+
 
 
 class CZIDataLoader(QtWidgets.QWidget):
@@ -158,41 +164,11 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.imod=int
 
 	def download_dataset(self):
-		#self.inquire_dataset()
 		if not self.create_data_folder(self.get_dataset_id()):
 			print("Data already downloaded. Please continue with the pipeline.")
 			return
 		indices = [item.row() for item in self.data_table.selectedItems()]
-		# try:
-		# 	self.set_indices = self.download_tomo_num.text()
-		# except:
-		# 	print("No set indices provide. Download all tomogram in the dataset")
-		# 	return
-		# indices = []
-		# tomo_num= self.set_indices
-		# if tomo_num =="all":
-		# 	print("Download all tomograms in the current dataset")
-		# 	indices = list(range(len(self.tomos)))
-		# elif re.search("[0-9]+(-[0-9]+){0,1}(,[0-9]+(-[0-9]+)*)*",tomo_num).group(0) == tomo_num:
-		# 	for s in tomo_num.split(","):
-		# 		l_small  =sorted([int(index) for index in s.split("-")])
-		# 		if len(l_small) == 1:
-		# 			indices.append(int(l_small[0]))
-		# 			continue
-		# 		else:
-		# 			for i in range(l_small[0],l_small[1]+1):
-		# 				indices.append(i)
-		# 	print("Download tomograms at index", sorted(list(set(indices))))
-		# else:
-		# 	print(re.search("[0-9]+(-[0-9]+){0,1}(,[0-9]+(-[0-9]+)*)*",tomo_num).group(0))
-		# 	print("Please provide a valid indices range to download tomograms. \nEx: 1-3,5-7 to download tomogram 1,2,3,5,6,7; or \n 'all' to download the whole dataset")
-		# 	return
-
-		#for index in sorted(list(set(indices))):
 		for index in indices:
-			# if index not in range(len(self.tomos)):
-			# 	print("Index", index, "is out of range. Skip")
-			# 	continue
 			tomo=self.tomos[index]
 			js_fname = os.path.join(self.tomo_fname,tomo.name[:-4]+".json")
 			if self.download_tomo:
@@ -300,7 +276,9 @@ class CZIDataLoader(QtWidgets.QWidget):
 										print("Importing segmentations",sname,"for",tomo_f[0:-4],"as a binary mask")
 										eman2_seg_f = os.path.join("./segs/","{}_{}_czi__seg.hdf".format(base_name(eman2_f),sname))
 										json_file = eman2_seg_f[0:-4]+".json"
-										os.system("e2proc3d.py {} {} --compressbits=8".format(ori_seg_f,eman2_seg_f))
+										#os.system("e2proc3d.py {} {} --compressbits=8".format(ori_seg_f,eman2_seg_f))
+										os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
+
 										ser_text =  json.dumps(["1",sname,"-1"], default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
 										json_str = {ser_text:None}
 										js=js_open_dict(json_file)
@@ -311,7 +289,8 @@ class CZIDataLoader(QtWidgets.QWidget):
 								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),"000-multi"))
 								print("Generating the multicolor annotation")
 								ann_out, json_str = self.write_multiclass_annotate(annf_l)
-								ann_out.write_compressed(eman2_seg_f,0,8)
+								#ann_out.write_compressed(eman2_seg_f,0,8)
+								ann_out.write_image(eman2_seg_f)
 								json_file = eman2_seg_f[0:-4]+".json"
 								js=js_open_dict(json_file)
 								js['tree_dict'] = json_str
@@ -348,7 +327,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 			notmp = "--no_tmp"
 		os.system(f"e2tomo_annotate.py  --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname} &")
 		self.close()
-
 
 if __name__ == '__main__':
 	main()
