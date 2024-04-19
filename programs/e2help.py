@@ -137,6 +137,7 @@ act as a filter on the names of the algorithms."""
 		"mrc":["MRC/CCP4 convention","omega","FLOAT","omega","theta","FLOAT","theta","psi","FLOAT","psi"],
 		"xyz":["XYZ convention (Chimera)","x","FLOAT","X-axis","y","FLOAT","Y-axis","z","FLOAT","Z-axis"],
 		"spin":["Spin-Axis (n1,n2,n3) vector with angle omega","n1","FLOAT","X vector component","n2","FLOAT","Y vector component","n3","FLOAT","Z vector component","omega","FLOAT","Angle of rotation in degrees"],
+		"spinvec":["Spin vector, length determines rotation amount, 0.5 -> 180 deg","v1","FLOAT","X vector component","v2","FLOAT","Y vector component","v3","FLOAT","Z vector component"],
 		"sgirot":["SGI Spin-Axis (n1,n2,n3) vector with angle q","n1","FLOAT","X vector component","n2","FLOAT","Y vector component","n3","FLOAT","Z vector component","q","FLOAT","Angle of rotation in degrees"],
 		"quaternion":["Standard 4 component quaternion (e0,e1,e2,e3)","e0","FLOAT","e0","e1","FLOAT","e1","e2","FLOAT","e2","e3","FLOAT","e3"]}
 	

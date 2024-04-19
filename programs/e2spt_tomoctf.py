@@ -404,6 +404,7 @@ def main():
 		scr=np.array(scores)
 		scr=np.mean(scr[0]>scr[1])
 		print("Current hand is better than the flipped hand in {:.1f}% tilt images".format(scr*100))
+		open("checkhand.out","a").write(f"{scr}\t# {args[0]}\n")
 		
 		if scr>.5:
 			print("{}: Result: the handedness (--tltax={:.1f}) seems to be correct. Rerun CTF estimation without the checkhand option to finish the process.".format(args[0],-rot))

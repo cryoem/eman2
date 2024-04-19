@@ -67,11 +67,6 @@ def main():
 	else:
 		pass
 
-	#
-	# if len(args) == 0:
-	# 	print("INPUT ERROR: You must specify an image to display.")
-	# 	sys.exit(1)
-
 	awin = EMAnnotateWindow(app,options)
 	awin.resize(1120,720)
 	awin.show()
@@ -87,8 +82,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.app = weakref.ref(application)
 		self.setMinimumSize(1120, 720)
 		self.options=options
-
-
 
 		self.setWindowTitle("Image Viewer")
 		#System Menu
@@ -128,7 +121,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		if len(self.tom_folder)>0:
 			tom_ls = sorted(os.listdir(self.tom_folder))
-			# seg_ls = sorted(os.listdir(self.seg_folder))
 			for file_name in tom_ls:
 				if file_name.endswith(".hdf"):
 					self.tom_file_list.append(file_name)
@@ -222,35 +214,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			f = open(self.seg_info_path, 'x')
 		except:
 			print("Info file for the first one already exists. Continue ")
-			# if t == 0: #FIRST ITEM OF THE TREE
-			# 	self.data_file = str(os.path.join(self.tom_folder,file_name))
-			# 	hdr=EMData(self.data_file, 0,True)
-			#
-			# 	self.nx = hdr["nx"]
-			# 	self.ny = hdr["ny"]
-			# 	self.nz=hdr["nz"]
-			# 	self.apix = hdr["apix_x"]
-			#
-			# 	self.seg_path = os.path.join(self.seg_folder,base_name(self.data_file)+"_seg.hdf")
-			# 	print("First seg path", self.seg_path)
-			#
-			# 	#if not os.path.isfile(self.seg_path):
-			# 	if self.tomo_tree.topLevelItem(0):
-			# 		seg_out = EMData(self.nx,self.ny,self.nz)
-			# 		#self.write_header(seg_out)
-			# 		seg_out.write_image(self.seg_path)
-			# 		del seg_out
-			# 	else:
-			# 		print("Seg file for the first one already exists. Continue ")
-			# 		pass
-			#
-			# 	self.seg_info_path = self.seg_path[0:-4]+".json"
-			# 	try:
-			# 		f = open(self.seg_info_path, 'x')
-			# 	except:
-			# 		print("Info file for the first one already exists. Continue ")
-
-
 
 		self.tomo_tree.setCurrentItem(self.tomo_tree.topLevelItem(0))
 		self.tomo_tree.setHeaderHidden(True)
@@ -298,12 +261,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.img_view.setMinimumSize(680, 680)
 
-		#self.img_view.show()
-
-
-		#boxes for Boxer tab
 		self.boxes = []
-		#2 anchor points for autodetect plane
+		#Two anchor points for autodetect plane
 		self.p1p2 = []
 		self.fill_type = None
 		self.unet = None
@@ -355,8 +314,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		zt_hbl.addWidget(self.zc_spinbox)
 		zt_hbl.addWidget(QtWidgets.QLabel("z-thick"))
 		zt_hbl.addWidget(self.zt_spinbox)
-
-
 
 
 		tomo_vbl.addLayout(zt_hbl,3,0)
@@ -584,7 +541,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.mousedrag.connect(self.img_view_mouse_drag)
 		self.zt_spinbox.valueChanged.connect(self.z_spinbox_changed)
 		self.zc_spinbox.valueChanged.connect(self.z_spinbox_changed)
-		self.show_vol_bt.clicked[bool].connect(self.show_3D_region)
+		self.show_vol_bt.clicked[bool].connect(self.show_vol)
 		self.previous_z = self.get_zpos()
 
 		E2loadappwin("e2annotate","main",self)
@@ -755,7 +712,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#print("data xy", self.data_xy)
 
 		if self.get_annotation():
-			print("Print annotation to file", self.seg_path)
+			print("Write annotation to file", self.seg_path)
 
 			#self.write_header(self.get_annotation())
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
@@ -848,18 +805,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			print("No info file available. Using class info of project")
 			return
 		self.get_segtab().update_sets()
-		# try:
 		tree_topit = self.get_segtab().tree_set.topLevelItem(0)
 		self.get_segtab().tree_set.setCurrentItem(tree_topit,1)
-		# except:
-		# 	print("Except")
-		# 	pass
-
 	def z_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
 		try:
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		except:
 			print("Zt_change annotation",self.get_annotation())
 			print("image cannot be write to disk")#when annotation files is None
@@ -868,17 +819,16 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.reset_morp_params(reset_vs=False)
 
 
-	def show_3D_region(self):
-		# if self.view is None:
-		# 	self.view = CustomScene3D(target=self)
-		# 	print("Init a new 3Dscene")
-		# else:
-		# 	pass
-		self.view = CustomScene3D(target=self)
-		self.view.show_3D_region()
-		self.view.show()
+	def show_vol(self):
+		try:
+			self.view = CustomScene3D(target=self)
+			self.view.show_3D_region()
+			self.view.show()
+		except Exception as e:
+			print("Cannot show 3D region due to", e)
+			return
 		try: self.view.raise_()
-		except: pass
+		except: return
 
 
 	def showerror(self,msg,parent=None):
@@ -886,20 +836,19 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def test_drawing_function(self):
 		self.save_current_state()
+		self.showerror("This button is for testing purpose only")
 		return
 
-	def save_current_state(self):
-		if self.no_tmp:
+	def save_current_state(self, no_force_save=True):
+		if self.no_tmp and no_force_save:
 			return
 		temp_path = os.path.join(self.seg_folder,"current_temp.hdf")
 		temp_info_path =  os.path.join(self.seg_folder,"info","current_set_info.json")
 		if not os.path.isfile(temp_path):
 			seg_out = EMData(self.nx,self.ny,self.nz)
-			#self.write_header(seg_out)
 			seg_out.write_image(temp_path)
 			del seg_out
 		else:
-			#print("Seg file for the first one already exists. Continue ")
 			pass
 
 		try:
@@ -1248,8 +1197,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				print("Need at least 3 points for a contour")
 				return
 
-			#w_line = int(self.tx_line_width.text())
-			# pts_l = sparse_polygon(self.contour.points)
 			center, side_length = find_bounding_square_box(self.contour.points)
 			print("Center,side_length", center, side_length)
 
@@ -1258,27 +1205,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			a[rr,cc] = 1
 			a = np.rot90(np.fliplr(a))
 			fill_vol = define_eroded_volume(a,self.img_view.nz)
-			# mask = np.zeros((self.img_view.nx,self.img_view.ny))
-			# mask[rr,cc] = 1
-			# fill_vol = define_eroded_volume(mask,self.img_view.nz)
-
-		# 	mask[rr,cc] = int(self.get_current_class())
-			#from_numpy(fill_vol).write_image("fillvol.hdf")
-
-			#print("Fillvol shape",fill_vol.shape)
 
 
 			xrot, yrot, zrot = self.img_view.reverse_transform_point([center[0],center[1],self.img_view.nz//2+self.img_view.zpos], self.img_view.get_xform())
 			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2+xrot,"ty":self.img_view.ny//2+yrot,"tz":self.img_view.nz//2+zrot})
 			subvol=self.img_view.get_full_annotation().get_rotated_clip(xform,(side_length,side_length,self.img_view.nz),0)
-
-
-			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
-			#subvol.process_inplace("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
 			self.img_view.full_annotation.set_rotated_clip(xform,from_numpy(np.where(fill_vol>0,value,to_numpy(subvol))))
-			#self.img_view.full_annotation.set_rotated_clip(xform,subvol*2)
-			# full_vol=from_numpy(np.where(fill_vol>0,value,to_numpy(self.img_view.full_annotation)))
-			# self.img_view.full_annotation = full_vol.process("xform",{"transform":self.img_view.xform})
 			self.img_view.force_display_update()
 			self.img_view.updateGL()
 			return
@@ -1799,32 +1731,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.do_update()
 		self.img_view.updateGL()
 
-	# def on_table_tom(self,row,col):
-	# 	print("Row", row, "Col", col, "Tomogram", self.table_tom.itemAt(row,col))
-	# 	print(self.table_tom.currentItem().text())
-
-	# def table_tom_cell_changed(self):
-	# 	#print("New Cell", self.table_tom.currentItem().text())
-	# 	self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
 	def set_data(self):
 		return
-
-	# def update_sets(self):
-	# 	#Set the colors and flags of table set items
-	# 	for i in range(self.table_tom.rowCount()):
-	# 		key = int(self.table_tom.item(i,0).text())
-	# 		self.table_tom.item(i,0).setFlags(self.indexflags)
-	# 		self.table_tom.item(i,1).setFlags(self.itemflags)
-	# 		self.table_tom.item(i,0).setForeground(self.colors[key])
-	# 		self.table_tom.item(i,1).setForeground(self.colors[key])
-
-
 
 	def add_boxes(self, size = 64):
 		self.boxes = [box for box in self.boxes if box[3] != -1]
 		sz = size
-		#color = [0.1,0.1,0.3]
-		#print("add boxes", self.boxes)
 		for i in range(len(self.boxes)):
 			#print(self.boxes[i])
 			color=QtGui.QColor(self.setcolors[self.boxes[i][4]%len(self.setcolors)]).getRgbF()
@@ -1853,9 +1765,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nz=hdr["nz"]
 		self.apix = hdr["apix_x"]
 		current_child_count = self.tomo_tree.currentItem().childCount()
-		# 	seg_path = os.path.join(self.seg_folder,self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].checkedButton().text())
-		# 	print("Seg file for current tomogram already exists at",seg_path)
-		# else:
 		seg_path = os.path.join(self.seg_folder,"{}_seg_{}.hdf".format(base_name(self.data_file),str(current_child_count+1)))
 		print("Create seg_file",seg_path)
 		seg_out = EMData(self.nx,self.ny,self.nz)
@@ -1864,7 +1773,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		seg_item = QtWidgets.QTreeWidgetItem()
 		self.tomo_tree.currentItem().addChild(seg_item)
 		seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
-		#seg_item.setCheckState(0,0)
 		seg_button = QtWidgets.QRadioButton(os.path.basename(seg_path))
 		self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 		seg_button.setChecked(True)
@@ -1934,10 +1842,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			E2saveappwin("e2annotate","tomograms",self.tomo_list_panel)
 		except:
 			pass
-		#self.write_header(self.get_annotation())
 
-		#self.write_metadata(self.seg_path)
-		print(self.get_annotation(), self.seg_path, self.cur_region)
 		try:
 			self.get_inspector().seg_tab.write_treeset_json(self.seg_info_path)
 		except:
@@ -1949,7 +1854,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			#print(self.get_annotation().numpy().shape, self.cur_region)
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 		except:
-			print("Cannot write annotation to segs file.")
+			#print("Cannot write annotation to segs file.")
 			pass
 
 		self.control_panel.close()
@@ -1971,17 +1876,19 @@ class CustomScene3D(EMScene3D):
 
 	def show_3D_region(self):
 		print("SHOW 3D")
+		self.target.save_current_state(no_force_save=False)
 		if self.target.zt_spinbox.value() == 0:
 			print("Cannot show 3D region of 2D slice. Set zthick spinbox to non-zero value to continue")
 			return
 		reg = Region()
-		reg.set_origin(self.target.cur_region.get_origin())
+		#reg.set_origin(self.target.cur_region.get_origin())
 		reg.set_width(self.target.cur_region.get_width()+2)
 		reg.set_height(self.target.cur_region.get_height()+2)
 		reg.set_depth(self.target.cur_region.get_depth())
-		print("Reg", reg)
+		print("Reg ori",reg.get_origin(),"Reg dims",reg.get_width(),reg.get_height())
 
-		tomo = self.target.get_data().get_clip(reg)
+		#tomo = self.target.get_data().get_clip(reg)
+		tomo = self.target.get_data()
 		tomo_di = EMDataItem3D(tomo, transform=Transform())
 		self.insertNewNode('Data', tomo_di, parentnode=self)
 		volslice = EMSliceItem3D(tomo_di, transform=Transform())
@@ -1990,14 +1897,7 @@ class CustomScene3D(EMScene3D):
 		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
 		self.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
 
-		# #isosurface of reconstituted particles
-		# try:
-		# 	self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-		# except:
-		# 	pass
-		# annotate = EMData(self.seg_path, 0, False, self.cur_region)
 		annotate = self.target.get_annotation().get_clip(reg)
-		print("annotate size",annotate.get_sizes())
 		annotate_di = EMDataItem3D(annotate, transform=Transform())
 		self.insertNewNode('Annotate', annotate_di, parentnode=self)
 		isosurface = EMIsosurface(annotate_di, transform=Transform())
@@ -2121,7 +2021,7 @@ class Thumbnail(EMImage2DWidget):
 			print("Bzsz", self.box_size, "scale fac", self.scale_fac)
 			self.add_box(xy[0],xy[1], self.box_size)
 			if self.app_target.get_annotation():
-				print("Print annotation to file", self.app_target.seg_path)
+				print("Write annotation to file", self.app_target.seg_path)
 				try:
 					self.app_target.write_out(self.app_target.get_annotation(), self.app_target.seg_path, self.app_target.cur_region)
 				except:
