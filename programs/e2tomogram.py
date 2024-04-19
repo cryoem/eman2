@@ -1335,16 +1335,10 @@ def get_params(allparams, options):
 
 #### get 2D position on a tilt given 3D location
 def get_xf_pos(tpm, pk):
-	### first project the point to xy plane
-	xf0=Transform({"type":"xyz","xtilt":float(tpm[4]),"ytilt":float(tpm[3])})
-	p0=[pk[0], pk[1], pk[2]]
-	p1=xf0.transform(p0)#).astype(int)
-
-	### undo the 2D alignment
-	xf1=Transform({"type":"2d","tx":tpm[0], "ty":tpm[1],"alpha":tpm[2]})
-	p2=xf1.transform([p1[0], p1[1]])
-
-	return [p2[0], p2[1]]
+	xf0=Transform({"type":"xyz","xtilt":tpm[4],"ytilt":tpm[3],"ztilt":tpm[2],"tx":tpm[0], "ty":tpm[1]})
+	p1=xf0.transform([pk[0], pk[1], pk[2]])
+	
+	return [p1[0], p1[1]]
 
 #### coarse translational alignment
 def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
