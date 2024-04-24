@@ -176,7 +176,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 					json.dump(tomo.to_dict(), f)
 				print("Downloading Tomogram",tomo.name)
 				tomo.download_mrcfile(dest_path=self.tomo_fname)
-			# if self.download_anno_cb.isChecked():
 			if self.download_anno:
 				seg_dest = os.path.join(self.seg_fname,tomo.name)
 				os.mkdir(seg_dest)
@@ -276,9 +275,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 										print("Importing segmentations",sname,"for",tomo_f[0:-4],"as a binary mask")
 										eman2_seg_f = os.path.join("./segs/","{}_{}_czi__seg.hdf".format(base_name(eman2_f),sname))
 										json_file = eman2_seg_f[0:-4]+".json"
-										#os.system("e2proc3d.py {} {} --compressbits=8".format(ori_seg_f,eman2_seg_f))
-										os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
-
+										os.system("e2proc3d.py {} {} --compressbits=8".format(ori_seg_f,eman2_seg_f))
 										ser_text =  json.dumps(["1",sname,"-1"], default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
 										json_str = {ser_text:None}
 										js=js_open_dict(json_file)
@@ -289,8 +286,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),"000-multi"))
 								print("Generating the multicolor annotation")
 								ann_out, json_str = self.write_multiclass_annotate(annf_l)
-								#ann_out.write_compressed(eman2_seg_f,0,8)
-								ann_out.write_image(eman2_seg_f)
+								ann_out.write_compressed(eman2_seg_f,0,8)
 								json_file = eman2_seg_f[0:-4]+".json"
 								js=js_open_dict(json_file)
 								js['tree_dict'] = json_str
@@ -327,6 +323,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 			notmp = "--no_tmp"
 		os.system(f"e2tomo_annotate.py  --zthick={zthick}  {notmp} --region_sz={reg_sz} --folder={tomo_fname} &")
 		self.close()
+
 
 if __name__ == '__main__':
 	main()

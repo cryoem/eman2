@@ -177,6 +177,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		file_name = self.tom_file_list[0]
 		self.data_file = str(os.path.join(self.tom_folder,file_name))
+
 		hdr=EMData(self.data_file, 0,True)
 
 		self.nx = hdr["nx"]
@@ -198,8 +199,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			try:
 				self.tomo_tree.topLevelItem(0).addChild(seg_item)
 				seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
-
-				#seg_item.setCheckState(0,0)
 				seg_button = QtWidgets.QRadioButton(os.path.basename(seg_path))
 				self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 				seg_button.setChecked(True)
@@ -309,7 +308,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.view = None
 
 
-
 		zt_hbl.addWidget(QtWidgets.QLabel("cen"))
 		zt_hbl.addWidget(self.zc_spinbox)
 		zt_hbl.addWidget(QtWidgets.QLabel("z-thick"))
@@ -374,8 +372,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ltlay.addWidget(self.points_label,0,0,2,2)
 		self.ltlay.addWidget(QtWidgets.QLabel("Line Width"),2,2,1,2)
 		self.ltlay.addWidget(self.tx_line_width,2,3,1,1)
-		#self.ltlay.addWidget(QtWidgets.QLabel("Ann Class"),3,2,1,2)
-		#self.ltlay.addWidget(self.tx_ann_class,3,3,1,1)
+
 		self.tx_interp=QtWidgets.QSpinBox(self)
 		self.tx_interp.setValue(20)
 		self.ltlay.addWidget(self.interp_button,0,2,1,1)
@@ -397,8 +394,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ctlay.addWidget(QtWidgets.QLabel("Draw line to annotate file"),2,0,1,2)
 		self.ctlay.addWidget(QtWidgets.QLabel("Line Width"),2,2,1,1)
 		self.ctlay.addWidget(self.ct_line_width,2,3,1,1)
-		# self.ctlay.addWidget(QtWidgets.QLabel("Ann Class"),3,2,1,1)
-		# self.ctlay.addWidget(self.ct_ann_class,3,3,1,1)
+
 		self.ctlay.addWidget(self.clear_contour_button,0,2,1,1)
 		self.ctlay.addWidget(self.fill_contour_checkbox,4,2,1,1)
 
@@ -459,8 +455,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.extract_bt.clicked[bool].connect(self.extract_bt_clicked)
 		self.bsz_vs.valueChanged.connect(self.bsz_vs_value_changed)
 
-
-
 		self.assisted_tab = QtWidgets.QTabWidget()
 		self.ext_tab = Extrapolate_Tab(target=self)
 		self.nn_tab = NNet_Tab(target=self)
@@ -471,8 +465,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.templ_tab = Templ_Match_Tab(target=self)
 		self.stat_tab = Statistics_Tab(target=self)
 		self.subtom_tab = Subtom_Tab(target=self)
-
-
 
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"UNet")
@@ -502,9 +494,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.test_button.setCheckable(True)
 		self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
-
-
-
 		inspector_vbl = QtWidgets.QVBoxLayout()
 		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
 		inspector_vbl.addWidget(self.img_view_inspector)
@@ -530,7 +519,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.curve=Curve(img=self.img_view, points=pts )
 		self.curve_shape_index = 0
 		self.img_view.shapes[0]=self.curve
-
 
 		self.contour=Contour(img=self.img_view, points=pts)
 		self.contour_shape_index = 1
@@ -585,10 +573,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def get_current_class(self):
 		return self.get_segtab().get_current_class()
 
-
 	def zchange(self,value):
 		print(value)
-
 
 	def do_filters(self):
 		#print("do filter")
@@ -630,8 +616,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		if reset_vs:
 			self.binary_tab.bin_low_pass_vs.setValue(1)
 			self.binary_tab.bin_threshold_vs.setValue(0.001)
-
-
 
 
 	def seg_path_change(self,seg_bt):
@@ -724,15 +708,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.zc_spinbox.setValue(self.nz//2)
 		self.zc_spinbox.setMaximum(self.nz)
 
-
 		#print("SegPath,newSegPath", self.seg_path,seg_path)
 		self.seg_path = seg_path
 		self.seg_info_path = seg_info_path
+		#self.seg_path_temp = base_name(self.data_file)+"_temp_ann_fullscale.hdf"
 		self.reset_morp_params(reset_vs=False)
 		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
 		self.update_tree_set()
-
-
 
 	#need to write region out before setting new data
 	def write_out(self,file_out, out_name, region):
@@ -853,7 +835,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		try:
 			self.write_out(self.get_annotation(), temp_path, self.cur_region)
-
 			print("Saved current state to disk")
 			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		except Exception as e:
@@ -868,7 +849,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			pass
 
 		#self.undo_button.setEnabled(True)
-
 		self.medit_undo.setEnabled(True)
 
 		return
