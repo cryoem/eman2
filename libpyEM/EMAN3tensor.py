@@ -174,6 +174,12 @@ class EMStack():
 		self.coerce_emdata()
 		EMData.write_images(fsp,self._data)
 
+	def downsample(self,newsize):
+		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
+		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
+		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
+		not be used on rectangular images/volumes."""
+		pass
 
 class EMStack3D(EMStack):
 	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
@@ -254,6 +260,14 @@ class EMStack3D(EMStack):
 		elif isinstance(target,tf.Tensor):
 			return EMStack3D(self.tensor*tf.math.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
+	def downsample(self,newsize):
+		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
+		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
+		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
+		not be used on rectangular images/volumes."""
+
+		return EMStack3D(tf_downsample_3d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
 
 class EMStack2D(EMStack):
@@ -370,6 +384,14 @@ class EMStack2D(EMStack):
 		elif isinstance(target,tf.Tensor):
 			return EMStack2D(self.tensor*target)
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+
+	def downsample(self,newsize):
+		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
+		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
+		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
+		not be used on rectangular images/volumes."""
+
+		return EMStack2D(tf_downsample_2d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
