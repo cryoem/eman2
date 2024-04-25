@@ -159,6 +159,8 @@ static vector<std::shared_ptr<EMData>> read_images(const string & filename,
 									  EMUtil::ImageType imgtype = EMUtil::IMAGE_UNKNOWN,
 									  bool header_only = false);
 
+static EMData avg_images(const string & filename);
+
 /** Write a set of images to file specified by 'filename'.
  * Which images are written is set by 'imgs'.
  * @param filename The image file name.

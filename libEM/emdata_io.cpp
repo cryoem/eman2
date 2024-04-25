@@ -414,6 +414,51 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 	return v;
 }
 
+EMData EMData::avg_images(const string & filename)
+{
+	ENTERFUNC;
+
+	auto im = EMData();
+
+	auto a = im.read_images(filename, vector<int>({0}));
+
+
+//	int total_img = EMUtil::get_image_count(filename);
+//	size_t num_img = img_indices.size();
+
+//	for (size_t i = 0; i < num_img; i++)
+//		if (img_indices[i] < 0 || img_indices[i] >= total_img)
+//			throw OutofRangeException(0, total_img, img_indices[i], "image index");
+
+//	size_t n = (num_img == 0 ? total_img : num_img);
+//	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY, imgtype);
+	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+
+	vector<shared_ptr<EMData>> v;
+	for (size_t j = 0; j < n; j++) {
+		shared_ptr<EMData> d(new EMData());
+		size_t k = (num_img == 0 ? j : img_indices[j]);
+		try {
+			d->_read_image(imageio, (int)k, header_only);
+		}
+		catch(E2Exception &e) {
+			throw(e);
+		}
+		if ( d != 0 )
+			v.push_back(d);
+		else
+			throw ImageReadException(filename, "imageio read data failed");
+	}
+
+	EMUtil::close_imageio(filename, imageio);
+	imageio = 0;
+
+
+	EXITFUNC;
+//	return v;
+	return *(a[0].get());
+}
+
 bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData>> imgs,
 						  int idxs,
 						  EMUtil::ImageType imgtype,
