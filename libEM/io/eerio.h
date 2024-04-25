@@ -36,7 +36,6 @@
 
 #include <tiffio.h>
 #include <bitset>
-#include <boost/asio/thread_pool.hpp>
 
 
 namespace EMAN
@@ -195,7 +194,6 @@ namespace EMAN
 		TIFF *tiff_file;
 		size_t num_frames = 0;
 		Dict acquisition_data_dict;
-		boost::asio::thread_pool pool;
 		
 		Decoder &decoder;
 	};

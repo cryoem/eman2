@@ -32,16 +32,11 @@
 #include "eerio.h"
 
 #include <algorithm>
-//#include <thread>
-#include <future>
 #include <tiffio.h>
 #include <boost/property_tree/xml_parser.hpp>
-#include <boost/asio/thread_pool.hpp>
 
 
 using boost::property_tree::ptree;
-//using boost::asio::post;
-
 using namespace EMAN;
 
 
@@ -154,7 +149,7 @@ auto read_raw_data(TIFF *tiff) {
 
 
 EerIO::EerIO(const string & fname, IOMode rw, Decoder &dec)
-:	ImageIO(fname, rw), decoder(dec), pool(12)
+:	ImageIO(fname, rw), decoder(dec)
 {
 	TIFFSetWarningHandler(TIFFOutputWarning);
 
@@ -239,10 +234,6 @@ int EerIO::write_header(const Dict & dict, int image_index, const Region* area,
 
 	return 0;
 }
-void fill_rdata(float *rdata, uint cam) {
-	std::fill(rdata, rdata + cam * cam, 0);
-}
-
 
 int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 {
@@ -252,37 +243,9 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	
 	auto data = read_raw_data(tiff_file);
 
-	const size_t nThreads = std::thread::hardware_concurrency();
-	const size_t sChunk = decoder.camera_size * decoder.camera_size / nThreads;
-
-	cout<<"nThreads: " << nThreads
-		<<" sChunk: " << sChunk
-		<<" ";
-
-//	vector<std::thread> threads;
-	std::vector<std::future<void>> futures;
-	for(size_t i=0; i<nThreads; ++i) {
-		auto beg = i * sChunk;
-		auto end = (i == nThreads-1 ? decoder.camera_size * decoder.camera_size : beg + sChunk);
-
-//		threads.emplace_back([&rdata, beg, end]{
-//			std::fill(rdata + beg, rdata + end, 0);
-//		});
-		futures.push_back(std::async(std::launch::async, [&] {
-			std::fill(rdata + beg, rdata + end, 0);
-//			for(auto p = rdata + beg; p<rdata + end; ++p)
-//				*p=0;
-        }));
-//		boost::asio::post(pool, [&] {
-//					std::fill(rdata + beg, rdata + end, 0);
-//		        });
-	}
-
-//	for(auto &t:threads)
-//		t.join();
+	std::fill(rdata, rdata + decoder.camera_size * decoder.camera_size, 0);
 
 	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
-	cout<<"Coords.size(): " << coords.size() << endl;
 	for(const auto &c : coords)
 		rdata[c.first + c.second * decoder.num_pix()] += 1;
 
