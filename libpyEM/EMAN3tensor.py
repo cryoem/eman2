@@ -585,6 +585,20 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		amps/=max(amps)
 		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps))))).transpose()
 
+	def replicate(n=2,dev=0.01):
+		"""Makes n copies of the current Gaussians shifted by a small random amount to improve the level of detail without
+significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
+stddev=0.01"""
+		self.coerce_tensor()
+		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
+		self._data=tf.concat(dups,0)
+
+	def norm_filter(thr=0.5):
+		"""Rescale the amplitudes so the maximum is 1, then remove any Gaussians with amplitude less than thr"""
+		self.coerce_tensor()
+		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		self._data=tf.boolean_mask(self._data,self._data[:,3]>thr)					# remove any gaussians with amplitude below threshold
+
 	def project_simple(self,orts,boxsize,txty=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
 		orts - must be an Orientations object
