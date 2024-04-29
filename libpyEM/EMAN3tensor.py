@@ -585,7 +585,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		amps/=max(amps)
 		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps))))).transpose()
 
-	def replicate(n=2,dev=0.01):
+	def replicate(self,n=2,dev=0.01):
 		"""Makes n copies of the current Gaussians shifted by a small random amount to improve the level of detail without
 significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
 stddev=0.01"""
@@ -593,7 +593,7 @@ stddev=0.01"""
 		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
 		self._data=tf.concat(dups,0)
 
-	def norm_filter(thr=0.5):
+	def norm_filter(self,thr=0.5):
 		"""Rescale the amplitudes so the maximum is 1, then remove any Gaussians with amplitude less than thr"""
 		self.coerce_tensor()
 		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
@@ -811,9 +811,10 @@ FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containi
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
-def tf_frc(ima,imb,avg=0):
+def tf_frc(ima,imb,avg=0,weight=1.0):
 	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
-	then the average of the first 'avg' values. If -1, averages through Nyquist"""
+	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
+	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
 	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_fsc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
@@ -865,6 +866,10 @@ def tf_frc(ima,imb,avg=0):
 	if avg>len(frc[0]): avg=-1
 	if avg>0:
 		frc=tf.stack(frc)
+		if weight!=1.0:
+			w1=2.0-weight
+			w=np.linspace(weight,2.0-weight,nr)
+			frc=frc*w
 		return tf.math.reduce_mean(frc[:,:avg],1)
 	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
