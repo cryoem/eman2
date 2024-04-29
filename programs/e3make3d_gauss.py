@@ -58,28 +58,45 @@ def main():
 	nx=EMData(args[0],0,True)["nx"]
 
 
-
-	ptcls=EMStack2D(EMData.read_images(args[0],))
+	# stage 1 - limit to ~1000 particles for initial low resolution work
+	ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//1000)))
 	orts,txty=ptcls.orientations
-
 	ptclsf=ptcls.do_fft()
 
-	# initial downsampling
+	# stage 1, heavy downsampling
 	ptclsfds=ptcls.downsample(16)    # downsample specifies the final size, not the amount of downsampling
 	ny=ptclsfds.shape[1]
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
-	rnd=tf.random.uniform((500,4))     # specify the number of Gaussians to start with here
+	rnd=tf.random.uniform((200,4))     # specify the number of Gaussians to start with here
 	rnd+=(-.5,-.5,-.5,100.0)
 	gaus._data=rnd/(1.5,1.5,1.5,100.0)
 
-	vol=gaus.volume(map1["nx"])
-	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
-	vol.write_images("A_vol_opt_1.hdf")
+	# vol=gaus.volume(map1["nx"])
+	# vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
+	# vol.write_images("A_vol_opt_1.hdf")
 
 
 	E3end(argv)
+
+@tf.function
+def gradient_step(gaus,ptclsfds,orts,txty):
+	ny=ptclsfds.shape[1]
+	with tf.GradientTape() as gt:
+		gt.watch(gaus.tensor)
+		projs=gaus.project_simple(orts,ny,txty=txty)
+		projsf=projs.do_fft()
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,8,1.5)
+
+	grad=gt.gradient(frcs,gaus._data)
+	qual=tf.math.reduce_mean(frcs)
+	shift=tf.math.reduce_std(grad[:,:3])
+	sca=tf.math.reduce_std(grad[:,3])
+	xyzs=1.0/(shift*1000)   # xyz scale
+	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,1.0/(sca*500)))
+#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+
 
 #@tf.function
 def optimize_g(gaus,projsf,orts,txty):
@@ -88,18 +105,6 @@ def optimize_g(gaus,projsf,orts,txty):
 
 	# "learn" Gaussian locations test on downsampled particles
 	for i in range(64):
-		with tf.GradientTape() as gt:
-			gt.watch(gaus.tensor)
-			projs=gaus.project_simple(orts,ny,txty=txty)
-			projsf=projs.do_fft()
-			frcs=tf_frc(projsf.tensor,ptclsfds.tensor,8,1.5)
-		grad=gt.gradient(frcs,gaus._data)
-		qual=tf.math.reduce_mean(frcs)
-		shift=tf.math.reduce_std(grad[:,:3])
-		sca=tf.math.reduce_std(grad[:,3])
-		xyzs=1.0/(shift*1000)   # xyz scale
-		gaus.add_tensor(grad*(xyzs,xyzs,xyzs,1.0/(sca*500)))
-		print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
 	print(tf.reduce_min(gaus.tensor,0),tf.reduce_max(gaus.tensor,0),tf.reduce_mean(gaus.tensor,0))
 
