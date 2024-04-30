@@ -323,11 +323,11 @@ class EMStack2D(EMStack):
 
 	@property
 	def orientations(self):
-		"""returns an Orientations object and txty array for the current images if available or None if not"""
+		"""returns an Orientations object and tytx array for the current images if available or None if not"""
 		if self._xforms is None: return None
 		orts=Orientations()
-		txty=orts.init_from_transforms(self._xforms)
-		return orts,txty
+		tytx=orts.init_from_transforms(self._xforms)
+		return orts,tytx
 
 	def center_clip(self,size):
 		try: size=np.array((int(size),int(size)))
@@ -441,15 +441,15 @@ class Orientations():
 
 	def init_from_transforms(self,xformlist):
 		"""Replaces current contents of Orientations object with a list of Transform objects,
-		returns txty array with any translations (not stored within Orientations)"""
+		returns tytx array with any translations (not stored within Orientations)"""
 		self._data=np.zeros((len(xformlist),3))
-		txty=[]
+		tytx=[]
 		for i,x in enumerate(xformlist):
 			r=x.get_rotation("spinvec")
 			self._data[i]=(r["v1"],r["v2"],r["v3"])
-			txty.append(tuple(x.get_trans_2d()))
+			tytx.append((x.get_trans_2d()[1],x.get_trans_2d()[0]))
 
-		return(tf.constant(txty))
+		return(tf.constant(tytx))
 
 	def transforms(self):
 		"""converts the current orientations to a list of Transform objects"""
@@ -599,10 +599,10 @@ stddev=0.01"""
 		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
 		self._data=tf.boolean_mask(self._data,self._data[:,3]>thr)					# remove any gaussians with amplitude below threshold
 
-	def project_simple(self,orts,boxsize,txty=None):
+	def project_simple(self,orts,boxsize,tytx=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
 		orts - must be an Orientations object
-		txty =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+		tytx =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
 		boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
 		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
@@ -619,9 +619,9 @@ stddev=0.01"""
 		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 		for j in range(len(orts)):
 			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-			if txty is not None:
-				#print(xfgauss.shape,txty.shape)
-				xfgauss+=txty[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+			if tytx is not None:
+				#print(xfgauss.shape,tytx.shape)
+				xfgauss+=tytx[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
 
 			xfgaussf=tf.floor(xfgauss)

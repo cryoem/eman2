@@ -331,9 +331,9 @@ def main():
 		sym_object = parsesym(options.sym[i])
 		[og_name,og_args] = parsemodopt(options.orientgen)
 		eulers = sym_object.gen_orientations(og_name, og_args)
-		if option.randshift>0 :
+		if options.randshift>0 :
 			for e in eulers:
-				e.set_trans(random.randint(-option.randshift,option.randshift),random.randint(-option.randshift,option.randshift),0)
+				e.set_trans(random.randint(-options.randshift,options.randshift),random.randint(-options.randshift,options.randshift),0)
 
 		# generate and save all the projections to disk - that's it, that main job is done
 		if ( options.verbose>0 ):
