@@ -867,7 +867,6 @@ def tf_frc(ima,imb,avg=0,weight=1.0):
 	if avg>0:
 		frc=tf.stack(frc)
 		if weight!=1.0:
-			w1=2.0-weight
 			w=np.linspace(weight,2.0-weight,nr)
 			frc=frc*w
 		return tf.math.reduce_mean(frc[:,:avg],1)

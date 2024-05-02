@@ -59,13 +59,16 @@ def main():
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
 
+	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
+
 	# definition of downsampling sequence for stages of refinement
 	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, variance
 	# replication skipped in final stage
 	stages=[
-		[500,16,64,1.5,.75,4,.02],
-		[2500,64,64,1.5,.6,4,.01],
-		[10000,256,64,1.0,.6,0,.01]
+		[500,16,16,1.5,.75,4,.02],
+		[500,32,32,1.5,.7,4,.02],
+		[2500,64,32,1.5,.6,4,.01],
+		[10000,256,64,1.0,.3,0,.01]
 	]
 
 	gaus=Gaussians()
@@ -86,7 +89,7 @@ def main():
 		tytx/=nxraw
 		ptclsf=ptcls.do_fft()
 		
-		if options.verbose: print(f"\tDownsampling {stage[1]} px")
+		if options.verbose: print(f"\tDownsampling {min(nxraw,stage[1])} px")
 		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
 		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
 		ny=stage[1]
