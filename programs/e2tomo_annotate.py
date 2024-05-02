@@ -62,7 +62,7 @@ def main():
 
 	app = EMApp()
 	if options.load_data_czi:
-		os.system("python ./e2import_from_czi.py")
+		os.system("e2import_from_czi.py")
 		return
 	else:
 		pass
