@@ -313,11 +313,12 @@ This function is called to log the end of the current job. n is returned by E3in
 		hist=open(".eman3log.txt","r+")
 		hist.seek(n)
 		start=hist.read(19)
-		hist.read(1)
 		end=local_datetime()
 	except:
 		return -1
-	hist.write(f"{end:19s}\t{timestamp_diff(start,end):11d}")
+	hist.seek(n+20)
+	try: hist.write(f"{end:19s}\t{timestamp_diff(start,end):11d}")
+	except: print(f"E3end failed: {start} {end} {n}")
 	hist.close()
 
 	return n
@@ -1787,7 +1788,7 @@ def timestamp_diff(t1,t2):
 #		print "time error ",t1,t2
 		return 0
 
-	return tt2-tt1
+	return int(tt2-tt1)
 
 def difftime(secs):
 	"""Returns a string representation of a time difference in seconds as a Dd hh:mm:ss style string"""

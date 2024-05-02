@@ -815,8 +815,8 @@ def tf_frc(ima,imb,avg=0,weight=1.0):
 	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
 	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
 	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
-	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
-	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_fsc works on stacks of FFTs not individual images, and the shape of both inputs must match")
+	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_frc requires FFTs")
+#	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
 #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)

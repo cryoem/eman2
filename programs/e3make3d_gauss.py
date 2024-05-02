@@ -33,6 +33,7 @@ from EMAN3 import *
 from EMAN3tensor import *
 import numpy as np
 import sys
+import time
 
 def main():
 
@@ -44,7 +45,7 @@ def main():
 	parser.add_argument("--volout", type=str,help="Volume output file", default=None)
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default="gauss.txt")
 	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
-	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=250", default=250)
+	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
@@ -53,56 +54,93 @@ def main():
 	(options, args) = parser.parse_args()
 	tf_set_device(dev=0,maxmem=options.gpuram)
 
-	pid=E3init(sys.argv)
+	llo=E3init(sys.argv)
 
 	nptcl=EMUtil.get_image_count(args[0])
-	nx=EMData(args[0],0,True)["nx"]
+	nxraw=EMData(args[0],0,True)["nx"]
 
-
-	# stage 1 - limit to ~1000 particles for initial low resolution work
-	ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//1000))))
-	orts,txty=ptcls.orientations
-	ptclsf=ptcls.do_fft()
-
-	# stage 1, heavy downsampling
-	ptclsfds=ptcls.downsample(16)    # downsample specifies the final size, not the amount of downsampling
-	ny=ptclsfds.shape[1]
+	# definition of downsampling sequence for stages of refinement
+	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, variance
+	# replication skipped in final stage
+	stages=[
+		[500,16,64,1.5,.75,4,.02],
+		[2500,64,64,1.5,.6,4,.01],
+		[10000,256,64,1.0,.6,0,.01]
+	]
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
 	rnd+=(-.5,-.5,-.5,100.0)
-	gaus._data=rnd/(1.5,1.5,1.5,100.0)
+	gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
-	for i in range(32):
-		qual,shift,sca=gradient_step(gaus,ptclsfds,orts,txty,1.5)
-		print(f"{qual}\t{shift}\t{sca}")
+	times=[time.time()]
+	ptcls=[]
+	for sn,stage in enumerate(stages):
+		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 
-	# vol=gaus.volume(map1["nx"])
-	# vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.3})
-	# vol.write_images("A_vol_opt_1.hdf")
+		# stage 1 - limit to ~1000 particles for initial low resolution work
+		if options.verbose: print(f"\tReading Files {stage[0]} ptcl")
+		ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//stage[0]))))
+		orts,tytx=ptcls.orientations
+		tytx/=nxraw
+		ptclsf=ptcls.do_fft()
+		
+		if options.verbose: print(f"\tDownsampling {stage[1]} px")
+		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
+		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
+		ny=stage[1]
+		ptcls=None		# free resouces since we're committed to re-reading files for now
+		ptclsf=None
+#		ny=ptclsfds.shape[1]
 
 
-	E3end(pid)
+#	print(ptclsfds.shape,tytx.shape)
+		
+		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\tshift_grad\tamp_grad")
+		for i in range(stage[2]):
+			qual,shift,sca=gradient_step(gaus,ptclsfds,orts,tytx,stage[3])
+			print(f"{i}: {qual}\t{shift}\t{sca}")
 
-@tf.function
+		vol=gaus.volume(nxraw)
+		vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+		vol.write_images(f"A_vol_opt_{sn}.hdf")
+
+		# filter results and prepare for stage 2
+		g0=len(gaus)
+		gaus.norm_filter(thr=stage[4])
+		g1=len(gaus)
+		if stage[5]>0: gaus.replicate(stage[5],stage[6])
+		g2=len(gaus)
+		print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {local_datetime()}")
+		times.append(time.time())
+	
+	times=np.array(times)
+	times-=times[0]
+	if options.verbose>1 : print(times)
+
+	E3end(llo)
+
+#@tf.function
 def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0):
 	"""Takes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution"""
 	ny=ptclsfds.shape[1]
+
 	with tf.GradientTape() as gt:
 		gt.watch(gaus.tensor)
 		projs=gaus.project_simple(orts,ny,tytx=tytx)
 		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny/2,weight)	# specifying ny/2 radius explicitly so weight functions
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight)	# specifying ny/2 radius explicitly so weight functions
 
 	grad=gt.gradient(frcs,gaus._data)
 	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
 	shift=tf.math.reduce_std(grad[:,:3])	# translational std
 	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=1.0/(shift*1000)   				# xyz scale factor, 1000 heuristic, TODO: may change
-	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,1.0/(sca*500)))	# amplitude scale, 500 heuristic, TODO: may change
+	xyzs=1.0/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,1.0/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (float(qual),float(shift),float(sca))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
