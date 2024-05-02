@@ -203,7 +203,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 			print("Invalid dataset id or",e,". Abort.")
 			return
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
-		tomo_l = [tomo.name for tomo in self.tomos]
+		tomo_l = sorted([tomo.name for tomo in self.tomos])
 		self.populate_table(data_l=tomo_l)
 
 
