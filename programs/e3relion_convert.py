@@ -144,7 +144,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			if options.verbose>0: print("Unable to group particles using rlnImageName")
 		except:
 			# final try. If the same defocus was assigned to all images in a micrograph, we can use that
-			dfrng=[int(.002*df/options.dftolerance) for df in star[rkey]["rlnDefocusU"]]  # defocus converted to integers covering the acceptable range of values, .002 microns&range
+			dfrng=[int(.0002*df/options.dftolerance) for df in star[rkey]["rlnDefocusU"]]  # defocus converted to integers covering the acceptable range of values, .002 microns&range
 			dfs=set(dfrng)
 			if len(dfs)<nptcl/5:
 				if options.verbose>0: print(f"Using rlnDefocusU to group particles into {len(dfs)} groups")
@@ -154,8 +154,9 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				for i in range(1,nptcl):
 					if df[i]!=df[i-1]: n+=1
 					ugnums.append(n)
-			if len(dfs)>=nptcl/5 or len(ugnums)>nptcl/5:
-				print("WARNING: Unable to group particles usefully by micrograph, collapsing to a single file. Consider rerunning with sufficiently large --dftolerance")
+			if len(dfs)>=nptcl/5 or ugnums[-1]>nptcl/5:
+				print(df[:1000])
+				print(f'WARNING: Unable to group particles usefully by micrograph ({len(dfs)} defoci, {len(ugnums)} "micrographs"), collapsing to a single file. Consider rerunning with sufficiently large --dftolerance')
 				ugnums=np.zeros(nptcl,"int32")
 
 	# copy particles by micrograph

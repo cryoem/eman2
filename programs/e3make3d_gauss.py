@@ -65,11 +65,26 @@ def main():
 	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, variance
 	# replication skipped in final stage
 	stages=[
-		[500,16,16,1.5,.75,4,.02],
-		[500,32,32,1.5,.7,4,.02],
-		[2500,64,32,1.5,.6,4,.01],
-		[10000,256,64,1.0,.3,0,.01]
+		[500,16,24,1.5,.75,4,.02,2],
+		[500,32,32,1.5,.5,4,.02,1.5],
+		[2500,64,32,1.5,.4,4,.01,1.0],
+		[10000,256,48,1.0,.3,0,.01,.5]
 	]
+
+	times=[time.time()]
+
+	# Cache initialization
+	if options.verbose: print("Caching particle data")
+	caches={s[1]:StackCache(f"tmp_{s[1]}.cache",nptcl) for s in stages} 	# dictionary keyed by box size
+	for i in range(0,nptcl,2500):
+		if options.verbose>1: print(f"Caching {i}/{nptcl}")
+		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
+		orts,tytx=stk.orientations
+		tytx/=nxraw
+		stkf=stk.do_fft()
+		for stage in stages:
+			stkfds=stkf.downsample(stage[1])
+			caches[stage[1]].write(stkfds,i,orts,tytx)
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
@@ -77,33 +92,50 @@ def main():
 	rnd+=(-.5,-.5,-.5,100.0)
 	gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
-	times=[time.time()]
+	times.append(time.time())
 	ptcls=[]
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
+#
+# 		# stage 1 - limit to ~1000 particles for initial low resolution work
+# 		if options.verbose: print(f"\tReading Files {min(stage[0],nptcl)} ptcl")
+# 		ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//stage[0]))))
+# 		orts,tytx=ptcls.orientations
+# 		tytx/=nxraw
+# 		ptclsf=ptcls.do_fft()
+#
+# 		if options.verbose: print(f"\tDownsampling {min(nxraw,stage[1])} px")
+# 		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
+# 		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
+# 		ny=stage[1]
+# 		ptcls=None		# free resouces since we're committed to re-reading files for now
+# 		ptclsf=None
+# #		ny=ptclsfds.shape[1]
 
-		# stage 1 - limit to ~1000 particles for initial low resolution work
-		if options.verbose: print(f"\tReading Files {stage[0]} ptcl")
-		ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//stage[0]))))
-		orts,tytx=ptcls.orientations
-		tytx/=nxraw
-		ptclsf=ptcls.do_fft()
-		
-		if options.verbose: print(f"\tDownsampling {min(nxraw,stage[1])} px")
-		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
-		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
-		ny=stage[1]
-		ptcls=None		# free resouces since we're committed to re-reading files for now
-		ptclsf=None
-#		ny=ptclsfds.shape[1]
-
+		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 
 #	print(ptclsfds.shape,tytx.shape)
 		
-		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\tshift_grad\tamp_grad")
-		for i in range(stage[2]):
-			qual,shift,sca=gradient_step(gaus,ptclsfds,orts,tytx,stage[3])
-			print(f"{i}: {qual}\t{shift}\t{sca}")
+		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
+		for i in range(stage[2]):		# training epochs
+			for j in range(0,len(nliststg),1000):	# compute the gradient step piecewise due to memory limitations, 1000 particles at a time
+				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+1000])
+				step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+				if j==0:
+					step,qual,shift,sca=step0,qual0,shift0,sca0
+				else:
+					step+=step0
+					qual+=qual0
+					shift+=shift0
+					sca+=sca0
+			norm=len(nliststg)//1000+1
+			step/=norm
+			qual/=norm
+			shift/=norm
+			sca/=norm
+			gaus.add_tensor(step)
+
+			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t{sca:1.4f}")
 
 		vol=gaus.volume(nxraw)
 		vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
@@ -125,10 +157,15 @@ def main():
 	E3end(llo)
 
 #@tf.function
-def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0):
-	"""Takes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
+def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
+	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution"""
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
 
 	with tf.GradientTape() as gt:
@@ -141,11 +178,12 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0):
 	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
 	shift=tf.math.reduce_std(grad[:,:3])	# translational std
 	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=1.0/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,1.0/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
 	#print(f"{qual}\t{shift}\t{sca}")
 
-	return (float(qual),float(shift),float(sca))
+	return (step,float(qual),float(shift),float(sca))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
 

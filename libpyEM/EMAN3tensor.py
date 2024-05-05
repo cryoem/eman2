@@ -60,9 +60,65 @@ from EMAN3 import *
 import tensorflow as tf
 import numpy as np
 
+class StackCache():
+	"""This object serves as a cache of EMStack objects which can be conveniently read back in. This provides
+	methods for easy/efficient sampling of subsets of data sets which may be too large for RAM. Caches are not persistent across sessions
+	Writing images to the cache will coerce them to tensorflow representation."""
+
+	def __init__(self,filename,n):
+		"""Specify filename and number of images to be cached."""
+		self.filename=filename
+
+		self.fp=open(filename,"wb+")		# erase file!
+		self.locs=np.zeros(n+1,dtype=np.int64)
+		self.orts=np.zeros((n,3),dtype=np.float32)
+		self.tytx=np.zeros((n,2),dtype=np.float32)
+		self.cloc=0
+		self.locked=False
+
+	def __del__(self):
+		"""free all resources if possible"""
+		self.fp=None
+		os.unlink(self.filename)
+		self.locs=None
+
+	def write(self,stack,n0,ortss=None,tytxs=None):
+		"""writes stack of images starting at n0 to cache"""
+		while self.locked: time.sleep(0.1)
+		self.locked=True
+		stack.coerce_tensor()
+		if ortss is not None: self.orts[n0:n0+len(stack)]=ortss.numpy
+		if tytxs is not None: self.tytx[n0:n0+len(stack)]=tytxs
+
+		# we go through the images one at a time, serialze, and write to a file with a directory
+		self.fp.seek(self.cloc)
+		for i in range(len(stack)):
+			im=stack[i]
+			self.locs[n0+i]=self.cloc
+			self.fp.write(tf.io.serialize_tensor(im).numpy())
+			self.cloc=self.fp.tell()
+			self.locs[n0+i+1]=self.cloc
+
+		self.locked=False
+
+	def read(self,nlist):
+		while self.locked: time.sleep(0.1)
+
+		self.locked=True
+
+		stack=[]
+		for i in nlist:
+			self.fp.seek(self.locs[i])
+			stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))
+
+		self.locked=False
+		ret=EMStack2D(tf.stack(stack))
+		orts=Orientations(self.orts[nlist])
+		tytx=self.tytx[nlist]
+		return ret,orts,tytx
 
 class EMStack():
-	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
+	"""This class represents a stack of images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
 	- Shape of the array is {N,Z,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
 	- All images in the stack must have the same dimensions.
 	- Only one representation exists at a time. Coercing to a new type is relatively expensive in terms of time.
@@ -834,19 +890,21 @@ def tf_frc(ima,imb,avg=0,weight=1.0):
 #		zero=tf.zeros((int(ny*0.70711)+1))
 #		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
 #		FRC_NORM[ny]=norm
+	try:
+		imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+		imai=tf.math.imag(ima)
+		imbr=tf.math.real(imb)
+		imbi=tf.math.imag(imb)
 
-	imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
-	imai=tf.math.imag(ima)
-	imbr=tf.math.real(imb)
-	imbi=tf.math.imag(imb)
+		imabr=imar*imbr		# compute these before squaring for normalization
+		imabi=imai*imbi
 
-	imabr=imar*imbr		# compute these before squaring for normalization
-	imabi=imai*imbi
-
-	imar=imar*imar		# just need the squared versions, not the originals now
-	imai=imai*imai
-	imbr=imbr*imbr
-	imbi=imbi*imbi
+		imar=imar*imar		# just need the squared versions, not the originals now
+		imai=imai*imai
+		imbr=imbr*imbr
+		imbi=imbi*imbi
+	except:
+		raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
 
 	frc=[]
 	for i in range(nimg):
