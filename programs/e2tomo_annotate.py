@@ -49,7 +49,7 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--tomos",type=str,help="The tomograms to annotate",default="")
+	parser.add_argument("--tomo",type=str,help="The tomograms to annotate",default="")
 	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms")
 
 	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
@@ -82,8 +82,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.app = weakref.ref(application)
 		self.setMinimumSize(1120, 720)
 		self.options=options
-
-
 
 		self.setWindowTitle("Image Viewer")
 		#System Menu
@@ -121,25 +119,53 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.tomo_tree = QtWidgets.QTreeWidget()
 
-		if len(self.tom_folder)>0:
+
+		if len(options.tomo)>0:
+			self.tom_folder = "."
+			tom_ls = options.tomo.split(',')
+			for file_name in tom_ls:
+				if file_name.endswith(".hdf"):
+					self.tom_file_list.append(file_name)
+				else:
+					print(file_name,"is not a valid file_name. Pass")
+					continue
+
+		elif len(self.tom_folder)>0:
 			tom_ls = sorted(os.listdir(self.tom_folder))
 			# seg_ls = sorted(os.listdir(self.seg_folder))
 			for file_name in tom_ls:
 				if file_name.endswith(".hdf"):
 					self.tom_file_list.append(file_name)
 
-		elif len(options.tomos) == 0:
+		# elif len(options.tomo) == 0:
+		# 	print("Specify tomogram or tomograms folder for start annotation")
+		# 	sys.exit(0)
+		# 	return
+
+		else:
 			print("Specify tomogram or tomograms folder for start annotation")
 			sys.exit(0)
 			return
 
-		else:
-			tom_ls = options.tomos.split(',')
-			for file_name in tom_ls:
-				if file_name.endswith(".hdf"):
-					self.tom_file_list.append(file_name)
-				else:
-					print(file_name,"is not a valid file_name. Pass")
+		# if len(self.tom_folder)>0:
+		# 	tom_ls = sorted(os.listdir(self.tom_folder))
+		# 	# seg_ls = sorted(os.listdir(self.seg_folder))
+		# 	for file_name in tom_ls:
+		# 		if file_name.endswith(".hdf"):
+		# 			self.tom_file_list.append(file_name)
+		#
+		# elif len(options.tomos) == 0:
+		# 	print("Specify tomogram or tomograms folder for start annotation")
+		# 	sys.exit(0)
+		# 	return
+		#
+		# else:
+		# 	tom_ls = options.tomos.split(',')
+		# 	for file_name in tom_ls:
+		# 		if file_name.endswith(".hdf"):
+		# 			self.tom_file_list.append(file_name)
+		# 		else:
+		# 			print(file_name,"is not a valid file_name. Pass")
 
 
 		print("Self.tom_file_list",self.tom_file_list)
