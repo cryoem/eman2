@@ -42,10 +42,11 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--volout", type=str,help="Volume output file", default=None)
-	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default="gauss.txt")
+	parser.add_argument("--volout", type=str,help="Volume output file", default="threed.hdf")
+	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
+	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
@@ -62,29 +63,33 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, variance
+	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, step coef
 	# replication skipped in final stage
 	stages=[
-		[500,16,24,1.5,.75,4,.02,2],
-		[500,32,32,1.5,.5,4,.02,1.5],
-		[2500,64,32,1.5,.4,4,.01,1.0],
-		[10000,256,48,1.0,.3,0,.01,.5]
+		[500,16,16,1.8,0,1,.01,3.0],
+		[500,16,16,1.8,.75,4,.01,1.0],
+		[1000,32,16,1.5,0,1,.005,2.0],
+		[1000,32,16,1.5,.5,3,.005,1.0],
+		[2500,64,24,1.2,.4,3,.003,1.0],
+		[10000,256,24,1.0,0.2,1,.001,.5],
+		[25000,512,12,0.8,0.2,1,.001,.2]
 	]
 
 	times=[time.time()]
 
 	# Cache initialization
 	if options.verbose: print("Caching particle data")
-	caches={s[1]:StackCache(f"tmp_{s[1]}.cache",nptcl) for s in stages} 	# dictionary keyed by box size
+	downs=sorted(set([s[1] for s in stages]))
+	caches={down:StackCache(f"tmp_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	for i in range(0,nptcl,2500):
 		if options.verbose>1: print(f"Caching {i}/{nptcl}")
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
 		orts,tytx=stk.orientations
 		tytx/=nxraw
 		stkf=stk.do_fft()
-		for stage in stages:
-			stkfds=stkf.downsample(stage[1])
-			caches[stage[1]].write(stkfds,i,orts,tytx)
+		for down in downs:
+			stkfds=stkf.downsample(min(down,nxraw))
+			caches[down].write(stkfds,i,orts,tytx)
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
@@ -134,12 +139,14 @@ def main():
 			shift/=norm
 			sca/=norm
 			gaus.add_tensor(step)
+			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
-			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t{sca:1.4f}")
+			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
 
-		vol=gaus.volume(nxraw)
-		vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
-		vol.write_images(f"A_vol_opt_{sn}.hdf")
+		if options.savesteps:
+			vol=gaus.volume(nxraw)
+			vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+			vol.write_images(f"A_vol_opt_{sn}.hdf")
 
 		# filter results and prepare for stage 2
 		g0=len(gaus)
@@ -150,6 +157,16 @@ def main():
 		print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {local_datetime()}")
 		times.append(time.time())
 	
+		# do this at the end of each stage in case of early termination
+		if options.gaussout is not None:
+			out=open(options.gaussout,"w")
+			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
+
+		vol=gaus.volume(nxraw)
+		vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+		vol.write_images(options.volout)
+
+
 	times=np.array(times)
 	times-=times[0]
 	if options.verbose>1 : print(times)

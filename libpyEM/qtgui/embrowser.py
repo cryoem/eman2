@@ -1760,6 +1760,8 @@ class EMStackFileType(EMFileType) :
 				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), 
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+			if self.dim[0]>=3 and self.dim[0]<=5: rtr.append(("Spheres","Each X line is X-Y-Z[-A[-S]]. Show as spheres in 3-D",self.showSpheres))
+			else: print("Nope ",self.dim)
 			
 		# 1-D stack
 		elif self.nimg > 1:
@@ -1772,6 +1774,32 @@ class EMStackFileType(EMFileType) :
 			rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
 
 		return rtr
+
+	def showSpheres(self,brws):
+		"""New 3-D window"""
+		brws.busy()
+
+		target = emscene3d.EMScene3D()
+		brws.view3d.append(target)
+
+		data=EMData.read_images(self.path)
+		gaussplots=[emshapeitem3d.EMScatterPlot3D() for i in data]
+		for i,d in enumerate(data):
+			target.insertNewNode(f"Iter_{i}",gaussplots[i])
+			if i>0: gaussplots[i].setVisibleItem(False)
+			cp=data[i].numpy().copy().transpose()
+			cp[:3]*=256.0
+			gaussplots[i].setData(cp)
+
+		# target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		# target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+
+		brws.notbusy()
+		target.setWindowTitle(display_path(self.path))
+
+		target.show()
+		target.raise_()
+
 
 	def showChimera(self, brws):
 		"""Open in Chimera"""
@@ -3716,9 +3744,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		dirregex - default "", a regular expression for filtering filenames (directory names not filtered)
 		"""
 		# although this looks dumb it is necessary to break Python's issue with circular imports(a major weakness of Python IMO)
-		global emscene3d, emdataitem3d
+		global emscene3d, emdataitem3d, emshapeitem3d
 		from . import emscene3d
 		from . import emdataitem3d
+		from . import emshapeitem3d
 
 		QtWidgets.QWidget.__init__(self, parent)
 		

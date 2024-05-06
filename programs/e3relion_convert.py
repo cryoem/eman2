@@ -61,6 +61,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	parser.add_argument("--cs", default=0, type=float,help="Spherical aberration in mm, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--ac", default=0, type=float,help="Amplitude contrast as a percentage, eg - 10, not 0.1, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--particlebits", default=6, type=float,help="Significant bits to retain in HDF files for raw particles, 6 is usually more than sufficient (default 6)", guitype='intbox', row=9, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--clip", type=int, help="Adjust box size to specified --clip value AFTER CTF phase flipping (if requested). Note that this makes phase un-flipping impossible",default=-1)
 	parser.add_argument("--dftolerance",default=0.001, type=float,help="If defocus has to be used to group the particles by micrograph, and the defocus varies per particle, this is the amount of variation in microns to permit within a single file")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -188,7 +189,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		except: bfactor=50.0
 		try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":star[rkey]["rlnOriginX"][i],"ty":star[rkey]["rlnOriginY"][i]})
 		except:
-			try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":star[rkey]["rlnOriginXAngstrom"][i]/apix,"ty":star[rkey]["rlnOriginYAngstrom"][i]/apix})
+			try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":-star[rkey]["rlnOriginXAngstrom"][i]/apix,"ty":-star[rkey]["rlnOriginYAngstrom"][i]/apix})
 			except:
 				traceback.print_exc()
 				if i==0: print("No usable particle orientations found in STAR file!")
@@ -220,7 +221,10 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		img["ctf_phase_flipped"]=0
 
 		# write the particle to an image stack, and add an entry to the .lst file (-1 appends)
-		img.write_image(ptclname,ptclno)
+		if options.clip>0:
+			cp=img.get_clip(Region((img["nx"]-options.clip)//2,(img["ny"]-options.clip)//2,options.clip,options.clip))
+			cp.write_image(ptclname,ptclno)
+		else: img.write_image(ptclname,ptclno)
 		lst[-1]=(ptclno,ptclname.split(":")[0],{"xform.projection":xform})
 
 		# write the phase flipped image/lst if requested
@@ -236,7 +240,10 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			imgc["apix_z"]=apix
 			imgc["ctf"]=ctf						# CTF with good general parameters in the header, can be overridden in lst files
 			imgc["ctf_phase_flipped"]=1
-			imgc.write_image(ptclfname,ptclno)
+			if options.clip>0:
+				cp=imgc.get_clip(Region((img["nx"]-options.clip)//2,(img["ny"]-options.clip)//2,options.clip,options.clip))
+				cp.write_image(ptclfname,ptclno)
+			else: imgc.write_image(ptclfname,ptclno)
 			lstf[-1]=(ptclno,ptclfname.split(":")[0],{"xform.projection":xform})
 
 		lastctf=ctf.to_vector()

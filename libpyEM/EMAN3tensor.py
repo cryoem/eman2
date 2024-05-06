@@ -226,9 +226,9 @@ class EMStack():
 		if isinstance(target,EMStack3D):
 			return self.tensor*tf.math.conj(target)
 
-	def write_images(self,fsp=None):
+	def write_images(self,fsp=None,bits=12):
 		self.coerce_emdata()
-		EMData.write_images(fsp,self._data)
+		im_write_compressed(self._data,fsp,0,bits)
 
 	def downsample(self,newsize):
 		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
@@ -645,6 +645,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		"""Makes n copies of the current Gaussians shifted by a small random amount to improve the level of detail without
 significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
 stddev=0.01"""
+		if n<=1 : return
 		self.coerce_tensor()
 		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
 		self._data=tf.concat(dups,0)
