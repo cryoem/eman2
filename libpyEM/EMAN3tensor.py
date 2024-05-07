@@ -868,7 +868,7 @@ FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containi
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
-def tf_frc(ima,imb,avg=0,weight=1.0):
+def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
 	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
 	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
@@ -928,7 +928,7 @@ def tf_frc(ima,imb,avg=0,weight=1.0):
 		if weight!=1.0:
 			w=np.linspace(weight,2.0-weight,nr)
 			frc=frc*w
-		return tf.math.reduce_mean(frc[:,:avg],1)
+		return tf.math.reduce_mean(frc[:,minfreq:avg],1)
 	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 

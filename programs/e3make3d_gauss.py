@@ -47,6 +47,7 @@ def main():
 	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
+	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
 
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
@@ -60,20 +61,35 @@ def main():
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
 
+	if options.savesteps: 
+		try: os.unlink("steps.hdf")
+		except: pass
+
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
 	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, step coef
 	# replication skipped in final stage
-	stages=[
-		[500,16,16,1.8,0,1,.01,3.0],
-		[500,16,16,1.8,.75,4,.01,1.0],
-		[1000,32,16,1.5,0,1,.005,2.0],
-		[1000,32,16,1.5,.5,3,.005,1.0],
-		[2500,64,24,1.2,.4,3,.003,1.0],
-		[10000,256,24,1.0,0.2,1,.001,.5],
-		[25000,512,12,0.8,0.2,1,.001,.2]
-	]
+	if options.tomo:
+		stages=[
+			[256,32,16,1.8,0,1,.01,3.0],
+			[256,32,16,1.8,.3,2,.01,1.0],
+			[256,64,24,1.5,0,1,.005,1.0],
+			[256,64,48,1.5,.2,2,.005,0.5],
+			[256,128,32,1.2,.2,3,.003,0.5],
+			[256,512,32,1.0,0.2,3,.001,0.25],
+			[256,1024,24,0.8,0.2,1,.001,.1]
+		]
+	else:
+		stages=[
+			[500,16,16,1.8,0,1,.01,2.0],
+			[500,16,16,1.8,.7,4,.01,1.0],
+			[1000,32,16,1.5,0,1,.005,1.5],
+			[1000,32,16,1.5,.5,3,.005,1.0],
+			[2500,64,24,1.2,.4,3,.003,1.0],
+			[10000,256,24,1.0,0.2,1,.001,.5],
+			[25000,512,12,0.8,0.2,1,.001,.2]
+		]
 
 	times=[time.time()]
 
@@ -94,8 +110,9 @@ def main():
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
-	rnd+=(-.5,-.5,-.5,100.0)
-	gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	rnd+=(-.5,-.5,-.5,10.0)
+	if options.tomo: gaus._data=rnd/(.9,.9,.9,10.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	else: gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
 	times.append(time.time())
 	ptcls=[]
@@ -143,10 +160,10 @@ def main():
 
 			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
 
-		if options.savesteps:
-			vol=gaus.volume(nxraw)
-			vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
-			vol.write_images(f"A_vol_opt_{sn}.hdf")
+		# if options.savesteps:
+		# 	vol=gaus.volume(nxraw)
+		# 	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+		# 	vol.write_images(f"A_vol_opt_{sn}.hdf")
 
 		# filter results and prepare for stage 2
 		g0=len(gaus)
@@ -163,7 +180,7 @@ def main():
 			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
 		vol=gaus.volume(nxraw)
-		vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+		#vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
 		vol.write_images(options.volout)
 
 
@@ -189,7 +206,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 		gt.watch(gaus.tensor)
 		projs=gaus.project_simple(orts,ny,tytx=tytx)
 		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight)	# specifying ny/2 radius explicitly so weight functions
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,3)	# specifying ny/2 radius explicitly so weight functions
 
 	grad=gt.gradient(frcs,gaus._data)
 	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
