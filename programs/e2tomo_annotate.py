@@ -4564,11 +4564,15 @@ class Statistics_Tab(QtWidgets.QWidget):
 					self.cent_mass_em.append([pair[2],pair[1],pair[0]])
 				elif len(pair) == 2:
 					self.cent_mass_em.append([pair[1],pair[0]])
-			for  i in range(len(self.cent_mass_em)):
-				cmass =[f"{loc:.1f}" for loc in self.cent_mass_em[i]]
-				name = objs[i].name
-				print(f"Center of Mass of Obj {name}:",",".join(cmass))
+					
+			with open("CenterOfMass_coordinates.txt", "w") as file:
+				for  i in range(1,len(self.cent_mass_em)+1):
+					print("Center of Mass of Obj",i,":", str(self.cent_mass_em[-i]))
+					# Write the name and coordinates to the file
+					file.write(f"{str(self.cent_mass_em[-i][0])} {str(self.cent_mass_em[-i][1])} {str(self.cent_mass_em[-i][2])}\n")
+					
 			return
+			
 		else:
 			stat_txt = self.stat_combo.currentText()
 			unit = "Pixel"
