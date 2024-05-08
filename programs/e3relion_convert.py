@@ -124,9 +124,10 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	# first we try using the micrograph name field
 	try:
 		ugnames=set(star[rkey]["rlnMicrographName"])
+		if options.verbose>1: print(f"Identified {len(ugnames)} rlnMicrographNames")
 
 		# if the rlnMicrographName seems to be valid, and document multiple micrographs, we use it
-		if len(ugbyname)>1 and nptcl/len(ugbyname)>3:
+		if len(ugnames)>1 and nptcl/len(ugnames)>3:
 			nmtonum={}
 			for i,n in enumerate(ugnames): nmtonum[n]=i		# map micrograph names to numbers
 			ugnums=[nmtonum[n] for n in star[rkey]["rlnMicrographName"]]
@@ -137,7 +138,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			ugnames=set([i.split("@")[1] for i in star[rkey]["rlnImageName"]])
 
 			# if the rlnMicrographName seems to be valid, and document multiple micrographs, we use it
-			if len(ugbyname)>1 and nptcl/len(ugbyname)>3:
+			if len(ugnames)>1 and nptcl/len(ugnames)>3:
 				nmtonum={}
 				for i,n in enumerate(ugnames): nmtonum[n]=i		# map micrograph names to numbers
 				ugnums=[nmtonum[n] for n in star[rkey]["rlnImageName"].split("@")[1]]
