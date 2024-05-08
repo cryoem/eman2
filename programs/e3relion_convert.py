@@ -171,6 +171,9 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		try: os.unlink("sets/fromstar__ctf_flip.lst")
 		except: pass
 		lstf=LSXFile("sets/fromstar__ctf_flip.lst")
+		try: os.unlink("sets/fromstar__ctf_flip_ds5.lst")
+		except: pass
+		lstft=LSXFile("sets/fromstar__ctf_flip_ds5.lst")
 	lastctf=[]
 	t0=time.time()
 	for i in range(nptcl):
@@ -205,6 +208,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			ugnum=ugnums[i]
 			ptclname=f"particles/micro_{ugnum:05d}.hdf:{options.particlebits}"
 			ptclfname=f"particles/micro_{ugnum:05d}__ctf_flip.hdf:{options.particlebits}"
+			ptclfsname=f"particles/micro_{ugnum:05d}__ctf_flip_ds5.hdf:{options.particlebits}"
 			ptclno=0
 			jdb=js_open_dict(info_name(ptclname))
 
@@ -244,8 +248,16 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			if options.clip>0:
 				cp=imgc.get_clip(Region((img["nx"]-options.clip)//2,(img["ny"]-options.clip)//2,options.clip,options.clip))
 				cp.write_image(ptclfname,ptclno)
-			else: imgc.write_image(ptclfname,ptclno)
+				nbx=good_size(int(options.clip*apix/1.8))
+				shr=cp.process("math.fft.resample",{"n":options.clip/nbx})
+				shr.write_image(ptclfsname,ptclno)
+			else:
+				imgc.write_image(ptclfname,ptclno)
+				nbx=good_size(int(imgc["nx"]*apix/1.8))
+				shr=imgc.process("math.fft.resample",{"n":imgc["nx"]/nbx})
+				shr.write_image(ptclfsname,ptclno)
 			lstf[-1]=(ptclno,ptclfname.split(":")[0],{"xform.projection":xform})
+			lstft[-1]=(ptclno,ptclfsname.split(":")[0],{"xform.projection":xform})
 
 		lastctf=ctf.to_vector()
 
