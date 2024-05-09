@@ -650,10 +650,11 @@ stddev=0.01"""
 		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
 		self._data=tf.concat(dups,0)
 
-	def norm_filter(self,thr=0.5):
-		"""Rescale the amplitudes so the maximum is 1, then remove any Gaussians with amplitude less than thr"""
+	def norm_filter(self,sig=0.5):
+		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma"""
 		self.coerce_tensor()
 		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		thr=tf.math.reduce_mean(self._data[:,3])+sig*tf.math.reduce_std(self._data[:,3])
 		self._data=tf.boolean_mask(self._data,self._data[:,3]>thr)					# remove any gaussians with amplitude below threshold
 
 	def project_simple(self,orts,boxsize,tytx=None):

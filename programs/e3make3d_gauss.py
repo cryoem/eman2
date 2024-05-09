@@ -72,23 +72,23 @@ def main():
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
-			[256,32,16,1.8,0,1,.01,3.0],
-			[256,32,16,1.8,.3,2,.01,1.0],
-			[256,64,24,1.5,0,1,.005,1.0],
-			[256,64,48,1.5,.2,2,.005,0.5],
-			[256,128,32,1.2,.2,3,.003,0.5],
-			[256,512,32,1.0,0.2,3,.001,0.25],
-			[256,1024,24,0.8,0.2,1,.001,.1]
+			[256,32,  16,1.8,  0,1,.01, 3.0],
+			[256,32,  16,1.8,0.3,2,.01, 1.0],
+			[256,64,  24,1.5,  0,1,.005,1.0],
+			[256,64,  48,1.5,0.2,2,.005,0.5],
+			[256,128, 32,1.2,0.2,3,.003,0.5],
+			[256,512, 32,1.0,0.2,3,.001,0.25],
+			[256,1024,24,0.8,0.2,1,.001,0.1]
 		]
 	else:
 		stages=[
-			[500,16,16,1.8,0,1,.01,2.0],
-			[500,16,16,1.8,.7,4,.01,1.0],
-			[1000,32,16,1.5,0,1,.005,1.5],
-			[1000,32,16,1.5,.5,3,.005,1.0],
-			[2500,64,24,1.2,.4,3,.003,1.0],
-			[10000,256,24,1.0,0.2,1,.001,.5],
-			[25000,512,12,0.8,0.2,1,.001,.2]
+			[500,   16,16,1.8,-3  ,1,.01, 2.0],
+			[500,   16,16,1.8, 0  ,4,.01, 1.0],
+			[1000,  32,16,1.5,-1  ,1,.005,1.5],
+			[1000,  32,16,1.5,-1.5,3,.005,1.0],
+			[2500,  64,24,1.2,-1.5,3,.003,1.0],
+			[10000,256,24,1.0,-2  ,2,.001,0.5],
+			[25000,512,12,0.8,-2  ,1,.001,0.2]
 		]
 
 	times=[time.time()]
@@ -140,8 +140,8 @@ def main():
 		
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
 		for i in range(stage[2]):		# training epochs
-			for j in range(0,len(nliststg),1000):	# compute the gradient step piecewise due to memory limitations, 1000 particles at a time
-				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+1000])
+			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 1000 particles at a time
+				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
 				step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 				if j==0:
 					step,qual,shift,sca=step0,qual0,shift0,sca0
@@ -150,7 +150,7 @@ def main():
 					qual+=qual0
 					shift+=shift0
 					sca+=sca0
-			norm=len(nliststg)//1000+1
+			norm=len(nliststg)//500+1
 			step/=norm
 			qual/=norm
 			shift/=norm
@@ -167,7 +167,7 @@ def main():
 
 		# filter results and prepare for stage 2
 		g0=len(gaus)
-		gaus.norm_filter(thr=stage[4])
+		gaus.norm_filter(sig=stage[4])
 		g1=len(gaus)
 		if stage[5]>0: gaus.replicate(stage[5],stage[6])
 		g2=len(gaus)
