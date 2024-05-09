@@ -49,7 +49,7 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--tomo",type=str,help="The tomograms to annotate",default="")
+	parser.add_argument("--tomo",type=str,help="The tomogram to annotate",default="")
 	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms")
 
 	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
@@ -62,7 +62,7 @@ def main():
 
 	app = EMApp()
 	if options.load_data_czi:
-		os.system("e2import_from_czi.py")
+		os.system("python ./e2import_from_czi.py")
 		return
 	else:
 		pass
@@ -82,6 +82,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.app = weakref.ref(application)
 		self.setMinimumSize(1120, 720)
 		self.options=options
+
+
 
 		self.setWindowTitle("Image Viewer")
 		#System Menu
@@ -119,53 +121,25 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.tomo_tree = QtWidgets.QTreeWidget()
 
-
-		if len(options.tomo)>0:
-			self.tom_folder = "."
-			tom_ls = options.tomo.split(',')
-			for file_name in tom_ls:
-				if file_name.endswith(".hdf"):
-					self.tom_file_list.append(file_name)
-				else:
-					print(file_name,"is not a valid file_name. Pass")
-					continue
-
-		elif len(self.tom_folder)>0:
+		if len(self.tom_folder)>0:
 			tom_ls = sorted(os.listdir(self.tom_folder))
 			# seg_ls = sorted(os.listdir(self.seg_folder))
 			for file_name in tom_ls:
 				if file_name.endswith(".hdf"):
 					self.tom_file_list.append(file_name)
 
-		# elif len(options.tomo) == 0:
-		# 	print("Specify tomogram or tomograms folder for start annotation")
-		# 	sys.exit(0)
-		# 	return
-
-		else:
+		elif len(options.tomo) == 0:
 			print("Specify tomogram or tomograms folder for start annotation")
 			sys.exit(0)
 			return
 
-		# if len(self.tom_folder)>0:
-		# 	tom_ls = sorted(os.listdir(self.tom_folder))
-		# 	# seg_ls = sorted(os.listdir(self.seg_folder))
-		# 	for file_name in tom_ls:
-		# 		if file_name.endswith(".hdf"):
-		# 			self.tom_file_list.append(file_name)
-		#
-		# elif len(options.tomos) == 0:
-		# 	print("Specify tomogram or tomograms folder for start annotation")
-		# 	sys.exit(0)
-		# 	return
-		#
-		# else:
-		# 	tom_ls = options.tomos.split(',')
-		# 	for file_name in tom_ls:
-		# 		if file_name.endswith(".hdf"):
-		# 			self.tom_file_list.append(file_name)
-		# 		else:
-		# 			print(file_name,"is not a valid file_name. Pass")
+		else:
+			tom_ls = options.tomo.split(',')
+			for file_name in tom_ls:
+				if file_name.endswith(".hdf"):
+					self.tom_file_list.append(file_name)
+				else:
+					print(file_name,"is not a valid file_name. Pass")
 
 
 		print("Self.tom_file_list",self.tom_file_list)
@@ -500,6 +474,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.assisted_tab = QtWidgets.QTabWidget()
+		self.tmplt_tab = Tmplt_Match_Tab(target=self)
 		self.ext_tab = Extrapolate_Tab(target=self)
 		self.nn_tab = NNet_Tab(target=self)
 		self.snn_tab = Simple_NNet_Tab(target=self)
@@ -512,6 +487,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 
+		#self.assisted_tab.addTab(self.tmplt_tab,"Template Matching")
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"UNet")
 		self.assisted_tab.addTab(self.snn_tab,"EMAN2NNet")
@@ -2008,11 +1984,14 @@ class CustomScene3D(EMScene3D):
 		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
 		self.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
 
-		annotate = self.target.get_annotation().get_clip(reg)
-		annotate_di = EMDataItem3D(annotate, transform=Transform())
-		self.insertNewNode('Annotate', annotate_di, parentnode=self)
-		isosurface = EMIsosurface(annotate_di, transform=Transform())
-		self.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		if self.target.get_annotation()["mean_nonzero"] != 0:
+			annotate = self.target.get_annotation().get_clip(reg)
+			annotate_di = EMDataItem3D(annotate, transform=Transform())
+			self.insertNewNode('Annotate', annotate_di, parentnode=self)
+			isosurface = EMIsosurface(annotate_di, transform=Transform())
+			self.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		else:
+			print("Annotation is empty. Show data volume only")
 		return
 
 
@@ -4060,13 +4039,389 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.target.img_view.set_data(self.target.data, self.target.annotate)
 		return
 
+class Tmplt_Match_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		self.tmplt_le = QtWidgets.QLineEdit()
+		self.tmplt_browser_bt = QtWidgets.QPushButton("Browse ")
+		self.tmplt_sym_le = QtWidgets.QLineEdit()
+		self.tmplt_sym_le.setText("c1")
+		self.tmplt_delta_le = QtWidgets.QLineEdit()
+		self.tmplt_delta_le.setText("45")
+		self.tmplt_nshrink_le = QtWidgets.QLineEdit()
+		self.tmplt_nshrink_le.setText("4")
+		self.tmplt_nthrds_le = QtWidgets.QLineEdit()
+		self.tmplt_nthrds_le.setText("4")
+
+		self.calc_ccm_bt = QtWidgets.QPushButton("Calc CC")
+		self.show_ccm_bt = QtWidgets.QPushButton("Show CC")
+		self.find_peaks_bt = QtWidgets.QPushButton("Find Peaks")
+		self.do_local_search_bt = QtWidgets.QPushButton("Local Search")
+		self.insert_vol_le = QtWidgets.QLineEdit()
+		self.insert_vol_browser_bt = QtWidgets.QPushButton("Browse ")
+		self.insert_vol_bt = QtWidgets.QPushButton("Insert Mask")
+
+		self.tmplt_npeaks_le = QtWidgets.QLineEdit()
+		self.tmplt_npeaks_le.setText("20")
+		self.tmplt_dthr_le = QtWidgets.QLineEdit()
+		self.tmplt_dthr_le.setText("20")
+		self.tmplt_cccthr_le = QtWidgets.QLineEdit()
+		self.tmplt_cccthr_le.setText("20")
+		self.tmplt_minvol_vs = ValSlider(value=20,rng=(0,1000),rounding=-1,label="minvol   ",labelwidth=56)
+		self.tmplt_minvol_vs.setIntonly(1)
+
+		self.tmplt_ins_thres_vs = ValSlider(value=0.5,rng=(0,1.0),rounding=1,label="thres    ",labelwidth=56)
+
+
+		templ_gbl = QtWidgets.QGridLayout()
+		templ_gbl.addWidget(QtWidgets.QLabel("Template"),0,0,1,1)
+		templ_gbl.addWidget(self.tmplt_le,0,1,1,3)
+		templ_gbl.addWidget(self.tmplt_browser_bt,0,4,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("Find particles"),1,0,1,5)
+		templ_gbl.addWidget(QtWidgets.QLabel("sym"),2,0,1,1)
+		templ_gbl.addWidget(self.tmplt_sym_le,2,1,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("delta"),2,2,1,1)
+		templ_gbl.addWidget(self.tmplt_delta_le,2,3,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("nshrinks"),3,0,1,1)
+		templ_gbl.addWidget(self.tmplt_nshrink_le,3,1,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("threads"),3,2,1,1)
+		templ_gbl.addWidget(self.tmplt_nthrds_le,3,3,1,1)
+
+		#templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
+		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,0,1,1)
+		templ_gbl.addWidget(self.tmplt_npeaks_le,4,1,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
+		templ_gbl.addWidget(self.tmplt_cccthr_le,4,3,1,1)
+		#templ_gbl.addWidget(QtWidgets.QLabel("dist thr"),4,2,1,1)
+		#templ_gbl.addWidget(self.tmplt_dthr_le,4,3,1,1)
+
+		#templ_gbl.addWidget(self.tmplt_minvol_vs,5,0,1,4)
+
+		templ_gbl.addWidget(self.calc_ccm_bt,2,4,1,1)
+		templ_gbl.addWidget(self.show_ccm_bt,3,4,1,1)
+		templ_gbl.addWidget(self.find_peaks_bt,4,4,1,1)
+		templ_gbl.addWidget(self.do_local_search_bt,5,4,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("Segment particles"),6,0,1,5)
+		templ_gbl.addWidget(self.insert_vol_bt,8,4,1,1)
+
+		templ_gbl.addWidget(QtWidgets.QLabel("Mask"),7,0,1,1)
+		templ_gbl.addWidget(self.insert_vol_le,7,1,1,3)
+		templ_gbl.addWidget(self.insert_vol_browser_bt,7,4,1,1)
+
+
+		templ_gbl.addWidget(self.tmplt_ins_thres_vs,8,0,1,3)
+
+
+		self.setLayout(templ_gbl)
+		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
+		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
+		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
+		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_thrds)
+		self.insert_vol_bt.clicked[bool].connect(self.insert_vol)
+		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
+		self.insert_vol_browser_bt.clicked[bool].connect(self.load_insert_vol)
+		self.ccc_file = "tmplt_match_ccc.hdf"
+		self.pts = []
+		self.xfs = []
+
+	def calc_ccm(self):
+		def do_match(jsd, xfs):
+			for xf in xfs:
+				r=ref.process("xform", {"transform":xf})
+				r.clip_inplace(tomo_reg)
+				f_ref = r.do_fft()
+				cf=f_tomo.calc_ccf(f_ref)
+				jsd.put(cf)
+
+		#create oris to rotate the tempt
+		sym=parsesym(self.tmplt_sym_le.text())
+		dt=int(self.tmplt_delta_le.text())
+		tomo = self.target.get_data().copy()
+		ref = EMData(self.tmplt_le.text())
+		shrink = int(self.tmplt_nshrink_le.text())
+		oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt,"inc_mirror":1})
+
+		#print(sym, dt, shrink, oris, tomo.get_sizes(), ref.get_sizes())
+		#processing tempt and tomo
+		if shrink > 1:
+			tomo.process_inplace("math.fft.resample",{'n':shrink})
+			nx,ny,nz= tomo.get_sizes()
+			tomo_reg = Region(0,0,0,nx,ny,nz)
+
+		mbin=tomo["apix_x"]/ref["apix_x"]
+		print("Will shrink reference by {:.1f}".format(mbin))
+		ref.process_inplace("math.fft.resample",{'n':mbin})
+		ref.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
+		ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+		ref.process_inplace('normalize.edgemean')
+		#ref.mult(-1)
+
+		boxsz=ref["nx"]//2
+		tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
+		tomo.process_inplace('normalize.edgemean')
+		tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
+		f_tomo = tomo.do_fft()
+
+		#calc fourier transform of tomo and ref+prepad before do_match
+		#Should rotate the small ref vol, padding it then do a fourier transform.
+
+		nthrds=int(self.tmplt_nthrds_le.text()) #processes got own memory allocation, thrds share. python got global interpreter lock, hence not thrds safety.
+		rg=np.arange(len(oris))
+
+		tasks=[oris[i::nthrds] for i in range(nthrds)]
+		#ccc=tomo.copy()*0-65535 #maximum value of an unsigned 16-bit integer
+		ccc=tomo.copy_head()
+		ccc.to_zero()
+		ccc.sub(65535.0)
+		#compute ccc
+		jsd=queue.Queue(0) #thrds safe, while list obj is not.
+		thrds=[threading.Thread(target=do_match,args=(jsd, xfs)) for xfs in tasks] #each thrd got overhead
+		thrtolaunch=0
+		tsleep=threading.active_count()
+
+		ndone=0
+		for t in thrds:
+			t.start()
+		while threading.active_count()>tsleep or not jsd.empty():
+			while not jsd.empty():
+				cf=jsd.get()
+				ccc.process_inplace("math.max", {"with":cf}) #can also use a maximum averager
+				ndone+=1
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(oris)))
+				sys.stdout.flush()
+			time.sleep(.5)
+		print("")
+		ccc.process_inplace("xform.phaseorigin.tocenter")
+		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
+		ccc.process_inplace("filter.highpass.gauss",{"cutoff_pixels":24})
+		ccc.process_inplace("normalize.edgemean")
+		ccc.process_inplace("threshold.belowtozero")
+		#self.ccm = ccc
+		ccc.write_compressed(self.ccc_file,0,12)
+
+
+
+	def show_ccm(self):
+		os.system("e2display.py {} & ".format(self.ccc_file))
+		return
+
+	def find_peaks_amp(self):
+		try:
+			n_peaks = int(self.tmplt_npeaks_le.text())
+			nbin = int(self.tmplt_nshrink_le.text())
+			ccc_thr = float(self.tmplt_cccthr_le.text())
+			ref_head = EMData(self.tmplt_le.text(), 0,True)
+			rx,ry,rz = ref_head.get_sizes()
+
+		except:
+			print("Invalid n_peaks, nbin and ccc_thr. Return")
+			return
+		ccc_hdr=EMData(self.ccc_file, 0,True)
+		cx,cy,cz = ccc_hdr.get_sizes()
+
+		ccc = EMData(self.ccc_file).get_clip(Region(rx//2,rx//2,rx//2,cx-rx,cy-rx,cz-rx)).get_clip(Region(-rx//2,-rx//2,-rx//2,cx,cy,cz))
+		mean=float(ccc.get_attr("mean"))
+		sig=float(ccc.get_attr("sigma"))
+		ccc.process_inplace("threshold.belowtozero",{"minval":ccc_thr})
+		ccc.process_inplace("mask.onlypeaks",{"npeaks":0})
+
+		peaks = ccc.calc_highest_locations(mean+3*sig)
+		peaks.sort(key=lambda peak: -peak.value)
+		pts = [(nbin*peak.x,nbin*peak.y,nbin*peak.z) for peak in peaks]
+
+		if len(pts) > n_peaks:
+			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+			self.pts = pts[:n_peaks]
+		else:
+			print("Find {} peaks at {}".format(len(pts),pts))
+			self.pts = pts
+
+	def find_peaks(self):
+		img=EMData(self.ccc_file).numpy().copy()
+		min_vol = int(self.tmplt_minvol_vs.value)
+		if len(self.tmplt_le.text()) > 0:
+			ref_head = EMData(self.tmplt_le.text(), 0,True)
+			rx,ry,rz = ref_head.get_sizes()
+			refvol = rx*ry*rz
+		else:
+			refvol = 100000000
+
+		img[img<3]=0
+		lb, nlb=ndi.label(img)
+
+		pks=np.array(ndi.maximum_position(img,lb,list(range(1,nlb))))
+		#pks=np.array(ndi.center_of_mass(img,lb,list(range(1,nlb))))
+		pksize=np.array(ndi.sum(img,lb,list(range(1,nlb))))
+		#print(pksize[:50])
+		pks_mask = lb.copy()
+		pks_mask[pks_mask > 0] = 1
+		pks_vol = np.array(ndi.sum(pks_mask, lb, list(range(1, nlb))))
+		n=len(pks)
+
+		kpid=np.logical_and(pksize>min_vol, pks_vol<refvol)
+
+		pks=pks[kpid]
+		pkscore=pksize[kpid]
+		pks_vol = pks_vol[kpid]
+		srt=np.argsort(-pkscore)
+		pks=pks[srt]
+		pks_vol = pks_vol[srt]
+		pkscore=pkscore[srt]
+		# if np.max(pkscore) != 0:
+		try:
+			pkscore/=np.max(pkscore)
+		except:
+			pass
+
+		tree=KDTree(pks)
+		tokeep=np.ones(len(pks), dtype=bool)
+
+		dthr = int(self.tmplt_dthr_le.text())
+		n_peaks = int(self.tmplt_npeaks_le.text())
+		nbin = int(self.tmplt_nshrink_le.text())
+		#print(np.min(pks, axis=0), np.max(pks, axis=0), boxsz, dthr)
+		for i in range(len(pks)):
+			if tokeep[i]:
+				k=tree.query_ball_point(pks[i], dthr)
+				tokeep[k]=False
+				tokeep[i]=True
+		pts=pks[tokeep]*nbin
+		scr=pkscore[tokeep]
+		pvolume=pks_vol[tokeep]
+		#options so that peaks are not too close together
+		if len(pts) > n_peaks:
+			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+			self.pts = pts[:n_peaks]
+		else:
+			print("Find {} peaks at {}".format(len(pts),pts))
+			self.pts = pts
+
+	def do_search(self, tomo, tempt, jsd, ps):
+		for p in ps:
+			x,y,z= (int(i) for i in p)
+			bs = tempt["nx"]
+			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
+			tempt_a = tempt.align("rotate_translate_3d_tree",subvol)
+			#tempt_a["loc"]=p
+			jsd.put((p,tempt_a["xform.align3d"]))
+
+	def do_local_search_thrds(self):
+		if len(self.pts) == 0:
+			try:
+				self.find_peaks()
+			except:
+				print("No peaks specified for local search. Find peaks first")
+				return
+
+		nthrds = int(self.tmplt_nthrds_le.text())
+		tomo = self.target.get_data().copy()
+		tempt = EMData(self.tmplt_le.text())
+
+		start = time.time()
+		rg=np.arange(len(self.pts))
+		tasks=[self.pts[i::nthrds] for i in range(nthrds)]
+
+		#print(tasks)
+		jsd=queue.Queue(0)
+		thrds=[threading.Thread(target=self.do_search,args=(tomo, tempt, jsd, ps)) for ps in tasks]
+		thrtolaunch=0
+		tsleep=threading.active_count()
+
+		ndone=0
+		for t in thrds:
+			t.start()
+		p_xf_l = []
+		print("Start local searching at {} location".format(len(self.pts)))
+
+		while threading.active_count()>tsleep or not jsd.empty():
+			while not jsd.empty():
+				p,xf=jsd.get()
+				p_xf_l.append((p,xf))
+				ndone+=1
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(self.pts)))
+				sys.stdout.flush()
+			time.sleep(.5)
+		print("")
+		print("Finish in {}s".format(time.time()-start))
+		self.pts = [p_xf[0] for p_xf in p_xf_l]
+		self.xfs = [p_xf[1] for p_xf in p_xf_l]
+
+	def insert_vol(self):
+		val = self.target.get_current_class()
+		if val == 0:
+			print("Select a class for the insert mask.")
+			return
+
+		outfile = "tmplt_match_temp_vol.hdf"
+		if self.target.get_annotation() is not None:
+			tomo_head = self.target.get_annotation().copy()
+			tomo_head.write_image(outfile)
+		else:
+			tomo_head = self.target.get_data().copy_head()
+			tomo_head.write_image(outfile)
+
+		if self.insert_vol_le.text() == 0:
+			print("Specify mask to put in the tomogram")
+			return
+		else:
+			insert_im = EMData(self.insert_vol_le.text())
+
+		if len(self.pts) == 0 or len(self.xfs) == 0:
+			self.do_local_search_thrds()
+
+		for i,loc in enumerate(self.pts):
+			vol = insert_im.copy()
+			vol.process_inplace("threshold.binary",{"value":self.tmplt_ins_thres_vs.value})
+			vol.process_inplace("xform", {"transform":self.xfs[i]})
+			vol.mult(val)
+			x,y,z = [int(i) for i in loc]
+			bs = insert_im["nx"]
+			reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
+			try:
+				tomo_vol = self.target.get_annotation().get_clip(reg)
+				insert_vol=vol.process("math.max",{"with":tomo_vol})
+			except:
+				insert_vol = vol
+			try:
+				insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
+			except:
+				print("Invalid region at location",x,y,z,".Skip.")
+				continue
+		annotate = EMData(outfile)
+		self.target.img_view.set_data(self.target.data,annotate)
+		print("Finishing segmentation")
+
+	def load_template(self):
+		self.tmplt_browser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.tmplt_browser.ok.connect(self.load_tmplt_browser_ok)
+		self.tmplt_browser.show()
+		return
+
+	def load_tmplt_browser_ok(self):
+		self.tmplt_le.setText(self.tmplt_browser.getResult()[0])
+		return
+
+
+	def load_insert_vol(self):
+		self.insert_browser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.insert_browser.ok.connect(self.load_insert_browser_ok)
+		self.insert_browser.show()
+		return
+
+	def load_insert_browser_ok(self):
+		self.insert_vol_le.setText(self.insert_browser.getResult()[0])
+		return
+
+
 
 class Templ_Match_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self,None)
 		self.target = target
 		self.template_text = QtWidgets.QLineEdit()
-		self.template_browser_bt = QtWidgets.QPushButton("Browse")
+		self.tmplt_browser_bt = QtWidgets.QPushButton("Browse")
 		self.create_template_bt = QtWidgets.QPushButton("Make Template")
 		self.template_match_bt = QtWidgets.QPushButton("Template Match")
 		self.tplt_low_pass_vs = ValSlider(value=1,rng=(0.001,1),rounding=2,label= "Low-pass Filt")
@@ -4075,7 +4430,7 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 
 		templ_gbl = QtWidgets.QGridLayout()
 		templ_gbl.addWidget(self.template_text,0,0,1,3)
-		templ_gbl.addWidget(self.template_browser_bt,0,3,1,1)
+		templ_gbl.addWidget(self.tmplt_browser_bt,0,3,1,1)
 		templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
 		templ_gbl.addWidget(self.template_match_bt,1,2,1,2)
 		templ_gbl.addWidget(self.tplt_threshold_vs,2,0,1,4)
@@ -4093,7 +4448,7 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		tml_layout.addWidget(self.tplt_launch_bt)
 		self.tplt_match_launcher.setLayout(tml_layout)
 
-		self.template_browser_bt.clicked[bool].connect(self.load_template)
+		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
 		self.template_match_bt.clicked[bool].connect(self.tplt_match)
 		self.create_template_bt.clicked[bool].connect(self.create_tplt)
 		self.tplt_launch_bt.clicked[bool].connect(self.tplt_match_launched)
@@ -4465,7 +4820,7 @@ class Statistics_Tab(QtWidgets.QWidget):
 			mask_op = ndi.binary_opening(raw_mask, iterations=1)
 			labeled, num = ndi.label(mask_op)
 			areas = np.array(ndi.sum(mask_op,labeled, np.arange(labeled.max()+1)))
-			mask = areas > thres
+			mask = areas > thres/(4*4*4)
 			remove_small = mask[labeled.ravel()].reshape(labeled.shape)
 			labeled, num = ndi.label(mask_op)
 			total = num
@@ -4553,26 +4908,56 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.n_objects_text.setText(str(count))
 		return objs
 
+	def write_boxes_to_info(self,class_name,box_l,box_sz=64):
+		self.jsonfile = info_name(self.target.data_file)
+		print(self.jsonfile)
+		info = js_open_dict(self.jsonfile)
+
+		if "class_list" in info:
+			clslst=info["class_list"]
+		else:
+			info["class_list"] = {}
+			clslst=info["class_list"]
+
+		class_number = len(clslst.keys())
+		clslst[str(class_number)] = {"name":class_name,"boxsize":box_sz}
+
+		if "boxes_3d" in info:
+			box=info["boxes_3d"]
+		else:
+			info["boxes_3d"] = []
+			box = info["boxes_3d"]
+		for b in box_l:
+			box.append([round(b[0]),round(b[1]),round(b[2]),"e2tomo_annotate_stat",0.0,class_number,0])
+		info["class_list"] =clslst
+		info["boxes_3d"] =box
+		print("Finished writing boxes to e2spt_boxer info")
+		info.close()
+
 	def calc_stat(self):
 		sel = self.get_selected_item()
 		objs = self.label_objs(ask_user=False)
 		if (self.stat_combo.currentText() == "Center of Mass"):
 			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(objs))])
 			self.cent_mass_em = []
+			ox,oy,oz = self.target.cur_region.get_origin()
 			for pair in self.cent_mass:
 				if len(pair) == 3:
-					self.cent_mass_em.append([pair[2],pair[1],pair[0]])
+					self.cent_mass_em.append([pair[2]+ox,pair[1]+oy,pair[0]+oz])
 				elif len(pair) == 2:
-					self.cent_mass_em.append([pair[1],pair[0]])
-					
-			with open("CenterOfMass_coordinates.txt", "w") as file:
-				for  i in range(1,len(self.cent_mass_em)+1):
-					print("Center of Mass of Obj",i,":", str(self.cent_mass_em[-i]))
-					# Write the name and coordinates to the file
-					file.write(f"{str(self.cent_mass_em[-i][0])} {str(self.cent_mass_em[-i][1])} {str(self.cent_mass_em[-i][2])}\n")
-					
+					self.cent_mass_em.append([pair[1]+ox,pair[0]]+oy)
+			for  i in range(len(self.cent_mass_em)):
+				cmass =[f"{loc:.1f}" for loc in self.cent_mass_em[i]]
+				name = objs[i].name
+				print(f"Center of Mass of Obj {name}:",",".join(cmass))
+			try:
+				class_name =(objs[0].name).split("_")[0]
+				self.write_boxes_to_info(class_name,self.cent_mass_em,64)
+
+			except Exception as e:
+				print(e)
 			return
-			
+
 		else:
 			stat_txt = self.stat_combo.currentText()
 			unit = "Pixel"
