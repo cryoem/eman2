@@ -195,7 +195,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			defocus,dfdiff,dfang=1.0,0.0,0.0		# 1 micron default if we can't find a good defocus
 		try: bfactor=star[rkey]["rlnCtfBfactor"][i]
 		except: bfactor=50.0
-		try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":star[rkey]["rlnOriginX"][i],"ty":star[rkey]["rlnOriginY"][i]})
+		try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":-star[rkey]["rlnOriginX"][i],"ty":-star[rkey]["rlnOriginY"][i]})
 		except:
 			try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":-star[rkey]["rlnOriginXAngstrom"][i]/apix,"ty":-star[rkey]["rlnOriginYAngstrom"][i]/apix})
 			except:
