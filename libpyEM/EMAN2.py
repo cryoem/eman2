@@ -2920,8 +2920,8 @@ def is_file_compressible(fsp):
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
-	This function can be used to read a set of images from a file or bdb: database. Pass in
-	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	This function can be used to read a set of images from a file. Pass in
+	the filename, optionally a list of image numbers to read (or None),
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid."""
 	#	print "RI ",fsp,str(parms)
@@ -2967,8 +2967,8 @@ EMData.read_image = db_read_image
 def db_read_images(fsp, *parms):
 	"""EMData.read_images(filespec,[image # list],[header only])
 
-	This function can be used to read a set of images from a file or bdb: database. Pass in
-	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	This function can be used to read a set of images from a file. Pass in
+	the filename, optionally a list of image numbers to read (or None),
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid"""
 	if fsp[:4].lower() == "bdb:":
@@ -3001,8 +3001,7 @@ def db_write_image(self, fsp, *parms):
 	help(EMUtil.ImageType) for a list of valid image types, eg EMUtil.ImageType.IMAGE_MRC
 	help(EMUtil.EMDataType) for a list of valid storage types
 
-	Writes an image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
-	the remaining options are ignored
+	Writes an image to a file.
 	"""
 	#	print "In db_write_image, WI ",fsp,str(parms)
 
