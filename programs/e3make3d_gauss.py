@@ -34,6 +34,7 @@ from EMAN3tensor import *
 import numpy as np
 import sys
 import time
+import os
 
 def main():
 
@@ -48,7 +49,7 @@ def main():
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
-
+ 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
@@ -60,6 +61,7 @@ def main():
 
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
+	apix=EMData(args[0],0,True)["apix_x"]
 
 	if options.savesteps: 
 		try: os.unlink("steps.hdf")
@@ -85,10 +87,10 @@ def main():
 			[500,   16,16,1.8,-3  ,1,.01, 2.0],
 			[500,   16,16,1.8, 0.5  ,4,.01, 1.0],
 			[1000,  32,16,1.5,0  ,1,.005,1.5],
-			[1000,  32,16,1.5,-1,3,.005,1.0],
-			[2500,  64,24,1.2,-1.5,3,.003,1.0],
-			[10000,256,24,1.0,-2  ,3,.001,0.5],
-			[25000,512,12,0.8,-2  ,1,.001,0.2]
+			[1000,  32,16,1.5,-1,3,.007,1.0],
+			[2500,  64,24,1.2,-1.5,3,.005,1.0],
+			[10000,256,24,1.0,-2  ,3,.002,0.75],
+			[25000,512,12,0.8,-2  ,1,.001,0.5]
 		]
 
 	times=[time.time()]
@@ -96,7 +98,7 @@ def main():
 	# Cache initialization
 	if options.verbose: print("Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
-	caches={down:StackCache(f"tmp_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
+	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	for i in range(0,nptcl,2500):
 		if options.verbose>1: print(f"Caching {i}/{nptcl}")
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
@@ -180,6 +182,9 @@ def main():
 			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
 		vol=gaus.volume(nxraw)
+		vol["apix_x"]=apix
+		vol["apix_y"]=apix
+		vol["apix_z"]=apix
 		#vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
 		vol.write_images(options.volout)
 
