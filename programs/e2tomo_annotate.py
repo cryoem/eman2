@@ -575,7 +575,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		print("Reading new compressed annotate file into temp file ")
 		self.ori_seg_path = ori_seg_path
 		try:
-			os.system("e2proc3d.py {} {} --compressbits=-1".format(ori_seg_path,self.seg_path))
+			tmp = EMData(ori_seg_path)
+			tmp.write_image(self.seg_path)
+			del tmp
+
+			#os.system("e2proc3d.py {} {} --compressbits=-1".format(ori_seg_path,self.seg_path))
 		except Exception as e:
 			print(e)
 			return
@@ -747,7 +751,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 			#self.write_header(self.get_annotation())
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-			os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			tmp = EMData(self.seg_path)
+			tmp.write_compressed(self.ori_seg_path,0,8)
+			del tmp
+
+			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
 
 		else:
 			print("Annotation is none.")
@@ -850,7 +858,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		try:
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
 			print("Finish writing to temp")
-			os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			tmp = EMData(self.seg_path)
+			tmp.write_compressed(self.ori_seg_path,0,8)
+			del tmp
 			print("Finish compressed to annotation file")
 		except Exception as e:
 			print("Zt_change annotation",self.get_annotation())
@@ -1939,7 +1950,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		try:
 			#print(self.get_annotation().numpy().shape, self.cur_region)
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-			os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			tmp = EMData(self.seg_path)
+			tmp.write_compressed(self.ori_seg_path,0,8)
+			del tmp
 
 		except:
 			#print("Cannot write annotation to segs file.")
@@ -2085,7 +2099,7 @@ class Thumbnail(EMImage2DWidget):
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		print("Mouse release")
+		#print("Mouse release")
 		lc=self.scr_to_img(event.x(),event.y())
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img(event.x(),event.y())
@@ -2106,10 +2120,10 @@ class Thumbnail(EMImage2DWidget):
 			else:
 				pass
 
-			print("Mouse release at", lc, "mouse position set to", xy)
+			#print("Mouse release at", lc, "mouse position set to", xy)
 			self.box_size = self.get_box_size()
 			self.scale_fac = self.get_scale_fac()
-			print("Bzsz", self.box_size, "scale fac", self.scale_fac)
+			#print("Bzsz", self.box_size, "scale fac", self.scale_fac)
 			self.add_box(xy[0],xy[1], self.box_size)
 			if self.app_target.get_annotation():
 				print("Write annotation to file", self.app_target.seg_path)
@@ -5124,6 +5138,7 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
+		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")
