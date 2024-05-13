@@ -118,31 +118,32 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.tomogram_list = QtWidgets.QListWidget()
 		self.tom_file_list = []
 		self.seg_grps = []
-
 		self.tomo_tree = QtWidgets.QTreeWidget()
 
-		if len(self.tom_folder)>0:
-			tom_ls = sorted(os.listdir(self.tom_folder))
-			# seg_ls = sorted(os.listdir(self.seg_folder))
-			for file_name in tom_ls:
-				if file_name.endswith(".hdf"):
-					self.tom_file_list.append(file_name)
-
-		elif len(options.tomo) == 0:
-			print("Specify tomogram or tomograms folder for start annotation")
-			sys.exit(0)
-			return
-
-		else:
+		if len(options.tomo)>0:
+			self.tom_folder = "."
 			tom_ls = options.tomo.split(',')
 			for file_name in tom_ls:
 				if file_name.endswith(".hdf"):
 					self.tom_file_list.append(file_name)
 				else:
 					print(file_name,"is not a valid file_name. Pass")
+					continue
+
+		elif len(self.tom_folder)>0:
+			tom_ls = sorted(os.listdir(self.tom_folder))
+			# seg_ls = sorted(os.listdir(self.seg_folder))
+			for file_name in tom_ls:
+				if file_name.endswith(".hdf"):
+					self.tom_file_list.append(file_name)
+
+		else:
+			print("Specify tomogram or tomograms folder for start annotation")
+			sys.exit(0)
+			return
 
 
-		print("Self.tom_file_list",self.tom_file_list)
+		#print("Self.tom_file_list",self.tom_file_list)
 		for t in range(len(self.tom_file_list)):
 			file_name = self.tom_file_list[t]
 			#Populate the Tree
@@ -3042,6 +3043,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 		#self.extract_train_le = QtWidgets.QLineEdit()
 		#self.extract_train_le.setText(os.path.join('./trainset/',base_name(self.target.data_file)[0:-4]+"_trainset.hdf"))
 
+		#ox,oy,oz = self.target.cur_region.get_origin()
 		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 
@@ -3054,6 +3056,12 @@ class Boxer_Widget(QtWidgets.QWidget):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
 				bdf=[0,0,0,"manual",0.0, 0, 0]
 				for j,bi in enumerate(b):  bdf[j]=bi
+
+				# bdf[0] = bdf[0] - ox
+				# bdf[1] = bdf[1] - oy
+				# bdf[2] = bdf[2] - oz
+
+
 				if bdf[5] not in list(self.sets.keys()):
 					clsi=int(bdf[5])
 					self.sets[clsi]="particles_{:02d}".format(clsi)
@@ -4130,6 +4138,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			for xf in xfs:
 				r=ref.process("xform", {"transform":xf})
 				r.clip_inplace(tomo_reg)
+				#r.process_inplace("mask.fft.wedge",{"anglemax":30,"anglemin":-30})
 				f_ref = r.do_fft()
 				cf=f_tomo.calc_ccf(f_ref)
 				jsd.put(cf)
@@ -5115,7 +5124,6 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
-		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")
