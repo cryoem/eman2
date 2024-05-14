@@ -2920,8 +2920,8 @@ def is_file_compressible(fsp):
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
-	This function can be used to read a set of images from a file or bdb: database. Pass in
-	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	This function can be used to read a set of images from a file. Pass in
+	the filename, optionally a list of image numbers to read (or None),
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid."""
 	#	print "RI ",fsp,str(parms)
@@ -2967,8 +2967,8 @@ EMData.read_image = db_read_image
 def db_read_images(fsp, *parms):
 	"""EMData.read_images(filespec,[image # list],[header only])
 
-	This function can be used to read a set of images from a file or bdb: database. Pass in
-	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
+	This function can be used to read a set of images from a file. Pass in
+	the filename, optionally a list of image numbers to read (or None),
 	and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid"""
 	if fsp[:4].lower() == "bdb:":
@@ -3001,8 +3001,7 @@ def db_write_image(self, fsp, *parms):
 	help(EMUtil.ImageType) for a list of valid image types, eg EMUtil.ImageType.IMAGE_MRC
 	help(EMUtil.EMDataType) for a list of valid storage types
 
-	Writes an image to a file or a bdb: entry. Note that for bdb: specifications, only image # is supported.
-	the remaining options are ignored
+	Writes an image to a file.
 	"""
 	#	print "In db_write_image, WI ",fsp,str(parms)
 
@@ -3020,6 +3019,102 @@ def db_write_image(self, fsp, *parms):
 
 EMData.write_image_c = EMData.write_image
 EMData.write_image = db_write_image
+
+def db_write_images(fsp,
+                    imgs,
+                    idxs=0,
+                    imgtype=IMAGE_UNKNOWN,
+                    header_only=False,
+                    reqion=None,
+                    filestoragetype=EM_FLOAT,
+                    use_host_endian=True):
+
+	if fsp[:4].lower() == "bdb:":
+		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
+		return
+
+	is_compression_syntax = (":" in fsp)
+
+	if is_compression_syntax:
+		fsp, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(fsp)
+
+		if not is_file_compressible(fsp):
+			raise Exception(f"Only {[i.strip('.') for i in compressible_formats()]} "
+			                f"formats are supported by write_compressed()")
+		if mode=="f" or mode is None:
+			nooutliers=False
+			minval,maxval=0,0
+		elif mode=="o" : nooutliers=True
+		#print(fsp, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s)
+
+		for i,im in enumerate(imgs):
+			if not isinstance(im,EMData) : raise(Exception,"write_compressed() requires a list of EMData objects")
+
+			# no compression
+			if bits<0 :
+				im.del_attr("render_min")
+				im.del_attr("render_max")
+				im.del_attr("render_bits")
+				im.del_attr("render_compress_level")
+				# im.write_image_c(fsp,i+n)	# bits<0 implies no compression
+				continue
+
+			im["render_bits"]=bits
+			im["render_compress_level"]=1
+			# float compression, no range change
+			if bits==0 :
+				im.del_attr("render_min")
+				im.del_attr("render_max")
+				# im.write_image_c(fsp,i+n,EMUtil.ImageType.IMAGE_UNKNOWN,0,None,EMUtil.EMDataType.EM_COMPRESSED)
+				continue
+
+			### This is an important option, as it will be the default in many cases. It makes an effort to intelligently
+			### eliminate extreme outliers, while not modifying cases with highly nongaussian distributions
+			if nooutliers:		# nooutliers may be specified either via function call or in filename, same code
+				nxyz=im.get_size()
+				maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
+				print(im.get_attr_dict())
+				h0=im["minimum"]
+				h1=im["maximum"]
+				hs=(h1-h0)/4095
+				hist=im.calc_hist(4096,h0,h1)
+
+				#ok, we're doing this approximately
+				for sl in range(2048):
+					if sum(hist[:sl+1])>maxout: break
+				for sh in range(4095,2048,-1):
+					if sum(hist[sh:])>maxout: break
+
+				im["render_min"]=sl*hs+h0
+				im["render_max"]=sh*hs+h0
+			elif is_compression_syntax and not mode=="f":	# specified range in filename
+				if rendermin_abs is not None : im["render_min"]=max(rendermin_abs,im["minimum"])
+				else: im["render_min"]=max(im["mean"]-rendermin_s*im["sigma"],im["minimum"])
+				if rendermax_abs is not None : im["render_max"]=min(rendermax_abs,im["maximum"])
+				else: im["render_max"]=min(im["mean"]+rendermax_s*im["sigma"],im["maximum"])
+			elif maxval<=minval:		# Full range
+				im["render_min"]=im["minimum"]
+				im["render_max"]=im["maximum"]
+			else:				# specified range in function call
+				im["render_min"]=max(float(minval),im["minimum"])
+				im["render_max"]=min(float(maxval),im["maximum"])
+
+			# integer-only images are handled differently during compression, so if value truncation occurs in
+			# an integer only image, truncation must be to an integer
+			if im["all_int"]:
+				im["render_min"]=round(im["render_min"])
+				im["render_max"]=round(im["render_max"])
+
+			#print(f"PY {im['render_min']} - {im['render_max']} {im['minimum']} - {im['maximum']}   {im['render_bits']}")
+		if bits < 0:
+			EMData.write_images_c(fsp, imgs, idxs)	# bits<0 implies no compression
+		else:
+			EMData.write_images_c(fsp, imgs, idxs, EMUtil.ImageType.IMAGE_UNKNOWN, 0, None, EMUtil.EMDataType.EM_COMPRESSED)
+	else:
+		EMData.write_images_c(fsp, imgs, idxs, imgtype, header_only, reqion, filestoragetype, use_host_endian)
+
+EMData.write_images_c = staticmethod(EMData.write_images)
+EMData.write_images = staticmethod(db_write_images)
 
 def im_write_compressed(self,fsp,n,bits=8,minval=0,maxval=0,nooutliers=True,level=1,erase=False):
 	"""
