@@ -1013,6 +1013,8 @@ class EMPlotFileType(EMFileType) :
 			if lnumc != 0 and lnumc != numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
 			if lnumc != 0 : numr += 1
 
+		if numr<3 and numc<3: return False
+
 		return (size, "-", "%d x %d"%(numr, numc))
 
 	@staticmethod
@@ -2381,8 +2383,8 @@ class EMDirEntry(object) :
 			head = open(self.path(), "rb").read(16384)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 			ext=os.path.splitext(self.path())[1]
 			if ext not in EMFileType.extbyft:
-				return 0
-			guesses = EMFileType.extbyft[ext]		# This will get us a list of possible FileTypes for this extension
+				guesses=EMFileType.alltocheck
+			else: guesses = EMFileType.extbyft[ext]		# This will get us a list of possible FileTypes for this extension
 
 	#			print "-------\n", guesses
 

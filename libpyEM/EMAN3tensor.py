@@ -380,7 +380,7 @@ class EMStack2D(EMStack):
 	@property
 	def orientations(self):
 		"""returns an Orientations object and tytx array for the current images if available or None if not"""
-		if self._xforms is None: return None
+		if self._xforms is None: return None,None
 		orts=Orientations()
 		tytx=orts.init_from_transforms(self._xforms)
 		return orts,tytx
