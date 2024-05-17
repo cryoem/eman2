@@ -43,8 +43,10 @@
 #include "util.h"
 #include "ctf.h"
 #include "transform.h"
+#include "half-2.2.0/include/half.hpp"
 
 using namespace EMAN;
+using half_float::half;
 
 string convert_microseconds_to_local_time(long us) {
 	using std::chrono::microseconds;
@@ -1043,6 +1045,7 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	unsigned char *  cdata  = (unsigned char *)  rdata;
 	short *          sdata  = (short *)          rdata;
 	unsigned short * usdata = (unsigned short *) rdata;
+	half *           hdata  = (half *)          rdata;
 
 	size_t size = 0;
 	int xlen = 0, ylen = 0, zlen = 0;
@@ -1118,6 +1121,12 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 		for (size_t i = 0; i < size; ++i) {
 			size_t j = size - 1 - i;
 			rdata[j] = static_cast < float >(usdata[j]);
+		}
+	}
+	else if (mrch.mode == MRC_FLOAT16) {
+		for (size_t i = 0; i < size; ++i) {
+			size_t j = size - 1 - i;
+			rdata[j] = static_cast < float >(hdata[j]);
 		}
 	}
 
@@ -1352,6 +1361,9 @@ int MrcIO::get_mode_size(int mm)
 	case MRC_FLOAT:
 	case MRC_FLOAT_COMPLEX:
 		msize = sizeof(float);
+		break;
+	case MRC_FLOAT16:
+		msize = sizeof(half);
 		break;
 	default:
 		msize = 0;
