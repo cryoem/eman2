@@ -979,7 +979,9 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		if not isprint(header) : return False
+		try:
+			if not isprint(header) : return False
+		except: return False
 
 		# We need to try to count the columns in the file
 		header=header.decode("utf-8")

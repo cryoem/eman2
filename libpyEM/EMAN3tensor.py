@@ -70,9 +70,9 @@ class StackCache():
 		self.filename=filename
 
 		self.fp=open(filename,"wb+")		# erase file!
-		self.locs=np.zeros(n+1,dtype=np.int64)
-		self.orts=np.zeros((n,3),dtype=np.float32)
-		self.tytx=np.zeros((n,2),dtype=np.float32)
+		self.locs=np.zeros(n+1,dtype=np.int64)			# list of seek locations in the binary file for each image
+		self.orts=np.zeros((n,3),dtype=np.float32)		# orientations in spinvec format
+		self.tytx=np.zeros((n,2),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format
 		self.cloc=0
 		self.locked=False
 
@@ -101,6 +101,12 @@ class StackCache():
 
 		self.locked=False
 
+	def add_orts(self,nlist,dorts,dtytxs):
+		"""adds dorts and dtytxs to existing arrays at locations described by nlist, used to take a gradient step
+		on a subset of the data."""
+		self.orts[nlist]+=dorts
+		self.tytx[nlist]+=dtytxs
+
 	def read(self,nlist):
 		while self.locked: time.sleep(0.1)
 
@@ -114,7 +120,7 @@ class StackCache():
 		self.locked=False
 		ret=EMStack2D(tf.stack(stack))
 		orts=Orientations(self.orts[nlist])
-		tytx=self.tytx[nlist]
+		tytx=tf.constant(self.tytx[nlist])
 		return ret,orts,tytx
 
 class EMStack():
