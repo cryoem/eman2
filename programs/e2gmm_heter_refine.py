@@ -16,6 +16,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="mask that defines the region of focusing.", default=None)
 	parser.add_argument("--ngauss", type=int,help="number of gauss used in initial heterogeneity analysis.", default=8000)
 	parser.add_argument("--niter", type=int,help="iterations of focused alignment afterwards.", default=5)
+	parser.add_argument("--batchsz", type=int,help="batch size.", default=16)
 	parser.add_argument("--expandsym", type=str,help="symmetry. the program does not apply symmetry so always specify symmetry here and the final structure will be in c1", default=None)
 	parser.add_argument("--maxres", type=float,help="maximum resolution for the heterogeneity analysis. This will also be the starting resolution for the following focused alignment.", default=7)
 	parser.add_argument("--minres", type=float,help="min resolution for the heterogeneity analysis.", default=50)
@@ -119,7 +120,7 @@ def main():
 
 		etc=""
 		etc+=f" --selgauss {options.mask}"
-		etc+=" --batchsz 16"
+		etc+=f" --batchsz {options.batchsz}"
 		etc3=""# --setsf sf_lp.txt"
 		
 		## pretrain from lower res to ensure convergence
