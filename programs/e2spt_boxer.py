@@ -1164,7 +1164,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			self.wdepth.setValue(int(round(self.z_loc+1)))
 
 		elif event.key() == 49: ## "1" to move down a slice
-			self.wdepth.setValue(self.z_loc-1)
+			self.wdepth.setValue(int(round(self.z_loc-1)))
 		else:
 			self.keypress.emit(event)
 
