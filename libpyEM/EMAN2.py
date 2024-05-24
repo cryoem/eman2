@@ -3073,7 +3073,6 @@ def db_write_images(fsp,
 			if nooutliers:		# nooutliers may be specified either via function call or in filename, same code
 				nxyz=im.get_size()
 				maxout=max(nxyz//20000,8)		# at most 1 in 20000 pixels should be considered an outlier on each end
-				print(im.get_attr_dict())
 				h0=im["minimum"]
 				h1=im["maximum"]
 				hs=(h1-h0)/4095
