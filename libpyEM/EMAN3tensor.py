@@ -73,6 +73,7 @@ class StackCache():
 		self.locs=np.zeros(n+1,dtype=np.int64)			# list of seek locations in the binary file for each image
 		self.orts=np.zeros((n,3),dtype=np.float32)		# orientations in spinvec format
 		self.tytx=np.zeros((n,2),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format
+		self.frcs=np.zeros((n),dtype=np.float32)+2.0	# FRCs from previous round, initialize to 2.0 (> 1.0 normal max)
 		self.cloc=0
 		self.locked=False
 
@@ -87,8 +88,12 @@ class StackCache():
 		while self.locked: time.sleep(0.1)
 		self.locked=True
 		stack.coerce_tensor()
-		if ortss is not None: self.orts[n0:n0+len(stack)]=ortss.numpy
-		if tytxs is not None: self.tytx[n0:n0+len(stack)]=tytxs
+		if ortss is not None:
+			try: self.orts[n0:n0+len(stack)]=ortss
+			except: self.orts[n0:n0+len(stack)]=ortss.numpy()
+		if tytxs is not None:
+			try: self.tytx[n0:n0+len(stack)]=tytxs
+			except: self.tytx[n0:n0+len(stack)]=tytxs.numpy()
 
 		# we go through the images one at a time, serialze, and write to a file with a directory
 		self.fp.seek(self.cloc)
@@ -106,6 +111,10 @@ class StackCache():
 		on a subset of the data."""
 		self.orts[nlist]+=dorts
 		self.tytx[nlist]+=dtytxs
+
+	def set_frcs(self,nlist,frcs):
+		self.frcs[nlist]=frcs
+
 
 	def read(self,nlist):
 		while self.locked: time.sleep(0.1)

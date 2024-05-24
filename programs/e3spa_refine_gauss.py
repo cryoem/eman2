@@ -38,7 +38,7 @@ import os
 
 def main():
 
-	usage="""e3make3d_gauss.py <projections>
+	usage="""e3spa_refine_gauss.py <projections>
 
 
 	"""
@@ -80,22 +80,22 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, step coef
-	# replication skipped in final stage
+	# 0)#ptcl, 1)downsample, 2)iter, 3)frc weight, 4)amp threshold, 5)replicate, 6)grad step coef, 7) FRC weighting 8)frc loc threshold (9 disables gradient)
+	# replication skipped in final stage. thresholds are mean+coef*std
 	stages=[
-		[500,   16,16,1.8,-3  ,1,.01, 2.0],
-		[500,   16,16,1.8, 0  ,1,.01, 2.0],
-		[500,   16,16,1.8,-3  ,1,.01, 2.0],
-		[500,   16,16,1.8, 0  ,2,.01, 2.0],
-		[500,   16,16,1.8,-3  ,1,.01, 2.0],
-		[500,   16,16,1.8,-3  ,1,.01, 2.0],
-		[500,   16,16,1.8, 0.5,4,.01, 1.0],
-		[1000,  32,16,1.5, 0  ,1,.005,1.5],
-		[1000,  32,16,1.5,-1  ,3,.007,1.0],
-		[2500,  64,24,1.2,-1.5,3,.005,1.0],
-		[10000,256,24,1.0,-2  ,3,.002,0.75],
-		[25000,512,12,0.8,-2  ,1,.001,0.5]
+		[1000,   16,16,1.8, 0  ,2,.01, 2.0,9],
+		[1000,   16,16,1.8, 0  ,2,.01, 2.0,9],
+		[1000,   16,16,1.8,-1  ,2,.01, 2.0,-1],
+		[1000,   16,16,1.8,-1  ,2,.01, 2.0,-1],
+		[1000,   16,16,1.8,-1  ,1,.01, 2.0,-1],
+		[2000,  32,16,1.5,-.5  ,2,.005,1.5,-3],
+		[2000,  32,16,1.5,-1  ,3,.007,1.0,-2],
+		[5000,  64,24,1.2,-1.5,3,.005,1.0,-3],
+		[10000,256,24,1.0,-2  ,3,.002,0.75,-3],
+		[25000,512,12,1.0,-2  ,1,.001,0.5,-3.0]
 	]
+
+	for l in stages: l[1]=min(l[1],nxraw)		# make sure we aren't "upsampling"
 
 	times=[time.time()]
 
@@ -114,10 +114,13 @@ def main():
 		else: tytx/=nxraw
 		stkf=stk.do_fft()
 		for down in downs:
-			stkfds=stkf.downsample(min(down,nxraw))
-			caches[down].write(stkfds,i,orts,tytx)
+			if down!=nxraw:
+				stkfds=stkf.downsample(down)
+				caches[down].write(stkfds,i,orts,tytx)
+			else:
+				caches[down].write(stkf,i,orts,tytx)
 
-	# Forces all of the caches to share the same orientation information so we can update them simultaneously below
+	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
@@ -132,6 +135,7 @@ def main():
 	ptcls=[]
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
+		ccache=caches[stage[1]]
 #
 # 		# stage 1 - limit to ~1000 particles for initial low resolution work
 # 		if options.verbose: print(f"\tReading Files {min(stage[0],nptcl)} ptcl")
@@ -148,7 +152,8 @@ def main():
 # 		ptclsf=None
 # #		ny=ptclsfds.shape[1]
 
-		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 		norm=len(nliststg)//500+1
 
 #	print(ptclsfds.shape,tytx.shape)
@@ -156,7 +161,7 @@ def main():
 		if options.verbose: print(f"\tIterating Gaussian parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
 		for i in range(stage[2]):		# training epochs
 			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
-				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
+				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
 				step0,qual0,shift0,sca0=gradient_step_gauss(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 				if j==0:
 					step,qual,shift,sca=step0,qual0,shift0,sca0
@@ -174,41 +179,60 @@ def main():
 
 			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
 
-		if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
-		fout=open(f"{options.path}/fscs.txt","w")
-		for i in range(stage[2]):		# training epochs
-			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
-				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
-				ortstep,dydxstep,qual0,ortstd0,dydxstd0,frcs=gradient_step_ort(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
-				if j==0:
-					qual,ortstd,dydxstd=qual0,ortstd0,dydxstd0
-				else:
-					qual+=qual0
-					ortstd+=ortstd0
-					dydxstd+=dydxstd0
+		if stage[8]<9:
+			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
+			fout=open(f"{options.path}/fscs.txt","w")
+			for i in range(stage[2]):		# training epochs
+				for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
+					ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
+					ortstep,dydxstep,qual0,ortstd0,dydxstd0,frcs=gradient_step_ort(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+					if j==0:
+						qual,ortstd,dydxstd=qual0,ortstd0,dydxstd0
+					else:
+						qual+=qual0
+						ortstd+=ortstd0
+						dydxstd+=dydxstd0
 
-				#print(len(nliststg[j:j+500]),ortstep.shape,dydxstep.shape)
-				caches[stage[1]].add_orts(nliststg[j:j+500],ortstep,dydxstep)
-				for ii,n in enumerate(nliststg[j:j+500]): fout.write(f"{n}\t{frcs[ii]}\t{orts[ii][0]}\t{orts[ii][1]}\t{orts[ii][2]}\n")
+					#print(len(nliststg[j:j+500]),ortstep.shape,dydxstep.shape)
+					ccache.add_orts(nliststg[j:j+500],ortstep,dydxstep)
+					ccache.set_frcs(nliststg[j:j+500],frcs)
+					for ii,n in enumerate(nliststg[j:j+500]): fout.write(f"{n}\t{frcs[ii]:1.4f}\t{orts[ii][0]:1.4f}\t{orts[ii][1]:1.4f}\t{orts[ii][2]:1.4f}\n")
 
-			qual/=norm
-			ortstd/=norm
-			dydxstd/=norm
+				qual/=norm
+				ortstd/=norm
+				dydxstd/=norm
 
-			print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
+				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
+		else: print("Skipping orientation gradient this step")
 
 		# if options.savesteps:
 		# 	vol=gaus.volume(nxraw)
 		# 	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
 		# 	vol.write_images(f"A_vol_opt_{sn}.hdf")
 
-		# filter results and prepare for stage 2
+		# filter results and prepare for next stage
 		g0=len(gaus)
-		gaus.norm_filter(sig=stage[4])
+		gaus.norm_filter(sig=stage[4])	# remove gaussians below threshold
 		g1=len(gaus)
-		if stage[5]>0: gaus.replicate(stage[5],stage[6])
+		if stage[5]>0: gaus.replicate(stage[5],stage[6])	# make copies of gaussians with local perturbation
 		g2=len(gaus)
-		print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {local_datetime()}")
+
+		if stage[8]<9:
+			# reseed orientations for low FRCs
+			frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
+			frcm=np.mean(frcs[frcs<1.5])
+			frcsg=np.std(frcs[frcs<1.5])
+			nseeded=0
+			for ii,f in enumerate(frcs):
+				if f<frcm+frcsg*stage[8]:
+					ccache.orts[ii]=rand.random((3,))-0.5
+					ccache.tytx[ii]=(0,0)
+					frcs[ii]=2.0
+					nseeded+=1
+
+			print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {nseeded} orts reseeded ({frcm+frcsg*stage[8]} thr)   {local_datetime()}")
+
+		else: print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  no orts reseeded   {local_datetime()}")
 		times.append(time.time())
 	
 		# do this at the end of each stage in case of early termination
@@ -219,7 +243,7 @@ def main():
 		vol["apix_x"]=apix
 		vol["apix_y"]=apix
 		vol["apix_z"]=apix
-		#vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+		vol.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt*min(stage[1],nxraw)/nxraw})
 		vol.write_image(f"{options.path}/threed{sn:02d}.hdf:12")
 
 
