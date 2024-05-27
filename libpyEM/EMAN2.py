@@ -3106,11 +3106,11 @@ def db_write_images(fsp,
 
 			#print(f"PY {im['render_min']} - {im['render_max']} {im['minimum']} - {im['maximum']}   {im['render_bits']}")
 		if bits < 0:
-			EMData.write_images_c(fsp, imgs, idxs)	# bits<0 implies no compression
+			return EMData.write_images_c(fsp, imgs, idxs)	# bits<0 implies no compression
 		else:
-			EMData.write_images_c(fsp, imgs, idxs, EMUtil.ImageType.IMAGE_UNKNOWN, 0, None, EMUtil.EMDataType.EM_COMPRESSED)
+			return EMData.write_images_c(fsp, imgs, idxs, EMUtil.ImageType.IMAGE_UNKNOWN, 0, None, EMUtil.EMDataType.EM_COMPRESSED)
 	else:
-		EMData.write_images_c(fsp, imgs, idxs, imgtype, header_only, reqion, filestoragetype, use_host_endian)
+		return EMData.write_images_c(fsp, imgs, idxs, imgtype, header_only, reqion, filestoragetype, use_host_endian)
 
 EMData.write_images_c = staticmethod(EMData.write_images)
 EMData.write_images = staticmethod(db_write_images)
