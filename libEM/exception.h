@@ -79,10 +79,10 @@ namespace EMAN {
 			: filename(file), linenum(line), desc(desc_str), objname(objname_str)
 		{
 			// Log the message
-			stringstream ss;
-			string line_str;
-			ss << line;
-			ss >> line_str;
+//			stringstream ss;
+//			string line_str;
+//			ss << line;
+//			ss >> line_str;
 // We shouldn't log all exceptions, since they are frequently used intentionally, with no implied error
 //			string message = "File " + file + " line " + line_str + " description " + desc_str + " " + objname_str;
 //			LOGERR( message.c_str() );
@@ -95,7 +95,8 @@ namespace EMAN {
 		 * location (filename, line number,function name) and
 		 * description.
 		 */
-		virtual const char *what() const throw();
+		virtual const char *what() const noexcept;
+		//virtual const char *what() const throw();
 
 		/** The name of this E2Exception class.
 		 * @return The name of this E2Exception class.
@@ -106,6 +107,7 @@ namespace EMAN {
 		int linenum;
 		string desc;
 		string objname;
+		static string msg;
     };
 
 

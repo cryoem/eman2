@@ -71,7 +71,8 @@ namespace EMAN
 			MRC_UCHAR3 = 16,	// unsigned char * 3, for rgb data, non-standard
 			MRC_CHAR = 17,		// non-standard - signed char
 			MRC_UHEX = 101,	// 2 4-bit values packed into each 8-bit byte
-			MRC_UNKNOWN = 18
+			MRC_UNKNOWN = 18,
+			MRC_FLOAT16 = 12
 		};
 
 		enum {

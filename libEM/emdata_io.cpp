@@ -444,7 +444,7 @@ bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData
 	}
 
 	LOGVAR("getimageio %d",rwmode);
-	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode);
+	ImageIO *imageio = EMUtil::get_imageio(filename, rwmode, imgtype);
 
 	if(imgtype == EMUtil::IMAGE_TIFF && idxs != 0)
 		throw ImageWriteException(imageio->get_filename(), "Offset specification for TIFF writes is not supported.");

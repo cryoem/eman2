@@ -49,7 +49,7 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--tomos",type=str,help="The tomograms to annotate",default="")
+	parser.add_argument("--tomo",type=str,help="The tomogram to annotate",default="")
 	parser.add_argument("--folder",type=str, help="List the folder contain all tomograms to process", default="./tomograms")
 
 	parser.add_argument("--seg_folder",type=str, help="List the folder contain all annotation file", default="./segs/")
@@ -82,6 +82,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.app = weakref.ref(application)
 		self.setMinimumSize(1120, 720)
 		self.options=options
+
+
 
 		self.setWindowTitle("Image Viewer")
 		#System Menu
@@ -116,30 +118,32 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.tomogram_list = QtWidgets.QListWidget()
 		self.tom_file_list = []
 		self.seg_grps = []
-
 		self.tomo_tree = QtWidgets.QTreeWidget()
 
-		if len(self.tom_folder)>0:
-			tom_ls = sorted(os.listdir(self.tom_folder))
-			for file_name in tom_ls:
-				if file_name.endswith(".hdf"):
-					self.tom_file_list.append(file_name)
-
-		elif len(options.tomos) == 0:
-			print("Specify tomogram or tomograms folder for start annotation")
-			sys.exit(0)
-			return
-
-		else:
-			tom_ls = options.tomos.split(',')
+		if len(options.tomo)>0:
+			self.tom_folder = "."
+			tom_ls = options.tomo.split(',')
 			for file_name in tom_ls:
 				if file_name.endswith(".hdf"):
 					self.tom_file_list.append(file_name)
 				else:
 					print(file_name,"is not a valid file_name. Pass")
+					continue
+
+		elif len(self.tom_folder)>0:
+			tom_ls = sorted(os.listdir(self.tom_folder))
+			# seg_ls = sorted(os.listdir(self.seg_folder))
+			for file_name in tom_ls:
+				if file_name.endswith(".hdf"):
+					self.tom_file_list.append(file_name)
+
+		else:
+			print("Specify tomogram or tomograms folder for start annotation")
+			sys.exit(0)
+			return
 
 
-		print("Self.tom_file_list",self.tom_file_list)
+		#print("Self.tom_file_list",self.tom_file_list)
 		for t in range(len(self.tom_file_list)):
 			file_name = self.tom_file_list[t]
 			#Populate the Tree
@@ -208,8 +212,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				print("EXCEPTION when add child", e)
 				pass
 
-		self.seg_path = seg_path
+		#self.seg_path = seg_path
+		self.seg_path = "temp_fs_ann.hdf"
 		self.seg_info_path = self.seg_path[0:-4]+".json"
+		self.decompress_seg_file(seg_path)
+
 		try:
 			f = open(self.seg_info_path, 'x')
 		except:
@@ -261,8 +268,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.img_view.setMinimumSize(680, 680)
 
+		#self.img_view.show()
+
+
+		#boxes for Boxer tab
 		self.boxes = []
-		#Two anchor points for autodetect plane
+		#2 anchor points for autodetect plane
 		self.p1p2 = []
 		self.fill_type = None
 		self.unet = None
@@ -314,6 +325,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		zt_hbl.addWidget(self.zc_spinbox)
 		zt_hbl.addWidget(QtWidgets.QLabel("z-thick"))
 		zt_hbl.addWidget(self.zt_spinbox)
+
+
 
 
 		tomo_vbl.addLayout(zt_hbl,3,0)
@@ -462,6 +475,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.assisted_tab = QtWidgets.QTabWidget()
+		self.tmplt_tab = Tmplt_Match_Tab(target=self)
 		self.ext_tab = Extrapolate_Tab(target=self)
 		self.nn_tab = NNet_Tab(target=self)
 		self.snn_tab = Simple_NNet_Tab(target=self)
@@ -474,6 +488,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 
+		#self.assisted_tab.addTab(self.tmplt_tab,"Template Matching")
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"UNet")
 		self.assisted_tab.addTab(self.snn_tab,"EMAN2NNet")
@@ -554,6 +569,23 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		glEnable( GL_POLYGON_SMOOTH );
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+
+	def decompress_seg_file(self, ori_seg_path):
+		print("Reading new compressed annotate file into temp file ")
+		self.ori_seg_path = ori_seg_path
+		try:
+			tmp = EMData(ori_seg_path)
+			tmp.write_image(self.seg_path)
+			del tmp
+
+			#os.system("e2proc3d.py {} {} --compressbits=-1".format(ori_seg_path,self.seg_path))
+		except Exception as e:
+			print(e)
+			return
+
+
+
 
 	def img_view_wheel_event(self, event):
 		return
@@ -636,7 +668,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def seg_path_change(self,seg_bt):
 		#print(grp.text()+" is selected")
-		self.seg_path = os.path.join(self.seg_folder,seg_bt.text())
+		#self.seg_path = os.path.join(self.seg_folder,seg_bt.text())
+		seg_path = os.path.join(self.seg_folder,seg_bt.text())
+		self.decompress_seg_file(seg_path)
 		self.seg_info_path = self.seg_path[0:-4]+".json"
 		self.reset_morp_params(reset_vs=False)
 		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
@@ -712,10 +746,16 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#print("data xy", self.data_xy)
 
 		if self.get_annotation():
-			print("Write annotation to file", self.seg_path)
+			#print("Write annotation to file", self.seg_path)
+			print("Write annotation to file", self.ori_seg_path)
 
 			#self.write_header(self.get_annotation())
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+			tmp = EMData(self.seg_path)
+			tmp.write_compressed(self.ori_seg_path,0,8)
+			del tmp
+
+			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
 
 		else:
 			print("Annotation is none.")
@@ -726,8 +766,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		#print("SegPath,newSegPath", self.seg_path,seg_path)
-		self.seg_path = seg_path
+		#self.seg_path = seg_path
 		self.seg_info_path = seg_info_path
+		#TESTING COMPRESSED
+		self.decompress_seg_file(seg_path)
+
+
 		self.reset_morp_params(reset_vs=False)
 		self.set_imgview_data(round(self.data_xy[0]),round(self.data_xy[1]),self.img_view_region_size)
 		self.update_tree_set()
@@ -738,11 +782,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 	def write_out(self,file_out, out_name, region):
 		#self.set_scale=1
 		if file_out:
-			try:
-				file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
-			except Exception as e:
-				print("Error writing file out due to", e)
-				return
+			file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+			# try:
+			# 	file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+			# except Exception as e:
+			# 	print("Error writing file out due to exception", e)
+			# 	return
 		else:
 
 			return
@@ -807,13 +852,20 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.get_segtab().update_sets()
 		tree_topit = self.get_segtab().tree_set.topLevelItem(0)
 		self.get_segtab().tree_set.setCurrentItem(tree_topit,1)
+
 	def z_spinbox_changed(self,event):
 		self.data_xy = self.thumbnail.get_xy()
 		try:
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
-		except:
+			print("Finish writing to temp")
+			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			tmp = EMData(self.seg_path)
+			tmp.write_compressed(self.ori_seg_path,0,8)
+			del tmp
+			print("Finish compressed to annotation file")
+		except Exception as e:
 			print("Zt_change annotation",self.get_annotation())
-			print("image cannot be write to disk")#when annotation files is None
+			print("image cannot be write to disk due to", e)#when annotation files is None
 			pass
 		self.set_imgview_data(self.data_xy[0],self.data_xy[1],self.img_view_region_size)
 		self.reset_morp_params(reset_vs=False)
@@ -853,18 +905,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		try:
 			self.write_out(self.get_annotation(), temp_path, self.cur_region)
-
-			print("Saved current state to disk")
+			print("Save current state to disk")
 			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		except Exception as e:
-			print("image cannot be write to disk due to", e)#when annotation files is None
+			print("Current state cannot be saved due to exception", e)#when annotation files is None
 			pass
 
 		try:
 
 			self.get_inspector().seg_tab.write_treeset_json(temp_info_path)
 		except Exception as e:
-			print("Cannot print metadata to info file due to", e)
+			print("Cannot print metadata to info file due to exception", e)
 			pass
 
 		#self.undo_button.setEnabled(True)
@@ -1197,6 +1248,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				print("Need at least 3 points for a contour")
 				return
 
+			#w_line = int(self.tx_line_width.text())
+			# pts_l = sparse_polygon(self.contour.points)
 			center, side_length = find_bounding_square_box(self.contour.points)
 			print("Center,side_length", center, side_length)
 
@@ -1205,12 +1258,27 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			a[rr,cc] = 1
 			a = np.rot90(np.fliplr(a))
 			fill_vol = define_eroded_volume(a,self.img_view.nz)
+			# mask = np.zeros((self.img_view.nx,self.img_view.ny))
+			# mask[rr,cc] = 1
+			# fill_vol = define_eroded_volume(mask,self.img_view.nz)
+
+		# 	mask[rr,cc] = int(self.get_current_class())
+			#from_numpy(fill_vol).write_image("fillvol.hdf")
+
+			#print("Fillvol shape",fill_vol.shape)
 
 
 			xrot, yrot, zrot = self.img_view.reverse_transform_point([center[0],center[1],self.img_view.nz//2+self.img_view.zpos], self.img_view.get_xform())
 			xform=Transform({"type":"eman","alt":self.img_view.alt,"az":self.img_view.az,"tx":self.img_view.nx//2+xrot,"ty":self.img_view.ny//2+yrot,"tz":self.img_view.nz//2+zrot})
 			subvol=self.img_view.get_full_annotation().get_rotated_clip(xform,(side_length,side_length,self.img_view.nz),0)
+
+
+			#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+			#subvol.process_inplace("mask.paint",{"x":self.w_line,"y":self.w_line,"z":self.w_line,"r1":self.w_line,"v1":value,"r2":self.w_line,"v2":0})
 			self.img_view.full_annotation.set_rotated_clip(xform,from_numpy(np.where(fill_vol>0,value,to_numpy(subvol))))
+			#self.img_view.full_annotation.set_rotated_clip(xform,subvol*2)
+			# full_vol=from_numpy(np.where(fill_vol>0,value,to_numpy(self.img_view.full_annotation)))
+			# self.img_view.full_annotation = full_vol.process("xform",{"transform":self.img_view.xform})
 			self.img_view.force_display_update()
 			self.img_view.updateGL()
 			return
@@ -1275,7 +1343,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				self.contour.points =[]
 				self.do_update()
 			except Exception as e:
-				print("Can't paint due to", e)
+				print("Can't paint due to exception", e)
 
 				pass
 			# if self.extract_bt:
@@ -1731,12 +1799,32 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.do_update()
 		self.img_view.updateGL()
 
+	# def on_table_tom(self,row,col):
+	# 	print("Row", row, "Col", col, "Tomogram", self.table_tom.itemAt(row,col))
+	# 	print(self.table_tom.currentItem().text())
+
+	# def table_tom_cell_changed(self):
+	# 	#print("New Cell", self.table_tom.currentItem().text())
+	# 	self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
 	def set_data(self):
 		return
+
+	# def update_sets(self):
+	# 	#Set the colors and flags of table set items
+	# 	for i in range(self.table_tom.rowCount()):
+	# 		key = int(self.table_tom.item(i,0).text())
+	# 		self.table_tom.item(i,0).setFlags(self.indexflags)
+	# 		self.table_tom.item(i,1).setFlags(self.itemflags)
+	# 		self.table_tom.item(i,0).setForeground(self.colors[key])
+	# 		self.table_tom.item(i,1).setForeground(self.colors[key])
+
+
 
 	def add_boxes(self, size = 64):
 		self.boxes = [box for box in self.boxes if box[3] != -1]
 		sz = size
+		#color = [0.1,0.1,0.3]
+		#print("add boxes", self.boxes)
 		for i in range(len(self.boxes)):
 			#print(self.boxes[i])
 			color=QtGui.QColor(self.setcolors[self.boxes[i][4]%len(self.setcolors)]).getRgbF()
@@ -1765,6 +1853,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nz=hdr["nz"]
 		self.apix = hdr["apix_x"]
 		current_child_count = self.tomo_tree.currentItem().childCount()
+		# 	seg_path = os.path.join(self.seg_folder,self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].checkedButton().text())
+		# 	print("Seg file for current tomogram already exists at",seg_path)
+		# else:
 		seg_path = os.path.join(self.seg_folder,"{}_seg_{}.hdf".format(base_name(self.data_file),str(current_child_count+1)))
 		print("Create seg_file",seg_path)
 		seg_out = EMData(self.nx,self.ny,self.nz)
@@ -1773,14 +1864,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		seg_item = QtWidgets.QTreeWidgetItem()
 		self.tomo_tree.currentItem().addChild(seg_item)
 		seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
+		#seg_item.setCheckState(0,0)
 		seg_button = QtWidgets.QRadioButton(os.path.basename(seg_path))
 		self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 		seg_button.setChecked(True)
 		self.tomo_tree.setItemWidget(seg_item,0,seg_button)
 		seg_info_path = os.path.join(seg_path[0:-4]+".json")
 
-		self.seg_path = seg_path
+		#self.seg_path = seg_path
+		self.decompress_seg_file(seg_path)
 		self.seg_info_path = seg_info_path
+
 
 		self.data_xy = self.thumbnail.get_xy()
 		self.reset_morp_params(reset_vs=False)
@@ -1842,7 +1936,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			E2saveappwin("e2annotate","tomograms",self.tomo_list_panel)
 		except:
 			pass
+		#self.write_header(self.get_annotation())
 
+		#self.write_metadata(self.seg_path)
+		#print(self.get_annotation(), self.seg_path, self.cur_region)
 		try:
 			self.get_inspector().seg_tab.write_treeset_json(self.seg_info_path)
 		except:
@@ -1853,6 +1950,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		try:
 			#print(self.get_annotation().numpy().shape, self.cur_region)
 			self.write_out(self.get_annotation(), self.seg_path, self.cur_region)
+			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
+			tmp = EMData(self.seg_path)
+			tmp.write_compressed(self.ori_seg_path,0,8)
+			del tmp
+
 		except:
 			#print("Cannot write annotation to segs file.")
 			pass
@@ -1897,11 +1999,14 @@ class CustomScene3D(EMScene3D):
 		tomo_iso = EMIsosurface(tomo_di, transform=Transform())
 		self.insertNewNode("Iso", tomo_iso, parentnode=tomo_di)
 
-		annotate = self.target.get_annotation().get_clip(reg)
-		annotate_di = EMDataItem3D(annotate, transform=Transform())
-		self.insertNewNode('Annotate', annotate_di, parentnode=self)
-		isosurface = EMIsosurface(annotate_di, transform=Transform())
-		self.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		if self.target.get_annotation()["mean_nonzero"] != 0:
+			annotate = self.target.get_annotation().get_clip(reg)
+			annotate_di = EMDataItem3D(annotate, transform=Transform())
+			self.insertNewNode('Annotate', annotate_di, parentnode=self)
+			isosurface = EMIsosurface(annotate_di, transform=Transform())
+			self.insertNewNode("Iso", isosurface, parentnode=annotate_di)
+		else:
+			print("Annotation is empty. Show data volume only")
 		return
 
 
@@ -1994,31 +2099,31 @@ class Thumbnail(EMImage2DWidget):
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		print("Mouse release")
+		#print("Mouse release")
 		lc=self.scr_to_img(event.x(),event.y())
 		if event.button()==Qt.LeftButton:
 			lc=self.scr_to_img(event.x(),event.y())
 			xy = [lc[0],lc[1]]
-			print("Box x,y,bound", lc[0], lc[1], self.box_size[0]/2, self.size-self.box_size[0]/2)
+			#print("Box x,y,bound", lc[0], lc[1], self.box_size[0]/2, self.size-self.box_size[0]/2)
 			if lc[0] <= self.box_size[0]/2:
-				print("x is out of bound, move position to x =",self.box_size[0]/2)
+				print("x is out of bound, move position to x = {:.2f}".format(self.box_size[0]/2))
 				xy[0]=self.box_size[0]/2
 			elif lc[0] >= self.size-self.box_size[0]/2:
-				print("x is out of bound, move position to x =",self.size-self.box_size[0]/2)
+				print("x is out of bound, move position to x = {:.2f}".format(self.size-self.box_size[0]/2))
 				xy[0]=self.size-self.box_size[0]/2
 			if lc[1] <= self.box_size[1]/2:
-				print("y is out of bound, move position to y =",self.box_size[1]/2)
+				print("y is out of bound, move position to y = {:.2f}".format(self.box_size[1]/2))
 				xy[1]=self.box_size[1]/2
 			elif lc[1] >= (self.size-self.box_size[1]/2):
-				print("y is out of bound, move position to y =",self.size-self.box_size[1]/2)
+				print("y is out of bound, move position to y = {:.2f}".format(self.size-self.box_size[1]/2))
 				xy[1]=self.size-self.box_size[1]/2
 			else:
 				pass
 
-			print("Mouse release at", lc, "mouse position set to", xy)
+			#print("Mouse release at", lc, "mouse position set to", xy)
 			self.box_size = self.get_box_size()
 			self.scale_fac = self.get_scale_fac()
-			print("Bzsz", self.box_size, "scale fac", self.scale_fac)
+			#print("Bzsz", self.box_size, "scale fac", self.scale_fac)
 			self.add_box(xy[0],xy[1], self.box_size)
 			if self.app_target.get_annotation():
 				print("Write annotation to file", self.app_target.seg_path)
@@ -2904,7 +3009,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 		QtWidgets.QWidget.__init__(self,None)
 		self.target = target
 		self.jsonfile = info_name(self.target.data_file)
-		print(self.jsonfile)
+		#print(self.jsonfile)
 		if os.path.isfile(self.jsonfile):
 			info = js_open_dict(self.jsonfile)
 		else:
@@ -2952,6 +3057,7 @@ class Boxer_Widget(QtWidgets.QWidget):
 		#self.extract_train_le = QtWidgets.QLineEdit()
 		#self.extract_train_le.setText(os.path.join('./trainset/',base_name(self.target.data_file)[0:-4]+"_trainset.hdf"))
 
+		#ox,oy,oz = self.target.cur_region.get_origin()
 		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 
@@ -2964,6 +3070,12 @@ class Boxer_Widget(QtWidgets.QWidget):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
 				bdf=[0,0,0,"manual",0.0, 0, 0]
 				for j,bi in enumerate(b):  bdf[j]=bi
+
+				# bdf[0] = bdf[0] - ox
+				# bdf[1] = bdf[1] - oy
+				# bdf[2] = bdf[2] - oz
+
+
 				if bdf[5] not in list(self.sets.keys()):
 					clsi=int(bdf[5])
 					self.sets[clsi]="particles_{:02d}".format(clsi)
@@ -3949,13 +4061,390 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.target.img_view.set_data(self.target.data, self.target.annotate)
 		return
 
+class Tmplt_Match_Tab(QtWidgets.QWidget):
+	def __init__(self,target) :
+		QtWidgets.QWidget.__init__(self,None)
+		self.target = target
+		self.tmplt_le = QtWidgets.QLineEdit()
+		self.tmplt_browser_bt = QtWidgets.QPushButton("Browse ")
+		self.tmplt_sym_le = QtWidgets.QLineEdit()
+		self.tmplt_sym_le.setText("c1")
+		self.tmplt_delta_le = QtWidgets.QLineEdit()
+		self.tmplt_delta_le.setText("45")
+		self.tmplt_nshrink_le = QtWidgets.QLineEdit()
+		self.tmplt_nshrink_le.setText("4")
+		self.tmplt_nthrds_le = QtWidgets.QLineEdit()
+		self.tmplt_nthrds_le.setText("4")
+
+		self.calc_ccm_bt = QtWidgets.QPushButton("Calc CC")
+		self.show_ccm_bt = QtWidgets.QPushButton("Show CC")
+		self.find_peaks_bt = QtWidgets.QPushButton("Find Peaks")
+		self.do_local_search_bt = QtWidgets.QPushButton("Local Search")
+		self.insert_vol_le = QtWidgets.QLineEdit()
+		self.insert_vol_browser_bt = QtWidgets.QPushButton("Browse ")
+		self.insert_vol_bt = QtWidgets.QPushButton("Insert Mask")
+
+		self.tmplt_npeaks_le = QtWidgets.QLineEdit()
+		self.tmplt_npeaks_le.setText("20")
+		self.tmplt_dthr_le = QtWidgets.QLineEdit()
+		self.tmplt_dthr_le.setText("20")
+		self.tmplt_cccthr_le = QtWidgets.QLineEdit()
+		self.tmplt_cccthr_le.setText("20")
+		self.tmplt_minvol_vs = ValSlider(value=20,rng=(0,1000),rounding=-1,label="minvol   ",labelwidth=56)
+		self.tmplt_minvol_vs.setIntonly(1)
+
+		self.tmplt_ins_thres_vs = ValSlider(value=0.5,rng=(0,1.0),rounding=1,label="thres    ",labelwidth=56)
+
+
+		templ_gbl = QtWidgets.QGridLayout()
+		templ_gbl.addWidget(QtWidgets.QLabel("Template"),0,0,1,1)
+		templ_gbl.addWidget(self.tmplt_le,0,1,1,3)
+		templ_gbl.addWidget(self.tmplt_browser_bt,0,4,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("Find particles"),1,0,1,5)
+		templ_gbl.addWidget(QtWidgets.QLabel("sym"),2,0,1,1)
+		templ_gbl.addWidget(self.tmplt_sym_le,2,1,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("delta"),2,2,1,1)
+		templ_gbl.addWidget(self.tmplt_delta_le,2,3,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("nshrinks"),3,0,1,1)
+		templ_gbl.addWidget(self.tmplt_nshrink_le,3,1,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("threads"),3,2,1,1)
+		templ_gbl.addWidget(self.tmplt_nthrds_le,3,3,1,1)
+
+		#templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
+		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,0,1,1)
+		templ_gbl.addWidget(self.tmplt_npeaks_le,4,1,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
+		templ_gbl.addWidget(self.tmplt_cccthr_le,4,3,1,1)
+		#templ_gbl.addWidget(QtWidgets.QLabel("dist thr"),4,2,1,1)
+		#templ_gbl.addWidget(self.tmplt_dthr_le,4,3,1,1)
+
+		#templ_gbl.addWidget(self.tmplt_minvol_vs,5,0,1,4)
+
+		templ_gbl.addWidget(self.calc_ccm_bt,2,4,1,1)
+		templ_gbl.addWidget(self.show_ccm_bt,3,4,1,1)
+		templ_gbl.addWidget(self.find_peaks_bt,4,4,1,1)
+		templ_gbl.addWidget(self.do_local_search_bt,5,4,1,1)
+		templ_gbl.addWidget(QtWidgets.QLabel("Segment particles"),6,0,1,5)
+		templ_gbl.addWidget(self.insert_vol_bt,8,4,1,1)
+
+		templ_gbl.addWidget(QtWidgets.QLabel("Mask"),7,0,1,1)
+		templ_gbl.addWidget(self.insert_vol_le,7,1,1,3)
+		templ_gbl.addWidget(self.insert_vol_browser_bt,7,4,1,1)
+
+
+		templ_gbl.addWidget(self.tmplt_ins_thres_vs,8,0,1,3)
+
+
+		self.setLayout(templ_gbl)
+		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
+		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
+		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
+		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_thrds)
+		self.insert_vol_bt.clicked[bool].connect(self.insert_vol)
+		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
+		self.insert_vol_browser_bt.clicked[bool].connect(self.load_insert_vol)
+		self.ccc_file = "tmplt_match_ccc.hdf"
+		self.pts = []
+		self.xfs = []
+
+	def calc_ccm(self):
+		def do_match(jsd, xfs):
+			for xf in xfs:
+				r=ref.process("xform", {"transform":xf})
+				r.clip_inplace(tomo_reg)
+				#r.process_inplace("mask.fft.wedge",{"anglemax":30,"anglemin":-30})
+				f_ref = r.do_fft()
+				cf=f_tomo.calc_ccf(f_ref)
+				jsd.put(cf)
+
+		#create oris to rotate the tempt
+		sym=parsesym(self.tmplt_sym_le.text())
+		dt=int(self.tmplt_delta_le.text())
+		tomo = self.target.get_data().copy()
+		ref = EMData(self.tmplt_le.text())
+		shrink = int(self.tmplt_nshrink_le.text())
+		oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt,"inc_mirror":1})
+
+		#print(sym, dt, shrink, oris, tomo.get_sizes(), ref.get_sizes())
+		#processing tempt and tomo
+		if shrink > 1:
+			tomo.process_inplace("math.fft.resample",{'n':shrink})
+			nx,ny,nz= tomo.get_sizes()
+			tomo_reg = Region(0,0,0,nx,ny,nz)
+
+		mbin=tomo["apix_x"]/ref["apix_x"]
+		print("Will shrink reference by {:.1f}".format(mbin))
+		ref.process_inplace("math.fft.resample",{'n':mbin})
+		ref.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
+		ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+		ref.process_inplace('normalize.edgemean')
+		#ref.mult(-1)
+
+		boxsz=ref["nx"]//2
+		tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
+		tomo.process_inplace('normalize.edgemean')
+		tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
+		f_tomo = tomo.do_fft()
+
+		#calc fourier transform of tomo and ref+prepad before do_match
+		#Should rotate the small ref vol, padding it then do a fourier transform.
+
+		nthrds=int(self.tmplt_nthrds_le.text()) #processes got own memory allocation, thrds share. python got global interpreter lock, hence not thrds safety.
+		rg=np.arange(len(oris))
+
+		tasks=[oris[i::nthrds] for i in range(nthrds)]
+		#ccc=tomo.copy()*0-65535 #maximum value of an unsigned 16-bit integer
+		ccc=tomo.copy_head()
+		ccc.to_zero()
+		ccc.sub(65535.0)
+		#compute ccc
+		jsd=queue.Queue(0) #thrds safe, while list obj is not.
+		thrds=[threading.Thread(target=do_match,args=(jsd, xfs)) for xfs in tasks] #each thrd got overhead
+		thrtolaunch=0
+		tsleep=threading.active_count()
+
+		ndone=0
+		for t in thrds:
+			t.start()
+		while threading.active_count()>tsleep or not jsd.empty():
+			while not jsd.empty():
+				cf=jsd.get()
+				ccc.process_inplace("math.max", {"with":cf}) #can also use a maximum averager
+				ndone+=1
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(oris)))
+				sys.stdout.flush()
+			time.sleep(.5)
+		print("")
+		ccc.process_inplace("xform.phaseorigin.tocenter")
+		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
+		ccc.process_inplace("filter.highpass.gauss",{"cutoff_pixels":24})
+		ccc.process_inplace("normalize.edgemean")
+		ccc.process_inplace("threshold.belowtozero")
+		#self.ccm = ccc
+		ccc.write_compressed(self.ccc_file,0,12)
+
+
+
+	def show_ccm(self):
+		os.system("e2display.py {} & ".format(self.ccc_file))
+		return
+
+	def find_peaks_amp(self):
+		try:
+			n_peaks = int(self.tmplt_npeaks_le.text())
+			nbin = int(self.tmplt_nshrink_le.text())
+			ccc_thr = float(self.tmplt_cccthr_le.text())
+			ref_head = EMData(self.tmplt_le.text(), 0,True)
+			rx,ry,rz = ref_head.get_sizes()
+
+		except:
+			print("Invalid n_peaks, nbin and ccc_thr. Return")
+			return
+		ccc_hdr=EMData(self.ccc_file, 0,True)
+		cx,cy,cz = ccc_hdr.get_sizes()
+
+		ccc = EMData(self.ccc_file).get_clip(Region(rx//2,rx//2,rx//2,cx-rx,cy-rx,cz-rx)).get_clip(Region(-rx//2,-rx//2,-rx//2,cx,cy,cz))
+		mean=float(ccc.get_attr("mean"))
+		sig=float(ccc.get_attr("sigma"))
+		ccc.process_inplace("threshold.belowtozero",{"minval":ccc_thr})
+		ccc.process_inplace("mask.onlypeaks",{"npeaks":0})
+
+		peaks = ccc.calc_highest_locations(mean+3*sig)
+		peaks.sort(key=lambda peak: -peak.value)
+		pts = [(nbin*peak.x,nbin*peak.y,nbin*peak.z) for peak in peaks]
+
+		if len(pts) > n_peaks:
+			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+			self.pts = pts[:n_peaks]
+		else:
+			print("Find {} peaks at {}".format(len(pts),pts))
+			self.pts = pts
+
+	def find_peaks(self):
+		img=EMData(self.ccc_file).numpy().copy()
+		min_vol = int(self.tmplt_minvol_vs.value)
+		if len(self.tmplt_le.text()) > 0:
+			ref_head = EMData(self.tmplt_le.text(), 0,True)
+			rx,ry,rz = ref_head.get_sizes()
+			refvol = rx*ry*rz
+		else:
+			refvol = 100000000
+
+		img[img<3]=0
+		lb, nlb=ndi.label(img)
+
+		pks=np.array(ndi.maximum_position(img,lb,list(range(1,nlb))))
+		#pks=np.array(ndi.center_of_mass(img,lb,list(range(1,nlb))))
+		pksize=np.array(ndi.sum(img,lb,list(range(1,nlb))))
+		#print(pksize[:50])
+		pks_mask = lb.copy()
+		pks_mask[pks_mask > 0] = 1
+		pks_vol = np.array(ndi.sum(pks_mask, lb, list(range(1, nlb))))
+		n=len(pks)
+
+		kpid=np.logical_and(pksize>min_vol, pks_vol<refvol)
+
+		pks=pks[kpid]
+		pkscore=pksize[kpid]
+		pks_vol = pks_vol[kpid]
+		srt=np.argsort(-pkscore)
+		pks=pks[srt]
+		pks_vol = pks_vol[srt]
+		pkscore=pkscore[srt]
+		# if np.max(pkscore) != 0:
+		try:
+			pkscore/=np.max(pkscore)
+		except:
+			pass
+
+		tree=KDTree(pks)
+		tokeep=np.ones(len(pks), dtype=bool)
+
+		dthr = int(self.tmplt_dthr_le.text())
+		n_peaks = int(self.tmplt_npeaks_le.text())
+		nbin = int(self.tmplt_nshrink_le.text())
+		#print(np.min(pks, axis=0), np.max(pks, axis=0), boxsz, dthr)
+		for i in range(len(pks)):
+			if tokeep[i]:
+				k=tree.query_ball_point(pks[i], dthr)
+				tokeep[k]=False
+				tokeep[i]=True
+		pts=pks[tokeep]*nbin
+		scr=pkscore[tokeep]
+		pvolume=pks_vol[tokeep]
+		#options so that peaks are not too close together
+		if len(pts) > n_peaks:
+			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+			self.pts = pts[:n_peaks]
+		else:
+			print("Find {} peaks at {}".format(len(pts),pts))
+			self.pts = pts
+
+	def do_search(self, tomo, tempt, jsd, ps):
+		for p in ps:
+			x,y,z= (int(i) for i in p)
+			bs = tempt["nx"]
+			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
+			tempt_a = tempt.align("rotate_translate_3d_tree",subvol)
+			#tempt_a["loc"]=p
+			jsd.put((p,tempt_a["xform.align3d"]))
+
+	def do_local_search_thrds(self):
+		if len(self.pts) == 0:
+			try:
+				self.find_peaks()
+			except:
+				print("No peaks specified for local search. Find peaks first")
+				return
+
+		nthrds = int(self.tmplt_nthrds_le.text())
+		tomo = self.target.get_data().copy()
+		tempt = EMData(self.tmplt_le.text())
+
+		start = time.time()
+		rg=np.arange(len(self.pts))
+		tasks=[self.pts[i::nthrds] for i in range(nthrds)]
+
+		#print(tasks)
+		jsd=queue.Queue(0)
+		thrds=[threading.Thread(target=self.do_search,args=(tomo, tempt, jsd, ps)) for ps in tasks]
+		thrtolaunch=0
+		tsleep=threading.active_count()
+
+		ndone=0
+		for t in thrds:
+			t.start()
+		p_xf_l = []
+		print("Start local searching at {} location".format(len(self.pts)))
+
+		while threading.active_count()>tsleep or not jsd.empty():
+			while not jsd.empty():
+				p,xf=jsd.get()
+				p_xf_l.append((p,xf))
+				ndone+=1
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(self.pts)))
+				sys.stdout.flush()
+			time.sleep(.5)
+		print("")
+		print("Finish in {}s".format(time.time()-start))
+		self.pts = [p_xf[0] for p_xf in p_xf_l]
+		self.xfs = [p_xf[1] for p_xf in p_xf_l]
+
+	def insert_vol(self):
+		val = self.target.get_current_class()
+		if val == 0:
+			print("Select a class for the insert mask.")
+			return
+
+		outfile = "tmplt_match_temp_vol.hdf"
+		if self.target.get_annotation() is not None:
+			tomo_head = self.target.get_annotation().copy()
+			tomo_head.write_image(outfile)
+		else:
+			tomo_head = self.target.get_data().copy_head()
+			tomo_head.write_image(outfile)
+
+		if self.insert_vol_le.text() == 0:
+			print("Specify mask to put in the tomogram")
+			return
+		else:
+			insert_im = EMData(self.insert_vol_le.text())
+
+		if len(self.pts) == 0 or len(self.xfs) == 0:
+			self.do_local_search_thrds()
+
+		for i,loc in enumerate(self.pts):
+			vol = insert_im.copy()
+			vol.process_inplace("threshold.binary",{"value":self.tmplt_ins_thres_vs.value})
+			vol.process_inplace("xform", {"transform":self.xfs[i]})
+			vol.mult(val)
+			x,y,z = [int(i) for i in loc]
+			bs = insert_im["nx"]
+			reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
+			try:
+				tomo_vol = self.target.get_annotation().get_clip(reg)
+				insert_vol=vol.process("math.max",{"with":tomo_vol})
+			except:
+				insert_vol = vol
+			try:
+				insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
+			except:
+				print("Invalid region at location",x,y,z,".Skip.")
+				continue
+		annotate = EMData(outfile)
+		self.target.img_view.set_data(self.target.data,annotate)
+		print("Finishing segmentation")
+
+	def load_template(self):
+		self.tmplt_browser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.tmplt_browser.ok.connect(self.load_tmplt_browser_ok)
+		self.tmplt_browser.show()
+		return
+
+	def load_tmplt_browser_ok(self):
+		self.tmplt_le.setText(self.tmplt_browser.getResult()[0])
+		return
+
+
+	def load_insert_vol(self):
+		self.insert_browser = EMBrowserWidget(withmodal=True,multiselect=False)
+		self.insert_browser.ok.connect(self.load_insert_browser_ok)
+		self.insert_browser.show()
+		return
+
+	def load_insert_browser_ok(self):
+		self.insert_vol_le.setText(self.insert_browser.getResult()[0])
+		return
+
+
 
 class Templ_Match_Tab(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self,None)
 		self.target = target
 		self.template_text = QtWidgets.QLineEdit()
-		self.template_browser_bt = QtWidgets.QPushButton("Browse")
+		self.tmplt_browser_bt = QtWidgets.QPushButton("Browse")
 		self.create_template_bt = QtWidgets.QPushButton("Make Template")
 		self.template_match_bt = QtWidgets.QPushButton("Template Match")
 		self.tplt_low_pass_vs = ValSlider(value=1,rng=(0.001,1),rounding=2,label= "Low-pass Filt")
@@ -3964,7 +4453,7 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 
 		templ_gbl = QtWidgets.QGridLayout()
 		templ_gbl.addWidget(self.template_text,0,0,1,3)
-		templ_gbl.addWidget(self.template_browser_bt,0,3,1,1)
+		templ_gbl.addWidget(self.tmplt_browser_bt,0,3,1,1)
 		templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
 		templ_gbl.addWidget(self.template_match_bt,1,2,1,2)
 		templ_gbl.addWidget(self.tplt_threshold_vs,2,0,1,4)
@@ -3982,7 +4471,7 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		tml_layout.addWidget(self.tplt_launch_bt)
 		self.tplt_match_launcher.setLayout(tml_layout)
 
-		self.template_browser_bt.clicked[bool].connect(self.load_template)
+		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
 		self.template_match_bt.clicked[bool].connect(self.tplt_match)
 		self.create_template_bt.clicked[bool].connect(self.create_tplt)
 		self.tplt_launch_bt.clicked[bool].connect(self.tplt_match_launched)
@@ -4225,7 +4714,7 @@ class Subtom_Tab(QtWidgets.QWidget):
 		try:
 			os.system(self.map_ptcls_cmd.toPlainText())
 		except Exception as e:
-			print("Error launching e2spt_mapptclstotomo.py program due to,",e," Abort.")
+			print("Error launching e2spt_mapptclstotomo.py program due to exception,",e," Abort.")
 			pass
 		return
 
@@ -4354,7 +4843,7 @@ class Statistics_Tab(QtWidgets.QWidget):
 			mask_op = ndi.binary_opening(raw_mask, iterations=1)
 			labeled, num = ndi.label(mask_op)
 			areas = np.array(ndi.sum(mask_op,labeled, np.arange(labeled.max()+1)))
-			mask = areas > thres
+			mask = areas > thres/(4*4*4)
 			remove_small = mask[labeled.ravel()].reshape(labeled.shape)
 			labeled, num = ndi.label(mask_op)
 			total = num
@@ -4442,22 +4931,56 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.n_objects_text.setText(str(count))
 		return objs
 
+	def write_boxes_to_info(self,class_name,box_l,box_sz=64):
+		self.jsonfile = info_name(self.target.data_file)
+		print(self.jsonfile)
+		info = js_open_dict(self.jsonfile)
+
+		if "class_list" in info:
+			clslst=info["class_list"]
+		else:
+			info["class_list"] = {}
+			clslst=info["class_list"]
+
+		class_number = len(clslst.keys())
+		clslst[str(class_number)] = {"name":class_name,"boxsize":box_sz}
+
+		if "boxes_3d" in info:
+			box=info["boxes_3d"]
+		else:
+			info["boxes_3d"] = []
+			box = info["boxes_3d"]
+		for b in box_l:
+			box.append([round(b[0]),round(b[1]),round(b[2]),"e2tomo_annotate_stat",0.0,class_number,0])
+		info["class_list"] =clslst
+		info["boxes_3d"] =box
+		print("Finished writing boxes to e2spt_boxer info")
+		info.close()
+
 	def calc_stat(self):
 		sel = self.get_selected_item()
 		objs = self.label_objs(ask_user=False)
 		if (self.stat_combo.currentText() == "Center of Mass"):
 			self.cent_mass = ndi.center_of_mass(self.target.get_annotation().numpy(),self.labeled_ann,[i+1 for i in range(len(objs))])
 			self.cent_mass_em = []
+			ox,oy,oz = self.target.cur_region.get_origin()
 			for pair in self.cent_mass:
 				if len(pair) == 3:
-					self.cent_mass_em.append([pair[2],pair[1],pair[0]])
+					self.cent_mass_em.append([pair[2]+ox,pair[1]+oy,pair[0]+oz])
 				elif len(pair) == 2:
-					self.cent_mass_em.append([pair[1],pair[0]])
+					self.cent_mass_em.append([pair[1]+ox,pair[0]]+oy)
 			for  i in range(len(self.cent_mass_em)):
 				cmass =[f"{loc:.1f}" for loc in self.cent_mass_em[i]]
 				name = objs[i].name
 				print(f"Center of Mass of Obj {name}:",",".join(cmass))
+			try:
+				class_name =(objs[0].name).split("_")[0]
+				self.write_boxes_to_info(class_name,self.cent_mass_em,64)
+
+			except Exception as e:
+				print(e)
 			return
+
 		else:
 			stat_txt = self.stat_combo.currentText()
 			unit = "Pixel"

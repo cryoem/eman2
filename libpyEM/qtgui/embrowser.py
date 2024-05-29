@@ -979,7 +979,9 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		if not isprint(header) : return False
+		try:
+			if not isprint(header) : return False
+		except: return False
 
 		# We need to try to count the columns in the file
 		header=header.decode("utf-8")
@@ -1012,6 +1014,8 @@ class EMPlotFileType(EMFileType) :
 			except: continue
 			if lnumc != 0 and lnumc != numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
 			if lnumc != 0 : numr += 1
+
+		if numr<3 and numc<3: return False
 
 		return (size, "-", "%d x %d"%(numr, numc))
 
@@ -1760,6 +1764,8 @@ class EMStackFileType(EMFileType) :
 				("Show 2D", "Show all images, one at a time in current window", self.show2dSingle), ("Show 2D+", "Show all images, one at a time in a new window", self.show2dSingleNew), 
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
+			if self.dim[0]>=3 and self.dim[0]<=5: rtr.append(("Spheres","Each X line is X-Y-Z[-A[-S]]. Show as spheres in 3-D",self.showSpheres))
+			else: print("Nope ",self.dim)
 			
 		# 1-D stack
 		elif self.nimg > 1:
@@ -1772,6 +1778,32 @@ class EMStackFileType(EMFileType) :
 			rtr.extend([("Plot 2D", "Plot xform", self.plot2dLstApp),("Plot 2D+", "plot xform in new window", self.plot2dLstNew)])
 
 		return rtr
+
+	def showSpheres(self,brws):
+		"""New 3-D window"""
+		brws.busy()
+
+		target = emscene3d.EMScene3D()
+		brws.view3d.append(target)
+
+		data=EMData.read_images(self.path)
+		gaussplots=[emshapeitem3d.EMScatterPlot3D() for i in data]
+		for i,d in enumerate(data):
+			target.insertNewNode(f"Iter_{i}",gaussplots[i])
+			if i>0: gaussplots[i].setVisibleItem(False)
+			cp=data[i].numpy().copy().transpose()
+			cp[:3]*=256.0
+			gaussplots[i].setData(cp)
+
+		# target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		# target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+
+		brws.notbusy()
+		target.setWindowTitle(display_path(self.path))
+
+		target.show()
+		target.raise_()
+
 
 	def showChimera(self, brws):
 		"""Open in Chimera"""
@@ -2353,8 +2385,8 @@ class EMDirEntry(object) :
 			head = open(self.path(), "rb").read(16384)		# Most FileTypes should be able to identify themselves using the first 4K block of a file
 			ext=os.path.splitext(self.path())[1]
 			if ext not in EMFileType.extbyft:
-				return 0
-			guesses = EMFileType.extbyft[ext]		# This will get us a list of possible FileTypes for this extension
+				guesses=EMFileType.alltocheck
+			else: guesses = EMFileType.extbyft[ext]		# This will get us a list of possible FileTypes for this extension
 
 	#			print "-------\n", guesses
 
@@ -3716,9 +3748,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		dirregex - default "", a regular expression for filtering filenames (directory names not filtered)
 		"""
 		# although this looks dumb it is necessary to break Python's issue with circular imports(a major weakness of Python IMO)
-		global emscene3d, emdataitem3d
+		global emscene3d, emdataitem3d, emshapeitem3d
 		from . import emscene3d
 		from . import emdataitem3d
+		from . import emshapeitem3d
 
 		QtWidgets.QWidget.__init__(self, parent)
 		

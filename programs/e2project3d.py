@@ -249,6 +249,7 @@ def main():
 	#parser.add_argument("--verifymirror",action="store_true",help="Used for testing the accuracy of mirror projects",default=False)
 #	parser.add_argument("--force", "-f",dest="force",default=False, action="store_true",help="Force overwrite the output file if it exists")
 	parser.add_argument("--append", "-a",dest="append",default=False, action="store_true",help="Append to the output file")
+	parser.add_argument("--randshift", dest = "randshift", type = int, default=0,help="Include a random uniform x/y translation to each projection with the specified max shift")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--check","-c", default=False, action="store_true",help="Checks to see if the command line arguments will work.")
 	parser.add_argument("--nofilecheck",action="store_true",help="Turns file checking off in the check functionality - used by e2refine.py.",default=False)
@@ -330,6 +331,9 @@ def main():
 		sym_object = parsesym(options.sym[i])
 		[og_name,og_args] = parsemodopt(options.orientgen)
 		eulers = sym_object.gen_orientations(og_name, og_args)
+		if options.randshift>0 :
+			for e in eulers:
+				e.set_trans(random.randint(-options.randshift,options.randshift),random.randint(-options.randshift,options.randshift),0)
 
 		# generate and save all the projections to disk - that's it, that main job is done
 		if ( options.verbose>0 ):

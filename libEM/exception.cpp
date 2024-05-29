@@ -30,17 +30,21 @@
  * */
 
 #include "util.h"
+#include <iostream>
 
 using namespace EMAN;
+using std::string;
 
-const char* E2Exception::what() const throw()
+string E2Exception::msg="";
+
+const char* E2Exception::what() const noexcept
 {
-	string err1 = "";
+	string err1="";
 	if (objname != "") {
 		err1 = "error with '" + objname + "': ";
 	}
 
-	string msg = string(name()) + " at " + filename + ":" + Util::int2str(linenum);
-	msg += ": " + err1 + "'" + desc + "' caught\n";
+	msg = string(name()) + " at " + filename + ":" + Util::int2str(linenum) + string(": ")+err1 + "'" + desc + "' caught\n";
+//	std::cerr<<"C++ Exception: "<<msg<<endl;		// this was for debugging when exception printing was broken
 	return msg.c_str();
 }

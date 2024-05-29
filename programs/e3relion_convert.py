@@ -61,6 +61,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	parser.add_argument("--cs", default=0, type=float,help="Spherical aberration in mm, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--ac", default=0, type=float,help="Amplitude contrast as a percentage, eg - 10, not 0.1, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--particlebits", default=6, type=float,help="Significant bits to retain in HDF files for raw particles, 6 is usually more than sufficient (default 6)", guitype='intbox', row=9, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--clip", type=int, help="Adjust box size to specified --clip value AFTER CTF phase flipping (if requested). Note that this makes phase un-flipping impossible",default=-1)
 	parser.add_argument("--dftolerance",default=0.001, type=float,help="If defocus has to be used to group the particles by micrograph, and the defocus varies per particle, this is the amount of variation in microns to permit within a single file")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -118,14 +119,16 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	# at this point rkey should contain the star key for the particle metadata
 
 	nptcl=len(star[rkey]["rlnAnglePsi"])
+	ctferrprt=True
 
 	### Here we create "ugnums" a per-particle micrograph identifier
 	# first we try using the micrograph name field
 	try:
 		ugnames=set(star[rkey]["rlnMicrographName"])
+		if options.verbose>1: print(f"Identified {len(ugnames)} rlnMicrographNames")
 
 		# if the rlnMicrographName seems to be valid, and document multiple micrographs, we use it
-		if len(ugbyname)>1 and nptcl/len(ugbyname)>3:
+		if len(ugnames)>1 and nptcl/len(ugnames)>3:
 			nmtonum={}
 			for i,n in enumerate(ugnames): nmtonum[n]=i		# map micrograph names to numbers
 			ugnums=[nmtonum[n] for n in star[rkey]["rlnMicrographName"]]
@@ -136,7 +139,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			ugnames=set([i.split("@")[1] for i in star[rkey]["rlnImageName"]])
 
 			# if the rlnMicrographName seems to be valid, and document multiple micrographs, we use it
-			if len(ugbyname)>1 and nptcl/len(ugbyname)>3:
+			if len(ugnames)>1 and nptcl/len(ugnames)>3:
 				nmtonum={}
 				for i,n in enumerate(ugnames): nmtonum[n]=i		# map micrograph names to numbers
 				ugnums=[nmtonum[n] for n in star[rkey]["rlnImageName"].split("@")[1]]
@@ -144,7 +147,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			if options.verbose>0: print("Unable to group particles using rlnImageName")
 		except:
 			# final try. If the same defocus was assigned to all images in a micrograph, we can use that
-			dfrng=[int(.002*df/options.dftolerance) for df in star[rkey]["rlnDefocusU"]]  # defocus converted to integers covering the acceptable range of values, .002 microns&range
+			dfrng=[int(.0002*df/options.dftolerance) for df in star[rkey]["rlnDefocusU"]]  # defocus converted to integers covering the acceptable range of values, .002 microns&range
 			dfs=set(dfrng)
 			if len(dfs)<nptcl/5:
 				if options.verbose>0: print(f"Using rlnDefocusU to group particles into {len(dfs)} groups")
@@ -154,8 +157,9 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				for i in range(1,nptcl):
 					if df[i]!=df[i-1]: n+=1
 					ugnums.append(n)
-			if len(dfs)>=nptcl/5 or len(ugnums)>nptcl/5:
-				print("WARNING: Unable to group particles usefully by micrograph, collapsing to a single file. Consider rerunning with sufficiently large --dftolerance")
+			if len(dfs)>=nptcl/5 or ugnums[-1]>nptcl/5:
+				print(df[:1000])
+				print(f'WARNING: Unable to group particles usefully by micrograph ({len(dfs)} defoci, {len(ugnums)} "micrographs"), collapsing to a single file. Consider rerunning with sufficiently large --dftolerance')
 				ugnums=np.zeros(nptcl,"int32")
 
 	# copy particles by micrograph
@@ -168,6 +172,9 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		try: os.unlink("sets/fromstar__ctf_flip.lst")
 		except: pass
 		lstf=LSXFile("sets/fromstar__ctf_flip.lst")
+		try: os.unlink("sets/fromstar__ctf_flip_ds5.lst")
+		except: pass
+		lstft=LSXFile("sets/fromstar__ctf_flip_ds5.lst")
 	lastctf=[]
 	t0=time.time()
 	for i in range(nptcl):
@@ -181,13 +188,16 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			dfv=star[rkey]["rlnDefocusV"][i]
 			dfang=star[rkey]["rlnDefocusAngle"][i]
 			defocus=(dfu+dfv)/20000.0
-			dfdiff(dfu-dfv)/10000.0
-		except: defocus,dfdiff,dfang=1.0,0.0,0.0		# 1 micron default if we can't find a good defocus
+			dfdiff=(dfu-dfv)/10000.0
+		except:
+			if ctferrprt: print("ERROR: could not determine defocus from STAR file")
+			ctferrprt=False
+			defocus,dfdiff,dfang=1.0,0.0,0.0		# 1 micron default if we can't find a good defocus
 		try: bfactor=star[rkey]["rlnCtfBfactor"][i]
 		except: bfactor=50.0
-		try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":star[rkey]["rlnOriginX"][i],"ty":star[rkey]["rlnOriginY"][i]})
+		try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":-star[rkey]["rlnOriginX"][i],"ty":-star[rkey]["rlnOriginY"][i]})
 		except:
-			try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":star[rkey]["rlnOriginXAngstrom"][i]/apix,"ty":star[rkey]["rlnOriginYAngstrom"][i]/apix})
+			try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":-star[rkey]["rlnOriginXAngstrom"][i]/apix,"ty":-star[rkey]["rlnOriginYAngstrom"][i]/apix})
 			except:
 				traceback.print_exc()
 				if i==0: print("No usable particle orientations found in STAR file!")
@@ -202,6 +212,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			ugnum=ugnums[i]
 			ptclname=f"particles/micro_{ugnum:05d}.hdf:{options.particlebits}"
 			ptclfname=f"particles/micro_{ugnum:05d}__ctf_flip.hdf:{options.particlebits}"
+			ptclfsname=f"particles/micro_{ugnum:05d}__ctf_flip_ds5.hdf:{options.particlebits}"
 			ptclno=0
 			jdb=js_open_dict(info_name(ptclname))
 
@@ -219,7 +230,10 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		img["ctf_phase_flipped"]=0
 
 		# write the particle to an image stack, and add an entry to the .lst file (-1 appends)
-		img.write_image(ptclname,ptclno)
+		if options.clip>0:
+			cp=img.get_clip(Region((img["nx"]-options.clip)//2,(img["ny"]-options.clip)//2,options.clip,options.clip))
+			cp.write_image(ptclname,ptclno)
+		else: img.write_image(ptclname,ptclno)
 		lst[-1]=(ptclno,ptclname.split(":")[0],{"xform.projection":xform})
 
 		# write the phase flipped image/lst if requested
@@ -235,8 +249,19 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			imgc["apix_z"]=apix
 			imgc["ctf"]=ctf						# CTF with good general parameters in the header, can be overridden in lst files
 			imgc["ctf_phase_flipped"]=1
-			imgc.write_image(ptclfname,ptclno)
+			if options.clip>0:
+				cp=imgc.get_clip(Region((img["nx"]-options.clip)//2,(img["ny"]-options.clip)//2,options.clip,options.clip))
+				cp.write_image(ptclfname,ptclno)
+				nbx=good_size(int(options.clip*apix/1.8))
+				shr=cp.process("math.fft.resample",{"n":options.clip/nbx})
+				shr.write_image(ptclfsname,ptclno)
+			else:
+				imgc.write_image(ptclfname,ptclno)
+				nbx=good_size(int(imgc["nx"]*apix/1.8))
+				shr=imgc.process("math.fft.resample",{"n":imgc["nx"]/nbx})
+				shr.write_image(ptclfsname,ptclno)
 			lstf[-1]=(ptclno,ptclfname.split(":")[0],{"xform.projection":xform})
+			lstft[-1]=(ptclno,ptclfsname.split(":")[0],{"xform.projection":xform})
 
 		lastctf=ctf.to_vector()
 

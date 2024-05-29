@@ -60,9 +60,80 @@ from EMAN3 import *
 import tensorflow as tf
 import numpy as np
 
+class StackCache():
+	"""This object serves as a cache of EMStack objects which can be conveniently read back in. This provides
+	methods for easy/efficient sampling of subsets of data sets which may be too large for RAM. Caches are not persistent across sessions
+	Writing images to the cache will coerce them to tensorflow representation."""
+
+	def __init__(self,filename,n):
+		"""Specify filename and number of images to be cached."""
+		self.filename=filename
+
+		self.fp=open(filename,"wb+")		# erase file!
+		self.locs=np.zeros(n+1,dtype=np.int64)			# list of seek locations in the binary file for each image
+		self.orts=np.zeros((n,3),dtype=np.float32)		# orientations in spinvec format
+		self.tytx=np.zeros((n,2),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format
+		self.frcs=np.zeros((n),dtype=np.float32)+2.0	# FRCs from previous round, initialize to 2.0 (> 1.0 normal max)
+		self.cloc=0
+		self.locked=False
+
+	def __del__(self):
+		"""free all resources if possible"""
+		self.fp=None
+		os.unlink(self.filename)
+		self.locs=None
+
+	def write(self,stack,n0,ortss=None,tytxs=None):
+		"""writes stack of images starting at n0 to cache"""
+		while self.locked: time.sleep(0.1)
+		self.locked=True
+		stack.coerce_tensor()
+		if ortss is not None:
+			try: self.orts[n0:n0+len(stack)]=ortss
+			except: self.orts[n0:n0+len(stack)]=ortss.numpy()
+		if tytxs is not None:
+			try: self.tytx[n0:n0+len(stack)]=tytxs
+			except: self.tytx[n0:n0+len(stack)]=tytxs.numpy()
+
+		# we go through the images one at a time, serialze, and write to a file with a directory
+		self.fp.seek(self.cloc)
+		for i in range(len(stack)):
+			im=stack[i]
+			self.locs[n0+i]=self.cloc
+			self.fp.write(tf.io.serialize_tensor(im).numpy())
+			self.cloc=self.fp.tell()
+			self.locs[n0+i+1]=self.cloc
+
+		self.locked=False
+
+	def add_orts(self,nlist,dorts,dtytxs):
+		"""adds dorts and dtytxs to existing arrays at locations described by nlist, used to take a gradient step
+		on a subset of the data."""
+		self.orts[nlist]+=dorts
+		self.tytx[nlist]+=dtytxs
+
+	def set_frcs(self,nlist,frcs):
+		self.frcs[nlist]=frcs
+
+
+	def read(self,nlist):
+		while self.locked: time.sleep(0.1)
+
+		self.locked=True
+
+		stack=[]
+		for i in nlist:
+			self.fp.seek(self.locs[i])
+			stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))
+
+		self.locked=False
+		ret=EMStack2D(tf.stack(stack))
+		orts=Orientations(self.orts[nlist])
+		tytx=tf.constant(self.tytx[nlist])
+		return ret,orts,tytx
 
 class EMStack():
-	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
+	"""This class represents a stack of images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
 	- Shape of the array is {N,Z,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
 	- All images in the stack must have the same dimensions.
 	- Only one representation exists at a time. Coercing to a new type is relatively expensive in terms of time.
@@ -170,10 +241,16 @@ class EMStack():
 		if isinstance(target,EMStack3D):
 			return self.tensor*tf.math.conj(target)
 
-	def write_images(self,fsp=None):
+	def write_images(self,fsp=None,bits=12):
 		self.coerce_emdata()
-		EMData.write_images(fsp,self._data)
+		im_write_compressed(self._data,fsp,0,bits)
 
+	def downsample(self,newsize):
+		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
+		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
+		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
+		not be used on rectangular images/volumes."""
+		pass
 
 class EMStack3D(EMStack):
 	"""This class represents a stack of 3-D Volumes in either an EMData, NumPy or Tensorflow representation, with easy interconversion
@@ -255,6 +332,14 @@ class EMStack3D(EMStack):
 			return EMStack3D(self.tensor*tf.math.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+	def downsample(self,newsize):
+		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
+		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
+		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
+		not be used on rectangular images/volumes."""
+
+		return EMStack3D(tf_downsample_3d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
 
 class EMStack2D(EMStack):
 	"""This class represents a stack of 2-D Images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
@@ -309,11 +394,11 @@ class EMStack2D(EMStack):
 
 	@property
 	def orientations(self):
-		"""returns an Orientations object and txty array for the current images if available or None if not"""
-		if self._xforms is None: return None
+		"""returns an Orientations object and tytx array for the current images if available or None if not"""
+		if self._xforms is None: return None,None
 		orts=Orientations()
-		txty=orts.init_from_transforms(self._xforms)
-		return orts,txty
+		tytx=orts.init_from_transforms(self._xforms)
+		return orts,tytx
 
 	def center_clip(self,size):
 		try: size=np.array((int(size),int(size)))
@@ -371,6 +456,14 @@ class EMStack2D(EMStack):
 			return EMStack2D(self.tensor*target)
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+	def downsample(self,newsize):
+		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
+		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
+		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
+		not be used on rectangular images/volumes."""
+
+		return EMStack2D(tf_downsample_2d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
@@ -419,15 +512,15 @@ class Orientations():
 
 	def init_from_transforms(self,xformlist):
 		"""Replaces current contents of Orientations object with a list of Transform objects,
-		returns txty array with any translations (not stored within Orientations)"""
+		returns tytx array with any translations (not stored within Orientations)"""
 		self._data=np.zeros((len(xformlist),3))
-		txty=[]
+		tytx=[]
 		for i,x in enumerate(xformlist):
 			r=x.get_rotation("spinvec")
 			self._data[i]=(r["v1"],r["v2"],r["v3"])
-			txty.append(tuple(x.get_trans_2d()))
+			tytx.append((x.get_trans_2d()[1],x.get_trans_2d()[0]))
 
-		return(tf.constant(txty))
+		return(tf.constant(tytx))
 
 	def transforms(self):
 		"""converts the current orientations to a list of Transform objects"""
@@ -563,10 +656,26 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		amps/=max(amps)
 		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps))))).transpose()
 
-	def project_simple(self,orts,boxsize,txty=None):
+	def replicate(self,n=2,dev=0.01):
+		"""Makes n copies of the current Gaussians shifted by a small random amount to improve the level of detail without
+significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
+stddev=0.01"""
+		if n<=1 : return
+		self.coerce_tensor()
+		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
+		self._data=tf.concat(dups,0)
+
+	def norm_filter(self,sig=0.5):
+		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma"""
+		self.coerce_tensor()
+		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		thr=tf.math.reduce_mean(self._data[:,3])+sig*tf.math.reduce_std(self._data[:,3])
+		self._data=tf.boolean_mask(self._data,self._data[:,3]>thr)					# remove any gaussians with amplitude below threshold
+
+	def project_simple(self,orts,boxsize,tytx=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
 		orts - must be an Orientations object
-		txty =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+		tytx =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
 		boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
 		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
@@ -583,9 +692,9 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 		for j in range(len(orts)):
 			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-			if txty is not None:
-				#print(xfgauss.shape,txty.shape)
-				xfgauss+=txty[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+			if tytx is not None:
+				#print(xfgauss.shape,tytx.shape)
+				xfgauss+=tytx[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
 
 			xfgaussf=tf.floor(xfgauss)
@@ -775,11 +884,12 @@ FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containi
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
-def tf_frc(ima,imb,avg=0):
+def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
-	then the average of the first 'avg' values. If -1, averages through Nyquist"""
-	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
-	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_fsc works on stacks of FFTs not individual images, and the shape of both inputs must match")
+	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
+	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
+	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_frc requires FFTs")
+#	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
 #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
@@ -797,19 +907,21 @@ def tf_frc(ima,imb,avg=0):
 #		zero=tf.zeros((int(ny*0.70711)+1))
 #		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
 #		FRC_NORM[ny]=norm
+	try:
+		imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+		imai=tf.math.imag(ima)
+		imbr=tf.math.real(imb)
+		imbi=tf.math.imag(imb)
 
-	imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
-	imai=tf.math.imag(ima)
-	imbr=tf.math.real(imb)
-	imbi=tf.math.imag(imb)
+		imabr=imar*imbr		# compute these before squaring for normalization
+		imabi=imai*imbi
 
-	imabr=imar*imbr		# compute these before squaring for normalization
-	imabi=imai*imbi
-
-	imar=imar*imar		# just need the squared versions, not the originals now
-	imai=imai*imai
-	imbr=imbr*imbr
-	imbi=imbi*imbi
+		imar=imar*imar		# just need the squared versions, not the originals now
+		imai=imai*imai
+		imbr=imbr*imbr
+		imbi=imbi*imbi
+	except:
+		raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
 
 	frc=[]
 	for i in range(nimg):
@@ -829,7 +941,10 @@ def tf_frc(ima,imb,avg=0):
 	if avg>len(frc[0]): avg=-1
 	if avg>0:
 		frc=tf.stack(frc)
-		return tf.math.reduce_mean(frc[:,:avg],1)
+		if weight!=1.0:
+			w=np.linspace(weight,2.0-weight,nr)
+			frc=frc*w
+		return tf.math.reduce_mean(frc[:,minfreq:avg],1)
 	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
