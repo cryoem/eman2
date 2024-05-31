@@ -70,7 +70,7 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, step coef
+	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) step coef
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
@@ -85,12 +85,12 @@ def main():
 	else:
 		stages=[
 			[500,   16,16,1.8,-3  ,1,.01, 2.0],
-			[500,   16,16,1.8, 0.5  ,4,.01, 1.0],
-			[1000,  32,16,1.5,0  ,1,.005,1.5],
-			[1000,  32,16,1.5,-1,3,.007,1.0],
-			[2500,  64,24,1.2,-1.5,3,.005,1.0],
-			[10000,256,24,1.0,-2  ,3,.002,0.75],
-			[25000,512,12,0.8,-2  ,1,.001,0.5]
+			[500,   16,16,1.8, 0  ,3,.01, 1.0],
+			[1000,  32,16,1.5, 0  ,2,.005,1.5],
+			[1000,  32,16,1.5,-1  ,3,.007,1.0],
+			[2500,  64,24,1.2,-1.5,2,.005,1.0],
+			[10000,256,24,1.0,-2  ,2,.002,1.0],
+			[25000,512,12,0.8,-2  ,1,.001,0.75]
 		]
 
 	times=[time.time()]
@@ -120,29 +120,15 @@ def main():
 	ptcls=[]
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
-#
-# 		# stage 1 - limit to ~1000 particles for initial low resolution work
-# 		if options.verbose: print(f"\tReading Files {min(stage[0],nptcl)} ptcl")
-# 		ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//stage[0]))))
-# 		orts,tytx=ptcls.orientations
-# 		tytx/=nxraw
-# 		ptclsf=ptcls.do_fft()
-#
-# 		if options.verbose: print(f"\tDownsampling {min(nxraw,stage[1])} px")
-# 		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
-# 		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
-# 		ny=stage[1]
-# 		ptcls=None		# free resouces since we're committed to re-reading files for now
-# 		ptclsf=None
-# #		ny=ptclsfds.shape[1]
 
-		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-
-#	print(ptclsfds.shape,tytx.shape)
+#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 		
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
+		lqual=-1.0
+		rstep=1.0
 		for i in range(stage[2]):		# training epochs
-			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 1000 particles at a time
+			nliststg=range(sn+i,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
+			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
 				step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 				if j==0:
@@ -153,14 +139,16 @@ def main():
 					shift+=shift0
 					sca+=sca0
 			norm=len(nliststg)//500+1
-			step/=norm
 			qual/=norm
+			if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
+			step*=rstep/norm
 			shift/=norm
 			sca/=norm
 			gaus.add_tensor(step)
+			lqual=qual
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
-			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
+			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}\t{rstep:1.4f}")
 
 		# if options.savesteps:
 		# 	vol=gaus.volume(nxraw)
@@ -169,7 +157,8 @@ def main():
 
 		# filter results and prepare for stage 2
 		g0=len(gaus)
-		gaus.norm_filter(sig=stage[4])
+		if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
+		else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
 		g1=len(gaus)
 		if stage[5]>0: gaus.replicate(stage[5],stage[6])
 		g2=len(gaus)
@@ -181,12 +170,12 @@ def main():
 			out=open(options.gaussout,"w")
 			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
-		vol=gaus.volume(nxraw)
+		vol=gaus.volume(nxraw).emdata[0]
 		vol["apix_x"]=apix
 		vol["apix_y"]=apix
 		vol["apix_z"]=apix
 		#vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
-		vol.write_images(options.volout)
+		vol.write_image(options.volout,0)
 
 
 	times=np.array(times)

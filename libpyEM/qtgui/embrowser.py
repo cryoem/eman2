@@ -63,8 +63,8 @@ def display_error(msg) :
 
 # This is a floating point number-finding regular expression
 # Documentation: https://regex101.com/r/68zUsE/4/
-renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
-
+#renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
+renumfind = re.compile(r"-?\d*\.?\d+[eE]?-?\d*")
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
 	"""Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value"""
@@ -846,7 +846,9 @@ class EMTextFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+#		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		try: s=header.decode("utf-8")
+		except: return False
 
 		try : size = os.stat(path)[6]
 		except : return False
@@ -880,7 +882,10 @@ class EMHTMLFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+
+		try: s=header.decode("utf-8")
+		except: return False
+#		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		if isinstance(header, bytes):
 			header=header.decode("utf-8")
 		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
@@ -979,8 +984,7 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		try:
-			if not isprint(header) : return False
+		try: s=header.decode("utf-8")
 		except: return False
 
 		# We need to try to count the columns in the file
@@ -1930,7 +1934,9 @@ class EMPDBFileType(EMFileType):
 		ext = os.path.basename(path).split('.')[-1]
 		if ext not in proper_exts: return False
 		
-		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		try: s=header.decode("utf-8")
+		except: return False
+#		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		
 		try : size = os.stat(path)[6]
 		except : return False
