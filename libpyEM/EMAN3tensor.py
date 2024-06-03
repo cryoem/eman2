@@ -107,11 +107,11 @@ class StackCache():
 
 		self.locked=False
 
-	def add_orts(self,nlist,dorts,dtytxs):
+	def add_orts(self,nlist,dorts=None,dtytxs=None):
 		"""adds dorts and dtytxs to existing arrays at locations described by nlist, used to take a gradient step
 		on a subset of the data."""
-		self.orts[nlist]+=dorts
-		self.tytx[nlist]+=dtytxs
+		if dorts is not None: self.orts[nlist]+=dorts
+		if dtytxs is not None: self.tytx[nlist]+=dtytxs
 
 	def set_frcs(self,nlist,frcs):
 		self.frcs[nlist]=frcs

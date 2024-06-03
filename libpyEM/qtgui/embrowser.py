@@ -999,7 +999,10 @@ class EMPlotFileType(EMFileType) :
 				return (os.stat(path)[6], '-', 'big')
 			numc=renumfind.findall(l)
 
-			numc = len([float(i) for i in numc])		# number of numeric columns
+			try:
+				numc = len([float(i) for i in numc])		# number of numeric columns
+			except:
+				break
 
 			if numc > 0 : break			# just finding the number of columns
 
@@ -3640,6 +3643,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 	
 	def __init__(self, parent = None,nimg = 1) :
 		QtWidgets.QDialog.__init__(self,parent)
+		nimg=int(nimg)
 		
 		self.setWindowTitle("Slice Parameters")
 
@@ -3662,7 +3666,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 			self.fol.addRow("Last Image #:",self.wspinmax)
 
 			self.wspinstep=QtWidgets.QSpinBox()
-			self.wspinstep.setRange(1,nimg/2)
+			self.wspinstep.setRange(1,nimg//2)
 			self.wspinstep.setValue(1)
 			self.wspinstep.setToolTip("Step for range of volumes to display (partial display of file)")
 			self.fol.addRow("Step:",self.wspinstep)

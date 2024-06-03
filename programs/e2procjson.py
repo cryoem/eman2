@@ -54,6 +54,7 @@ def main():
 	parser.add_argument("--extractspt", action="store_true", default=False, help="This will extract the parameters from a particle_parms JSON file in SPT projects as a multicolumn text file.")
 	parser.add_argument("--extractboxes", action="store_true", default=False, help="This will save 2-D particle box locations to one or more text files")
 	parser.add_argument("--extractboxes3d", action="store_true", default=False, help="This will save 3-D particle box locations to one or more text files")
+	parser.add_argument("--tilebox3d", type=str, default=None, help="Generate a tiling of 3-D box locations for a tomogram on the z=0 plane: <x0>,<y0>,<dxy>[,name]")
 	parser.add_argument("--autoloadboxes", action="store_true", default=False, help="Provide a list of .txt files using the same naming convention produced by extractboxes[3d]. Boxes from files will be added to any existing boxes in corresponding info/*.json files")
 	parser.add_argument("--removekey", type=str, default=None, help="DANGER! This will remove all data associated with the named key from all listed .json files.")
 	parser.add_argument("--addkey", type=str, default=None, help="add a simple key in the format of key:value. Will try to conver value to float if possible.")
@@ -89,7 +90,35 @@ def main():
 		for a,n in zip(args, newargs):
 			print("{} -> {}".format(a, n))
 		args=newargs
-		
+
+	if options.tilebox3d is not None:
+		for ifsp in args:
+			js=js_open_dict(ifsp)
+			b3d=js["boxes_3d"]
+			name="tiled"
+			try:
+				x0,y0,dxy=[int(i) for i in options.tilebox3d.split(",")]
+			except:
+				try: 
+					x0,y0,dxy,name=options.tilebox3d.split(",")
+					x0,y0,dxy=int(x0),int(y0),int(dxy)
+				except:	
+					print("ERROR: --tilebox3d <x0>,<y0>,<dxy> in raw tilt-series coordinates")
+					sys.exit(1)
+			try:
+				cls=js["class_list"]
+				clsno=max([int(k) for k in cls.keys()])+1
+				cls[str(clsno)]={"boxsize":dxy,"name":name}
+			except:
+				clsno=0
+				cls={str(clsno):{"boxsize":dxy,"name":tiled}}
+			js["class_list"]=cls
+
+			for y in range(y0,-y0+dxy//2,dxy):
+				for x in range(x0,-x0+dxy//2,dxy):
+					b3d.append([x,y,0,"manual",0.0,clsno])
+
+			js["boxes_3d"]=b3d
 		
 	if options.remaplstkeys:
 		try: os.remove("tmp_tmp.json")

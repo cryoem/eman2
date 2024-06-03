@@ -61,6 +61,7 @@ def main():
 
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
+	nxrawm2=good_size_small(nxraw-2)
 	apix=EMData(args[0],0,True)["apix_x"]
 
 	if options.savesteps: 
@@ -70,17 +71,17 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) step coef
+	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 6) step coef
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
-			[256,32,  16,1.8,  0,1,.01, 3.0],
-			[256,32,  16,1.8,0.3,2,.01, 1.0],
-			[256,64,  24,1.5,  0,1,.005,1.0],
-			[256,64,  48,1.5,0.2,2,.005,0.5],
-			[256,128, 32,1.2,0.2,3,.003,0.5],
-			[256,512, 32,1.0,0.2,3,.001,0.25],
-			[256,1024,24,0.8,0.2,1,.001,0.1]
+			[256,32,  32,1.8, -1,1,.03, 3.0],
+			[256,32,  32,1.8, -1,2,.03, 1.0],
+			[256,64,  48,1.5, -2,1,.02,1.0],
+			[256,64,  48,1.5, -1,2,.01,0.5],
+			[256,128, 48,1.2, -2,2,.005,2],
+			[256,512, 48,1.0, -1,2,.003,3],
+			[256,1024,48,0.8, -2,1,.001,5]
 		]
 	else:
 		stages=[
@@ -104,10 +105,17 @@ def main():
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
 		orts,tytx=stk.orientations
 		tytx/=nxraw
+		for im in stk.emdata: im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
-			stkfds=stkf.downsample(min(down,nxraw))
+			stkfds=stkf.downsample(min(down,nxrawm2))
 			caches[down].write(stkfds,i,orts,tytx)
+
+	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
+	for down in downs[1:]:
+		caches[down].orts=caches[downs[0]].orts
+		caches[down].tytx=caches[downs[0]].tytx
+
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
@@ -123,32 +131,60 @@ def main():
 
 #		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 		
-		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
+		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		lqual=-1.0
 		rstep=1.0
 		for i in range(stage[2]):		# training epochs
-			nliststg=range(sn+i,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
+			if nptcl>stage[0]: idx0=sn+i
+			else: idx0=0
+			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
+			imshift=0.0
 			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
-				step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
-				if j==0:
-					step,qual,shift,sca=step0,qual0,shift0,sca0
+				# standard mode, optimize gaussian parms only
+				if not options.tomo or sn<2:
+#				if True:
+					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+					if j==0:
+						step,qual,shift,sca=step0,qual0,shift0,sca0
+					else:
+						step+=step0
+						qual+=qual0
+						shift+=shift0
+						sca+=sca0
+				# optimize gaussians and image shifts
 				else:
-					step+=step0
-					qual+=qual0
-					shift+=shift0
-					sca+=sca0
+					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+					if j==0:
+						step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
+						caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+					else:
+						step+=step0
+						caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+						qual+=qual0
+						shift+=shift0
+						sca+=sca0
+						imshift+=imshift0
 			norm=len(nliststg)//500+1
 			qual/=norm
 			if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
 			step*=rstep/norm
 			shift/=norm
 			sca/=norm
+			imshift/=norm
 			gaus.add_tensor(step)
 			lqual=qual
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
-			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}\t{rstep:1.4f}")
+			print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}\t{rstep:1.5f}")
+
+		# end of epoch, save images and projections for comparison
+		if options.verbose>3:
+			projs=gaus.project_simple(orts,ptclsfds.shape[1],tytx=tytx)
+			ptclds=ptclsfds.do_ift()
+			for i in range(len(projs)):
+				ptclds.emdata[i].write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
+				projs.emdata[i].write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
 
 		# if options.savesteps:
 		# 	vol=gaus.volume(nxraw)
@@ -170,12 +206,19 @@ def main():
 			out=open(options.gaussout,"w")
 			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
-		vol=gaus.volume(nxraw).emdata[0]
-		vol["apix_x"]=apix
-		vol["apix_y"]=apix
-		vol["apix_z"]=apix
-		#vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
-		vol.write_image(options.volout,0)
+		# show individual shifts at high verbosity
+		if options.verbose>2:
+			print("TYTX: ",caches[stage[1]].tytx*nxraw)
+
+	outsz=min(1024,nxraw)
+	vol=gaus.volume(outsz).emdata[0]
+	times.append(time.time())
+	vol["apix_x"]=apix*nxraw/outsz
+	vol["apix_y"]=apix*nxraw/outsz
+	vol["apix_z"]=apix*nxraw/outsz
+	vol.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+	times.append(time.time())
+	vol.write_image(options.volout,0)
 
 
 	times=np.array(times)
@@ -200,7 +243,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 		gt.watch(gaus.tensor)
 		projs=gaus.project_simple(orts,ny,tytx=tytx)
 		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,3)	# specifying ny/2 radius explicitly so weight functions
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
 
 	grad=gt.gradient(frcs,gaus._data)
 	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
@@ -212,6 +255,38 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (step,float(qual),float(shift),float(sca))
+#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+
+def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
+	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+
+	with tf.GradientTape() as gt:
+		gt.watch(gaus.tensor)
+		gt.watch(tytx)
+		projs=gaus.project_simple(orts,ny,tytx=tytx)
+		projsf=projs.do_fft()
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+
+	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
+	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
+	shift=tf.math.reduce_std(grad[:,:3])	# translational std
+	imshift=tf.math.reduce_std(gradtytx)	# image shift std
+	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
+	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	tytxstep=gradtytx*relstep/(imshift*2000)
+	#print(f"{qual}\t{shift}\t{sca}")
+
+	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
 
