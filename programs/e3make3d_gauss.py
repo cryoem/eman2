@@ -46,6 +46,9 @@ def main():
 	parser.add_argument("--volout", type=str,help="Volume output file", default="threed.hdf")
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
+	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
+	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
+	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
@@ -61,8 +64,14 @@ def main():
 
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
+	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
-	apix=EMData(args[0],0,True)["apix_x"]
+	if options.apix>0: apix=options.apix
+	else: apix=EMData(args[0],0,True)["apix_x"]
+	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
+	else: zmax=0.5
+
+	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit {zmax}. {nptcl} input images")
 
 	if options.savesteps: 
 		try: os.unlink("steps.hdf")
@@ -78,10 +87,10 @@ def main():
 			[256,32,  32,1.8, -1,1,.03, 3.0],
 			[256,32,  32,1.8, -1,2,.03, 1.0],
 			[256,64,  48,1.5, -2,1,.02,1.0],
-			[256,64,  48,1.5, -1,2,.01,0.5],
-			[256,128, 48,1.2, -2,2,.005,2],
-			[256,512, 48,1.0, -1,2,.003,3],
-			[256,1024,48,0.8, -2,1,.001,5]
+			[256,64,  48,1.5, -2,2,.01,0.5],
+			[256,128, 48,1.2, -3,4,.008,2],
+			[256,512, 48,1.2, -2,4,.005,3],
+			[256,1024,48,1.2, -3,1,.001,5]
 		]
 	else:
 		stages=[
@@ -100,9 +109,12 @@ def main():
 	if options.verbose: print("Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	for i in range(0,nptcl,2500):
-		if options.verbose>1: print(f"Caching {i}/{nptcl}")
-		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
+	for i in range(0,nptcl,1000):
+		if options.verbose>1:
+			print(f" Caching {i}/{nptcl}\r")
+			sys.stdout.flush()
+		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
+		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
 		tytx/=nxraw
 		for im in stk.emdata: im.process_inplace("normalize.edgemean")
@@ -116,13 +128,14 @@ def main():
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
 
+	if options.verbose>1: print("")
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
-	rnd+=(-.5,-.5,-.5,10.0)
-	if options.tomo: gaus._data=rnd/(.9,.9,.9,10.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
-	else: gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	rnd+=(-.5,-.5,-.5,2.0)
+	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
 	times.append(time.time())
 	ptcls=[]
@@ -183,11 +196,13 @@ def main():
 			projs=gaus.project_simple(orts,ptclsfds.shape[1],tytx=tytx)
 			ptclds=ptclsfds.do_ift()
 			for i in range(len(projs)):
-				ptclds.emdata[i].write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
-				projs.emdata[i].write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
+				a=ptclds.emdata[i].process("normalize")
+				b=projs.emdata[i].process("filter.matchto",{"to":a})
+				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
+				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
 
 		# if options.savesteps:
-		# 	vol=gaus.volume(nxraw)
+		# 	vol=gaus.volume(nxraw,zmax)
 		# 	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
 		# 	vol.write_images(f"A_vol_opt_{sn}.hdf")
 
@@ -211,7 +226,7 @@ def main():
 			print("TYTX: ",caches[stage[1]].tytx*nxraw)
 
 	outsz=min(1024,nxraw)
-	vol=gaus.volume(outsz).emdata[0]
+	vol=gaus.volume(outsz,zmax).emdata[0]
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz

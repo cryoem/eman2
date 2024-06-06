@@ -726,10 +726,11 @@ stddev=0.01"""
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-	def volume(self,boxsize):
+	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_tensor()
 
-		vol=tf.zeros((boxsize,boxsize,boxsize))		# projections
+		zsize=good_size(boxsize*zaspect*2.0)
+		vol=tf.zeros((zsize,boxsize,boxsize))		# output
 
 		xfgauss=tf.reverse((self._data[:,:3]+0.5)*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 

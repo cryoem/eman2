@@ -68,6 +68,7 @@ def main():
 	parser.add_argument("--padtwod", type=float,help="padding factor", default=2.0, guitype='floatbox',row=5, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--noctf", action="store_true", default=False ,help="skip ctf correction.")
 	parser.add_argument("--wiener", action="store_true", default=False ,help="wiener filter the particles using ctf information. Not very useful...")
+	parser.add_argument("--nomasksubtlt", action="store_true", default=False ,help="extracted subtilts should be unmasked")
 	parser.add_argument("--alltomograms", action="store_true", default=False ,help="use all tomograms.", guitype='boolbox',row=1, col=1, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
 
@@ -674,7 +675,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			
 			## add a soft falloff
 			wd=(pad-boxsz*2)/4.
-			e.process_inplace("mask.soft",{"outer_radius":-wd, "width":wd/2})
+			if not options.nomasksubtlt: e.process_inplace("mask.soft",{"outer_radius":-wd, "width":wd/2})
 			
 			## skip all zero particles
 			if e["sigma"]==0:
