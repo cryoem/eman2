@@ -10,18 +10,19 @@ jobs:
   bump-and-tag:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Parse commit message for bump type
+        run: |
+          if ${{ contains(github.event.head_commit.message, '[bump patch]') || contains(github.event.head_commit.message, '[ci build]') }}; then
+            echo "bump=patch" >> $GITHUB_ENV
+          elif ${{ contains(github.event.head_commit.message, '[bump minor]') }}; then
+            echo "bump=minor" >> $GITHUB_ENV
+          elif ${{ contains(github.event.head_commit.message, '[bump major]') }}; then
+            echo "bump=major" >> $GITHUB_ENV
+          fi
 
-    - name: Parse commit message for bump type
-      run: |
-        if ${{ contains(github.event.head_commit.message, '[bump patch]') || contains(github.event.head_commit.message, '[ci build]') }}; then
-          echo "bump=patch" >> $GITHUB_ENV
-        elif ${{ contains(github.event.head_commit.message, '[bump minor]') }}; then
-          echo "bump=minor" >> $GITHUB_ENV
-        elif ${{ contains(github.event.head_commit.message, '[bump major]') }}; then
-          echo "bump=major" >> $GITHUB_ENV
-        fi
+      - name: Checkout eman2
+        if: ${{ env.bump }}
+        uses: actions/checkout@v2
 
     - name: Bump and tag new version
       if: ${{ env.bump }}
