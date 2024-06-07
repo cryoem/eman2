@@ -30,17 +30,3 @@ jobs:
         git config --global user.name "eman-bot"
         
         python ./utils/tag_new_version.py --bump ${{ env.bump }}
-
-    - name: Trigger eman dev
-      if: ${{ env.bump }}
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.EMAN_DEV_TOKEN }}
-        script: |
-          await github.rest.actions.createWorkflowDispatch({
-            owner: 'cryoem',
-            repo: 'eman-feedstock',
-            workflow_id: 'update-version.yml',
-            ref: 'master',
-            inputs: {new_version: process.env.new_version }
-          })
