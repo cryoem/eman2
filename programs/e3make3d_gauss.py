@@ -156,8 +156,8 @@ def main():
 			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
 				# standard mode, optimize gaussian parms only
-				if not options.tomo or sn<2:
-#				if True:
+#				if not options.tomo or sn<2:
+				if True:
 					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
@@ -220,7 +220,7 @@ def main():
 	
 		# do this at the end of each stage in case of early termination
 		if options.gaussout is not None:
-			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.6f",delimiter="\t")
+			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.4f",delimiter="\t")
 			# out=open(options.gaussout,"w")
 			# for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
