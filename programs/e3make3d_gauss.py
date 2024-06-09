@@ -245,7 +245,7 @@ def main():
 	times=np.array(times)
 	#times-=times[0]
 	times=times[1:]-times[:-1]
-	if options.verbose>1 : print(times.astype(int32))
+	if options.verbose>1 : print(times.astype(np.int32))
 
 	E3end(llo)
 
