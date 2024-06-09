@@ -33,4 +33,44 @@ jobs:
       - name: Bump and tag new version
         if: ${{ env.bump }}
         run: |
-          python ./utils/tag_new_version.py --bump ${{ env.bump }}
+          git fetch --tags
+          version=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+
+          if [[ "$version" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+            patch="${BASH_REMATCH[3]}"
+          fi
+
+          case "${{ env.bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+            *)
+              echo "Unknown bump type: ${{ env.bump }}"
+              exit 1
+              ;;
+          esac
+
+          new_version="${major}.${minor}.${patch}"
+          echo "new_version=${new_version}" >> $GITHUB_ENV
+
+          echo "Current version: ${version}"
+          echo "Requested bump : ${{ env.bump }}"
+          echo "New version    : ${new_version}"
+          
+          sed -i "s/VERSION\s*[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
+
+          git add CMakeLists.txt
+          git commit -m v${new_version}
+          git tag -f v${new_version}
+          git push origin ${{ github.ref }} v${new_version}
