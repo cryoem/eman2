@@ -24,10 +24,13 @@ jobs:
         if: ${{ env.bump }}
         uses: actions/checkout@v2
 
-    - name: Bump and tag new version
-      if: ${{ env.bump }}
-      run: |
-        git config --global user.email "eman.github@gmail.com"
-        git config --global user.name "eman-bot"
-        
-        python ./utils/tag_new_version.py --bump ${{ env.bump }}
+      - name: Set up Git user
+        if: ${{ env.bump }}
+        run: |
+          git config --global user.email "eman.github@gmail.com"
+          git config --global user.name "eman-bot"
+
+      - name: Bump and tag new version
+        if: ${{ env.bump }}
+        run: |
+          python ./utils/tag_new_version.py --bump ${{ env.bump }}
