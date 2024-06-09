@@ -74,3 +74,20 @@ jobs:
           git commit -m v${new_version}
           git tag -f v${new_version}
           git push origin ${{ github.ref }} v${new_version}
+
+      - name: Checkout eman-feedstock
+        if: ${{ env.bump }}
+        uses: actions/checkout@v2
+        with:
+         repository: cryoem/eman-feedstock
+         token: ${{ secrets.EMAN_DEV_TOKEN }}
+
+      - name: Update version in eman-feedstock
+        if: ${{ env.bump }}
+        run: |
+          sed -i 's/set\s*version\s*=\s*"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"/set version = "${{ env.new_version }}"/' recipe/meta.yaml
+          sed -i 's/set\s*build\s*=\s*[0-9][0-9]*/set build = 0/' recipe/meta.yaml
+
+          git add recipe/meta.yaml
+          git commit -m v${{ env.new_version }}
+          git push origin master
