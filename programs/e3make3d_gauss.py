@@ -45,7 +45,8 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--volout", type=str,help="Volume output file", default="threed.hdf")
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
-	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
+	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
+	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
@@ -84,13 +85,13 @@ def main():
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
-			[256,32,  32,1.8, -1,1,.03, 3.0],
-			[256,32,  32,1.8, -1,2,.03, 1.0],
-			[256,64,  48,1.5, -2,1,.02,1.0],
-			[256,64,  48,1.5, -2,2,.01,0.5],
-			[256,128, 48,1.2, -3,4,.008,2],
-			[256,512, 48,1.2, -2,4,.005,3],
-			[256,1024,48,1.2, -3,1,.001,5]
+			[256,32,  32,1.8, -1,1,.05, 3.0],
+			[256,32,  32,1.8, -1,2,.05, 1.0],
+			[256,64,  48,1.5, -2,1,.04,1.0],
+			[256,64,  48,1.5, -2,2,.02,0.5],
+			[256,128, 48,1.2, -3,4,.01,2],
+			[256,512, 48,1.2, -2,4,.01,3],
+			[256,1024,48,1.2, -3,1,.004,5]
 		]
 	else:
 		stages=[
@@ -190,6 +191,7 @@ def main():
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
 			print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}\t{rstep:1.5f}")
+			if qual>0.99: break
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -218,27 +220,32 @@ def main():
 	
 		# do this at the end of each stage in case of early termination
 		if options.gaussout is not None:
-			out=open(options.gaussout,"w")
-			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
+			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.6f",delimiter="\t")
+			# out=open(options.gaussout,"w")
+			# for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
 		# show individual shifts at high verbosity
 		if options.verbose>2:
-			print("TYTX: ",caches[stage[1]].tytx*nxraw)
+			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
 	outsz=min(1024,nxraw)
+	times.append(time.time())
 	vol=gaus.volume(outsz,zmax).emdata[0]
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
 	vol["apix_z"]=apix*nxraw/outsz
-	vol.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),0)
+	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
+	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
 	times.append(time.time())
 	vol.write_image(options.volout,0)
 
 
 	times=np.array(times)
-	times-=times[0]
-	if options.verbose>1 : print(times)
+	#times-=times[0]
+	times=times[1:]-times[:-1]
+	if options.verbose>1 : print(times.astype(int32))
 
 	E3end(llo)
 

@@ -732,7 +732,7 @@ stddev=0.01"""
 		zsize=good_size(boxsize*zaspect*2.0)
 		vol=tf.zeros((zsize,boxsize,boxsize))		# output
 
-		xfgauss=tf.reverse((self._data[:,:3]+0.5)*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+		xfgauss=tf.reverse((self._data[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 
 		xfgaussf=tf.floor(xfgauss)
 		xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index

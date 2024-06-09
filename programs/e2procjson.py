@@ -94,7 +94,8 @@ def main():
 	if options.tilebox3d is not None:
 		for ifsp in args:
 			js=js_open_dict(ifsp)
-			b3d=js["boxes_3d"]
+			try: b3d=js["boxes_3d"]
+			except: b3d=[]
 			name="tiled"
 			try:
 				x0,y0,dxy=[int(i) for i in options.tilebox3d.split(",")]
@@ -111,7 +112,7 @@ def main():
 				cls[str(clsno)]={"boxsize":dxy,"name":name}
 			except:
 				clsno=0
-				cls={str(clsno):{"boxsize":dxy,"name":tiled}}
+				cls={str(clsno):{"boxsize":dxy,"name":name}}
 			js["class_list"]=cls
 
 			for y in range(y0,-y0+dxy//2,dxy):
