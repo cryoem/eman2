@@ -32,6 +32,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="mask file applied to the GMM after each iteration. The mask can apply to amplitude or sigma depending on the --maskamp or --masksigma options.", default=None)
 	parser.add_argument("--tophat", type=str,help="tophat filter for post process.", default="localwiener")
 	parser.add_argument("--expandsym", type=str,help="symmetry expansion. i.e. start from an input refinement with the given symmetry and perform the new refinement with c1 by making copies of each particle at symmetrical equivalent positions.", default=None)
+	parser.add_argument("--breaksym", type=str,help="similar to expandsym but keep one particle assigned to the best asymmetrical unit.", default=None)
 	parser.add_argument("--masksigma", action="store_true", default=False ,help="mask the sigma of Gaussian using --mask")
 	parser.add_argument("--maskamp", action="store_true", default=False ,help="mask the amplitude of Gaussian using --mask")
 	parser.add_argument("--maskpp", type=str,help="Mask file for the reconstructed maps post processing. default is auto.", default=None)
@@ -54,6 +55,8 @@ def main():
 	itr=int(''.join(c[-2:]))
 	print(f"refinement path {oldpath}, iteration {itr}.")
 	res=options.startres
+	if options.breaksym:
+		options.expandsym=options.breaksym
 	
 	if options.path==None: 
 		path=options.path=num_path_new("gmm_")
@@ -160,7 +163,20 @@ def main():
 			
 			run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
 			
-			run(f"e2spa_make3d.py --input {path}/ptcls_{itr:02d}_{eo}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --parallel thread:32 --keep .9 --sym {options.sym} {etcm3d}")
+			pfile=f"{path}/ptcls_{itr:02d}_{eo}.lst"
+			if options.breaksym:
+				lst=load_lst_params(pfile)
+				score=np.array([l["score"] for l in lst])
+				nsym=Transform.get_nsym(options.breaksym)
+				score=score.reshape(-1, nsym)
+				cl=np.argmin(score,axis=1)
+				rng=np.arange(len(lst)).reshape(-1, nsym)
+				idx=rng[np.arange(len(rng)), cl]
+				lout=[lst[i] for i in idx]
+				pfile=f"{path}/ptcls_breaksym_{eo}.lst"
+				save_lst_params(lout, pfile)
+				
+			run(f"e2spa_make3d.py --input {pfile} --output {path}/threed_{itr:02d}_{eo}.hdf --parallel thread:32 --keep .9 --sym {options.sym} {etcm3d}")
 	   
 			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
 			

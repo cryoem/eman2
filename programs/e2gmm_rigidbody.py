@@ -72,6 +72,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="masks for refinement. multiple files separated by ','", default=None)
 	parser.add_argument("--niter", type=int, help="number of iteration",default=20)
 	parser.add_argument("--maxres", type=float, help="resolution",default=5.)
+	parser.add_argument("--minres", type=float, help="resolution",default=25.)
 	parser.add_argument("--learnrate", type=float, help="learning rate",default=2e-3)
 	parser.add_argument("--l2_weight", type=float, help="weighting factor for L2. default is 1",default=1.)
 	parser.add_argument("--xf_file", type=str,help="file for the transform input/output. hdf format. will overwrite.", default=None)
@@ -129,7 +130,7 @@ def main():
 		
 		
 	#### initialize dataset
-	options.minpx=2
+	options.minpx=ceil(raw_apix/options.minres*raw_boxsz)
 	options.maxpx=ceil(raw_apix/maxres*raw_boxsz)
 	options.batchsz=32
 	

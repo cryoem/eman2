@@ -42,7 +42,8 @@ def main():
 		x=res.x
 		xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3],"ty":x[4],"tz":x[5]})
 		a=ref.process("xform", {"transform":xf})
-		
+		a["xform.align3d"]=xf
+		print(xf)
 		if options.applysym:
 			a.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":sym})
 		outname=fname[:-4]+"_sym.hdf"

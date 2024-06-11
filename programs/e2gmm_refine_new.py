@@ -1033,8 +1033,6 @@ def translate_image(img, trans):
 	return(imgs_real1, imgs_imag1)
 
 def do_coarse_align_one(args):
-	# d0=tf.repeat(args[0][None,...], len(projs_cpx_global[0]), axis=0)
-	# d1=tf.repeat(args[1][None,...], len(projs_cpx_global[0]), axis=0)
 	dc=list([tf.repeat(a[None,...], len(projs_cpx_global[0]), axis=0) for a in args])
 	ts=ccf_trans(dc, projs_cpx_global)
 	dtrans=translate_image(dc,ts)

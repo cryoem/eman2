@@ -104,7 +104,7 @@ def main():
 						out.write("{:1.5f}\t{:1.1f}\t{:1.4f}\t{:1.5f}\t{:1.2f}\t{:1.1f}\t{:1.3f}\t{:1.2f}\n".format(v.defocus,v.bfactor,v.apix,v.dfdiff,v.dfang,v.voltage,v.cs,v.get_phase()))
 					elif isinstance(v,Transform) :
 						dct=v.get_params("eman")
-						out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(v["az"],v["alt"],v["phi"],v["tx"],v["ty"],v["tz"]))
+						out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(dct["az"],dct["alt"],dct["phi"],dct["tx"],dct["ty"],dct["tz"]))
 					elif isinstance(v,list) or isinstance(v,tuple):
 						out.write([str(i) for i in v].join("\t")+"\n")
 					else:

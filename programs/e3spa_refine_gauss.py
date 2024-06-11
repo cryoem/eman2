@@ -46,6 +46,7 @@ def main():
 	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
+	parser.add_argument("--fromscratch", action="store_true",help="Ignore orientations from input file and refine from scratch")
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
@@ -71,6 +72,7 @@ def main():
 
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
+	nxrawm2=good_size_small(nxraw-2)
 	apix=EMData(args[0],0,True)["apix_x"]
 
 	if options.savesteps: 
@@ -79,36 +81,22 @@ def main():
 
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
-	# definition of downsampling sequence for stages of refinement
-	# 0)#ptcl, 1)downsample, 2)iter, 3)frc weight, 4)amp threshold, 5)replicate, 6)grad step coef, 7) FRC weighting 8)frc loc threshold (9 disables gradient)
-	# replication skipped in final stage. thresholds are mean+coef*std
-	stages=[
-		[1000,   16,16,1.8, 0  ,2,.01, 2.0,9],
-		[1000,   16,16,1.8, 0  ,2,.01, 2.0,9],
-		[1000,   16,16,1.8,-1  ,2,.01, 2.0,-1],
-		[1000,   16,16,1.8,-1  ,2,.01, 2.0,-1],
-		[1000,   16,16,1.8,-1  ,1,.01, 2.0,-1],
-		[2000,  32,16,1.5,-.5  ,2,.005,1.5,-3],
-		[2000,  32,16,1.5,-1  ,3,.007,1.0,-2],
-		[5000,  64,24,1.2,-1.5,3,.005,1.0,-3],
-		[10000,256,24,1.0,-2  ,3,.002,0.75,-3],
-		[25000,512,12,1.0,-2  ,1,.001,0.5,-3.0]
-	]
-
-	for l in stages: l[1]=min(l[1],nxraw)		# make sure we aren't "upsampling"
 
 	times=[time.time()]
 
 	# Cache initialization
 	if options.verbose: print("Caching particle data")
-	downs=sorted(set([s[1] for s in stages]))
+#	downs=sorted(set([s[1] for s in stages]))
+	downs=sorted(set([min(i,nxrawm2) for i in (24,32,64,256,512)]))		# note that 24 is also used in reseeding
 #	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	caches={down:StackCache(f"{options.path}/tmp_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
+	fromscratch=options.fromscratch
 	for i in range(0,nptcl,2500):
 		if options.verbose>1: print(f"Caching {i}/{nptcl}")
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
 		orts,tytx=stk.orientations
-		if orts is None:
+		if orts is None or fromscratch:
+			fromscratch=True
 			tytx=np.zeros((stk.shape[0],2))
 			orts=rand.random((stk.shape[0],3))-0.5
 		else: tytx/=nxraw
@@ -120,45 +108,77 @@ def main():
 			else:
 				caches[down].write(stkf,i,orts,tytx)
 
+	# Reseed orientations for global search at low resolution
+	tstorts=[]
+	for x in np.arange(-0.5,0.5,0.04):
+		for y in np.arange(-0.5,0.5,0.04):
+			for z in np.arange(-0.5,0.5,0.04):
+				if hypot(x,y,z)<=0.5: tstorts.append((x,y,z))
+	tst_orts=Orientations(np.array(tstorts))
+
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
+
+	# definition of downsampling sequence for stages of refinement
+	# 0)#ptcl, 1)downsample, 2)iter, 3)frc weight, 4)amp threshold, 5)replicate, 6)replicate spread, 7) gradient scale 8)frc loc threshold (9 disables gradient)
+	# replication skipped in final stage. thresholds are mean+coef*std
+	if fromscratch:
+		print("Notice: refining from scratch without orientations")
+		stages=[
+			[200,   24,16,1.8, 0  ,2,.05, 2.0,9],
+			[200,   24,16,1.8, 0  ,2,.05, 2.0,9],
+			[200,   24,16,1.8,-1  ,2,.01, 2.0,-1],
+			[5000,  24,16,1.8,-1  ,3,.1, 2.0,-1],
+			[5000,  24,16,1.8, 0  ,1,.01, 2.0,-1],
+			[5000,  32,16,1.5,-.5 ,2,.05,1.5,-3],
+			[5000,  32,16,1.5,-1  ,3,.007,1.0,-2],
+			[10000, 64,12,1.2,-1.5,3,.005,1.0,-3],
+			[10000, 64,12,1.0,-2  ,3,.002,0.75,-3],
+			[10000,256,12,1.2,-1.5,3,.005,1.0,-3],
+			[10000,256,12,1.0,-2  ,3,.002,0.75,-3],
+			[25000,512, 6,1.0,-2  ,1,.001,0.5,-3.0],
+			[25000,512, 6,1.0,-2  ,1,.001,0.5,-3.0]
+		]
+	else:
+		stages=[
+			[1000,  24,16,1.8,-3  ,1,.01, 2.0, 9],
+			[1000,  24,16,1.8, 0  ,2,.03, 1.5, 9],
+			[1000,  24,16,1.8,-1  ,1,.01, 1.5, -3],
+			[1000,  24,16,1.8, 0  ,2,.01, 1.5, -2],
+			[2000,  32,16,1.5, 0  ,2,.02,1.5, -3],
+			[2000,  32,16,1.5,-0.5,2,.01,1.25, -2],
+			[5000,  64,24,1.2,-1  ,2,.005,1.0, -3],
+			[10000,256,24,1.0,-1  ,2,.002,1.0,-3],
+			[25000,512,12,1.0,-2  ,1,.001,1.0, -3]
+		]
+
+	for l in stages: l[1]=min(l[1],nxrawm2)		# make sure we aren't "upsampling"
+
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
 	rnd+=(-.5,-.5,-.5,10.0)
 	gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	lsxin=LSXFile(args[0])
 
 	times.append(time.time())
 	ptcls=[]
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 		ccache=caches[stage[1]]
-#
-# 		# stage 1 - limit to ~1000 particles for initial low resolution work
-# 		if options.verbose: print(f"\tReading Files {min(stage[0],nptcl)} ptcl")
-# 		ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//stage[0]))))
-# 		orts,tytx=ptcls.orientations
-# 		tytx/=nxraw
-# 		ptclsf=ptcls.do_fft()
-#
-# 		if options.verbose: print(f"\tDownsampling {min(nxraw,stage[1])} px")
-# 		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
-# 		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
-# 		ny=stage[1]
-# 		ptcls=None		# free resouces since we're committed to re-reading files for now
-# 		ptclsf=None
-# #		ny=ptclsfds.shape[1]
 
-#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+#		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 		norm=len(nliststg)//500+1
 
 #	print(ptclsfds.shape,tytx.shape)
 		
-		if options.verbose: print(f"\tIterating Gaussian parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
+		if options.verbose: print(f"\tIterating Gaussian parms x{stage[2]} at size {stage[1]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
+		lqual=-1.0
+		rstep=1.0
 		for i in range(stage[2]):		# training epochs
 			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
@@ -170,14 +190,43 @@ def main():
 					qual+=qual0
 					shift+=shift0
 					sca+=sca0
-			step/=norm
 			qual/=norm
+			if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
+			step*=rstep/norm
 			shift/=norm
 			sca/=norm
 			gaus.add_tensor(step)
+			lqual=qual
 			if options.savesteps: from_numpy(gaus.numpy).write_image(f"{options.path}/steps.hdf",-1)
 
 			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
+
+		# reseed orientations of particles with low FRCs
+		# we do this by finding the best orientation with fixed angular sampling and a fixed box size of 24
+		nseeded=0
+		if stage[8]<9:
+
+			frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
+			lowfrc=frcs[frcs<1.5]
+			if len(lowfrc)>0:
+				frcm=np.mean(lowfrc)
+				frcsg=np.std(lowfrc)
+				reseed_idx=np.where(frcs<frcm+frcsg*stage[8])[0]			# [0] required because of odd np.where return
+				nseeded=len(reseed_idx)
+
+				if options.verbose: print(f"Making {len(tst_orts)} projections for reseeding")
+				seedprojsf=gaus.project_simple(tst_orts,24).do_fft()		# fixed box size
+
+				ptcls,tmpo,tmpxy=caches[24].read(reseed_idx)				# read all of the particle images we need to seed with new orientations, each is tiny with the fixed size of 24x24
+
+				if options.verbose: print(f"Optimize {nseeded} orientations")
+				for i in range(len(ptcls)):
+					if options.verbose>1: print(f"{i}/{len(ptcls)}")
+					ofrcs=tf_frc(seedprojsf.tensor,ptcls[i],-1)
+					maxort=tf.argmax(ofrcs)			# best orientation for this particle
+					ccache.orts[i]=tst_orts[maxort]
+					#ccache.tytx[ii]=(0,0)			# just keep the current center?
+				print(f"{nseeded} orts reseeded ({frcm+frcsg*stage[8]} thr)   {local_datetime()}")
 
 		if stage[8]<9:
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
@@ -212,39 +261,48 @@ def main():
 
 		# filter results and prepare for next stage
 		g0=len(gaus)
-		gaus.norm_filter(sig=stage[4])	# remove gaussians below threshold
+		gaus.norm_filter(sig=stage[4],rad_downweight=0.33)	# remove gaussians below threshold
 		g1=len(gaus)
 		if stage[5]>0: gaus.replicate(stage[5],stage[6])	# make copies of gaussians with local perturbation
 		g2=len(gaus)
 
-		if stage[8]<9:
-			# reseed orientations for low FRCs
-			frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
-			frcm=np.mean(frcs[frcs<1.5])
-			frcsg=np.std(frcs[frcs<1.5])
-			nseeded=0
-			for ii,f in enumerate(frcs):
-				if f<frcm+frcsg*stage[8]:
-					ccache.orts[ii]=rand.random((3,))-0.5
-					ccache.tytx[ii]=(0,0)
-					frcs[ii]=2.0
-					nseeded+=1
+		print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  no orts reseeded   {local_datetime()}")
 
-			print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {nseeded} orts reseeded ({frcm+frcsg*stage[8]} thr)   {local_datetime()}")
 
-		else: print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  no orts reseeded   {local_datetime()}")
+
+
+			# frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
+			# frcm=np.mean(frcs[frcs<1.5])
+			# frcsg=np.std(frcs[frcs<1.5])
+			# nseeded=0
+			# for ii,f in enumerate(frcs):
+			# 	if f<frcm+frcsg*stage[8]:
+			# 		ccache.orts[ii]=rand.random((3,))-0.5
+			# 		ccache.tytx[ii]=(0,0)
+			# 		frcs[ii]=2.0
+			# 		nseeded+=1
 		times.append(time.time())
 	
 		# do this at the end of each stage in case of early termination
-		out=open(f"{options.path}/threed{sn:02d}.txt","w")
+
+		# Particle orientations
+		lsxout=LSXFile(f"{options.path}/ptcls_{sn:02d}.lst")
+		for i in range(len(lsxin)):
+			a,b,c=lsxin[i]
+			lsxout[i]=(a,b,{"xform.projection":Transform({"type":"spinvec","v1":float(ccache.orts[i][0]),"v2":float(ccache.orts[i][1]),"v3":float(ccache.orts[i][2]),"tx":float(ccache.tytx[i][1]*nxraw),"ty":float(ccache.tytx[i][0]*nxraw)}),"frc":float(ccache.frcs[i])})
+		lsxout=None
+
+		# Gaussian locations
+		out=open(f"{options.path}/threed_{sn:02d}.txt","w")
 		for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
+		# Filtered volume
 		vol=gaus.volume(nxraw).emdata[0]
 		vol["apix_x"]=apix
 		vol["apix_y"]=apix
 		vol["apix_z"]=apix
 		vol.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt*min(stage[1],nxraw)/nxraw})
-		vol.write_image(f"{options.path}/threed{sn:02d}.hdf:12")
+		vol.write_image(f"{options.path}/threed_{sn:02d}.hdf:12")
 
 
 	times=np.array(times)
