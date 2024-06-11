@@ -35,8 +35,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import ipywidgets as widget
 from ipyevents import Event
-import ipycanvas as canvas
-
 from IPython.display import display
 import asyncio
 from time import time
@@ -203,10 +201,14 @@ class JupyterDisplay():
                                              readout_format=".3f", layout=slider_layout(), style=style)
         self.max_slider = widget.FloatSlider(min=self.image_min, max=self.image_max, step=0.001, value=self.image_max, description="Max",
                                              readout_format=".3f", layout=slider_layout(), style=style)
-        self.brightness = widget.FloatSlider(min=-1, max=1, step=0.001, value=0, description="Brt", readout_format=".3f", 
+        self.brightness = widget.FloatSlider(min=-1, max=1, step=0.001, value=0, description="Brt", readout_format=".3f",
                                              layout=slider_layout(), style=style)
         self.contrast = widget.FloatSlider(min=0, max=1, step=0.001, value=0.5, description="Cont", readout_format=".3f",
                                            layout=slider_layout(), style=style)
+        self.slider_tabs = widget.Tab()
+        self.slider_tabs.children = [widget.VBox([self.min_slider, self.max_slider]),
+                                     widget.VBox([self.brightness, self.contrast])]
+        self.slider_tabs.titles = ["MinMax", "BrtCont"]
         self.auto_button = widget.Button(description="autoC", layout=button_layout(self.controls_above))
         self.full_button = widget.Button(description="fullC", layout=button_layout(self.controls_above))
         self.invert_button = widget.ToggleButton(description="Invert", layout=button_layout(self.controls_above))
@@ -289,7 +291,7 @@ class JupyterDisplay():
         self.coords = []
 
         self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-        self.img_canvas = widget.Image(value=convert_to_bytes(self.img_norm, self.mag_slider.value), format='png')
+        self.img_widget = widget.Image(value=convert_to_bytes(self.img_norm, self.mag_slider.value), format='png')
 
 
         # Create the histogram
@@ -317,11 +319,11 @@ class JupyterDisplay():
         self.auto_button.click()
 
         # Define all events (won't be connected unless called)
-        self.no_drag = Event(source=self.img_canvas, watched_events=['dragstart'], prevent_default_action=True)
-        self.mouse_updown = Event(source=self.img_canvas, watched_events=['mousedown', 'mouseup'])
-        self.mouse_move = Event(source=self.img_canvas, watched_events=['mousemove'], wait=500)
-        self.mouse_scroll = Event(source=self.img_canvas, watched_events=['wheel'], prevent_default_action=True)
-        self.control_position = Event(source=self.img_canvas, watched_events=['auxclick'], prevent_default_action=True)
+        self.no_drag = Event(source=self.img_widget, watched_events=['dragstart'], prevent_default_action=True)
+        self.mouse_updown = Event(source=self.img_widget, watched_events=['mousedown', 'mouseup'])
+        self.mouse_move = Event(source=self.img_widget, watched_events=['mousemove'], wait=500)
+        self.mouse_scroll = Event(source=self.img_widget, watched_events=['wheel'], prevent_default_action=True)
+        self.control_position = Event(source=self.img_widget, watched_events=['auxclick'], prevent_default_action=True)
         self.mouse_updown.on_dom_event(self.connect_move_event)
         self.mouse_scroll.on_dom_event(self.update_zoom_scroll)
         self.control_position.on_dom_event(self.display_control_panel)
@@ -333,21 +335,30 @@ class JupyterDisplay():
             if self.controls_above:
                 contrast_box = widget.VBox([self.fourier_buttons, self.invert_button, self.auto_button, self.full_button],
                                           layout=widget.Layout(width='10%'))
-                sliders = widget.VBox([self.mag_slider, self.min_slider, self.max_slider, self.brightness,
-                                       self.contrast, self.index], layout=widget.Layout(width='33%'))
+                self.tabs.layout = widget.Layout(width='35%')
+                self.fourier_buttons.style={'button_width': '99%'}
+                # sliders = widget.VBox([self.mag_slider, self.min_slider, self.max_slider, self.brightness,
+                #                        self.contrast, self.index], layout=widget.Layout(width='33%'))
+                sliders = widget.VBox([self.mag_slider, self.slider_tabs, self.index], layout=widget.Layout(width='33%'))
                 controls = widget.HBox([self.tabs, contrast_box, sliders, self.hist_fig.canvas])
                 controls.layout = controls_layout(self.controls_above)
-                self.img_canvas.layout = image_layout(self.controls_above)
-                display(widget.VBox([controls, self.img_canvas]))
+                self.img_widget.layout = image_layout(self.controls_above)
+                display(widget.VBox([controls, self.img_widget]))
             else:
                 contrast_box = widget.HBox([self.invert_button, self.auto_button, self.full_button])
+                # controls = widget.VBox([self.tabs, self.fourier_buttons, contrast_box, self.mag_slider,
+                #                         self.min_slider, self.max_slider, self.brightness, self.contrast,
+                #                         self.hist_fig.canvas, self.index])
+                self.tabs.layout = widget.Layout(width='100%')
+                self.slider_tabs.layout = widget.Layout(width='100%')
+                self.fourier_buttons.style={'button_width': '32%'}
                 controls = widget.VBox([self.tabs, self.fourier_buttons, contrast_box, self.mag_slider,
-                                        self.min_slider, self.max_slider, self.brightness, self.contrast,
-                                        self.hist_fig.canvas, self.index])
+                                        self.slider_tabs, self.hist_fig.canvas, self.index])
                 controls.layout = controls_layout(self.controls_above)
-                self.img_canvas.layout = image_layout(self.controls_above)
-                display(widget.HBox([controls, self.img_canvas]))
+                self.img_widget.layout = image_layout(self.controls_above)
+                display(widget.HBox([controls, self.img_widget]))
         display(self.output)
+
 
     def __del__(self):
         """When object is deleted tell jupyter to close the figures"""
@@ -356,6 +367,40 @@ class JupyterDisplay():
 
 
 
+    @output.capture()
+    def draw_image(self):
+        if self.slider_tabs.selected_index == 0:
+            # Min/max mode
+            if self.fourier_buttons.value == 'Real':
+                self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
+            else:
+                self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
+        elif self.slider_tabs.selected_index == 1:
+            # Brt/cont mode
+            if self.fourier_buttons.value == 'Real':
+                min = ((self.image_min+self.image_max) / 2.0)-(self.image_max-self.image_min)*(1.0-self.contrast.value)-self.brightness.value*(self.image_max-self.image_min)
+                max = ((self.image_min+self.image_max) / 2.0)+(self.image_max-self.image_min)*(1.0-self.contrast.value)-self.brightness.value*(self.image_max-self.image_min)
+                self.img_norm = normalize(self.cur_image, min, max, self.invert_button.value)
+            else:
+                min = ((self.fourier_min+self.fourier_max) / 2.0)-(self.fourier_max-self.fourier_min)*(1.0-cont)-brt*(self.fourier_max-self.fourier_min)
+                max = ((self.fourier_min+self.fourier_max) / 2.0)+(self.fourier_max-self.fourier_min)*(1.0-cont)-brt*(self.fourier_max-self.fourier_min)
+                self.img_norm = normalize(self.fft_display, min, max, self.invert_button.value)
+        self.img_widget.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+
+    def update_slider_mode(self, change):
+        # 0 = min/max, 1 = brt/cont
+        if change['new'] == 0:
+            self.update_min_max(self.brightness.value, self.contrast.value)
+            self.brightness.unobserve(self.update_brt, 'value')
+            self.contrast.unobserve(self.update_cont, 'value')
+            self.min_slider.observe(self.update_min, 'value')
+            self.max_slider.observe(self.update_max, 'value')
+        elif change['new'] == 1:
+            self.update_brt_cont(self.min_slider.value, self.max_slider.value)
+            self.brightness.observe(self.update_brt, 'value')
+            self.contrast.observe(self.update_cont, 'value')
+            self.min_slider.unobserve(self.update_min, 'value')
+            self.max_slider.unobserve(self.update_max, 'value')
 
     # Functions for widgets
     def update_app_stats(self, change):
@@ -418,7 +463,6 @@ class JupyterDisplay():
             self.sigma = self.eman_object[change['new']]['sigma']
             self.hist_axs.cla()
             self.hist_axs.hist(self.cur_image.flatten(), bins='auto')
-            self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
         else:
             self.fft = self.eman_object[change['new']].do_fft()
             self.fft_display = self.fft.process("xform.fourierorigin.tocenter")
@@ -431,10 +475,9 @@ class JupyterDisplay():
             self.fourier_mean = self.fft_display['mean']
             self.fourier_sigma = self.fft_display['sigma']
             self.fft_display = self.fft_display.numpy().copy()
-            self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
             self.hist_axs.cla()
             self.hist_axs.hist(self.fft_display.flatten(), bins='auto', range=(self.fourier_min, self.fourier_max))
-        self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+        self.draw_image()
         self.lock = False
 
     @output.capture()
@@ -465,12 +508,7 @@ class JupyterDisplay():
             self.hist_axs.cla()
             self.hist_axs.hist(self.fft_display.flatten(), bins='auto', range=(self.fourier_min, self.fourier_max))
         self.auto_button.click()
-
-        if change['new'] == 'Real':
-            self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-        else:
-            self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-        self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+        self.draw_image()
         self.lock = False
 
     def autoC(self, b):
@@ -500,7 +538,7 @@ class JupyterDisplay():
                 self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
             else:
                 self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+            self.img_widget.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
 
     def fullC(self, b):
         """Sets the self.min_slider and self.max_slider values for auto contrast"""
@@ -525,21 +563,12 @@ class JupyterDisplay():
         if self.lock:
             return
         else:
-            if self.fourier_buttons.value == 'Real':
-                self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            else:
-                self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+            self.draw_image()
 
     def invert(self, change):
         """Inverts the image"""
-        if self.fourier_buttons.value == 'Real':
-            self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, invert=change['new'])
-        else:
-            self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, invert=change['new'])
-        self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+        self.draw_image()
 
-    @throttle(0.3)
     def update_brt_cont(self, min, max):
         """Updates self.brightness and self.contrast sliders to reflect changes in self.min_slider or
         self.max_slider. Throttled to prevent jumpiness."""
@@ -550,24 +579,21 @@ class JupyterDisplay():
             self.brightness.value = -0.5*(min+max-(self.fourier_max+self.fourier_min))/((self.fourier_max-self.fourier_min))
             self.contrast.value = 1.0 - ((min-max) / (2.0*(self.fourier_min-self.fourier_max)))
 
-    @throttle(0.3)
     def update_min_max(self, brt, cont):
         """Updates self.min_slider and self.max_slider to reflect changes in self.brightness or
         self.contrast sliders. Throttled to prevent jumpiness."""
         if self.fourier_buttons.value == 'Real':
             m0 = ((self.image_min+self.image_max) / 2.0)-(self.image_max-self.image_min)*(1.0-cont)-brt*(self.image_max-self.image_min)
             m1 = ((self.image_min+self.image_max) / 2.0)+(self.image_max-self.image_min)*(1.0-cont)-brt*(self.image_max-self.image_min)
-            self.min_slider.min = min(m0, self.min_slider.min)
-            self.max_slider.max = max(m1, self.max_slider.max)
-            self.min_slider.value = m0
-            self.max_slider.value = m1
         else:
             m0 = ((self.fourier_min+self.fourier_max) / 2.0)-(self.fourier_max-self.fourier_min)*(1.0-cont)-brt*(self.fourier_max-self.fourier_min)
             m1 = ((self.fourier_min+self.fourier_max) / 2.0)+(self.fourier_max-self.fourier_min)*(1.0-cont)-brt*(self.fourier_max-self.fourier_min)
-            self.min_slider.min = min(m0, self.min_slider.min)
-            self.max_slider.max = max(m1, self.max_slider.max)
+        with self.min_slider.hold_trait_notifications():
             self.min_slider.value = m0
+            self.min_slider.min = min(m0-self.min_slider.step, self.min_slider.min)
+        with self.max_slider.hold_trait_notifications():
             self.max_slider.value = m1
+            self.max_slider.max = max(m1+self.max_slider.step, self.max_slider.max)
 
     def update_min(self, change):
         """Updates the minimum value mapped to the colormap based on a change to self.min_slider.
@@ -575,12 +601,8 @@ class JupyterDisplay():
         redraws the image."""
         if not self.lock:
             self.lock = True
-            self.update_brt_cont(change['new'], self.max_slider.value)
-            if self.fourier_buttons.value == 'Real':
-                self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            else:
-                self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+            # self.update_brt_cont(change['new'], self.max_slider.value)
+            self.draw_image()
             self.lock = False
 
     def update_max(self, change):
@@ -589,46 +611,30 @@ class JupyterDisplay():
         redraws the image."""
         if not self.lock:
             self.lock = True
-            self.update_brt_cont(self.min_slider.value, change['new'])
-            if self.fourier_buttons.value == 'Real':
-                self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            else:
-                self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+            # self.update_brt_cont(self.min_slider.value, change['new'])
+            self.draw_image()
             self.lock = False
 
     def update_brt(self, change):
         """Updates self.min_slider and self.max_slider when the user changes self.brightness."""
         if not self.lock:
             self.lock = True
-            self.update_min_max(change['new'], self.contrast.value)
-            if self.fourier_buttons.value == 'Real':
-                self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            else:
-                self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+            # self.update_min_max(change['new'], self.contrast.value)
+            self.draw_image()
             self.lock = False
 
     def update_cont(self, change):
         """Updates self.min_slider and self.max_slider when the user changes self.contrast."""
         if not self.lock:
             self.lock = True
-            self.update_min_max(self.brightness.value, change['new'])
-            if self.fourier_buttons.value == 'Real':
-                self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            else:
-                self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-            self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+            # self.update_min_max(self.brightness.value, change['new'])
+            self.draw_image()
             self.lock = False
 
     def update_zoom_slider(self, change):
         """Updates the image based on a change in self.mag_slider. A 2x increase in the value will be a 2x increase
         in the image side length"""
-        if self.fourier_buttons.value == 'Real':
-            self.img_norm = normalize(self.cur_image, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-        else:
-            self.img_norm = normalize(self.fft_display, self.min_slider.value, self.max_slider.value, self.invert_button.value)
-        self.img_canvas.value = convert_to_bytes(self.img_norm, change['new'], mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+        self.img_widget.value = convert_to_bytes(self.img_norm, change['new'], mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
 
     def update_zoom_scroll(self, event):
         """Updates mag slider (and thus the image) based on a scroll event"""
@@ -642,7 +648,7 @@ class JupyterDisplay():
 
     def pan(self, event):
         """Moves the image within the box with the mouse. Parts outside the box will get cut off"""
-        self.img_canvas.layout.object_position = f"{event['relativeX']-self.start_coord[0]}px {event['relativeY']-self.start_coord[1]}px"
+        self.img_widget.layout.object_position = f"{event['relativeX']-self.start_coord[0]}px {event['relativeY']-self.start_coord[1]}px"
 
     def connect_move_event(self,event):
         """Based on which tab is selected (App, Probe, or Meas), connects or disconnects
@@ -650,19 +656,19 @@ class JupyterDisplay():
         if event['event']=='mousedown':
             # Connect proper events on pressing a mouse button
             if self.tabs.selected_index == 0: # App tab
-                original_offset = [int(x[:-2]) for x in self.img_canvas.layout.object_position.split()]
+                original_offset = [int(x[:-2]) for x in self.img_widget.layout.object_position.split()]
                 self.start_coord = (event['relativeX'] - original_offset[0], event['relativeY']-original_offset[1])
                 self.mouse_move.on_dom_event(self.pan)
             elif self.tabs.selected_index == 1: # Probe tab
-                original_offset = [int(x[:-2]) for x in self.img_canvas.layout.object_position.split()]
+                original_offset = [int(x[:-2]) for x in self.img_widget.layout.object_position.split()]
                 center = (int((event['relativeX'] - original_offset[0])/self.mag_slider.value),
                           int((event['relativeY'] - original_offset[1])/self.mag_slider.value))
                 self.coords = [(center[0] - (self.probe_size_widget.value // 2), center[1] - (self.probe_size_widget.value // 2)),
                                (center[0] + (self.probe_size_widget.value // 2), center[1] + (self.probe_size_widget.value // 2))]
                 self.mouse_move.on_dom_event(self.probe_move)
-                self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+                self.img_widget.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
             elif self.tabs.selected_index == 2: # Meas tab
-                original_offset = [int(x[:-2]) for x in self.img_canvas.layout.object_position.split()]
+                original_offset = [int(x[:-2]) for x in self.img_widget.layout.object_position.split()]
                 self.coords = [(int((event['relativeX'] - original_offset[0])/self.mag_slider.value),
                                 int((event['relativeY'] - original_offset[1])/self.mag_slider.value))]
                 self.mouse_move.on_dom_event(self.meas_move)
@@ -685,12 +691,12 @@ class JupyterDisplay():
     @output.capture()
     def probe_move(self, event):
         """Moves the probe, redraws the image, and updates the probe tab on a move event. It is throttled"""
-        original_offset = [int(x[:-2]) for x in self.img_canvas.layout.object_position.split()]
+        original_offset = [int(x[:-2]) for x in self.img_widget.layout.object_position.split()]
         center = (int((event['relativeX'] - original_offset[0])/self.mag_slider.value),
                   int((event['relativeY'] - original_offset[1])/self.mag_slider.value))
         self.coords = [(center[0] - (self.probe_size_widget.value // 2), center[1] - (self.probe_size_widget.value // 2)),
                        (center[0] + (self.probe_size_widget.value // 2), center[1] + (self.probe_size_widget.value // 2))]
-        self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+        self.img_widget.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
         self.update_probe_tab(center)
 
     def update_probe_tab(self, center):
@@ -726,11 +732,11 @@ class JupyterDisplay():
 
     def meas_move(self, event):
         """Moves the endpoint of the measure line, redraws the image, and updates the Meas tab on a move event. It is throttled"""
-        original_offset = [int(x[:-2]) for x in self.img_canvas.layout.object_position.split()]
+        original_offset = [int(x[:-2]) for x in self.img_widget.layout.object_position.split()]
         self.coords = [self.coords[0], 
                        (int((event['relativeX'] - original_offset[0])/self.mag_slider.value),
                         int((event['relativeY'] - original_offset[1])/self.mag_slider.value))]
-        self.img_canvas.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
+        self.img_widget.value = convert_to_bytes(self.img_norm, self.mag_slider.value, mode=self.tabs.selected_index, xy=self.coords, color=self.line_color_button.value)
         self.update_meas_tab()
 
     def update_meas_tab(self):
@@ -803,22 +809,28 @@ class JupyterDisplay():
         self.output.clear_output()
         with self.output:
             if self.controls_above:
-                self.tabs.layout = widget.Layout(width='35%')
                 contrast_box = widget.VBox([self.fourier_buttons, self.invert_button, self.auto_button, self.full_button],
                                           layout=widget.Layout(width='10%'))
-                sliders = widget.VBox([self.mag_slider, self.min_slider, self.max_slider, self.brightness,
-                                       self.contrast, self.index], layout=widget.Layout(width='33%'))
+                self.tabs.layout = widget.Layout(width='35%')
+                self.fourier_buttons.style={'button_width': '99%'}
+                # sliders = widget.VBox([self.mag_slider, self.min_slider, self.max_slider, self.brightness,
+                #                        self.contrast, self.index], layout=widget.Layout(width='33%'))
+                sliders = widget.VBox([self.mag_slider, self.slider_tabs, self.index], layout=widget.Layout(width='33%'))
                 controls = widget.HBox([self.tabs, contrast_box, sliders, self.hist_fig.canvas])
                 controls.layout = controls_layout(self.controls_above)
-                self.img_canvas.layout = image_layout(self.controls_above)
-                display(widget.VBox([controls, self.img_canvas]))
+                self.img_widget.layout = image_layout(self.controls_above)
+                display(widget.VBox([controls, self.img_widget]))
             else:
-                self.tabs.layout = widget.Layout(width='100%')
                 contrast_box = widget.HBox([self.invert_button, self.auto_button, self.full_button])
+                # controls = widget.VBox([self.tabs, self.fourier_buttons, contrast_box, self.mag_slider,
+                #                         self.min_slider, self.max_slider, self.brightness, self.contrast,
+                #                         self.hist_fig.canvas, self.index])
+                self.tabs.layout = widget.Layout(width='100%')
+                self.slider_tabs.layout = widget.Layout(width='100%')
+                self.fourier_buttons.style={'button_width': '32%'}
                 controls = widget.VBox([self.tabs, self.fourier_buttons, contrast_box, self.mag_slider,
-                                        self.min_slider, self.max_slider, self.brightness, self.contrast,
-                                        self.hist_fig.canvas, self.index])
+                                        self.slider_tabs, self.hist_fig.canvas, self.index])
                 controls.layout = controls_layout(self.controls_above)
-                self.img_canvas.layout = image_layout(self.controls_above)
-                display(widget.HBox([controls, self.img_canvas]))
+                self.img_widget.layout = image_layout(self.controls_above)
+                display(widget.HBox([controls, self.img_widget]))
         display(self.output)
