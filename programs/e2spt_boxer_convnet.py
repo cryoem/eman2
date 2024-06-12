@@ -26,7 +26,6 @@ def main():
 	parser.add_argument("--label", type=str,help="Load previous contour segmentation.", default="tomobox",guitype='strbox',row=0, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="0",guitype='strbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
-	parser.add_argument("--select", type=str,help="a list file for selected tomograms", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -514,11 +513,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 
 	def update_list(self):
 		#### update file list
-		if self.options.select==None:
-			files=natural_sort([os.path.join(self.path,f) for f in os.listdir(self.path)])
-		else:
-			files=load_lst_params(self.options.select)
-			files=[f["src"] for f in files]
+		files=natural_sort([os.path.join(self.path,f) for f in os.listdir(self.path)])
 		self.imginfo=[]
 		for i,name in enumerate(files):
 			basename=base_name(name)

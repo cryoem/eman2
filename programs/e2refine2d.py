@@ -108,7 +108,6 @@ def main():
 	parser.add_argument("--classcmp",type=str,help="The name and parameters of the comparitor used to generate similarity scores, when class averaging. Default is ccc'", default="ccc", guitype='comboparambox', choicelist='re_filter_list(dump_cmps_list(),\'tomo\', 1)', row=19, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--classnormproc",type=str,default="normalize.edgemean",help="Normalization applied during class averaging", guitype='comboparambox', choicelist='re_filter_list(dump_processors_list(),\'normalize\')', row=17, col=0, rowspan=1, colspan=3, mode="spr")
 	parser.add_argument("--classrefsf",default=False, action="store_true", help="Use the setsfref option in class averaging to produce better filtered averages.", guitype='boolbox', row=18, col=2, rowspan=1, colspan=1, mode="spr")
-	parser.add_argument("--resultmx",default=False, action="store_true", help="save result matrix for class average.")
 
 
 	#options associated with e2basis.py
@@ -293,8 +292,6 @@ def main():
 		# make class-averages
 		cls_cmd = "e2classaverage.py --input=%s --classmx=%s/classmx_%02d.hdf --output=%s/classes_%02d.hdf --center %s --iter=%d " %(options.input,options.path,it,options.path,it,options.center,options.classiter)
 		cls_cmd += get_classaverage_extras(options)
-		if options.resultmx:
-			cls_cmd+=f" --resultmx {options.path}/resultmx_{it:02d}.hdf"
 		#run("e2classaverage.py %s %s#classmx_%02d %s#classes_%02d --iter=%d --align=%s:maxshift=%d --averager=%s -vf  --keep=%f --cmp=%s --aligncmp=%s"%(options.input,options.path,it,options.path,it,options.classiter,options.classalign,options.maxshift,options.classaverager,options.classkeep,options.classcmp,options.classaligncmp))
 		run(cls_cmd)
 
@@ -317,7 +314,6 @@ def get_classaverage_extras(options):
 		s += " --ralign=%s --raligncmp=%s" %(options.classralign,options.classraligncmp)
 	if options.parallel != None:
 		s += " --parallel=%s" %options.parallel
-		
 
 	return s
 

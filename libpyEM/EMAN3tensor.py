@@ -67,7 +67,6 @@ class StackCache():
 
 	def __init__(self,filename,n):
 		"""Specify filename and number of images to be cached."""
-		print("cache: ",filename)
 		self.filename=filename
 
 		self.fp=open(filename,"wb+")		# erase file!
@@ -107,11 +106,11 @@ class StackCache():
 
 		self.locked=False
 
-	def add_orts(self,nlist,dorts=None,dtytxs=None):
+	def add_orts(self,nlist,dorts,dtytxs):
 		"""adds dorts and dtytxs to existing arrays at locations described by nlist, used to take a gradient step
 		on a subset of the data."""
-		if dorts is not None: self.orts[nlist]+=dorts
-		if dtytxs is not None: self.tytx[nlist]+=dtytxs
+		self.orts[nlist]+=dorts
+		self.tytx[nlist]+=dtytxs
 
 	def set_frcs(self,nlist,frcs):
 		self.frcs[nlist]=frcs
@@ -124,11 +123,8 @@ class StackCache():
 
 		stack=[]
 		for i in nlist:
-			try:
-				self.fp.seek(self.locs[i])
-				stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))
-			except:
-				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]}")
+			self.fp.seek(self.locs[i])
+			stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))
 
 		self.locked=False
 		ret=EMStack2D(tf.stack(stack))
@@ -466,7 +462,6 @@ class EMStack2D(EMStack):
 		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
 		not be used on rectangular images/volumes."""
 
-		if newsize==self.shape[1]: return EMStack2D(self.tensor) # this won't copy, but since the tensor is constant should be ok?
 		return EMStack2D(tf_downsample_2d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
 class Orientations():
@@ -527,13 +522,10 @@ class Orientations():
 
 		return(tf.constant(tytx))
 
-	def transforms(self,tytx=None):
+	def transforms(self):
 		"""converts the current orientations to a list of Transform objects"""
 
-		if tytx is not None:
-			return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2],"tx":tytx[i][1],"ty":tytx[i][0]}) for i in range(len(self._data))]
-
-		return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2]}) for i in range(len(self._data))]
+		return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2]})]
 
 	def to_mx2d(self,swapxy=False):
 		"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
@@ -673,15 +665,12 @@ stddev=0.01"""
 		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
 		self._data=tf.concat(dups,0)
 
-	def norm_filter(self,sig=0.5,rad_downweight=-1):
-		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
+	def norm_filter(self,sig=0.5):
+		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma"""
 		self.coerce_tensor()
 		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
-		if rad_downweight>0:
-			famp=self._data[:,3]*(1.0-tf.nn.relu(tf.math.reduce_euclidean_norm(self._data[:,:3],1)-rad_downweight))
-		else: famp=self._data[:,3]
-		thr=tf.math.reduce_mean(famp)+sig*tf.math.reduce_std(famp)
-		self._data=tf.boolean_mask(self._data,famp>thr)					# remove any gaussians with amplitude below threshold
+		thr=tf.math.reduce_mean(self._data[:,3])+sig*tf.math.reduce_std(self._data[:,3])
+		self._data=tf.boolean_mask(self._data,self._data[:,3]>thr)					# remove any gaussians with amplitude below threshold
 
 	def project_simple(self,orts,boxsize,tytx=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
@@ -726,13 +715,12 @@ stddev=0.01"""
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-	def volume(self,boxsize,zaspect=0.5):
+	def volume(self,boxsize):
 		self.coerce_tensor()
 
-		zsize=good_size(boxsize*zaspect*2.0)
-		vol=tf.zeros((zsize,boxsize,boxsize))		# output
+		vol=tf.zeros((boxsize,boxsize,boxsize))		# projections
 
-		xfgauss=tf.reverse((self._data[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+		xfgauss=tf.reverse((self._data[:,:3]+0.5)*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 
 		xfgaussf=tf.floor(xfgauss)
 		xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
@@ -891,20 +879,13 @@ def tf_downsample_3d(imgs,newx,stack=False):
 	cropy=tf.gather(cropz,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1]))),axis=2)
 	return cropy[:,:,:,:newx//2+1]
 
-def tf_ccf_2d(ima,imb):
-	"""Compute the cross correlation between a stack of 2-D images (ima) and either a single 2-D image or a 1-1 stack of 2-D images (imb)"""
-
-	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_frc requires FFTs")
-
-
-
 FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
 #FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
 def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
-	"""Computes the pairwise FRCs between two stacks of complex images. imb may alternatively be a single image. Returns a list of 1D FSC tensors or if avg!=0
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
 	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
 	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
 	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_frc requires FFTs")
@@ -942,8 +923,6 @@ def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	except:
 		raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
 
-	if len(imbr.shape)==3: single=False
-	else: single=True
 	frc=[]
 	for i in range(nimg):
 		zero=tf.zeros([nr])
@@ -954,12 +933,8 @@ def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 		aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar[i])
 		aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai[i])
 
-		if single:
-			bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr)
-			bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi)
-		else:
-			bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
-			bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
+		bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
+		bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
 
 		frc.append(cross/tf.sqrt(aprd*bprd))
 

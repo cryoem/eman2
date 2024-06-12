@@ -5,10 +5,7 @@ import numpy as np
 
 def main():
 	
-	usage="""
-	Classify particles without alignment. 
-	e2spa_refine_multi.py --ptcl r3d_xx/ptcls_yy.lst --ncls 3 --parallel thread:64 --maxres 10
- """
+	usage=" "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcl", type=str,help="particle input", default="")
 	parser.add_argument("--ncls", type=int,help="number of classes", default=2)
@@ -22,7 +19,6 @@ def main():
 	parser.add_argument("--niter", type=int,help="iter", default=10)
 	parser.add_argument("--outsize", type=int,help="size of reconstruction output", default=-1)
 	parser.add_argument("--setsf", type=str,help="setsf", default=None)
-	parser.add_argument("--sgd", type=int,help="classify in small batches. specify batch size here.", default=-1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -48,7 +44,7 @@ def main():
 	else:
 		setsf=""
 	
-	pinput_all=pinput="{}/ptcls_input.lst".format(path)
+	pinput="{}/ptcls_input.lst".format(path)
 	if "even" in options.ptcl:
 		print("Merging even/odd particle list")
 		run("e2proclst.py {} {} --create {} --mergeeo".format(options.ptcl, options.ptcl.replace("even", "odd"), pinput))
@@ -73,25 +69,16 @@ def main():
 	if len(args)>0:
 		print("using given references")
 		refs=[]
-		ncls=options.ncls=len(args)
 		for i, a in enumerate(args):
 			r="{}/threed_00_{:02d}.hdf".format(path, i)
 			run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(a, r,  setsf, 1./options.maxres))
 			refs.append(r)
 			
-	if options.sgd>0:
-		lst=load_lst_params(pinput_all)
-		rg=np.arange(len(lst))
-		np.random.shuffle(rg)
-		rg=np.sort(rg[:options.sgd])
-		lst=[lst[i] for i in rg]
-		pinput=f"{path}/ptcls_sample.lst"
-		save_lst_params(lst, pinput)
-
+	#par0="thread:24"
 	m3detc=""
 	if options.outsize>0: m3detc=f" --outsize {options.outsize}"
 	for itr in range(options.niter+1):
-			
+		
 		c0=cls.copy()
 		scr=np.zeros((npt, ncls))
 		
@@ -109,29 +96,10 @@ def main():
 				run("e2spa_make3d.py --input {inp} --output {out} --keep 1 --sym {sm} --parallel {par} {etc}".format(inp=lname, out=threed, sm=sym, par=options.parallel, etc=m3detc))
 				
 				run("e2proc3d.py {} {} {} --process filter.lowpass.gauss:cutoff_freq={:.4f} --process normalize.edgemean".format(threed, threed, setsf, 1./options.maxres))
-			
+				
+		
 		sfile="{}/score_{:02d}.txt".format(path, itr)
-		if options.sgd>0:
-			#### update 3d maps
-			if itr>0:
-				for ic in range(options.ncls):
-					td0=f"{path}/threed_{itr-1:02d}_{ic:02d}.hdf"
-					td1=f"{path}/threed_{itr:02d}_{ic:02d}.hdf"
-					e0=EMData(td0)
-					e1=EMData(td1)
-					lr=0.2
-					e2=e0*(1-lr)+e1*lr
-					e2.write_image(td1)
-			
-			#### sample particles
-			lst=load_lst_params(pinput_all)
-			rg=np.arange(len(lst))
-			np.random.shuffle(rg)
-			rg=np.sort(rg[:options.sgd])
-			lst=[lst[i] for i in rg]
-			pinput=f"{path}/ptcls_sample.lst"
-			save_lst_params(lst, pinput)
-			
+		
 		### for visual only
 		if options.mask:
 			mask=EMData(options.mask)
@@ -143,7 +111,7 @@ def main():
 			for ic,rf in enumerate(rfs):
 				r=rf*mask + avg*(1-mask)
 				r.write_image(f"{path}/aliref_{ic:02d}.hdf")
-			
+				
 		run("e2spa_classify.py {rf} --ptclin {inp} --output {out} --maxres {rsx:.1f} --minres {rsn:.1f} --parallel {par} {etc}".format(rf=' '.join(refs), inp=pinput, out=sfile, rsx=options.maxres, rsn=options.minres, par=options.parallel, etc=etc))
 				
 		scr=np.loadtxt(sfile)
@@ -153,20 +121,11 @@ def main():
 		for ic in range(ncls):
 			print("class {}:  {} particles".format(ic, np.sum(cls==ic)))
 			
-		if options.sgd<=0:
-			print("iter {}, {:.1f}% particles change class".format(itr, 100*np.mean(c0!=cls)))
 		
 		
-	if options.sgd>0:
-		itr=50
-		refs=[f"{path}/threed_{itr:02d}_{ic:02d}.hdf" for ic in range(ncls)]
-		sfile=f"{path}/score_final.txt"
-		run("e2spa_classify.py {rf} --ptclin {inp} --output {out} --maxres {rsx:.1f} --minres {rsn:.1f} --parallel {par} {etc}".format(rf=' '.join(refs), inp=f"{path}/ptcls_input.lst", out=sfile, rsx=options.maxres, rsn=options.minres, par=options.parallel, etc=etc))
-				
-		scr=np.loadtxt(sfile)
-		cls=np.argmin(scr, axis=1)
-		np.savetxt("{}/class_{:02d}.txt".format(path, itr), cls)
+		print("iter {}, {:.1f}% particles change class".format(itr, 100*np.mean(c0!=cls)))
 		
+	
 	ps=classify_list(f"{path}/ptcls_input.lst", cls, f"{path}/ptcls_final", options.breaksym)
 	thd=[p.replace("ptcls_final","threed_final")[:-3]+"hdf" for p in ps]
 	for pt,td, in zip(ps, thd):

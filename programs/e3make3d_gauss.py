@@ -45,11 +45,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--volout", type=str,help="Volume output file", default="threed.hdf")
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
-	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
-	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
-	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
-	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
-	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
+	parser.add_argument("--volfilt", type=float, help="Lowpass filter to apply to output volume, absolute, Nyquist=0.5", default=0.3)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
@@ -65,14 +61,7 @@ def main():
 
 	nptcl=EMUtil.get_image_count(args[0])
 	nxraw=EMData(args[0],0,True)["nx"]
-	if options.preclip>0: nxraw=options.preclip
-	nxrawm2=good_size_small(nxraw-2)
-	if options.apix>0: apix=options.apix
-	else: apix=EMData(args[0],0,True)["apix_x"]
-	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
-	else: zmax=0.5
-
-	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit {zmax}. {nptcl} input images")
+	apix=EMData(args[0],0,True)["apix_x"]
 
 	if options.savesteps: 
 		try: os.unlink("steps.hdf")
@@ -81,27 +70,27 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 6) step coef
+	# #ptcl, downsample, iter, frc weight, amp threshold, replicate, step coef
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
-			[256,32,  32,1.8, -1,1,.05, 3.0],
-			[256,32,  32,1.8, -1,2,.05, 1.0],
-			[256,64,  48,1.5, -2,1,.04,1.0],
-			[256,64,  48,1.5, -2,2,.02,0.5],
-			[256,128, 48,1.2, -3,4,.01,2],
-			[256,512, 48,1.2, -2,4,.01,3],
-			[256,1024,48,1.2, -3,1,.004,5]
+			[256,32,  16,1.8,  0,1,.01, 3.0],
+			[256,32,  16,1.8,0.3,2,.01, 1.0],
+			[256,64,  24,1.5,  0,1,.005,1.0],
+			[256,64,  48,1.5,0.2,2,.005,0.5],
+			[256,128, 32,1.2,0.2,3,.003,0.5],
+			[256,512, 32,1.0,0.2,3,.001,0.25],
+			[256,1024,24,0.8,0.2,1,.001,0.1]
 		]
 	else:
 		stages=[
 			[500,   16,16,1.8,-3  ,1,.01, 2.0],
-			[500,   16,16,1.8, 0  ,3,.01, 1.0],
-			[1000,  32,16,1.5, 0  ,2,.005,1.5],
-			[1000,  32,16,1.5,-1  ,3,.007,1.0],
-			[2500,  64,24,1.2,-1.5,2,.005,1.0],
-			[10000,256,24,1.0,-2  ,2,.002,1.0],
-			[25000,512,12,0.8,-2  ,1,.001,0.75]
+			[500,   16,16,1.8, 0.5  ,4,.01, 1.0],
+			[1000,  32,16,1.5,0  ,1,.005,1.5],
+			[1000,  32,16,1.5,-1,3,.007,1.0],
+			[2500,  64,24,1.2,-1.5,3,.005,1.0],
+			[10000,256,24,1.0,-2  ,3,.002,0.75],
+			[25000,512,12,0.8,-2  ,1,.001,0.5]
 		]
 
 	times=[time.time()]
@@ -110,108 +99,77 @@ def main():
 	if options.verbose: print("Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	for i in range(0,nptcl,1000):
-		if options.verbose>1:
-			print(f" Caching {i}/{nptcl}\r")
-			sys.stdout.flush()
-		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
-		if options.preclip>0 : stk=stk.center_clip(options.preclip)
+	for i in range(0,nptcl,2500):
+		if options.verbose>1: print(f"Caching {i}/{nptcl}")
+		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+2500,nptcl))))
 		orts,tytx=stk.orientations
 		tytx/=nxraw
-		for im in stk.emdata: im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
-			stkfds=stkf.downsample(min(down,nxrawm2))
+			stkfds=stkf.downsample(min(down,nxraw))
 			caches[down].write(stkfds,i,orts,tytx)
-
-	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
-	for down in downs[1:]:
-		caches[down].orts=caches[downs[0]].orts
-		caches[down].tytx=caches[downs[0]].tytx
-
-	if options.verbose>1: print("")
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
-	rnd+=(-.5,-.5,-.5,2.0)
-	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
-	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	rnd+=(-.5,-.5,-.5,10.0)
+	if options.tomo: gaus._data=rnd/(.9,.9,.9,10.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	else: gaus._data=rnd/(1.5,1.5,1.5,100.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
 	times.append(time.time())
 	ptcls=[]
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
+#
+# 		# stage 1 - limit to ~1000 particles for initial low resolution work
+# 		if options.verbose: print(f"\tReading Files {min(stage[0],nptcl)} ptcl")
+# 		ptcls=EMStack2D(EMData.read_images(args[0],range(0,nptcl,max(1,nptcl//stage[0]))))
+# 		orts,tytx=ptcls.orientations
+# 		tytx/=nxraw
+# 		ptclsf=ptcls.do_fft()
+#
+# 		if options.verbose: print(f"\tDownsampling {min(nxraw,stage[1])} px")
+# 		if stage[1]<nxraw: ptclsfds=ptclsf.downsample(stage[1])    # downsample specifies the final size, not the amount of downsampling
+# 		else: ptclsfds=ptclsf			# if true size is smaller than stage size, don't downsample, obviously
+# 		ny=stage[1]
+# 		ptcls=None		# free resouces since we're committed to re-reading files for now
+# 		ptclsf=None
+# #		ny=ptclsfds.shape[1]
 
-#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+
+#	print(ptclsfds.shape,tytx.shape)
 		
-		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
-		lqual=-1.0
-		rstep=1.0
+		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
 		for i in range(stage[2]):		# training epochs
-			if nptcl>stage[0]: idx0=sn+i
-			else: idx0=0
-			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
-			imshift=0.0
-			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
+			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 1000 particles at a time
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
-				# standard mode, optimize gaussian parms only
-#				if not options.tomo or sn<2:
-				if True:
-					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
-					if j==0:
-						step,qual,shift,sca=step0,qual0,shift0,sca0
-					else:
-						step+=step0
-						qual+=qual0
-						shift+=shift0
-						sca+=sca0
-				# optimize gaussians and image shifts
+				step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+				if j==0:
+					step,qual,shift,sca=step0,qual0,shift0,sca0
 				else:
-					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
-					if j==0:
-						step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
-						caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
-					else:
-						step+=step0
-						caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
-						qual+=qual0
-						shift+=shift0
-						sca+=sca0
-						imshift+=imshift0
+					step+=step0
+					qual+=qual0
+					shift+=shift0
+					sca+=sca0
 			norm=len(nliststg)//500+1
+			step/=norm
 			qual/=norm
-			if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
-			step*=rstep/norm
 			shift/=norm
 			sca/=norm
-			imshift/=norm
 			gaus.add_tensor(step)
-			lqual=qual
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
-			print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}\t{rstep:1.5f}")
-			if qual>0.99: break
-
-		# end of epoch, save images and projections for comparison
-		if options.verbose>3:
-			projs=gaus.project_simple(orts,ptclsfds.shape[1],tytx=tytx)
-			ptclds=ptclsfds.do_ift()
-			for i in range(len(projs)):
-				a=ptclds.emdata[i].process("normalize")
-				b=projs.emdata[i].process("filter.matchto",{"to":a})
-				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
-				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
+			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
 
 		# if options.savesteps:
-		# 	vol=gaus.volume(nxraw,zmax)
+		# 	vol=gaus.volume(nxraw)
 		# 	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
 		# 	vol.write_images(f"A_vol_opt_{sn}.hdf")
 
 		# filter results and prepare for stage 2
 		g0=len(gaus)
-		if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
-		else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
+		gaus.norm_filter(sig=stage[4])
 		g1=len(gaus)
 		if stage[5]>0: gaus.replicate(stage[5],stage[6])
 		g2=len(gaus)
@@ -220,32 +178,20 @@ def main():
 	
 		# do this at the end of each stage in case of early termination
 		if options.gaussout is not None:
-			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.4f",delimiter="\t")
-			# out=open(options.gaussout,"w")
-			# for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
+			out=open(options.gaussout,"w")
+			for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
-		# show individual shifts at high verbosity
-		if options.verbose>2:
-			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
-
-	outsz=min(1024,nxraw)
-	times.append(time.time())
-	vol=gaus.volume(outsz,zmax).emdata[0]
-	times.append(time.time())
-	vol["apix_x"]=apix*nxraw/outsz
-	vol["apix_y"]=apix*nxraw/outsz
-	vol["apix_z"]=apix*nxraw/outsz
-	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),0)
-	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
-	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
-	times.append(time.time())
-	vol.write_image(options.volout,0)
+		vol=gaus.volume(nxraw)
+		vol["apix_x"]=apix
+		vol["apix_y"]=apix
+		vol["apix_z"]=apix
+		#vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
+		vol.write_images(options.volout)
 
 
 	times=np.array(times)
-	#times-=times[0]
-	times=times[1:]-times[:-1]
-	if options.verbose>1 : print(times.astype(np.int32))
+	times-=times[0]
+	if options.verbose>1 : print(times)
 
 	E3end(llo)
 
@@ -265,7 +211,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 		gt.watch(gaus.tensor)
 		projs=gaus.project_simple(orts,ny,tytx=tytx)
 		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,3)	# specifying ny/2 radius explicitly so weight functions
 
 	grad=gt.gradient(frcs,gaus._data)
 	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
@@ -277,38 +223,6 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (step,float(qual),float(shift),float(sca))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
-
-def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		gt.watch(tytx)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
 

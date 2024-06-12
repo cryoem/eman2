@@ -1,0 +1,29 @@
+name: EMAN2-SPHIRE-SPARX
+version: combined
+
+installer_filename: eman2.mac.sh    # [osx]
+installer_filename: eman2.linux.sh  # [linux]
+installer_filename: eman2.win.exe   # [win]
+
+channels:
+    - file:///place_holder_conda_prefix/conda-bld
+    - https://conda.anaconda.org/conda-forge
+    - https://repo.anaconda.com/pkgs/main           # [win]
+    - https://repo.anaconda.com/pkgs/msys2          # [win]
+
+keep_pkgs: False
+ignore_duplicate_files: True
+
+specs:
+  - eman2        2.99.55
+  - python       3.9.*
+  - conda
+  - mamba
+  - pip
+  - console_shortcut  # [win]
+  - menuinst          # [win]
+
+welcome_image: ../../images/EMAN2Icon.png      # [win]
+icon_image:    ../../images/eman.ico           # [win]
+post_install:  ../post-install-actions.sh      # [unix]
+post_install:  ../post-install-actions.bat     # [win]

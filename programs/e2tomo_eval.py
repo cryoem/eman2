@@ -24,7 +24,6 @@ def main():
 	parser.add_argument("--dir", type=str,help="look at a specified directory instead of tomograms/", default=None)
 	parser.add_argument("--zshift", type=float,help="shift thumbnail image along z. range -.5 to .5. default 0.", default=0)
 	parser.add_argument("--zthick", type=int,help="thickness of thumbnail image. default 0.", default=0)
-	parser.add_argument("--select", action="store_true", default=False ,help="add a selection column and save a list of selected tomograms.")
 
 	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
 
@@ -167,9 +166,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.wg_plot2d.show()
 		self.wg_plot2d.hide()
 		
-		self.selected=[]
-		self.update_files()
 		
+		self.update_files()
 
 	def update_files(self):
 		self.imginfo=[]
@@ -255,11 +253,6 @@ class TomoEvalGUI(QtWidgets.QWidget):
 						
 				else:
 					dic["curves"]=[]
-					
-				if "ice_thick" in js:
-					dic["ice_thick"]=js["ice_thick"]
-				else:
-					dic["ice_thick"]=-1
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
@@ -283,16 +276,8 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		
 		self.imglst.clear()
 		self.imglst.setRowCount(len(self.imginfo))
-		
-		self.labels=["ID", "file name", "#box", "loss", "defocus"]
-		thick=[info["ice_thick"] for info in self.imginfo]
-		if np.std(thick)>0:
-			self.labels.append("thickness")
-		if self.options.select:
-			self.labels.append("select")
-		
-		self.imglst.setColumnCount(len(self.labels))
-		self.imglst.setHorizontalHeaderLabels(self.labels)
+		self.imglst.setColumnCount(5)
+		self.imglst.setHorizontalHeaderLabels(["ID", "file name", "#box", "loss", "defocus"])
 		self.imglst.setColumnHidden(0, True)
 		for i,info in enumerate(self.imginfo):
 			#### use Qt.EditRole so we can sort them as numbers instead of strings
@@ -325,21 +310,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			it=QtWidgets.QTableWidgetItem()
 			it.setData(Qt.EditRole, float(df))
 			self.imglst.setItem(i,4, it)
-			
-			ik=5
-			if "thickness" in self.labels:
-				ice=np.round(info["ice_thick"],1)
-				it=QtWidgets.QTableWidgetItem()
-				it.setData(Qt.EditRole, float(ice))
-				self.imglst.setItem(i,ik, it)
-				ik+=1
-			
-			if "select" in self.labels:
-				sel=int(str(info["filename"]) in self.selected)
-				it=QtWidgets.QTableWidgetItem()
-				it.setData(Qt.EditRole, sel)
-				self.imglst.setItem(i,ik, it)
-				ik+=1
+			#print(str(info["basename"]), nbox, loss, df)
 			
 		self.imglst.setVerticalHeaderLabels([str(i) for i in range(len(self.imginfo))])
 		
@@ -542,26 +513,6 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.bt_plotloss.setEnabled(len(info["loss"])>0)
 		self.bt_plottpm.setEnabled(len(info["tlt_params"])>0)
 		self.setspanel.highlight(info["boxcls"])
-		if self.options.select:
-			self.find_selected()
-		
-	def find_selected(self):
-		self.selected=[]
-		ci=[i for i,l in enumerate(self.labels) if l=="select"]
-		ci=ci[0]
-		for row in range(len(self.imginfo)):
-			idx=self.imglst.item(row, 0).text()
-			info=self.imginfo[int(idx)]
-			
-			sel=self.imglst.item(row, ci).text()
-			sel=int(sel)
-			if sel>0:
-				self.selected.append(str(info["filename"]))
-				
-		# print(self.selected)
-		if len(self.selected)>0:
-			tosave=[{"src":s, "idx":0} for s in self.selected]
-			save_lst_params(tosave, "selected_tomograms.lst")
 		
 		
 	def sortlst(self,col):
