@@ -17,6 +17,7 @@ from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emannotate2d import EMAnnotate2DWidget,EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
+from eman2_gui.emshapeitem3d import EMScatterPlot3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D
 from eman2_gui.embrowser import EMBrowserWidget
 from eman2_gui.emshape import EMShape
@@ -62,7 +63,7 @@ def main():
 
 	app = EMApp()
 	if options.load_data_czi:
-		os.system("python ./e2import_from_czi.py")
+		os.system("e2import_from_czi.py")
 		return
 	else:
 		pass
@@ -118,6 +119,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.tomogram_list = QtWidgets.QListWidget()
 		self.tom_file_list = []
 		self.seg_grps = []
+
 		self.tomo_tree = QtWidgets.QTreeWidget()
 
 		if len(options.tomo)>0:
@@ -137,13 +139,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 				if file_name.endswith(".hdf"):
 					self.tom_file_list.append(file_name)
 
+
 		else:
 			print("Specify tomogram or tomograms folder for start annotation")
 			sys.exit(0)
 			return
 
 
-		#print("Self.tom_file_list",self.tom_file_list)
+
+
+
+		print("Self.tom_file_list",self.tom_file_list)
 		for t in range(len(self.tom_file_list)):
 			file_name = self.tom_file_list[t]
 			#Populate the Tree
@@ -488,11 +494,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 
-		#self.assisted_tab.addTab(self.tmplt_tab,"Template Matching")
+
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"UNet")
 		self.assisted_tab.addTab(self.snn_tab,"EMAN2NNet")
 		self.assisted_tab.addTab(self.stat_tab,"Statistics")
+		self.assisted_tab.addTab(self.tmplt_tab,"Template Matching")
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 		self.assisted_tab.addTab(self.subtom_tab,"SubTomogram")
@@ -616,6 +623,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def get_current_class(self):
 		return self.get_segtab().get_current_class()
+
+	def get_apix(self):
+		return self.apix
 
 
 	def zchange(self,value):
@@ -755,8 +765,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			tmp.write_compressed(self.ori_seg_path,0,8)
 			del tmp
 
-			#os.system("e2proc3d.py {} {} --compressbits=8".format(self.seg_path,self.ori_seg_path))
-
 		else:
 			print("Annotation is none.")
 			pass
@@ -887,8 +895,54 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		QtWidgets.QMessageBox.warning(parent,"ERROR",msg)
 
 	def test_drawing_function(self):
-		self.save_current_state()
-		self.showerror("This button is for testing purpose only")
+
+		tomo = self.get_data()
+		x,y,z= tomo.get_sizes()
+		xf= Transform({'tx':-x//2,'ty':-y//2,'tz':-z//2,'mirror':0,'scale':1.0000,'type':'eman'})
+		pks_plt=EMScatterPlot3D(transform=xf)
+		pks_em = EMData("tmplt_match_local_pks.hdf")
+		ccc = EMData("tmplt_match_ccc.hdf")
+		#nunbin = 1/int(self.tmplt_nshrink_le.text())
+		ccc.process_inplace("math.fft.resample",{'n':2})
+		pks = pks_em.numpy().copy().transpose()
+		#gauss = np.array([[1,3,5,1],[1,5,7,1],[10,7,5,0.5],[1,30,5,1],[1,50,7,1],[10,70,5,0.5],[10,3,5,1],[10,5,7,1],[10,7,5,0.5]]).transpose()
+		try:
+			pks[3] = 4*(pks[3]-min(pks[3]))/(max(pks[3])-min(pks[3]))
+
+		except:
+			pass
+# gauss.shape
+		# try:
+		# 	view = CustomScene3D(target=self.target)
+		# 	view.show_3D_region()
+		try:
+			#tempt_hdr = EMData(self.tmplt_le.text(),0,True)
+			# mbin=tomo["apix_x"]/tempt_hdr["apix_x"]
+			# pks_sz = int((tempt_hdr["nx"]/mbin)//2)
+			pks_sz=13
+		except:
+			pks_sz = 8
+
+		pks_plt.setData(pks,pks_sz)
+
+
+
+
+
+
+		self.show_vol()
+		self.view.insertNewNode("Peak Plt", pks_plt)
+		ccc_di = EMDataItem3D(ccc, transform=Transform())
+		self.view.insertNewNode('CCC', ccc_di, parentnode=self.view)
+
+		ccc_iso = EMIsosurface(ccc_di, transform=Transform())
+		self.view.insertNewNode("Iso", ccc_iso, parentnode=ccc_di)
+		#
+
+
+		#self.save_current_state()
+
+		#self.showerror("This button is for testing purpose only")
 		return
 
 	def save_current_state(self, no_force_save=True):
@@ -3057,7 +3111,6 @@ class Boxer_Widget(QtWidgets.QWidget):
 		#self.extract_train_le = QtWidgets.QLineEdit()
 		#self.extract_train_le.setText(os.path.join('./trainset/',base_name(self.target.data_file)[0:-4]+"_trainset.hdf"))
 
-		#ox,oy,oz = self.target.cur_region.get_origin()
 		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 
@@ -3070,12 +3123,6 @@ class Boxer_Widget(QtWidgets.QWidget):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
 				bdf=[0,0,0,"manual",0.0, 0, 0]
 				for j,bi in enumerate(b):  bdf[j]=bi
-
-				# bdf[0] = bdf[0] - ox
-				# bdf[1] = bdf[1] - oy
-				# bdf[2] = bdf[2] - oz
-
-
 				if bdf[5] not in list(self.sets.keys()):
 					clsi=int(bdf[5])
 					self.sets[clsi]="particles_{:02d}".format(clsi)
@@ -4079,19 +4126,24 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.calc_ccm_bt = QtWidgets.QPushButton("Calc CC")
 		self.show_ccm_bt = QtWidgets.QPushButton("Show CC")
 		self.find_peaks_bt = QtWidgets.QPushButton("Find Peaks")
+		self.show_peaks_bt = QtWidgets.QPushButton("Show Peaks")
 		self.do_local_search_bt = QtWidgets.QPushButton("Local Search")
 		self.insert_vol_le = QtWidgets.QLineEdit()
 		self.insert_vol_browser_bt = QtWidgets.QPushButton("Browse ")
 		self.insert_vol_bt = QtWidgets.QPushButton("Insert Mask")
+		self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
+		self.apply_mw.setChecked(False)
 
 		self.tmplt_npeaks_le = QtWidgets.QLineEdit()
 		self.tmplt_npeaks_le.setText("20")
 		self.tmplt_dthr_le = QtWidgets.QLineEdit()
 		self.tmplt_dthr_le.setText("20")
-		self.tmplt_cccthr_le = QtWidgets.QLineEdit()
-		self.tmplt_cccthr_le.setText("20")
+		# self.tmplt_cccthr_le = QtWidgets.QLineEdit()
+		# self.tmplt_cccthr_le.setText("20")
 		self.tmplt_minvol_vs = ValSlider(value=20,rng=(0,1000),rounding=-1,label="minvol   ",labelwidth=56)
 		self.tmplt_minvol_vs.setIntonly(1)
+		self.tmplt_cccthr_vs = ValSlider(value=5.0,rng=(0.00,5.0),rounding=2,label="ccc fac  ",labelwidth=56)
+
 
 		self.tmplt_ins_thres_vs = ValSlider(value=0.5,rng=(0,1.0),rounding=1,label="thres    ",labelwidth=56)
 
@@ -4111,10 +4163,11 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		templ_gbl.addWidget(self.tmplt_nthrds_le,3,3,1,1)
 
 		#templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
-		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,0,1,1)
-		templ_gbl.addWidget(self.tmplt_npeaks_le,4,1,1,1)
-		templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
-		templ_gbl.addWidget(self.tmplt_cccthr_le,4,3,1,1)
+		#templ_gbl.addWidget(self.apply_mw,4,0,1,2)
+		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,2,1,1)
+		templ_gbl.addWidget(self.tmplt_npeaks_le,4,3,1,1)
+		#templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
+		templ_gbl.addWidget(self.tmplt_cccthr_vs,5,0,1,4)
 		#templ_gbl.addWidget(QtWidgets.QLabel("dist thr"),4,2,1,1)
 		#templ_gbl.addWidget(self.tmplt_dthr_le,4,3,1,1)
 
@@ -4122,28 +4175,32 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 		templ_gbl.addWidget(self.calc_ccm_bt,2,4,1,1)
 		templ_gbl.addWidget(self.show_ccm_bt,3,4,1,1)
-		templ_gbl.addWidget(self.find_peaks_bt,4,4,1,1)
-		templ_gbl.addWidget(self.do_local_search_bt,5,4,1,1)
+		#templ_gbl.addWidget(self.find_peaks_bt,4,4,1,1)
+		templ_gbl.addWidget(self.do_local_search_bt,4,4,1,1)
 		templ_gbl.addWidget(QtWidgets.QLabel("Segment particles"),6,0,1,5)
 		templ_gbl.addWidget(self.insert_vol_bt,8,4,1,1)
+		templ_gbl.addWidget(self.show_peaks_bt,5,4,1,1)
 
 		templ_gbl.addWidget(QtWidgets.QLabel("Mask"),7,0,1,1)
 		templ_gbl.addWidget(self.insert_vol_le,7,1,1,3)
 		templ_gbl.addWidget(self.insert_vol_browser_bt,7,4,1,1)
 
 
-		templ_gbl.addWidget(self.tmplt_ins_thres_vs,8,0,1,3)
+		templ_gbl.addWidget(self.tmplt_ins_thres_vs,8,0,1,4)
+		templ_gbl.addWidget(QtWidgets.QLabel("This module is under development"),9,0,1,4)
 
 
 		self.setLayout(templ_gbl)
 		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
 		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
-		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
+		#self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
+		self.show_peaks_bt.clicked[bool].connect(self.show_peaks)
 		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_thrds)
 		self.insert_vol_bt.clicked[bool].connect(self.insert_vol)
 		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
 		self.insert_vol_browser_bt.clicked[bool].connect(self.load_insert_vol)
 		self.ccc_file = "tmplt_match_ccc.hdf"
+		self.owner_id_file = "tmplt_match_owner_id.hdf"
 		self.pts = []
 		self.xfs = []
 
@@ -4152,49 +4209,66 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			for xf in xfs:
 				r=ref.process("xform", {"transform":xf})
 				r.clip_inplace(tomo_reg)
-				#r.process_inplace("mask.fft.wedge",{"anglemax":30,"anglemin":-30})
+				r.process_inplace("normalize")
 				f_ref = r.do_fft()
-				cf=f_tomo.calc_ccf(f_ref)
+				# f_ref.process_inplace("xform.phaseorigin.tocenter")
+				# f_ref.process_inplace("xform.fourierorigin.tocenter")
+				if self.apply_mw.isChecked():
+
+					mask_ref = f_ref.numpy()*tomo_mask.numpy()
+					rev_r = from_numpy(mask_ref)
+
+				else:
+					rev_r = f_ref
+				cf=f_tomo.calc_ccf(rev_r)
+				#cf.process_inplace("normalize")
 				jsd.put(cf)
 
 		#create oris to rotate the tempt
-		sym=parsesym(self.tmplt_sym_le.text())
-		dt=int(self.tmplt_delta_le.text())
-		tomo = self.target.get_data().copy()
-		ref = EMData(self.tmplt_le.text())
-		shrink = int(self.tmplt_nshrink_le.text())
+		try:
+			sym=parsesym(self.tmplt_sym_le.text())
+			dt=int(self.tmplt_delta_le.text())
+			tomo = self.target.get_data().copy()
+			ref = EMData(self.tmplt_le.text())
+			shrink = int(self.tmplt_nshrink_le.text())
+		except:
+			print("Specify template to calc cross correlation.")
+			return
 		oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt,"inc_mirror":1})
 
 		#print(sym, dt, shrink, oris, tomo.get_sizes(), ref.get_sizes())
 		#processing tempt and tomo
 		if shrink > 1:
 			tomo.process_inplace("math.fft.resample",{'n':shrink})
-			nx,ny,nz= tomo.get_sizes()
-			tomo_reg = Region(0,0,0,nx,ny,nz)
 
 		mbin=tomo["apix_x"]/ref["apix_x"]
-		print("Will shrink reference by {:.1f}".format(mbin))
+		print("Will shrink reference by {:.1f} to match apix of tomogram".format(mbin))
 		ref.process_inplace("math.fft.resample",{'n':mbin})
 		ref.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
 		ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
 		ref.process_inplace('normalize.edgemean')
-		#ref.mult(-1)
+		ref.mult(-1)
 
 		boxsz=ref["nx"]//2
-		tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
-		tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
-		tomo.process_inplace('normalize.edgemean')
-		tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
-		f_tomo = tomo.do_fft()
 
+		# tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		# tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
+		tomo.process_inplace('normalize.edgemean')
+		#tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
+		f_tomo = tomo.do_fft()
+		if self.apply_mw.isChecked():
+			# tomo_mask = self.find_fft_mask(f_tomo)
+			tomo_mask = self.find_thres_mask(f_tomo)
+			# tomo_mask.process_inplace("xform.fourierorigin.tocenter")
+
+		nx,ny,nz= tomo.get_sizes()
+		tomo_reg = (Region(boxsz-nx//2,boxsz-ny//2,boxsz-nz//2,nx,ny,nz))
 		#calc fourier transform of tomo and ref+prepad before do_match
-		#Should rotate the small ref vol, padding it then do a fourier transform.
 
 		nthrds=int(self.tmplt_nthrds_le.text()) #processes got own memory allocation, thrds share. python got global interpreter lock, hence not thrds safety.
 		rg=np.arange(len(oris))
 
 		tasks=[oris[i::nthrds] for i in range(nthrds)]
-		#ccc=tomo.copy()*0-65535 #maximum value of an unsigned 16-bit integer
 		ccc=tomo.copy_head()
 		ccc.to_zero()
 		ccc.sub(65535.0)
@@ -4204,151 +4278,353 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		thrtolaunch=0
 		tsleep=threading.active_count()
 
+		owner_id = ccc.copy()
 		ndone=0
 		for t in thrds:
 			t.start()
+		avrg = Averagers.get("minmax",{"max":1,"owner":owner_id})
+
 		while threading.active_count()>tsleep or not jsd.empty():
 			while not jsd.empty():
 				cf=jsd.get()
-				ccc.process_inplace("math.max", {"with":cf}) #can also use a maximum averager
+				avrg.add_image(cf)
+				#ccc.process_inplace("math.max", {"with":cf}) #can also use a maximum averager
 				ndone+=1
 				sys.stdout.write("\r{}/{} finished.".format(ndone, len(oris)))
 				sys.stdout.flush()
 			time.sleep(.5)
 		print("")
-		ccc.process_inplace("xform.phaseorigin.tocenter")
+		ccc=avrg.finish()
+		if not self.apply_mw.isChecked():
+			ccc.process_inplace("xform.phaseorigin.tocenter")
 		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 		ccc.process_inplace("filter.highpass.gauss",{"cutoff_pixels":24})
 		ccc.process_inplace("normalize.edgemean")
-		ccc.process_inplace("threshold.belowtozero")
-		#self.ccm = ccc
+		ccc.write_compressed("tmp_ccc_nomsk.hdf",0,12)
+		#ccc.process_inplace("threshold.belowtozero")
+		# ccc_np = ccc.numpy().copy()
+		# ccc_np[np.where(owner_id.numpy()==0)]=0
+		ccc_mask = owner_id.process("threshold.binary",{"value":0.5})
+
+		ccc *= ccc_mask
 		ccc.write_compressed(self.ccc_file,0,12)
+		#from_numpy(ccc_np).write_compressed(self.ccc_file,0,12)
+		owner_id.write_compressed(self.owner_id_file,0,12)
+		self.pts = []
+		self.xfs = []
 
 
+	def determine_cut_off_thres(self,amplitude,preserve_ratio=0.95,n_pts=101):
+		cuts = [np.percentile(amplitude.ravel(),i) for i in np.linspace(0,99,n_pts)]
+		kept = np.array([amplitude[amplitude>i].sum() for i in cuts])
+		kept = kept/amplitude.sum()
+		return cuts[np.argmin(abs(kept-preserve_ratio))]
+
+
+	def find_vertical_intersection(self,amplitude,x,cut_off):
+		idxs = np.where(amplitude[:,x]>cut_off)[0]
+		if len(idxs) == 0:
+			return np.array([-1,-1])
+
+		top,bottom = idxs[0],idxs[-1]
+		return np.array([top,bottom])
+
+	def find_boundary(self,amplitude,cut_off=None):
+		if cut_off is None:
+			cut_off = self.determine_cut_off_thres(amplitude)
+		mask = np.zeros_like(amplitude)
+
+		if amplitude.sum() <1e-9:
+			return mask
+		center = np.round(np.array(ndi.center_of_mass(amplitude))).astype(int)
+		x_left = np.arange(0,center[1])
+		x_right = np.arange(center[1],amplitude.shape[1])
+
+		# Can adjust find vertical intersection to be more robust
+
+		y_left = np.stack([self.find_vertical_intersection(amplitude,i,cut_off) for i in x_left])
+		y_right = np.stack([self.find_vertical_intersection(amplitude,i,cut_off) for i in x_right])
+		y_lb,y_ub = [],[]
+		for name,x,y in zip(['left_top','left_bottom','right_top','right_bottom'],
+							[x_left,x_left,x_right,x_right,],
+							[y_left[:,0],y_left[:,1],y_right[:,0],y_right[:,1]]):
+			# Remove slide that is empty
+			idx = np.where(y>=0)[0]
+			y = y[idx]
+			x_ = x[idx]
+
+			coef = np.polyfit(x_,y,1)
+			f = np.poly1d(coef)
+			y_ = f(x)
+			if 'top' in name:
+				y_ub.append(y_)
+			else:
+				y_lb.append(y_)
+		y_ub = np.concatenate(y_ub)
+		y_lb = np.concatenate(y_lb)
+		# return mask,x_left,x_right,y_ub,y_lb
+
+		y = np.arange(mask.shape[1])
+		for x,i,j in zip(np.concatenate([x_left,x_right]),y_ub,y_lb):
+			mask[np.where(np.logical_and((y>=i),(y<=j)))[0],x] = 1
+		return mask
+
+	def find_fft_mask(self,f_vol):
+		f_tomo_copy = f_vol.process("xform.fourierorigin.tocenter")
+		f_amp = f_tomo_copy.get_fft_amplitude().numpy().astype(float)
+		cut_off = self.determine_cut_off_thres(f_amp)
+		mask = np.zeros_like(f_tomo_copy.numpy())
+		mask[:,:,0] = 1
+		mask[:,:,-1] = 1
+		for i in range(f_amp.shape[1]):
+			try:
+				#a = f_tomo_copy.get_fft_amplitude().numpy()[:,i,:].astype(float)
+				a= f_amp[:,i,:]
+				mask[:,i,1:-1] = self.find_boundary(a,cut_off=cut_off)
+			except Exception as e :
+				print(e)
+				print("fft_amp is all zeros at y=",i)
+				continue
+		return from_numpy(mask)
+
+	def find_thres_mask(self,f_vol):
+		#f_tomo_copy = f_vol.process("xform.fourierorigin.tocenter")
+		f_amp = f_vol.get_fft_amplitude()
+		cut_off = self.determine_cut_off_thres(f_amp.numpy().astype(float))
+		mask = np.zeros_like(f_vol.numpy())
+		mask[:,:,0] = 1
+		mask[:,:,-1] = 1
+		mask[:,:,1:-1] = f_amp.process("threshold.binary",{"value":cut_off}).numpy()
+		# for i in range(f_amp.shape[1]):
+		# 	try:
+		# 		#a = f_tomo_copy.get_fft_amplitude().numpy()[:,i,:].astype(float)
+		# 		a= f_amp[:,i,:]
+		# 		mask[:,i,1:-1] = self.find_boundary(a,cut_off=cut_off)
+		# 	except Exception as e :
+		# 		print(e)
+		# 		print("fft_amp is all zeros at y=",i)
+		# 		continue
+		return from_numpy(mask)
 
 	def show_ccm(self):
+
+
 		os.system("e2display.py {} & ".format(self.ccc_file))
+
 		return
 
-	def find_peaks_amp(self):
+	def find_peaks_amp(self,npks=-1):
 		try:
-			n_peaks = int(self.tmplt_npeaks_le.text())
+			if npks == -1:
+				n_peaks = int(self.tmplt_npeaks_le.text())
+			else:
+				n_peaks = npks
 			nbin = int(self.tmplt_nshrink_le.text())
-			ccc_thr = float(self.tmplt_cccthr_le.text())
+			ccc_fac = float(self.tmplt_cccthr_vs.value)
 			ref_head = EMData(self.tmplt_le.text(), 0,True)
 			rx,ry,rz = ref_head.get_sizes()
-
+			mbin = self.target.get_apix()/ref_head["apix_x"]
 		except:
-			print("Invalid n_peaks, nbin and ccc_thr. Return")
+			print("Invalid n_peaks, nbin or ccc_fac. Return")
 			return
 		ccc_hdr=EMData(self.ccc_file, 0,True)
 		cx,cy,cz = ccc_hdr.get_sizes()
 
-		ccc = EMData(self.ccc_file).get_clip(Region(rx//2,rx//2,rx//2,cx-rx,cy-rx,cz-rx)).get_clip(Region(-rx//2,-rx//2,-rx//2,cx,cy,cz))
+		bsz = rx // (nbin*mbin)
+		#ccc = EMData(self.ccc_file).get_clip(Region(bsz//2,bsz//2,bsz//2,cx-bsz,cy-bsz,cz-bsz)).get_clip(Region(-bsz//2,-bsz//2,-bsz//2,cx,cy,cz))
+		ccc = EMData(self.ccc_file).process("mask.zeroedge3d",{"x0":bsz//2,"x1":bsz//2,"y0":bsz//2,"y1":bsz//2,"z0":bsz//2,"z1":bsz//2})
+		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+		#ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+
+		print("Set border of ccc matrix to zero to avoid peaks too close to the border")
 		mean=float(ccc.get_attr("mean"))
 		sig=float(ccc.get_attr("sigma"))
-		ccc.process_inplace("threshold.belowtozero",{"minval":ccc_thr})
+		ccc.process_inplace("threshold.belowtozero",{"minval":mean+3*sig})
 		ccc.process_inplace("mask.onlypeaks",{"npeaks":0})
 
-		peaks = ccc.calc_highest_locations(mean+3*sig)
+		peaks = ccc.calc_highest_locations(mean+ccc_fac*sig)
 		peaks.sort(key=lambda peak: -peak.value)
 		pts = [(nbin*peak.x,nbin*peak.y,nbin*peak.z) for peak in peaks]
+		sym=parsesym(self.tmplt_sym_le.text())
+		oris=sym.gen_orientations("eman",{"delta":int(self.tmplt_delta_le.text()), "phitoo":int(self.tmplt_delta_le.text()),"inc_mirror":1})
+		initxf = EMData(self.owner_id_file)
+		xfs = [oris[int(initxf[(peak.x,peak.y,peak.z)])] for peak in peaks]
+
+
+		# xfs = [oris[int(initxf[pt])] for pt in pts]
+		# xform_pts = []
+		# for i,xf in enumerate(xfs):
+		# 	if xf.get_params("eman") != Transform().get_params("eman"):
+		# 		xform_pts.append(pts[i])
+		# 	else:
+		# 		continue
+
+
 
 		if len(pts) > n_peaks:
+			#print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
 			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
 			self.pts = pts[:n_peaks]
+			self.xfs = xfs[:n_peaks]
+
 		else:
 			print("Find {} peaks at {}".format(len(pts),pts))
 			self.pts = pts
+			self.xfs = xfs
 
-	def find_peaks(self):
-		img=EMData(self.ccc_file).numpy().copy()
-		min_vol = int(self.tmplt_minvol_vs.value)
-		if len(self.tmplt_le.text()) > 0:
-			ref_head = EMData(self.tmplt_le.text(), 0,True)
-			rx,ry,rz = ref_head.get_sizes()
-			refvol = rx*ry*rz
-		else:
-			refvol = 100000000
+	# def find_peaks(self):
+	# 	img=EMData(self.ccc_file).numpy().copy()
+	#
+	# 	min_vol = int(self.tmplt_minvol_vs.value)
+	# 	if len(self.tmplt_le.text()) > 0:
+	# 		ref_head = EMData(self.tmplt_le.text(), 0,True)
+	# 		rx,ry,rz = ref_head.get_sizes()
+	# 		refvol = rx*ry*rz
+	# 	else:
+	# 		refvol = 100000000
+	#
+	# 	img[img<3]=0
+	# 	lb, nlb=ndi.label(img)
+	#
+	# 	pks=np.array(ndi.maximum_position(img,lb,list(range(1,nlb))))
+	# 	#pks=np.array(ndi.center_of_mass(img,lb,list(range(1,nlb))))
+	# 	pksize=np.array(ndi.sum(img,lb,list(range(1,nlb))))
+	# 	#print(pksize[:50])
+	# 	pks_mask = lb.copy()
+	# 	pks_mask[pks_mask > 0] = 1
+	# 	pks_vol = np.array(ndi.sum(pks_mask, lb, list(range(1, nlb))))
+	# 	n=len(pks)
+	#
+	# 	kpid=np.logical_and(pksize>min_vol, pks_vol<refvol)
+	#
+	# 	pks=pks[kpid]
+	# 	pkscore=pksize[kpid]
+	# 	pks_vol = pks_vol[kpid]
+	# 	srt=np.argsort(-pkscore)
+	# 	pks=pks[srt]
+	# 	pks_vol = pks_vol[srt]
+	# 	pkscore=pkscore[srt]
+	# 	# if np.max(pkscore) != 0:
+	# 	try:
+	# 		pkscore/=np.max(pkscore)
+	# 	except:
+	# 		pass
+	#
+	# 	tree=KDTree(pks)
+	# 	tokeep=np.ones(len(pks), dtype=bool)
+	#
+	# 	dthr = int(self.tmplt_dthr_le.text())
+	# 	n_peaks = int(self.tmplt_npeaks_le.text())
+	# 	nbin = int(self.tmplt_nshrink_le.text())
+	# 	#print(np.min(pks, axis=0), np.max(pks, axis=0), boxsz, dthr)
+	# 	for i in range(len(pks)):
+	# 		if tokeep[i]:
+	# 			k=tree.query_ball_point(pks[i], dthr)
+	# 			tokeep[k]=False
+	# 			tokeep[i]=True
+	# 	pts=pks[tokeep]*nbin
+	# 	scr=pkscore[tokeep]
+	# 	pvolume=pks_vol[tokeep]
+	# 	#options so that peaks are not too close together
+	# 	if len(pts) > n_peaks:
+	# 		print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+	# 		self.pts = pts[:n_peaks]
+	# 	else:
+	# 		print("Find {} peaks at {}".format(len(pts),pts))
+	# 		self.pts = pts
 
-		img[img<3]=0
-		lb, nlb=ndi.label(img)
+	# def do_search(self, tomo, tempt, jsd, ps):
+	# 	for p in ps:
+	# 		x,y,z= (int(i) for i in p)
+	# 		bs = tempt.get_sizes()[0]
+	# 		subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
+	# 		tempt_a = tempt.align("rotate_translate_3d_tree",subvol)
+	# 		jsd.put((p,tempt_a["xform.align3d"]))
 
-		pks=np.array(ndi.maximum_position(img,lb,list(range(1,nlb))))
-		#pks=np.array(ndi.center_of_mass(img,lb,list(range(1,nlb))))
-		pksize=np.array(ndi.sum(img,lb,list(range(1,nlb))))
-		#print(pksize[:50])
-		pks_mask = lb.copy()
-		pks_mask[pks_mask > 0] = 1
-		pks_vol = np.array(ndi.sum(pks_mask, lb, list(range(1, nlb))))
-		n=len(pks)
-
-		kpid=np.logical_and(pksize>min_vol, pks_vol<refvol)
-
-		pks=pks[kpid]
-		pkscore=pksize[kpid]
-		pks_vol = pks_vol[kpid]
-		srt=np.argsort(-pkscore)
-		pks=pks[srt]
-		pks_vol = pks_vol[srt]
-		pkscore=pkscore[srt]
-		# if np.max(pkscore) != 0:
-		try:
-			pkscore/=np.max(pkscore)
-		except:
-			pass
-
-		tree=KDTree(pks)
-		tokeep=np.ones(len(pks), dtype=bool)
-
-		dthr = int(self.tmplt_dthr_le.text())
-		n_peaks = int(self.tmplt_npeaks_le.text())
-		nbin = int(self.tmplt_nshrink_le.text())
-		#print(np.min(pks, axis=0), np.max(pks, axis=0), boxsz, dthr)
-		for i in range(len(pks)):
-			if tokeep[i]:
-				k=tree.query_ball_point(pks[i], dthr)
-				tokeep[k]=False
-				tokeep[i]=True
-		pts=pks[tokeep]*nbin
-		scr=pkscore[tokeep]
-		pvolume=pks_vol[tokeep]
-		#options so that peaks are not too close together
-		if len(pts) > n_peaks:
-			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
-			self.pts = pts[:n_peaks]
-		else:
-			print("Find {} peaks at {}".format(len(pts),pts))
-			self.pts = pts
-
-	def do_search(self, tomo, tempt, jsd, ps):
-		for p in ps:
+	def save_peaks(self,ccc,pts):
+		outfile = "tmplt_match_ccc_pks.hdf"
+		peak_holder_vol = ccc.copy_head()
+		#peak_holder_vol.to_zero()
+		peak_holder_vol.write_image(outfile)
+		vol = test_image_3d(4,(10,10,10))
+		for i,loc in enumerate(pts):
+			x,y,z = [int(i) for i in loc]
+			bs = 10
+			reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
+			try:
+				current_vol = self.target.get_annotation().get_clip(reg)
+				insert_vol=vol.process("math.max",{"with":current_vol})
+			except:
+				insert_vol = vol
+			try:
+				insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
+				sys.stdout.write("\r{}/{} finished.".format(i, len(pts)))
+				sys.stdout.flush()
+				#print("Insert vol at location",x,y,z,"")
+			except:
+				print("Invalid region at location",x,y,z,".Skip.")
+				continue
+		# annotate = EMData(outfile)
+		# self.target.img_view.set_data(self.target.data,annotate)
+		# print("Finishing segmentation")
+	def do_search(self,tomo,tempt,jsd, px_l):
+		for pt_xf in px_l:
+			p = pt_xf[0]
+			initxf = pt_xf[1]
+			#print(p,"initxf",initxf)
 			x,y,z= (int(i) for i in p)
 			bs = tempt["nx"]
 			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
-			tempt_a = tempt.align("rotate_translate_3d_tree",subvol)
-			#tempt_a["loc"]=p
-			jsd.put((p,tempt_a["xform.align3d"]))
+			#nbest = tempt.xform_align_nbest('rotate_translate_3d', subvol, {'sym':'c1'}, 2, 'ccc.tomo',{})
+			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf,nbest[0]["xform.align3d"],nbest[1]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
+			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
+			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{},1,'ccc.tomo',{})
+			cf = subvol.calc_ccf(tempt_a)
+			cf_score = np.max(cf.numpy())
+
+			#cf.process_inplace("normalize")
+
+
+			#print(p,"new xf", tempt_a["xform.align3d"])
+			jsd.put((p,tempt_a["xform.align3d"],cf_score))
+
 
 	def do_local_search_thrds(self):
-		if len(self.pts) == 0:
-			try:
-				self.find_peaks()
-			except:
-				print("No peaks specified for local search. Find peaks first")
-				return
-
+		n_peaks = int(self.tmplt_npeaks_le.text())
+		self.find_peaks_amp(n_peaks*10)
 		nthrds = int(self.tmplt_nthrds_le.text())
 		tomo = self.target.get_data().copy()
 		tempt = EMData(self.tmplt_le.text())
 
+
+		mbin=tomo["apix_x"]/tempt["apix_x"]
+
+		print("Will shrink reference by {:.1f} to match apix of tomogram for local search".format(mbin))
+		tempt.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
+		tempt.process_inplace("math.fft.resample",{'n':mbin})
+		tempt.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
+		tempt.process_inplace('normalize.edgemean')
+		tempt.mult(-1)
+		good_szs=[good_size(tempt["nx"]),good_size(tempt["ny"]),good_size(tempt["nz"])]
+		tempt.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
+
+		boxsz=tempt["nx"]//2
+		#tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		# tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
+		tomo.process_inplace('normalize.edgemean')
+		#tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
+
+		pts_xfs_l = list(zip(self.pts,self.xfs))
 		start = time.time()
-		rg=np.arange(len(self.pts))
-		tasks=[self.pts[i::nthrds] for i in range(nthrds)]
+		#tasks=[self.pts[i::nthrds] for i in range(nthrds)]
+
+		tasks=[pts_xfs_l[i::nthrds] for i in range(nthrds)]
 
 		#print(tasks)
 		jsd=queue.Queue(0)
-		thrds=[threading.Thread(target=self.do_search,args=(tomo, tempt, jsd, ps)) for ps in tasks]
+		#thrds=[threading.Thread(target=self.do_search,args=(tomo, tempt, jsd, ps)) for ps in tasks]
+		thrds=[threading.Thread(target=self.do_search,args=(tomo, tempt, jsd, px_l)) for px_l in tasks]
+
 		thrtolaunch=0
 		tsleep=threading.active_count()
 
@@ -4357,19 +4633,91 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			t.start()
 		p_xf_l = []
 		print("Start local searching at {} location".format(len(self.pts)))
-
 		while threading.active_count()>tsleep or not jsd.empty():
 			while not jsd.empty():
-				p,xf=jsd.get()
-				p_xf_l.append((p,xf))
+				p,xf,cf=jsd.get()
+				p_xf_l.append((p,xf,cf))
 				ndone+=1
 				sys.stdout.write("\r{}/{} finished.".format(ndone, len(self.pts)))
 				sys.stdout.flush()
 			time.sleep(.5)
 		print("")
 		print("Finish in {}s".format(time.time()-start))
+
+		p_xf_l.sort(key = lambda x: -x[2])
+		try:
+			pt_cf_l = []
+			for i in range(len(p_xf_l)):
+				pt = list(p_xf_l[i][0])
+				pt.append(p_xf_l[i][2])
+				pt_cf_l.append(pt)
+			from_numpy(np.array(pt_cf_l)).write_image("tmplt_match_local_pks.hdf")
+			print("All peaks saved to tmplt_match_local_pks.hdf")
+		except Exception as e:
+			print(e)
+			pass
+		#print(p_xf_l)
+		p_xf_l=p_xf_l[:n_peaks]
+		# for p_xf in p_xf_l:
+		# 	print(p_xf[0],p_xf[2],"\n")
+
 		self.pts = [p_xf[0] for p_xf in p_xf_l]
 		self.xfs = [p_xf[1] for p_xf in p_xf_l]
+		cfs = [p_xf[2] for p_xf in p_xf_l]
+		self.cfs = [cf/max(cfs) for cf in cfs]
+
+		#print("Highest score {} locations detected at:".format(len(self.pts)))
+		# for i in range(len(self.pts)):
+		# 	print("Location:{} Correlation:{}\n".format(self.pts[i],self.cfs[i]))
+
+
+
+			#print("Location:{} Correlation:{}\n".format(self.pts[i],self.cfs[i]))
+		# 		self.pts = pts[:n_peaks]
+
+
+	def show_peaks(self):
+		tomo = self.target.get_data()
+		x,y,z= tomo.get_sizes()
+
+		xf= Transform({'tx':-x//2,'ty':-y//2,'tz':-z//2,'mirror':0,'scale':1.0000,'type':'eman'})
+		pks_plt=EMScatterPlot3D(transform=xf)
+		pks_em = EMData("tmplt_match_local_pks.hdf")
+		ccc = EMData("tmplt_match_ccc.hdf")
+		nunbin = 1/int(self.tmplt_nshrink_le.text())
+		ccc.process_inplace("math.fft.resample",{'n':nunbin})
+		#pks = pks_em.numpy().transpose()
+		pks = pks_em.numpy().copy().transpose()
+
+		try:
+			pks[3] = 2*(pks[3]-min(pks[3]))/(max(pks[3])-min(pks[3]))
+		except:
+			pass
+
+		try:
+			tempt_hdr = EMData(self.tmplt_le.text(),0,True)
+			mbin=tomo["apix_x"]/tempt_hdr["apix_x"]
+			pks_sz = int((tempt_hdr["nx"]/mbin)//2)
+		except:
+			pks_sz = 8
+
+		pks_plt.setData(pks,pks_sz)
+
+		self.target.show_vol()
+		self.target.view.insertNewNode("Peak Plt", pks_plt)
+		ccc_di = EMDataItem3D(ccc, transform=Transform())
+		self.target.view.insertNewNode('CCC', ccc_di, parentnode=self.target.view)
+
+		ccc_iso = EMIsosurface(ccc_di, transform=Transform())
+		self.target.view.insertNewNode("Iso", ccc_iso, parentnode=ccc_di)
+		#
+		# self.target.view.updateGL()
+
+		# 	view.show()
+		# except Exception as e:
+		# 	print("Cannot show peaks region due to", e)
+		# 	return
+
 
 	def insert_vol(self):
 		val = self.target.get_current_class()
@@ -4379,36 +4727,70 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 		outfile = "tmplt_match_temp_vol.hdf"
 		if self.target.get_annotation() is not None:
-			tomo_head = self.target.get_annotation().copy()
-			tomo_head.write_image(outfile)
+			anno_head = self.target.get_annotation().copy()
+			anno_head.write_image(outfile)
+			tomo_head = self.target.get_data().copy_head()
+			tomo_apix = tomo_head["apix_x"]
 		else:
 			tomo_head = self.target.get_data().copy_head()
 			tomo_head.write_image(outfile)
+			tomo_apix = tomo_head["apix_x"]
 
 		if self.insert_vol_le.text() == 0:
-			print("Specify mask to put in the tomogram")
+			if self.tmplt_le.text() > 0:
+				insert_im = EMData(self.tmplt_le.text())
+				print("Filter template to use as insert mask. ")
+			else:
+				print("Specify mask to put in the tomogram")
 			return
 		else:
 			insert_im = EMData(self.insert_vol_le.text())
 
+		mbin=tomo_apix/insert_im["apix_x"]
+		insert_im.process_inplace("math.fft.resample",{'n':mbin})
+		print("Will shrink insert vol by {:.1f} to match apix of tomogram".format(mbin))
+		good_szs=[good_size(insert_im["nx"]),good_size(insert_im["ny"]),good_size(insert_im["nz"])]
+		insert_im.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
+		print("Vol of insert im is {}".format(insert_im.get_sizes()))
 		if len(self.pts) == 0 or len(self.xfs) == 0:
+			# try:
+			# 	js=js_open_dict("tmp_xfs.json")
+			# 	if len(js['p_xf_dict']) >0:
+			# 		p_xf_dict = json.loads(js['p_xf_dict'])
+			# 		print("Reading local search result from tmp_xfs.json ")
+			# 		#self.pts = list(p_xf_dict.keys())
+			# 		self.pts = []
+			# 		for s in list(p_xf_dict.keys()):
+			# 			x,y,z = s.split("~~~")
+			# 			self.pts.append((float(x),float(y),float(z)))
+			# 		self.xfs = list(p_xf_dict.values())
+			# 	else:
+			# 		self.do_local_search_thrds()
+			# except:
 			self.do_local_search_thrds()
+
 
 		for i,loc in enumerate(self.pts):
 			vol = insert_im.copy()
-			vol.process_inplace("threshold.binary",{"value":self.tmplt_ins_thres_vs.value})
+			#vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.033})
 			vol.process_inplace("xform", {"transform":self.xfs[i]})
+			vol.process_inplace('normalize')
+			vol.process_inplace("threshold.binary",{"value":self.tmplt_ins_thres_vs.value})
+
 			vol.mult(val)
 			x,y,z = [int(i) for i in loc]
 			bs = insert_im["nx"]
 			reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
 			try:
-				tomo_vol = self.target.get_annotation().get_clip(reg)
-				insert_vol=vol.process("math.max",{"with":tomo_vol})
+				current_vol = self.target.get_annotation().get_clip(reg)
+				insert_vol=vol.process("math.max",{"with":current_vol})
 			except:
 				insert_vol = vol
 			try:
 				insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
+				sys.stdout.write("\r{}/{} finished.".format(i, len(self.pts)))
+				sys.stdout.flush()
+				#print("Insert vol at location",x,y,z,"")
 			except:
 				print("Invalid region at location",x,y,z,".Skip.")
 				continue
@@ -4843,7 +5225,7 @@ class Statistics_Tab(QtWidgets.QWidget):
 			mask_op = ndi.binary_opening(raw_mask, iterations=1)
 			labeled, num = ndi.label(mask_op)
 			areas = np.array(ndi.sum(mask_op,labeled, np.arange(labeled.max()+1)))
-			mask = areas > thres/(4*4*4)
+			mask = areas > thres
 			remove_small = mask[labeled.ravel()].reshape(labeled.shape)
 			labeled, num = ndi.label(mask_op)
 			total = num
@@ -4927,7 +5309,10 @@ class Statistics_Tab(QtWidgets.QWidget):
 		#self.target.annotate.numpy() += t_mask
 		print("number of object detected:", self.num)
 		self.target.img_view.set_data(self.target.data, self.target.annotate)
-		del t_mask
+		try:
+			del t_mask
+		except:
+			pass
 		self.n_objects_text.setText(str(count))
 		return objs
 
@@ -4980,7 +5365,6 @@ class Statistics_Tab(QtWidgets.QWidget):
 			except Exception as e:
 				print(e)
 			return
-
 		else:
 			stat_txt = self.stat_combo.currentText()
 			unit = "Pixel"
@@ -5011,6 +5395,9 @@ class Statistics_Tab(QtWidgets.QWidget):
 				if len(a_stats) > 0:
 					a_stat = a_stats[i]
 					print(f"At apix {apix:.2f}, equivalent to {a_stat:.2f} {a_unit}")
+
+			#print(stats)
+
 
 class Obj():
 	def __init__(self, i,name,arr,apix) :
