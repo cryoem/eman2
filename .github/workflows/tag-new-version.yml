@@ -10,37 +10,84 @@ jobs:
   bump-and-tag:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Parse commit message for bump type
+        run: |
+          if ${{ contains(github.event.head_commit.message, '[bump patch]') || contains(github.event.head_commit.message, '[ci build]') }}; then
+            echo "bump=patch" >> $GITHUB_ENV
+          elif ${{ contains(github.event.head_commit.message, '[bump minor]') }}; then
+            echo "bump=minor" >> $GITHUB_ENV
+          elif ${{ contains(github.event.head_commit.message, '[bump major]') }}; then
+            echo "bump=major" >> $GITHUB_ENV
+          fi
 
-    - name: Parse commit message for bump type
-      run: |
-        if ${{ contains(github.event.head_commit.message, '[bump patch]') || contains(github.event.head_commit.message, '[ci build]') }}; then
-          echo "bump=patch" >> $GITHUB_ENV
-        elif ${{ contains(github.event.head_commit.message, '[bump minor]') }}; then
-          echo "bump=minor" >> $GITHUB_ENV
-        elif ${{ contains(github.event.head_commit.message, '[bump major]') }}; then
-          echo "bump=major" >> $GITHUB_ENV
-        fi
+      - name: Checkout eman2
+        if: ${{ env.bump }}
+        uses: actions/checkout@v2
 
-    - name: Bump and tag new version
-      if: ${{ env.bump }}
-      run: |
-        git config --global user.email "eman.github@gmail.com"
-        git config --global user.name "eman-bot"
-        
-        python ./utils/tag_new_version.py --bump ${{ env.bump }}
+      - name: Set up Git user
+        if: ${{ env.bump }}
+        run: |
+          git config --global user.email "eman.github@gmail.com"
+          git config --global user.name "eman-bot"
 
-    - name: Trigger eman dev
-      if: ${{ env.bump }}
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.EMAN_DEV_TOKEN }}
-        script: |
-          await github.rest.actions.createWorkflowDispatch({
-            owner: 'cryoem',
-            repo: 'eman-feedstock',
-            workflow_id: 'update-version.yml',
-            ref: 'master',
-            inputs: {new_version: process.env.new_version }
-          })
+      - name: Bump and tag new version
+        if: ${{ env.bump }}
+        run: |
+          git fetch --tags
+          version=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+
+          if [[ "$version" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            major="${BASH_REMATCH[1]}"
+            minor="${BASH_REMATCH[2]}"
+            patch="${BASH_REMATCH[3]}"
+          fi
+
+          case "${{ env.bump }}" in
+            major)
+              major=$((major + 1))
+              minor=0
+              patch=0
+              ;;
+            minor)
+              minor=$((minor + 1))
+              patch=0
+              ;;
+            patch)
+              patch=$((patch + 1))
+              ;;
+            *)
+              echo "Unknown bump type: ${{ env.bump }}"
+              exit 1
+              ;;
+          esac
+
+          new_version="${major}.${minor}.${patch}"
+          echo "new_version=${new_version}" >> $GITHUB_ENV
+
+          echo "Current version: ${version}"
+          echo "Requested bump : ${{ env.bump }}"
+          echo "New version    : ${new_version}"
+          
+          sed -i "s/VERSION\s*[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
+
+          git add CMakeLists.txt
+          git commit -m v${new_version}
+          git tag -f v${new_version}
+          git push origin ${{ github.ref }} v${new_version}
+
+      - name: Checkout eman-feedstock
+        if: ${{ env.bump }}
+        uses: actions/checkout@v2
+        with:
+         repository: cryoem/eman-feedstock
+         token: ${{ secrets.EMAN_DEV_TOKEN }}
+
+      - name: Update version in eman-feedstock
+        if: ${{ env.bump }}
+        run: |
+          sed -i 's/set\s*version\s*=\s*"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"/set version = "${{ env.new_version }}"/' recipe/meta.yaml
+          sed -i 's/set\s*build\s*=\s*[0-9][0-9]*/set build = 0/' recipe/meta.yaml
+
+          git add recipe/meta.yaml
+          git commit -m v${{ env.new_version }}
+          git push origin master

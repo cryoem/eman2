@@ -107,7 +107,7 @@ namespace EMAN {
 		int linenum;
 		string desc;
 		string objname;
-		static string msg;
+		static string msg;		// while not completely threadsafe, without this the error string doesn't persist long enough and Python exception string is garbage
     };
 
 

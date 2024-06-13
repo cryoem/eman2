@@ -92,7 +92,7 @@ def main():
 		
 		for ii in range(len(xfsnp)):
 			vol, wt=do_insert(xfsnp[ii], data_cpx[ii], vol, wt)
-			if ii%200==0: print(ip+ii, time.time()-t0, end='\r')
+			if ii%200==0: print(ip+ii, time.time()-time0, end='\r')
 
 	v=vol.numpy()
 	w=wt.numpy()

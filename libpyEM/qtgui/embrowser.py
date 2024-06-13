@@ -63,8 +63,8 @@ def display_error(msg) :
 
 # This is a floating point number-finding regular expression
 # Documentation: https://regex101.com/r/68zUsE/4/
-renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
-
+#renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
+renumfind = re.compile(r"-?\d*\.?\d+[eE]?-?\d*")
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
 	"""Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value"""
@@ -846,7 +846,9 @@ class EMTextFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+#		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		try: s=header.decode("utf-8")
+		except: return False
 
 		try : size = os.stat(path)[6]
 		except : return False
@@ -880,7 +882,10 @@ class EMHTMLFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+
+		try: s=header.decode("utf-8")
+		except: return False
+#		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		if isinstance(header, bytes):
 			header=header.decode("utf-8")
 		if not "<html>" in header.lower() : return False # For the moment, we demand an <html> tag somewhere in the first 4k
@@ -979,8 +984,7 @@ class EMPlotFileType(EMFileType) :
 	@staticmethod
 	def isValid(path, header) :
 		"""Returns (size, n, dim) if the referenced path is a file of this type, None if not valid. The first 4k block of data from the file is provided as well to avoid unnecessary file access."""
-		try:
-			if not isprint(header) : return False
+		try: s=header.decode("utf-8")
 		except: return False
 
 		# We need to try to count the columns in the file
@@ -995,7 +999,10 @@ class EMPlotFileType(EMFileType) :
 				return (os.stat(path)[6], '-', 'big')
 			numc=renumfind.findall(l)
 
-			numc = len([float(i) for i in numc])		# number of numeric columns
+			try:
+				numc = len([float(i) for i in numc])		# number of numeric columns
+			except:
+				break
 
 			if numc > 0 : break			# just finding the number of columns
 
@@ -1930,7 +1937,9 @@ class EMPDBFileType(EMFileType):
 		ext = os.path.basename(path).split('.')[-1]
 		if ext not in proper_exts: return False
 		
-		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
+		try: s=header.decode("utf-8")
+		except: return False
+#		if not isprint(header) : return False			# demand printable Ascii. FIXME: what about unicode ?
 		
 		try : size = os.stat(path)[6]
 		except : return False
@@ -3634,6 +3643,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 	
 	def __init__(self, parent = None,nimg = 1) :
 		QtWidgets.QDialog.__init__(self,parent)
+		nimg=int(nimg)
 		
 		self.setWindowTitle("Slice Parameters")
 
@@ -3656,7 +3666,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 			self.fol.addRow("Last Image #:",self.wspinmax)
 
 			self.wspinstep=QtWidgets.QSpinBox()
-			self.wspinstep.setRange(1,nimg/2)
+			self.wspinstep.setRange(1,nimg//2)
 			self.wspinstep.setValue(1)
 			self.wspinstep.setToolTip("Step for range of volumes to display (partial display of file)")
 			self.fol.addRow("Step:",self.wspinstep)

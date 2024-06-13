@@ -15,6 +15,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="number of iteration. default is 5", default=5)
 	parser.add_argument("--npatch", type=int,help="number of patches. default is 8", default=8)
 	parser.add_argument("--maxres", type=float,help="max resolution to consider in refinement. i.e. the alignment will not use information beyond this even if FSC goes further.", default=4.)
+	parser.add_argument("--minres", type=float,help="minimum resolution for comparision.", default=25.)
 	parser.add_argument("--startres", type=float,help="start resolution.", default=-1)
 	parser.add_argument("--expandsym", type=str,help="symmetry expansion. i.e. start from an input refinement with the given symmetry and perform the new refinement with c1 by making copies of each particle at symmetrical equivalent positions. ", default=None)
 	parser.add_argument("--masktight", action="store_true", default=False ,help="Use tight patch mask instead of spherical ones. seems safe.")
@@ -24,6 +25,7 @@ def main():
 	parser.add_argument("--l2_weight", type=float, help="weighting factor for L2. default is 1",default=1.)
 	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=25000)
 	parser.add_argument("--storexf", action="store_true", default=False ,help="store the transform after refinement and start from the transform in the last iteration each time.")
+	parser.add_argument("--thread", type=int,help="thread for 3d reconstruction", default=32)
 
 	# parser.add_argument("--recover",action="store_true", default=False ,help="continue previous crashed refinement")
 
@@ -62,13 +64,13 @@ def main():
 			if options.expandsym:
 				run(f"e2proclst.py {path}/ptcls_00_{eo}.lst --sym {options.expandsym}")
 			
-			run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_{eo}.hdf --parallel thread:32 --keep 1 --sym c1")
+			run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_{eo}.hdf --parallel thread:{options.thread} --keep 1 --sym c1")
 			e=EMData(f"{path}/threed_{iiter:02d}_{eo}.hdf")
 			e.write_image(f"{path}/threed_{iiter:02d}_raw_{eo}.hdf")
 			
 		e=EMData(f"{oldpath}/mask.hdf")
 		e.write_image(f"{path}/mask_00.hdf")
-		run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread 32 --setsf sf.txt --align --mask {path}/mask_00.hdf")
+		run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread {options.thread} --setsf sf.txt --align --mask {path}/mask_00.hdf")
 		
 		
 		#### make masks
@@ -89,7 +91,7 @@ def main():
 					print(ps.shape)
 					np.savetxt(f"{path}/model_tmp.txt", ps)
 					run(f"e2gmm_refine_new.py --ptclsin {oldpath}/projections_even.hdf  --model {path}/model_tmp.txt --maxres -1 --modelout {path}/model_tmp.txt --niter 0 --trainmodel --evalmodel {path}/model_projs.hdf")
-					run(f"e2spa_make3d.py --input {path}/model_projs.hdf --output {path}/model_avg.hdf --thread 32")
+					run(f"e2spa_make3d.py --input {path}/model_projs.hdf --output {path}/model_avg.hdf --thread {options.thread}")
 					e=EMData(f"{path}/model_avg.hdf")
 					e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.25})
 					e.process_inplace("normalize.edgemean")
@@ -151,11 +153,11 @@ def main():
 			etc=""
 			if options.storexf: etc+=f" --xf_file {path}/xf_{eo}.hdf"
 			
-			run(f"e2gmm_batch.py 'e2gmm_rigidbody.py --ptclsin {path}/ptcls_00_{eo}.lst --ptclsout {path}/ptcls_{iiter:02d}_{eo}.lst --model {path}/model_{iiter-1:02d}_{eo}.txt --mask {masks} --maxres {res} --l2_weight {options.l2_weight} {etc}' --batch {options.chunksize} --niter 0")
+			run(f"e2gmm_batch.py 'e2gmm_rigidbody.py --ptclsin {path}/ptcls_00_{eo}.lst --ptclsout {path}/ptcls_{iiter:02d}_{eo}.lst --model {path}/model_{iiter-1:02d}_{eo}.txt --mask {masks} --maxres {res} --l2_weight {options.l2_weight} --minres {options.minres} {etc}' --batch {options.chunksize} --niter 0")
 		
 			
 			for pid in range(options.npatch):
-				run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_p{pid:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_p{pid:02d}_{eo}.hdf --parallel thread:32 --keep 1 --sym c1")
+				run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_p{pid:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_p{pid:02d}_{eo}.hdf --parallel thread:{options.thread} --keep 1 --sym c1")
 		
 			
 			#### merge patches here
@@ -186,11 +188,11 @@ def main():
 			avg.write_image(f"{path}/threed_raw_{eo}.hdf")
 			
 			
-		run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread 32 --setsf sf.txt --align --mask {path}/mask_00.hdf")
+		run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread {options.thread} --setsf sf.txt --align --mask {path}/mask_00.hdf")
 			
 		rr=options.maxres*resmult[iiter+1]
 		for eo in ["even","odd"]:
-			run(f"e2project3d.py {path}/threed_{iiter:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:32")
+			run(f"e2project3d.py {path}/threed_{iiter:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:{options.thread}")
 			
 			run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{iiter-1:02d}_even.txt --maxres {rr} --modelout {path}/model_{iiter:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 			
