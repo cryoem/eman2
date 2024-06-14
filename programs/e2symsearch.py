@@ -69,9 +69,9 @@ def main():
 	ref.process_inplace("xform.fourierorigin.tocenter")
 	
 	xf=Transform()
-	astep=7.4
+	astep=10
 	symx=Symmetries.get('c1')
-	xfcrs=symx.gen_orientations("eman",{"delta":astep,"inc_mirror":1})
+	xfcrs=symx.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 	score=[]
 	nsym=xf.get_nsym(sym)
 	t0=Transform()
@@ -125,36 +125,21 @@ def main():
 		
 	
 	a=EMData(fname)
-	c=c*a["nx"]/sz
-	a.process_inplace("xform", {"tx":-c[0], "ty":-c[1], "tz":-c[2]})
-
-	ref=a.do_fft()
-	ref.process_inplace("xform.phaseorigin.tocenter")
-	ref.process_inplace("xform.fourierorigin.tocenter")
-
+	a.process_inplace("xform.centeracf")
+	ref=a.copy()
 	x0=xfrefine[np.argmin(score)].copy()
-	x0[3:]*=scale
-	xf=Transform({"type":"xyz", "xtilt":x0[0], "ytilt":x0[1], "ztilt":x0[2]})
-	xf.set_trans(x0[3],x0[4],x0[5])
-	
-	res=minimize(test_rot, x0, method='Powell', 
-				options={'ftol': 1e-3, 'disp': False, "maxiter":40})
-	score.append(res.fun)
+	x=x0
+	res=minimize(test_rot_refine, x0, method='Powell', options={'ftol': 1e-3, 'disp': True, "maxiter":40})
 	x=res.x
-	xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2]})
-	xf.set_trans(x[3],x[4],x[5])
-	print(test_rot(x0), test_rot(x))
+	xf=Transform({"type":"xyz", "xtilt":x[0], "ytilt":x[1], "ztilt":x[2],"tx":x[3],"ty":x[4],"tz":x[5]})
+	print(test_rot_refine(x0), test_rot_refine(x))
 		
 	a=EMData(fname)
-	t=Transform({"type":"eman", "tx":-c[0], "ty":-c[1], "tz":-c[2]})
-	xf=xf*t
 	a.process_inplace("xform",{"transform":xf})
 	print(xf)
 	a["xform.align3d"]=xf
-	#outname=fname[:-4]+"_sym.hdf"
-	#a.write_image(outname)
 	if options.applysym:
-		a.process_inplace("xform.applysym", {"averager":"mean.tomo", "sym":sym})
+		a.process_inplace("xform.applysym", {"averager":"mean", "sym":sym})
 	outname=fname[:-4]+"_sym.hdf"
 	a.write_image(outname)
 	print("Done. Output written to {}".format(outname))

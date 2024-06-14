@@ -123,6 +123,8 @@ def main():
 		
 		last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
 		last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
+		l=load_lst_params(last2d, [0])
+		if "dxf" not in l: last2d=None
 		
 		if os.path.isfile(f"{path}/0_spt_gathermeta_params.json"):
 			print("Loading from existing metadata..")

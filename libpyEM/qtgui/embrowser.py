@@ -95,7 +95,8 @@ def size_sortable(s):
 def isprint(s) :
 	"""returns True if the string contains only printable ascii characters"""
 	# Seems like no isprint() in python, this does basically the same thing
-	s=s.decode("utf-8")
+	try: s=s.decode("utf-8")
+	except: return False
 	mpd = s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
 
 	if "A" in mpd :

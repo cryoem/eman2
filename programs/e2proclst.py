@@ -87,6 +87,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
 
+	parser.add_argument("--getptcls", action="store_true", default=False, help="Get particles from input 2D class averages and put them in a lst specified in --create")
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 	parser.add_argument("--scalexf", type=float, help="scale the translation in xform in header.",default=-1)
 
@@ -238,6 +239,24 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					print(i,lstref[i]["src"],lstref[i]["idx"], "missing")
 					exit()
 			save_lst_params(lstout, options.create)
+			
+		elif options.getptcls:
+			lst_all=[]
+			for fname in args:
+				imgs=EMData.read_images(fname, [], IMAGE_UNKNOWN, True)
+				keys=set()
+				for m in imgs:
+					lst=load_lst_params(m["class_ptcl_src"], m["class_ptcl_idxs"])
+					kk=["{}@@@{}".format(l["src"], l["idx"]) for l in lst]
+					keys.update(kk)
+					
+				print(f"{fname} - {len(keys)} particles")
+				
+				ks=[k.split("@@@") for k in sorted(keys)]
+				lout=[{"src":k[0], "idx":k[1]} for k in ks]
+				lst_all.extend(lout)
+				
+			save_lst_params(lst_all, options.create)
 			
 		else:
 			for f in args:
