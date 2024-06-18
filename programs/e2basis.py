@@ -33,9 +33,12 @@
 from builtins import range
 from EMAN2 import *
 from math import *
+import numpy as np
 import time
 import os
 import sys
+from EMAN2PAR import EMTaskCustomer
+from EMAN2jsondb import JSTask
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -70,7 +73,8 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n",type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is None. only support projectrot with oneout", default=None)
+
 	#parser.add_argument("--gui",action="store_true",help="Start the GUI for interactive boxing",default=False)
 	#parser.add_argument("--boxsize","-B",type=int,help="Box size in pixels",default=-1)
 	#parser.add_argument("--dbin","-D",type=str,help="Filename to read an existing box database from",default=None)
@@ -207,7 +211,50 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 		
 		# outer loop over images to be projected
 		n=EMUtil.get_image_count(args[2])
-		if options.oneout:
+		if options.parallel!=None:
+			
+			print("Initializing parallelism...")
+			etc=EMTaskCustomer(options.parallel, module="e2basis.SpaBasisTask")	
+			num_cpus = etc.cpu_est()
+			
+			print("{} particles".format(n))
+			print("{} total CPUs available".format(num_cpus))
+			
+			nbatch=min(n, num_cpus)
+			infos=[list(range(i,n,nbatch)) for i in range(nbatch)]
+				
+			print("{} jobs, each with {:.1f} particles".format(len(infos), np.mean([len(i) for i in infos])))
+			
+			tids=[]
+			for info in infos:
+				task = SpaBasisTask(info, args[2], args[1], args[3], options)
+				tid=etc.send_task(task)
+				tids.append(tid)
+			
+			while 1:
+				st_vals = etc.check_task(tids)
+				if -100 in st_vals:
+					print("Error occurs in parallelism. Exit")
+					return
+				E2progress(logid, np.mean(st_vals)/100.)
+				
+				if np.min(st_vals) == 100: break
+				time.sleep(5)
+			
+			output=[None]*n
+			for i in tids:
+				ret=etc.get_results(i)[1]
+				for r in ret:
+					output[r[0]]=r[1]
+			
+			del etc
+			out=np.array(output, dtype=np.float32)
+			# print(out)
+			o=from_numpy(out.copy()).copy()
+			o["isvector"]=1
+			o.write_image(args[4])
+			
+		elif options.oneout:
 			proj=EMData(len(basis)+4,n,1)
 			if options.recalcmean:
 				mean=EMData(args[2],0)
@@ -330,6 +377,68 @@ projectrot <basis input> <image input> <simmx input> <projection output>
 	else: print("Valid commands are project and projectrot")
 	
 	E2end(logid)
+
+class SpaBasisTask(JSTask):
+	
+	
+	def __init__(self, info, ptcls, basis, simmx, options):
+		
+		data={"info":info}
+		JSTask.__init__(self,"SpaBasisTask",data,{},"")
+		self.options=options
+		self.simmx=simmx
+		self.ptcls=ptcls
+		self.basis=basis
+	
+	def execute(self, callback):
+		time0=time.time()
+		options=self.options
+		data=self.data
+				
+		simmx=EMData(self.simmx,0)
+		simdx=EMData(self.simmx,1)
+		simdy=EMData(self.simmx,2)
+		simda=EMData(self.simmx,3)
+		simflip=EMData(self.simmx,4)
+	
+		basis=EMData.read_images(self.basis)
+		mean=basis[0]
+		basis=basis[1:]
+		# proj=EMData(len(basis)+4,n,1)
+		rets=[]
+		for i in data["info"]:
+			im=EMData(self.ptcls,i)
+			
+			# find the best orientation from the similarity matrix, and apply the transformation
+			best=[1.0e23,0,0,0,0]
+			
+			for j in range(simmx.get_xsize()): 
+				if simmx.get(j,i)<best[0] : best=(simmx.get(j,i),simdx.get(j,i),simdy.get(j,i),simda.get(j,i),simflip.get(j,i))
+			
+			im.transform(Transform({"type":"2d","alpha":best[3],"tx":best[1],"ty":best[2],"mirror":int(best[4])}))
+			im-=mean
+			
+			# inner loop over the basis images to generate the components of the projection vector
+			l=0
+			proj=list(best[1:])
+			
+			for j,b in enumerate(basis):
+				p=im.cmp("dot",b,{"normalize":options.normcomponent,"negative":0})
+				proj.append(p)
+				l+=p**2
+
+			if options.normproj :
+				l=sqrt(l)
+				for j in range(len(basis)): proj[j+4]/=l
+			
+			
+			rets.append((i, proj))
+			callback(100*float(len(rets)/len(self.data["info"])))
+			
+		# print(rets)
+		return rets
+
+
 
 if __name__== "__main__":
 	main()

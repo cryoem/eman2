@@ -18,9 +18,11 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--init", type=str,help="initial averages", default=None)
 	parser.add_argument("--ncls", type=int,help="number of classes", default=64)
-	parser.add_argument("--aliref", type=int,help="number of alignment references", default=5)
+	parser.add_argument("--startiter", type=int,help="starting iteration", default=0)
+	parser.add_argument("--aliref", type=int,help="number of alignment references", default=10)
 	parser.add_argument("--maxres", type=float,help="max resolution", default=5)
-	parser.add_argument("--niter", type=float,help="number of iterations", default=8)
+	parser.add_argument("--niter", type=float,help="number of iterations", default=6)
+	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:32")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -28,7 +30,8 @@ def main():
 	#### structure factor for sharpening
 	s=np.loadtxt(options.setsf)
 	x=np.arange(len(s))
-	y=np.tanh(x*.05)
+	y=np.tanh(x*.1)
+	s[:,1]-=np.min(s[:,1])
 	s[:,1]*=y
 
 	s[:,1]/=np.max(s[:,1])
@@ -53,7 +56,7 @@ def main():
 	print(cutoff)
 	maxalires=max(options.maxres, 10)
 	
-	for itr in range(options.niter):
+	for itr in range(options.startiter, options.niter):
 		
 		fname=f"{path}/classes_{itr:02d}.hdf"
 		n=EMUtil.get_image_count(fname)
@@ -61,9 +64,9 @@ def main():
 
 		for i in range(n):
 			data=EMData(fname,i)
-			# data.process_inplace("normalize.circlemean",{"radius":-10})
-			data.process_inplace("normalize.edgemean")
-			data.process_inplace("mask.soft",{"outer_radius":-16})
+			data.process_inplace("normalize.circlemean",{"radius":-10})
+			# data.process_inplace("normalize.edgemean")
+			data.process_inplace("mask.soft",{"outer_radius":-8})
 			# data.process_inplace("filter.matchto",{"to":ref,"interpolate":1,"keephires":1})
 			data.process_inplace("filter.setstrucfac",{"apix":data["apix_x"],"strucfac":sf})
 			data.process_inplace("filter.lowpass.gauss",{"cutoff_abs":cutoff[itr]})
@@ -163,10 +166,10 @@ def main():
 			e.write_image(f"{path}/aliref_{itr:02d}.hdf", i)
 
 		####
-		e2simmxcmd = f"e2simmx.py {path}/aliref_{itr:02d}.hdf {ptcls} {path}/simmx_{itr:02d}.hdf --saveali --cmp=frc --align=rotate_translate_tree:maxres={options.maxres} --aligncmp=frc:maxres={options.maxres} --parallel thread:64"
+		e2simmxcmd = f"e2simmx.py {path}/aliref_{itr:02d}.hdf {ptcls} {path}/simmx_{itr:02d}.hdf --saveali --cmp=frc --align=rotate_translate_tree:maxres={options.maxres} --aligncmp=frc:maxres={options.maxres} --parallel {options.parallel}"
 		run(e2simmxcmd)
 		
-		run(f"e2basis.py projectrot {path}/basis_{itr:02d}.hdf {ptcls} {path}/simmx_{itr:02d}.hdf {path}/input_{itr+1:02d}_proj.hdf --oneout --mean1 --normproj")
+		run(f"e2basis.py projectrot {path}/basis_{itr:02d}.hdf {ptcls} {path}/simmx_{itr:02d}.hdf {path}/input_{itr+1:02d}_proj.hdf --oneout --mean1 --normproj --parallel {options.parallel}")
 		
 		####
 		e=EMData(f"{path}/input_{itr+1:02d}_proj.hdf")
@@ -195,7 +198,7 @@ def main():
 			a=from_numpy(tosv[:,[i]])
 			a.write_image(clsmx, i)
 			
-		run(f"e2classaverage.py --input={ptcls} --classmx={clsmx} --output={path}/classes_{itr+1:02d}.hdf --center xform.centerofmass --iter=5 --align=rotate_translate_tree:maxres={options.maxres} --averager=mean  --keep=.8 --cmp=frc --aligncmp=frc:maxres={options.maxres} --parallel thread:64 --resultmx {path}/resultmx_{itr+1:02d}.hdf")
+		run(f"e2classaverage.py --input={ptcls} --classmx={clsmx} --output={path}/classes_{itr+1:02d}.hdf --center xform.centerofmass --iter=5 --align=rotate_translate_tree:maxres={options.maxres} --averager=mean  --keep=.8 --cmp=frc --aligncmp=frc:maxres={options.maxres} --parallel {options.parallel} --resultmx {path}/resultmx_{itr+1:02d}.hdf")
 		
 		
 	
