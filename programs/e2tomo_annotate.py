@@ -42,6 +42,9 @@ from matplotlib.patches import Circle
 import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
+import queue
+from scipy.spatial import KDTree
+
 def main():
 	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
 	 still developing
