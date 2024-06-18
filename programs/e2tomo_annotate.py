@@ -505,7 +505,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 		self.assisted_tab.addTab(self.subtom_tab,"SubTomogram")
-		self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
+		#self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
 		self.assisted_tab.addTab(self.templ_tab,"Template")
 
 		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
@@ -524,7 +524,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
 		#self.test_button.setCheckable(True)
-		#self.button_gbl.addWidget(self.test_button,6,0,1,1)
+		self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
 
 
@@ -2735,7 +2735,10 @@ class UNet():
 		print('-'*30)
 		self.model.fit(self.datas, self.labels, batch_size=batch_sz, epochs=no_epoch,verbose=1, shuffle=True,validation_split=val_split,callbacks=[model_checkpoint])
 		#return model,history
-		print("Done training model. Network saved to",weights_out)
+		# pred =   self.model.predict(self.datas, verbose=1)
+		# outname = self.weights_out[:-7]+"_pred.hdf"
+		#self.stack_outfile(self.datas,self.labels,pred,outfile=outname)
+		print("Done training model. Network saved to",self.weights_out)
 
 	def load_model(self,weights_in, tiny=False):
 		if tiny:
@@ -2752,11 +2755,13 @@ class UNet():
 		if tomogram==None:
 			print("Need to specify tomogram to apply U-net")
 			return
-		if not os.path.exists("./neural_nets/weights_temp.h5"):
-			print("There's no neural networks trained for this tomogram. Train a neural net first")
-			return
-		else:
-			pass
+		#if not os.path.exists("./neural_nets/weights_temp.h5"):
+		print("Load nnet", weights_in)
+		# if not os.path.exists(weights_in):
+		# 	print("There's no neural networks trained for this tomogram. Train a neural net first")
+		# 	return
+		# else:
+		# 	pass
 		is3d=True
 		enx,eny=tomogram["nx"], tomogram["ny"]
 		nframe=tomogram["nz"]
@@ -2768,7 +2773,6 @@ class UNet():
 		tomo_in=[]
 		for nf in range(nframe):
 			if enx %2 ==1:
-
 				e0=tomogram.get_clip(Region((enx-1-tsz)//2,(eny-1-tsz)//2,nf,tsz,tsz,1))
 			else:
 				e0=tomogram.get_clip(Region((enx-tsz)//2,(eny-tsz)//2,nf,tsz,tsz,1))
@@ -2813,6 +2817,24 @@ class UNet():
 		out = from_numpy(out_array)
 		out.write_image(outfile)
 		return
+
+	def predict_unet(self,test_data, test_labels,test_label_outfile,weights_in,pred_dir=None):
+		print('-'*30)
+		print('Loading and preprocessing test data...')
+		print('Loading saved weights...')
+		print('-'*30)
+		model = load_model(weights_in)
+
+		print('-'*30)
+		print('Predicting masks on test data...')
+		print('-'*30)
+		imgs_label_test = model.predict(test_data, verbose=1)
+		#print(model.evaluate(test_data,test_labels))
+		# np.save(test_label_outfile, imgs_label_test)
+		# print('-' * 30)
+		# print('Saving predicted masks to files...')
+		# print('-' * 30)
+		return imgs_label_test
 
 
 class Simple_NNet_Tab(QtWidgets.QWidget):
@@ -3544,7 +3566,8 @@ class NNet_Tab(QtWidgets.QWidget):
 			print("No trainset file detected in the ./particles folder. Abort")
 		else:
 			pass
-		self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
+		#self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
+		self.unet = UNet(infile=trainset_path)
 		print("Initialize Unet")
 		try:
 			os.listdir('./neural_nets')
@@ -3990,7 +4013,7 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.bin_detect_bt = QtWidgets.QPushButton("Detect Feature")
 		self.bin_fill_bt = QtWidgets.QPushButton("Fill")
 		self.bin_trim_bt = QtWidgets.QPushButton("Trim")
-		self.bin_low_pass_vs = ValSlider(value=5,rng=(0.001,5),rounding=2,label= "Cut-off Abs")
+		self.bin_low_pass_vs = ValSlider(value=10,rng=(0.001,50),rounding=0,label= "Lp Res     ")
 		self.bin_threshold_vs = ValSlider(value=0.001,rng=(0.001,5),rounding=2,label="Threshold  ")
 		self.closing_n_iters =1
 		self.opening_n_iters =1
@@ -4079,7 +4102,7 @@ class Binary_Tab(QtWidgets.QWidget):
 			return
 
 		self.mask = EMData("ori_detect.hdf")
-		lp = self.bin_low_pass_vs.value
+		lp = 1/self.bin_low_pass_vs.value
 		thres = self.bin_threshold_vs.value
 		lp_masked = mult*self.mask*self.target.get_data().process("filter.lowpass.gauss",{"cutoff_abs":lp})
 		mask = lp_masked.process("threshold.binary",{"value":thres})
@@ -4111,6 +4134,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.insert_vol_le = QtWidgets.QLineEdit()
 		self.insert_vol_browser_bt = QtWidgets.QPushButton("Browse ")
 		self.insert_vol_bt = QtWidgets.QPushButton("Insert Mask")
+		#self.draw_peaks_bt = QtWidgets.QPushButton("Draw Peaks")
 		self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
 		self.apply_mw.setChecked(False)
 
@@ -4119,6 +4143,8 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.tmplt_npeaks_le.setText("20")
 		self.tmplt_dthr_le = QtWidgets.QLineEdit()
 		self.tmplt_dthr_le.setText("20")
+		# self.tmplt_cccthr_le = QtWidgets.QLineEdit()
+		# self.tmplt_cccthr_le.setText("20")
 		self.tmplt_minvol_vs = ValSlider(value=20,rng=(0,1000),rounding=-1,label="minvol   ",labelwidth=56)
 		self.tmplt_minvol_vs.setIntonly(1)
 		self.tmplt_cccthr_vs = ValSlider(value=3.0,rng=(0.00,5.0),rounding=2,label="ccc fac  ",labelwidth=56)
@@ -4141,11 +4167,21 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		templ_gbl.addWidget(QtWidgets.QLabel("threads"),3,2,1,1)
 		templ_gbl.addWidget(self.tmplt_nthrds_le,3,3,1,1)
 
+		#templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
+		#templ_gbl.addWidget(self.apply_mw,4,0,1,2)
+		#templ_gbl.addWidget(self.show_initxf_bt,4,0,1,2)
 		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,2,1,1)
 		templ_gbl.addWidget(self.tmplt_npeaks_le,4,3,1,1)
+		#templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
 		templ_gbl.addWidget(self.tmplt_cccthr_vs,5,0,1,4)
+		#templ_gbl.addWidget(QtWidgets.QLabel("dist thr"),4,2,1,1)
+		#templ_gbl.addWidget(self.tmplt_dthr_le,4,3,1,1)
+		#templ_gbl.addWidget(self.tmplt_minvol_vs,5,0,1,4)
+
 		templ_gbl.addWidget(self.calc_ccm_bt,2,4,1,1)
 		templ_gbl.addWidget(self.show_ccm_bt,3,4,1,1)
+		#templ_gbl.addWidget(self.find_peaks_bt,4,0,1,1)
+		#templ_gbl.addWidget(self.draw_peaks_bt,4,1,1,1)
 		templ_gbl.addWidget(self.do_local_search_bt,4,4,1,1)
 		templ_gbl.addWidget(QtWidgets.QLabel("Segment particles"),6,0,1,5)
 		templ_gbl.addWidget(self.insert_vol_bt,8,4,1,1)
@@ -4164,7 +4200,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.setLayout(templ_gbl)
 		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
 		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
+		#self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
 		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_to_show)
+		#self.draw_peaks_bt.clicked[bool].connect(self.draw_peaks_on_tomo)
+
 		self.show_peaks_bt.clicked[bool].connect(self.show_peaks)
 		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_thrds)
 		self.insert_vol_bt.clicked[bool].connect(self.insert_vol)
@@ -4182,11 +4221,15 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 				r.clip_inplace(tomo_reg)
 				r.process_inplace("normalize")
 				f_ref = r.do_fft()
-				# if self.apply_mw.isChecked():
-				# 	mask_ref = f_ref.numpy()*tomo_mask.numpy()
-				# 	rev_r = from_numpy(mask_ref)
-				# else:
-				# 	rev_r = f_ref
+				# f_ref.process_inplace("xform.phaseorigin.tocenter")
+				# f_ref.process_inplace("xform.fourierorigin.tocenter")
+				if self.apply_mw.isChecked():
+
+					mask_ref = f_ref.numpy()*tomo_mask.numpy()
+					rev_r = from_numpy(mask_ref)
+
+				else:
+					rev_r = f_ref
 				cf=f_tomo.calc_ccf(rev_r)
 				#cf.process_inplace("normalize")
 				jsd.put(cf)
@@ -4202,6 +4245,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			print("Specify template to calc cross correlation.")
 			return
 		oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt,"inc_mirror":1})
+
+		#print(sym, dt, shrink, oris, tomo.get_sizes(), ref.get_sizes())
+		#processing tempt and tomo
 		if shrink > 1:
 			tomo.process_inplace("math.fft.resample",{'n':shrink})
 
@@ -4265,6 +4311,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		ccc.process_inplace("filter.highpass.gauss",{"cutoff_pixels":24})
 		ccc.process_inplace("normalize.edgemean")
 		ccc.write_compressed("tmp_ccc_nomsk.hdf",0,12)
+		#ccc.process_inplace("threshold.belowtozero")
+		# ccc_np = ccc.numpy().copy()
+		# ccc_np[np.where(owner_id.numpy()==0)]=0
 		ccc_mask = owner_id.process("threshold.binary",{"value":0.5})
 
 		ccc *= ccc_mask
@@ -4356,6 +4405,15 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		mask[:,:,0] = 1
 		mask[:,:,-1] = 1
 		mask[:,:,1:-1] = f_amp.process("threshold.binary",{"value":cut_off}).numpy()
+		# for i in range(f_amp.shape[1]):
+		# 	try:
+		# 		#a = f_tomo_copy.get_fft_amplitude().numpy()[:,i,:].astype(float)
+		# 		a= f_amp[:,i,:]
+		# 		mask[:,i,1:-1] = self.find_boundary(a,cut_off=cut_off)
+		# 	except Exception as e :
+		# 		print(e)
+		# 		print("fft_amp is all zeros at y=",i)
+		# 		continue
 		return from_numpy(mask)
 
 	def show_ccm(self):
@@ -4371,6 +4429,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 	def find_peaks_amp(self,npks=100):
 		try:
+			# if npks == -1:
+			#n_peaks = int(self.tmplt_npeaks_le.text())
+			# else:
 			n_peaks = npks
 			nbin = int(self.tmplt_nshrink_le.text())
 			ccc_fac = float(self.tmplt_cccthr_vs.value)
@@ -4384,8 +4445,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		cx,cy,cz = ccc_hdr.get_sizes()
 
 		bsz = rx // (nbin*mbin)
+		#ccc = EMData(self.ccc_file).get_clip(Region(bsz//2,bsz//2,bsz//2,cx-bsz,cy-bsz,cz-bsz)).get_clip(Region(-bsz//2,-bsz//2,-bsz//2,cx,cy,cz))
 		ccc = EMData(self.ccc_file).process("mask.zeroedge3d",{"x0":bsz//2,"x1":bsz//2,"y0":bsz//2,"y1":bsz//2,"z0":bsz//2,"z1":bsz//2})
 		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+		#ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
 
 		print("Set border of ccc matrix to zero to avoid peaks too close to the border")
 		mean=float(ccc.get_attr("mean"))
@@ -4402,6 +4465,16 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		xfs = [oris[int(initxf[(peak.x,peak.y,peak.z)])] for peak in peaks]
 
 
+		# xfs = [oris[int(initxf[pt])] for pt in pts]
+		# xform_pts = []
+		# for i,xf in enumerate(xfs):
+		# 	if xf.get_params("eman") != Transform().get_params("eman"):
+		# 		xform_pts.append(pts[i])
+		# 	else:
+		# 		continue
+
+
+
 		if len(pts) > n_peaks:
 			#print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
 			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
@@ -4412,6 +4485,75 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			print("Find {} peaks at {}".format(len(pts),pts))
 			self.pts = pts
 			self.xfs = xfs
+
+	# def find_peaks(self):
+	# 	img=EMData(self.ccc_file).numpy().copy()
+	#
+	# 	min_vol = int(self.tmplt_minvol_vs.value)
+	# 	if len(self.tmplt_le.text()) > 0:
+	# 		ref_head = EMData(self.tmplt_le.text(), 0,True)
+	# 		rx,ry,rz = ref_head.get_sizes()
+	# 		refvol = rx*ry*rz
+	# 	else:
+	# 		refvol = 100000000
+	#
+	# 	img[img<3]=0
+	# 	lb, nlb=ndi.label(img)
+	#
+	# 	pks=np.array(ndi.maximum_position(img,lb,list(range(1,nlb))))
+	# 	#pks=np.array(ndi.center_of_mass(img,lb,list(range(1,nlb))))
+	# 	pksize=np.array(ndi.sum(img,lb,list(range(1,nlb))))
+	# 	#print(pksize[:50])
+	# 	pks_mask = lb.copy()
+	# 	pks_mask[pks_mask > 0] = 1
+	# 	pks_vol = np.array(ndi.sum(pks_mask, lb, list(range(1, nlb))))
+	# 	n=len(pks)
+	#
+	# 	kpid=np.logical_and(pksize>min_vol, pks_vol<refvol)
+	#
+	# 	pks=pks[kpid]
+	# 	pkscore=pksize[kpid]
+	# 	pks_vol = pks_vol[kpid]
+	# 	srt=np.argsort(-pkscore)
+	# 	pks=pks[srt]
+	# 	pks_vol = pks_vol[srt]
+	# 	pkscore=pkscore[srt]
+	# 	# if np.max(pkscore) != 0:
+	# 	try:
+	# 		pkscore/=np.max(pkscore)
+	# 	except:
+	# 		pass
+	#
+	# 	tree=KDTree(pks)
+	# 	tokeep=np.ones(len(pks), dtype=bool)
+	#
+	# 	dthr = int(self.tmplt_dthr_le.text())
+	# 	n_peaks = int(self.tmplt_npeaks_le.text())
+	# 	nbin = int(self.tmplt_nshrink_le.text())
+	# 	#print(np.min(pks, axis=0), np.max(pks, axis=0), boxsz, dthr)
+	# 	for i in range(len(pks)):
+	# 		if tokeep[i]:
+	# 			k=tree.query_ball_point(pks[i], dthr)
+	# 			tokeep[k]=False
+	# 			tokeep[i]=True
+	# 	pts=pks[tokeep]*nbin
+	# 	scr=pkscore[tokeep]
+	# 	pvolume=pks_vol[tokeep]
+	# 	#options so that peaks are not too close together
+	# 	if len(pts) > n_peaks:
+	# 		print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+	# 		self.pts = pts[:n_peaks]
+	# 	else:
+	# 		print("Find {} peaks at {}".format(len(pts),pts))
+	# 		self.pts = pts
+
+	# def do_search(self, tomo, tempt, jsd, ps):
+	# 	for p in ps:
+	# 		x,y,z= (int(i) for i in p)
+	# 		bs = tempt.get_sizes()[0]
+	# 		subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
+	# 		tempt_a = tempt.align("rotate_translate_3d_tree",subvol)
+	# 		jsd.put((p,tempt_a["xform.align3d"]))
 
 	def save_peaks(self,ccc,pts):
 		outfile = "tmplt_match_ccc_pks.hdf"
@@ -4436,7 +4578,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			except:
 				print("Invalid region at location",x,y,z,".Skip.")
 				continue
-
+		# annotate = EMData(outfile)
+		# self.target.img_view.set_data(self.target.data,annotate)
+		# print("Finishing segmentation")
 	def do_search(self,tomo,tempt,jsd, px_l):
 		for pt_xf in px_l:
 			p = pt_xf[0]
@@ -4451,6 +4595,11 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
 			cf = subvol.calc_ccf(tempt_a)
 			cf_score = np.max(cf.numpy())
+
+			#cf.process_inplace("normalize")
+
+
+			#print(p,"new xf", tempt_a["xform.align3d"])
 			jsd.put((p,tempt_a["xform.align3d"],cf_score))
 
 
@@ -4523,6 +4672,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			pass
 		#print(p_xf_l)
 		p_xf_l=p_xf_l[:n_peaks]
+		# for p_xf in p_xf_l:
+		# 	print(p_xf[0],p_xf[2],"\n")
+
 		self.pts = [p_xf[0] for p_xf in p_xf_l]
 		self.xfs = [p_xf[1] for p_xf in p_xf_l]
 		cfs = [p_xf[2] for p_xf in p_xf_l]
@@ -4568,6 +4720,54 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		# 	view.show()
 		# except Exception as e:
 		# 	print("Cannot show peaks region due to", e)
+		# 	return
+
+	# def draw_peaks_on_tomo(self):
+	#
+	# 	tomo = self.target.get_data()
+	# 	x,y,z= tomo.get_sizes()
+	#
+	# 	xf= Transform({'tx':-x//2,'ty':-y//2,'tz':-z//2,'mirror':0,'scale':1.0000,'type':'eman'})
+	# 	pks_plt=EMScatterPlot3D(transform=xf)
+	# 	pks_em = EMData("tmplt_match_local_pks.hdf")
+	# 	ccc = EMData("tmplt_match_ccc.hdf")
+	# 	nunbin = 1/int(self.tmplt_nshrink_le.text())
+	# 	ccc.process_inplace("math.fft.resample",{'n':nunbin})
+	# 	pks = pks_em.numpy().copy() #.transpose()
+	#
+	#
+	# 	# try:
+	# 	# 	pks[3] = 2*(pks[3]-min(pks[3]))/(max(pks[3])-min(pks[3]))
+	# 	# except:
+	# 	# 	pass
+	#
+	# 	try:
+	# 		tempt_hdr = EMData(self.tmplt_le.text(),0,True)
+	# 		mbin=tomo["apix_x"]/tempt_hdr["apix_x"]
+	# 		pks_sz = int(0.7*(tempt_hdr["nx"]/mbin)//2)
+	# 	except:
+	# 		pks_sz = 8
+	#
+	# 	print("LEN PKS",len(pks))
+	#
+	# 	for pts in pks:
+	# 		xrot, yrot, zrot = self.target.img_view.reverse_transform_point([pts[0],pts[1],self.target.img_view.nz//2+pts[2]], self.target.img_view.get_xform())
+	# 		xform=Transform({"type":"eman","alt":self.target.img_view.alt,"az":self.target.img_view.az,"tx":self.target.img_view.nx//2+xrot,"ty":self.target.img_view.ny//2+yrot,"tz":self.target.img_view.nz//2+zrot})
+	# 		subvol=self.target.img_view.get_full_annotation().get_rotated_clip(xform,(2*pks_sz,2*pks_sz,2*pks_sz),0)
+	# 		#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+	# 		fill_vol = subvol.process("mask.paint",{"x":pks_sz,"y":pks_sz,"z":pks_sz,"r1":pks_sz,"v1":4,"r2":pks_sz,"v2":4})
+	# 		#self.img_view.full_annotation.set_rotated_clip(xform,value*subvol.process("threshold.binaryrange",{"high":value+0.1,"low":value-0.1}))
+	# 		self.target.img_view.full_annotation.set_rotated_clip(xform,fill_vol)
+	# 	self.target.img_view.force_display_update()
+	# 	self.target.img_view.updateGL()
+
+
+
+
+
+
+	def insert_coarse_masks(self):
+		return
 
 
 	def insert_vol(self):
@@ -4607,6 +4807,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			self.do_local_search_thrds()
 
 
+		#annotate = self.target.get_annotation()
+		#annotate = EMData("tmplt_match_temp_vol.hdf")
+
 		for i,loc in enumerate(self.pts):
 			vol = insert_im.copy()
 			#vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":0.033})
@@ -4622,6 +4825,8 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			#reg = Region(x,y,z,good_szs[0],good_szs[1],good_szs[2])
 
 			try:
+				#current_vol = self.target.get_annotation().get_clip(reg)
+				#current_vol = annotate.get_clip(reg)
 				current_vol = EMData(outfile, 0, False, reg)
 				#current_vol=annotate.get_rotated_clip(Transform(),reg)
 				insert_vol=current_vol.process("math.max",{"with":vol})
@@ -4636,6 +4841,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			except:
 				print("Invalid region at location",x,y,z,".Skip.")
 				continue
+		#annotate = EMData(outfile)
 		self.target.img_view.set_data(self.target.data,EMData(outfile))
 		self.target.img_view.updateGL()
 		print("Finishing segmentation")
@@ -5367,6 +5573,7 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
+		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")
