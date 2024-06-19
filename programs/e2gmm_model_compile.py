@@ -322,38 +322,35 @@ def main():
 	
 	#### RNA backbone...
 	residues=list(pdb.get_residues())
-	# bkb=["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
-	idx_rna_dih=[]
-	for ir, res in enumerate(residues):
-		# print(ir, res)
-		if ir==0: continue
-		dic0=residues[ir-1].child_dict
-		dic1=res.child_dict
-		
-		b0=[dic0[b] for b in ["C5'", "C4'", "C3'", "O3'"]]
-		b1=[dic1[b] for b in ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]]
-		
-		bk=b0+b1
-		bk=[atoms.index(b) for b in bk]
-		
-		dih=[bk[i:i+4] for i in range(7)]
-		
-		idx_rna_dih.append(dih)
-		
-	idx_rna_dih=np.array(idx_rna_dih)
-	# print(idx_rna_dih.shape)
-	idx_rna_dih=idx_rna_dih.reshape((idx_rna_dih.shape[0], -1))
-# 	
-# 	rna={"alpha":0, "beta":1, "gamma":2, "delta":3, "eps":4, "zeta":5}
-# 	dihs_rna_id=list([i for i,d in enumerate(dihs) if dihs_type[i] in rna])
-# 	dihs_rna=dihs[dihs_rna_id]
-# 	dihs_rna_res=[atoms[i].get_parent().get_resname() for i in dihs_rna[:,1]]
-# 	dihs_rna_res=np.array([e2pc.restype_3_to_index[i] for i in dihs_rna_res])
-# 	rna_id=np.array([rna[i] for i in dihs_type[dihs_rna_id]])
-	print("{} RNA backbone angles".format(len(idx_rna_dih)))
+	rid=[r.resname for r in residues]
+	if np.any([a in rid for a in "AUGC"]):
+		print("RNA detected")
 
-	# tosave=np.hstack([dihs_rna, dihs_rna_res[:,None], rna_id[:,None]])
-	np.savetxt(f"{path}/model_dih_rna.txt", idx_rna_dih.astype(int))
+		# bkb=["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+		idx_rna_dih=[]
+		for ir, res in enumerate(residues):
+			# print(ir, res)
+			if ir==0: continue
+			dic0=residues[ir-1].child_dict
+			dic1=res.child_dict
+			
+			b0=[dic0[b] for b in ["C5'", "C4'", "C3'", "O3'"]]
+			b1=[dic1[b] for b in ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]]
+			
+			bk=b0+b1
+			bk=[atoms.index(b) for b in bk]
+			
+			dih=[bk[i:i+4] for i in range(7)]
+			
+			idx_rna_dih.append(dih)
+			
+		idx_rna_dih=np.array(idx_rna_dih)
+		# print(idx_rna_dih.shape)
+		idx_rna_dih=idx_rna_dih.reshape((idx_rna_dih.shape[0], -1))
+		print("{} RNA backbone angles".format(len(idx_rna_dih)))
+
+		# tosave=np.hstack([dihs_rna, dihs_rna_res[:,None], rna_id[:,None]])
+		np.savetxt(f"{path}/model_dih_rna.txt", idx_rna_dih.astype(int))
 	
 	print(f"Done. Parameters written in folder {path}")
 	E2end(logid)
