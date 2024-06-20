@@ -14,7 +14,7 @@ floattype=np.float32
 #### here we import tensorflow at the global scale so @tf.function works
 ##   although how much performance gain we get from @tf.function is questionable...
 ##   so here we need to make a fake tf module for --help so the CI works properly.
-if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0’ 
+if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
 if ('-h' in sys.argv) or ('--help' in sys.argv):
