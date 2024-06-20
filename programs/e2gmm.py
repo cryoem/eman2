@@ -59,7 +59,7 @@ import sklearn.manifold as skmf
 from queue import Queue
 from matplotlib.patches import Circle
 
-if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0’
+if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0'
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 
