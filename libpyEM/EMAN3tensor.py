@@ -245,6 +245,12 @@ class EMStack():
 		if isinstance(target,EMStack3D):
 			return self.tensor*tf.math.conj(target)
 
+	def align_translate(ref,maxshift=-1):
+		"""compute translational alignment of a stack of images to a same sized stack or single reference image.
+		returns array of shifts the same size as the input stack. maxshift limits the maximum search area to +-maxshift
+		on each axis"""
+		pass
+
 	def write_images(self,fsp=None,bits=12):
 		self.coerce_emdata()
 		im_write_compressed(self._data,fsp,0,bits)
@@ -468,6 +474,33 @@ class EMStack2D(EMStack):
 
 		if newsize==self.shape[1]: return EMStack2D(self.tensor) # this won't copy, but since the tensor is constant should be ok?
 		return EMStack2D(tf_downsample_2d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
+	def align_translate(self,ref,maxshift=-1):
+		"""compute translational alignment of a stack of images to a same sized stack (or single) of reference images.
+		returns array of (dy,dx) the same size as the input stack required to bring each "this" image into alignment with "ref". maxshift limits the maximum search area to +-maxshift
+		on each axis. If maxshift is unspecified -> box size //4"""
+
+		ny,nx=self.shape[1:]
+		if self.tensor.dtype==tf.complex64 :
+			nx=(nx-1)*2
+			data=self
+		else:
+			data=self.do_fft()
+			ref=ref.do_fft()
+
+		if maxshift<=0: maxshift=ny//4
+
+		ccfs=data.calc_ccf(ref)
+		ccfsr=ccfs.do_ift()
+		ccfsrc=ccfsr[:,ny//2-maxshift:ny//2+maxshift,nx//2-maxshift:nx//2+maxshift]		# only search a region around the center defined by maxshift
+
+		# reshaped CCF so we can use reduce_max on it
+		ccfsrs=tf.reshape(ccfsrc,(ccfsrc.shape[0],maxshift*2*maxshift*2))
+
+		# The y,x coordinates of the peak location
+		peaks=maxshift-tf.unravel_index(tf.argmax(ccfsrs,1),(maxshift*2,maxshift*2))
+
+		return tf.transpose(peaks)
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
