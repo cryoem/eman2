@@ -571,7 +571,7 @@ class Orientations():
 
 	def to_mx3d(self):
 		"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
-		rotated 3-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+		rotated 3-vectors. Typically used with Gaussians to generate projections.
 
 		To apply to a set of vectors:
 		mx=self.to_mx2d()
@@ -596,7 +596,7 @@ class Orientations():
 		(2*q[0]*q[2]+2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
 		return mx
 
-
+CTF_SIGN={}
 class Gaussians():
 	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Representation is a N x 4 numpy array or tensor (x,y,z,amp) ],
 x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pixels) is applied when generating projections. """
@@ -725,6 +725,86 @@ stddev=0.01"""
 
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+
+	def project_ctf(self,orts,boxsize,apix,defocus,dfrange,tytx=None,cs=2.7,voltage=300,fullsize=-1):
+		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+		orts-must be an Orientations object
+		tytx-is an optional Nx2+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians
+		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
+		dfrange-a tuple of (min defocus,max defocus) in the project
+		cs-The spherical abberation for the project
+		voltage-The voltage of the microscope for the project
+
+		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+		is used for comparisons should be resampled without any "clip" operations.
+		"""
+		global FRC_RADS
+		global CTF_SIGN
+		self.coerce_tensor()
+
+		dfstep=0.01 # TODO: Need to fix this to split properly, this is for single particle (0.5-2)
+		boxstep=dfstep*10000.0/apix
+		proj=tf.zeros((ceil(boxsize/boxstep),boxsize,boxsize))
+		proj2=[]
+		mx=orts.to_mx3d()
+		wl=12.2639/sqrt(voltage*1000.0+0.97845*voltage*voltage)
+		g1=np.pi/2*cs*1.0e7*pow(wl,3)
+		g2=np.pi*wl*10000.0
+		try:
+			ctf_stack=CTF_SIGN[dfrange]
+			if boxsize > ctf_stack.shape[1]: # should only be possible if fullsize was not supplied the first time this dfrange is given
+				raise Exception("Stored ctf smaller than needed boxsize, must recalculate with larger size")
+			ctf_stack=ctf_stack.downsample(boxsize)
+		except:
+			ny=max(fullsize,boxsize)
+			try:
+				rad_img=tf.cast(FRC_RADS[ny],tf.float32)
+			except:
+				rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
+				FRC_RADS[ny]=rad_img
+				rad_img=tf.cast(rad_img, tf.float32)
+			dflist=tf.range(dfrange[0],dfrange[1],dfstep) # TODO: Need to fix this range to split properly, this is for single particle (0.5-2)
+			ctf_stack=EMStack2D(tf.math.sign(tf.cast(tf.reshape(tf.sin(-g1*rad_img*rad_img*rad_img*rad_img+g2*rad_img*rad_img*dflist[:,tf.newaxis,tf.newaxis,tf.newaxis]),(dflist.shape[0],ny,ny//2+1)),tf.complex64)))
+			CTF_SIGN[dfrange]=ctf_stack
+			ctf_stack=ctf_stack.downsample(boxsize)
+
+		# iterate over projections
+		# TODO - Same as project_simple--at some point should be converted to a tensor axis for better performance
+		for j in range(len(orts)):
+#		for j in range(1):
+			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])
+			if tytx is not None:
+				xfgauss+=tytx[j,:3]	# Translation, including z but ignoring any other variables
+			xfgauss=tf.reverse((xfgauss+(0.5,0.5,0))*boxsize, axis=[-1])
+			# now xfgauss is z,y,x with z (-boxsize/2, boxsize/2) and x/y are (0, boxsize)
+
+			xfgaussf=tf.floor(xfgauss)
+			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
+			xfgaussf=xfgauss-xfgaussf 		# remainder used for bilinear interpolation
+			xfgaussi=tf.concat([tf.cast(tf.round(xfgauss[:,0]/boxstep),tf.int32)[:,tf.newaxis],xfgaussi[:,1:]], axis=-1)
+			# Now xfgaussi has z-layer, y, x
+
+			# messy tensor math here to implement bilinear interpolation
+			bamp0=self._data[:,3]*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])		# 0,0 corner
+			bamp1=self._data[:,3]*(xfgaussf[:,1])*(1.0-xfgaussf[:,2])		# 1,0 corner
+			bamp2=self._data[:,3]*(xfgaussf[:,1])*(xfgaussf[:,2])			# 1,1 corner
+			bamp3=self._data[:,3]*(1.0-xfgaussf[:,1])*(xfgaussf[:,2])		# 0,1 corner
+			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0) # TODO: This would be ,1 with loop subsumed
+			bposall=tf.concat([xfgaussi+(0,0,int((boxsize/2)/boxstep)),xfgaussi+(1,0,int((boxsize/2)/boxstep)),xfgaussi+(1,1,int((boxsize/2)/boxstep)),xfgaussi+(0,1,int((boxsize/2)/boxstep))],0) # TODO: This too
+#			tf.print(bposall,summarize=-1)
+#			tf.print(bampall,summarize=-1)
+			projf=tf.signal.rfft2d(tf.tensor_scatter_nd_add(proj,bposall,bampall))
+#			tf.print(tf.tensor_scatter_nd_add(proj,bposall,bampall), summarize=-1)
+			print("projf shape:",projf.shape)
+			print("z-layer:", tf.unique(xfgaussi[:,0])[0])
+			print("ctf shape:", ctf_stack[int(tf.round((defocus[j]-0.5)/0.01))-int((ny/2)/boxstep):int(tf.round((defocus[j]-0.5)/0.01))+int((ny/2)/boxstep)+1].shape)
+			print("defocuses in ctf:", dflist[int(tf.round((defocus[j]-0.5)/0.01))-int((ny/2)/boxstep):int(tf.round((defocus[j]-0.5)/0.01))+int((ny/2)/boxstep)+1])
+			print("center defocus:", defocus[j])
+			projf=projf*ctf_stack[int(tf.round((defocus[j]-0.5)/0.01))-int((ny/2)/boxstep):int(tf.round((defocus[j]-0.5)/0.01))+int((ny/2)/boxstep)+1]
+			proj2.append(tf.reduce_sum(tf.signal.irfft2d(projf), axis=0))
+		return EMStack2D(tf.stack(proj2))
+
+
 
 	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_tensor()
