@@ -940,14 +940,23 @@ def tf_ccf_2d(ima,imb):
 
 
 
-FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
-def rad_img(ny):
+FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny,1 containing the integer Fourier radius to each point in the image
+def rad_img_int(ny):
 	try: return FRC_RADS[ny]
 	except:
 		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
 		FRC_RADS[ny]=rad_img
 		return rad_img
 
+GEN_RAD2={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the floating point radius at each Fourier pixel location
+def rad2_img(ny):
+	"""Returns a complex tensor ny/2+2,ny containing the (real value) Fourier radius**2 (squared) in each pixel location. Tensors for a
+given size are cached for reuse. """
+	try: return GEN_RAD2[ny]
+	except:
+		rad2_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.float32(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.float32((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))
+		GEN_RAD2[ny]=rad2_img
+		return rad2_img
 
 #FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
@@ -965,7 +974,7 @@ def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
 	nr=int(ny*0.70711)+1	# max radius we consider
-	rad_img=rad_img(ny)
+	rad_img=rad_img_int(ny)
 	try:
 		imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
 		imai=tf.math.imag(ima)
