@@ -144,7 +144,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				for i,n in enumerate(ugnames): nmtonum[n]=i		# map micrograph names to numbers
 				ugnums=[nmtonum[n] for n in star[rkey]["rlnImageName"].split("@")[1]]
 				if options.verbose>0: print("Using rlnImageName to group particles")
-			if options.verbose>0: print("Unable to group particles using rlnImageName")
+			else: raise Exception
 		except:
 			# final try. If the same defocus was assigned to all images in a micrograph, we can use that
 			dfrng=[int(.0002*df/options.dftolerance) for df in star[rkey]["rlnDefocusU"]]  # defocus converted to integers covering the acceptable range of values, .002 microns&range

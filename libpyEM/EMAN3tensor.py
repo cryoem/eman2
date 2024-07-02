@@ -883,6 +883,15 @@ def tf_phaseorigin3d(imgs):
 
 	return imgs*POF3D
 
+def tf_gaussfilt_2d(boxsize,halfwidth):
+	"""create a (multiplicative) Gaussian lowpass filter for boxsize with halfwidth (0.5=Nyquist)"""
+	coef=1.0/(halfwidth*boxsize)**2
+	rad2_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.float32(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.float32((x**2+(ny//2-y)**2)),(ny//2,ny//2+1))))),2)
+	filt=tf.math.exp(rad2_img*coef)
+
+	return filt
+
+
 def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
@@ -932,6 +941,14 @@ def tf_ccf_2d(ima,imb):
 
 
 FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
+def rad_img(ny):
+	try: return FRC_RADS[ny]
+	except:
+		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
+		FRC_RADS[ny]=rad_img
+		return rad_img
+
+
 #FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
@@ -948,17 +965,7 @@ def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
 	nr=int(ny*0.70711)+1	# max radius we consider
-	try:
-		rad_img=FRC_RADS[ny]
-#		norm=FRC_NORM[ny]
-	except:
-		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
-#		rad_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
-		FRC_RADS[ny]=rad_img
-#		ones=tf.ones(ima.shape)
-#		zero=tf.zeros((int(ny*0.70711)+1))
-#		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
-#		FRC_NORM[ny]=norm
+	rad_img=rad_img(ny)
 	try:
 		imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
 		imai=tf.math.imag(ima)
