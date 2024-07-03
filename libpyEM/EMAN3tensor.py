@@ -245,6 +245,12 @@ class EMStack():
 		if isinstance(target,EMStack3D):
 			return self.tensor*tf.math.conj(target)
 
+	def mult(self,img):
+		"""multiply each image in the stack by img"""
+		if isinstance(img,tf.Tensor):
+			self._data=self.tensor*imgs
+		else: raise Exception("Only tensor data currently supported")
+
 	def align_translate(ref,maxshift=-1):
 		"""compute translational alignment of a stack of images to a same sized stack or single reference image.
 		returns array of shifts the same size as the input stack. maxshift limits the maximum search area to +-maxshift
@@ -885,9 +891,9 @@ def tf_phaseorigin3d(imgs):
 
 def tf_gaussfilt_2d(boxsize,halfwidth):
 	"""create a (multiplicative) Gaussian lowpass filter for boxsize with halfwidth (0.5=Nyquist)"""
-	coef=1.0/(halfwidth*boxsize)**2
-	rad2_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.float32(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.float32((x**2+(ny//2-y)**2)),(ny//2,ny//2+1))))),2)
-	filt=tf.math.exp(rad2_img*coef)
+	coef=-1.0/(halfwidth*boxsize)**2
+	r2img=rad2_img(boxsize)
+	filt=tf.math.exp(r2img*coef)
 
 	return filt
 
@@ -954,7 +960,7 @@ def rad2_img(ny):
 given size are cached for reuse. """
 	try: return GEN_RAD2[ny]
 	except:
-		rad2_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.float32(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.float32((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))
+		rad2_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.complex64(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.complex64((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))
 		GEN_RAD2[ny]=rad2_img
 		return rad2_img
 
