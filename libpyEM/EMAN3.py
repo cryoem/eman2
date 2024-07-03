@@ -1093,6 +1093,7 @@ def parse_infile_arg(arg):
 	slices_exc = parse_string_to_slices(seq_exc) if seq_exc else []
 
 	nimg = EMUtil.get_image_count(fname)
+	if ":" not in arg: return arg,range(nimg)		#quick stopgap for performance problem
 
 	idxs = OrderedDict()
 	for i in slices_inc:
