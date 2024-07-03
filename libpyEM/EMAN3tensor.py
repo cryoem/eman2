@@ -245,6 +245,18 @@ class EMStack():
 		if isinstance(target,EMStack3D):
 			return self.tensor*tf.math.conj(target)
 
+	def mult(self,img):
+		"""multiply each image in the stack by img"""
+		if isinstance(img,tf.Tensor):
+			self._data=self.tensor*imgs
+		else: raise Exception("Only tensor data currently supported")
+
+	def align_translate(ref,maxshift=-1):
+		"""compute translational alignment of a stack of images to a same sized stack or single reference image.
+		returns array of shifts the same size as the input stack. maxshift limits the maximum search area to +-maxshift
+		on each axis"""
+		pass
+
 	def write_images(self,fsp=None,bits=12):
 		self.coerce_emdata()
 		im_write_compressed(self._data,fsp,0,bits)
@@ -468,6 +480,33 @@ class EMStack2D(EMStack):
 
 		if newsize==self.shape[1]: return EMStack2D(self.tensor) # this won't copy, but since the tensor is constant should be ok?
 		return EMStack2D(tf_downsample_2d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
+	def align_translate(self,ref,maxshift=-1):
+		"""compute translational alignment of a stack of images to a same sized stack (or single) of reference images.
+		returns array of (dy,dx) the same size as the input stack required to bring each "this" image into alignment with "ref". maxshift limits the maximum search area to +-maxshift
+		on each axis. If maxshift is unspecified -> box size //4"""
+
+		ny,nx=self.shape[1:]
+		if self.tensor.dtype==tf.complex64 :
+			nx=(nx-1)*2
+			data=self
+		else:
+			data=self.do_fft()
+			ref=ref.do_fft()
+
+		if maxshift<=0: maxshift=ny//4
+
+		ccfs=data.calc_ccf(ref)
+		ccfsr=ccfs.do_ift()
+		ccfsrc=ccfsr[:,ny//2-maxshift:ny//2+maxshift,nx//2-maxshift:nx//2+maxshift]		# only search a region around the center defined by maxshift
+
+		# reshaped CCF so we can use reduce_max on it
+		ccfsrs=tf.reshape(ccfsrc,(ccfsrc.shape[0],maxshift*2*maxshift*2))
+
+		# The y,x coordinates of the peak location
+		peaks=maxshift-tf.unravel_index(tf.argmax(ccfsrs,1),(maxshift*2,maxshift*2))
+
+		return tf.transpose(peaks)
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
@@ -935,6 +974,15 @@ def tf_phaseorigin3d(imgs):
 
 	return imgs*POF3D
 
+def tf_gaussfilt_2d(boxsize,halfwidth):
+	"""create a (multiplicative) Gaussian lowpass filter for boxsize with halfwidth (0.5=Nyquist)"""
+	coef=-1.0/(halfwidth*boxsize)**2
+	r2img=rad2_img(boxsize)
+	filt=tf.math.exp(r2img*coef)
+
+	return filt
+
+
 def tf_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
@@ -983,7 +1031,24 @@ def tf_ccf_2d(ima,imb):
 
 
 
-FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the Fourier radius to each point in the image
+FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny,1 containing the integer Fourier radius to each point in the image
+def rad_img_int(ny):
+	try: return FRC_RADS[ny]
+	except:
+		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
+		FRC_RADS[ny]=rad_img
+		return rad_img
+
+GEN_RAD2={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the floating point radius at each Fourier pixel location
+def rad2_img(ny):
+	"""Returns a complex tensor ny/2+2,ny containing the (real value) Fourier radius**2 (squared) in each pixel location. Tensors for a
+given size are cached for reuse. """
+	try: return GEN_RAD2[ny]
+	except:
+		rad2_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.complex64(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.complex64((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))
+		GEN_RAD2[ny]=rad2_img
+		return rad2_img
+
 #FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
@@ -1000,17 +1065,7 @@ def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
 	nr=int(ny*0.70711)+1	# max radius we consider
-	try:
-		rad_img=FRC_RADS[ny]
-#		norm=FRC_NORM[ny]
-	except:
-		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
-#		rad_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
-		FRC_RADS[ny]=rad_img
-#		ones=tf.ones(ima.shape)
-#		zero=tf.zeros((int(ny*0.70711)+1))
-#		norm=tf.tensor_scatter_nd_add(zero, rad_img, ones)  # computes the number of values at each Fourier radius
-#		FRC_NORM[ny]=norm
+	rad_img=rad_img_int(ny)
 	try:
 		imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
 		imai=tf.math.imag(ima)

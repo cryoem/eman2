@@ -42,6 +42,9 @@ from matplotlib.patches import Circle
 import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
 
+import queue
+from scipy.spatial import KDTree
+
 def main():
 	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
 	 still developing
@@ -494,16 +497,15 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 
-
+		self.assisted_tab.addTab(self.tmplt_tab,"Template Matching")
 		self.assisted_tab.addTab(self.binary_tab,"AutoDetect")
 		self.assisted_tab.addTab(self.nn_tab,"UNet")
 		self.assisted_tab.addTab(self.snn_tab,"EMAN2NNet")
 		self.assisted_tab.addTab(self.stat_tab,"Statistics")
-		self.assisted_tab.addTab(self.tmplt_tab,"Template Matching")
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 		self.assisted_tab.addTab(self.subtom_tab,"SubTomogram")
-		self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
+		#self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
 		self.assisted_tab.addTab(self.templ_tab,"Template")
 
 		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
@@ -902,27 +904,14 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		pks_plt=EMScatterPlot3D(transform=xf)
 		pks_em = EMData("tmplt_match_local_pks.hdf")
 		ccc = EMData("tmplt_match_ccc.hdf")
-		#nunbin = 1/int(self.tmplt_nshrink_le.text())
 		ccc.process_inplace("math.fft.resample",{'n':2})
 		pks = pks_em.numpy().copy().transpose()
-		#gauss = np.array([[1,3,5,1],[1,5,7,1],[10,7,5,0.5],[1,30,5,1],[1,50,7,1],[10,70,5,0.5],[10,3,5,1],[10,5,7,1],[10,7,5,0.5]]).transpose()
 		try:
-			pks[3] = 4*(pks[3]-min(pks[3]))/(max(pks[3])-min(pks[3]))
-
+			pks[3] = 2*(pks[3]-min(pks[3]))/(max(pks[3])-min(pks[3]))
 		except:
 			pass
-# gauss.shape
-		# try:
-		# 	view = CustomScene3D(target=self.target)
-		# 	view.show_3D_region()
-		try:
-			#tempt_hdr = EMData(self.tmplt_le.text(),0,True)
-			# mbin=tomo["apix_x"]/tempt_hdr["apix_x"]
-			# pks_sz = int((tempt_hdr["nx"]/mbin)//2)
-			pks_sz=13
-		except:
-			pks_sz = 8
 
+		pks_sz = 8
 		pks_plt.setData(pks,pks_sz)
 
 
@@ -934,15 +923,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.view.insertNewNode("Peak Plt", pks_plt)
 		ccc_di = EMDataItem3D(ccc, transform=Transform())
 		self.view.insertNewNode('CCC', ccc_di, parentnode=self.view)
-
 		ccc_iso = EMIsosurface(ccc_di, transform=Transform())
 		self.view.insertNewNode("Iso", ccc_iso, parentnode=ccc_di)
-		#
-
-
-		#self.save_current_state()
-
-		#self.showerror("This button is for testing purpose only")
 		return
 
 	def save_current_state(self, no_force_save=True):
@@ -956,11 +938,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			del seg_out
 		else:
 			pass
-
 		try:
 			self.write_out(self.get_annotation(), temp_path, self.cur_region)
 			print("Save current state to disk")
-			#self.get_annotation().write_image(self.seg_path, 0, IMAGE_HDF, False, self.cur_region)
 		except Exception as e:
 			print("Current state cannot be saved due to exception", e)#when annotation files is None
 			pass
@@ -2755,7 +2735,10 @@ class UNet():
 		print('-'*30)
 		self.model.fit(self.datas, self.labels, batch_size=batch_sz, epochs=no_epoch,verbose=1, shuffle=True,validation_split=val_split,callbacks=[model_checkpoint])
 		#return model,history
-		print("Done training model. Network saved to",weights_out)
+		# pred =   self.model.predict(self.datas, verbose=1)
+		# outname = self.weights_out[:-7]+"_pred.hdf"
+		#self.stack_outfile(self.datas,self.labels,pred,outfile=outname)
+		print("Done training model. Network saved to",self.weights_out)
 
 	def load_model(self,weights_in, tiny=False):
 		if tiny:
@@ -2772,11 +2755,13 @@ class UNet():
 		if tomogram==None:
 			print("Need to specify tomogram to apply U-net")
 			return
-		if not os.path.exists("./neural_nets/weights_temp.h5"):
-			print("There's no neural networks trained for this tomogram. Train a neural net first")
-			return
-		else:
-			pass
+		#if not os.path.exists("./neural_nets/weights_temp.h5"):
+		print("Load nnet", weights_in)
+		# if not os.path.exists(weights_in):
+		# 	print("There's no neural networks trained for this tomogram. Train a neural net first")
+		# 	return
+		# else:
+		# 	pass
 		is3d=True
 		enx,eny=tomogram["nx"], tomogram["ny"]
 		nframe=tomogram["nz"]
@@ -2788,7 +2773,6 @@ class UNet():
 		tomo_in=[]
 		for nf in range(nframe):
 			if enx %2 ==1:
-
 				e0=tomogram.get_clip(Region((enx-1-tsz)//2,(eny-1-tsz)//2,nf,tsz,tsz,1))
 			else:
 				e0=tomogram.get_clip(Region((enx-tsz)//2,(eny-tsz)//2,nf,tsz,tsz,1))
@@ -2833,6 +2817,24 @@ class UNet():
 		out = from_numpy(out_array)
 		out.write_image(outfile)
 		return
+
+	def predict_unet(self,test_data, test_labels,test_label_outfile,weights_in,pred_dir=None):
+		print('-'*30)
+		print('Loading and preprocessing test data...')
+		print('Loading saved weights...')
+		print('-'*30)
+		model = load_model(weights_in)
+
+		print('-'*30)
+		print('Predicting masks on test data...')
+		print('-'*30)
+		imgs_label_test = model.predict(test_data, verbose=1)
+		#print(model.evaluate(test_data,test_labels))
+		# np.save(test_label_outfile, imgs_label_test)
+		# print('-' * 30)
+		# print('Saving predicted masks to files...')
+		# print('-' * 30)
+		return imgs_label_test
 
 
 class Simple_NNet_Tab(QtWidgets.QWidget):
@@ -3564,7 +3566,8 @@ class NNet_Tab(QtWidgets.QWidget):
 			print("No trainset file detected in the ./particles folder. Abort")
 		else:
 			pass
-		self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
+		#self.unet = UNet(infile="./particles/org_temp_trainset.hdf")
+		self.unet = UNet(infile=trainset_path)
 		print("Initialize Unet")
 		try:
 			os.listdir('./neural_nets')
@@ -4010,7 +4013,7 @@ class Binary_Tab(QtWidgets.QWidget):
 		self.bin_detect_bt = QtWidgets.QPushButton("Detect Feature")
 		self.bin_fill_bt = QtWidgets.QPushButton("Fill")
 		self.bin_trim_bt = QtWidgets.QPushButton("Trim")
-		self.bin_low_pass_vs = ValSlider(value=5,rng=(0.001,5),rounding=2,label= "Cut-off Abs")
+		self.bin_low_pass_vs = ValSlider(value=10,rng=(0.001,50),rounding=0,label= "Lp Res     ")
 		self.bin_threshold_vs = ValSlider(value=0.001,rng=(0.001,5),rounding=2,label="Threshold  ")
 		self.closing_n_iters =1
 		self.opening_n_iters =1
@@ -4099,7 +4102,7 @@ class Binary_Tab(QtWidgets.QWidget):
 			return
 
 		self.mask = EMData("ori_detect.hdf")
-		lp = self.bin_low_pass_vs.value
+		lp = 1/self.bin_low_pass_vs.value
 		thres = self.bin_threshold_vs.value
 		lp_masked = mult*self.mask*self.target.get_data().process("filter.lowpass.gauss",{"cutoff_abs":lp})
 		mask = lp_masked.process("threshold.binary",{"value":thres})
@@ -4131,8 +4134,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.insert_vol_le = QtWidgets.QLineEdit()
 		self.insert_vol_browser_bt = QtWidgets.QPushButton("Browse ")
 		self.insert_vol_bt = QtWidgets.QPushButton("Insert Mask")
+		#self.draw_peaks_bt = QtWidgets.QPushButton("Draw Peaks")
 		self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
 		self.apply_mw.setChecked(False)
+
 
 		self.tmplt_npeaks_le = QtWidgets.QLineEdit()
 		self.tmplt_npeaks_le.setText("20")
@@ -4142,10 +4147,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		# self.tmplt_cccthr_le.setText("20")
 		self.tmplt_minvol_vs = ValSlider(value=20,rng=(0,1000),rounding=-1,label="minvol   ",labelwidth=56)
 		self.tmplt_minvol_vs.setIntonly(1)
-		self.tmplt_cccthr_vs = ValSlider(value=5.0,rng=(0.00,5.0),rounding=2,label="ccc fac  ",labelwidth=56)
+		self.tmplt_cccthr_vs = ValSlider(value=3.0,rng=(0.00,5.0),rounding=2,label="ccc fac  ",labelwidth=56)
 
 
-		self.tmplt_ins_thres_vs = ValSlider(value=0.5,rng=(0,1.0),rounding=1,label="thres    ",labelwidth=56)
+		self.tmplt_ins_thres_vs = ValSlider(value=0.5,rng=(0,1.0),rounding=1,label="thresh   ",labelwidth=56)
 
 
 		templ_gbl = QtWidgets.QGridLayout()
@@ -4164,22 +4169,24 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 		#templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
 		#templ_gbl.addWidget(self.apply_mw,4,0,1,2)
+		#templ_gbl.addWidget(self.show_initxf_bt,4,0,1,2)
 		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,2,1,1)
 		templ_gbl.addWidget(self.tmplt_npeaks_le,4,3,1,1)
 		#templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
 		templ_gbl.addWidget(self.tmplt_cccthr_vs,5,0,1,4)
 		#templ_gbl.addWidget(QtWidgets.QLabel("dist thr"),4,2,1,1)
 		#templ_gbl.addWidget(self.tmplt_dthr_le,4,3,1,1)
-
 		#templ_gbl.addWidget(self.tmplt_minvol_vs,5,0,1,4)
 
 		templ_gbl.addWidget(self.calc_ccm_bt,2,4,1,1)
 		templ_gbl.addWidget(self.show_ccm_bt,3,4,1,1)
-		#templ_gbl.addWidget(self.find_peaks_bt,4,4,1,1)
+		#templ_gbl.addWidget(self.find_peaks_bt,4,0,1,1)
+		#templ_gbl.addWidget(self.draw_peaks_bt,4,1,1,1)
 		templ_gbl.addWidget(self.do_local_search_bt,4,4,1,1)
 		templ_gbl.addWidget(QtWidgets.QLabel("Segment particles"),6,0,1,5)
 		templ_gbl.addWidget(self.insert_vol_bt,8,4,1,1)
 		templ_gbl.addWidget(self.show_peaks_bt,5,4,1,1)
+
 
 		templ_gbl.addWidget(QtWidgets.QLabel("Mask"),7,0,1,1)
 		templ_gbl.addWidget(self.insert_vol_le,7,1,1,3)
@@ -4194,6 +4201,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
 		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
 		#self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
+		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_to_show)
+		#self.draw_peaks_bt.clicked[bool].connect(self.draw_peaks_on_tomo)
+
 		self.show_peaks_bt.clicked[bool].connect(self.show_peaks)
 		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_thrds)
 		self.insert_vol_bt.clicked[bool].connect(self.insert_vol)
@@ -4413,12 +4423,16 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 		return
 
-	def find_peaks_amp(self,npks=-1):
+	def find_peaks_to_show(self):
+		n_peaks = int(self.tmplt_npeaks_le.text())
+		self.find_peaks_amp(n_peaks)
+
+	def find_peaks_amp(self,npks=100):
 		try:
-			if npks == -1:
-				n_peaks = int(self.tmplt_npeaks_le.text())
-			else:
-				n_peaks = npks
+			# if npks == -1:
+			#n_peaks = int(self.tmplt_npeaks_le.text())
+			# else:
+			n_peaks = npks
 			nbin = int(self.tmplt_nshrink_le.text())
 			ccc_fac = float(self.tmplt_cccthr_vs.value)
 			ref_head = EMData(self.tmplt_le.text(), 0,True)
@@ -4575,10 +4589,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			x,y,z= (int(i) for i in p)
 			bs = tempt["nx"]
 			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
-			#nbest = tempt.xform_align_nbest('rotate_translate_3d', subvol, {'sym':'c1'}, 2, 'ccc.tomo',{})
-			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf,nbest[0]["xform.align3d"],nbest[1]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
+			#nbest = tempt.xform_align_nbest('rotate_translate_3d', subvol, {'sym':'c1'}, 3, 'ccc.tomo',{})
+			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[nbest[0]["xform.align3d"],nbest[1]["xform.align3d"],nbest[2]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
 			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
-			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{},1,'ccc.tomo',{})
+			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
 			cf = subvol.calc_ccf(tempt_a)
 			cf_score = np.max(cf.numpy())
 
@@ -4591,7 +4605,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 	def do_local_search_thrds(self):
 		n_peaks = int(self.tmplt_npeaks_le.text())
-		self.find_peaks_amp(n_peaks*10)
+		self.find_peaks_amp(n_peaks*5)
 		nthrds = int(self.tmplt_nthrds_le.text())
 		tomo = self.target.get_data().copy()
 		tempt = EMData(self.tmplt_le.text())
@@ -4666,16 +4680,6 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		cfs = [p_xf[2] for p_xf in p_xf_l]
 		self.cfs = [cf/max(cfs) for cf in cfs]
 
-		#print("Highest score {} locations detected at:".format(len(self.pts)))
-		# for i in range(len(self.pts)):
-		# 	print("Location:{} Correlation:{}\n".format(self.pts[i],self.cfs[i]))
-
-
-
-			#print("Location:{} Correlation:{}\n".format(self.pts[i],self.cfs[i]))
-		# 		self.pts = pts[:n_peaks]
-
-
 	def show_peaks(self):
 		tomo = self.target.get_data()
 		x,y,z= tomo.get_sizes()
@@ -4686,7 +4690,6 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		ccc = EMData("tmplt_match_ccc.hdf")
 		nunbin = 1/int(self.tmplt_nshrink_le.text())
 		ccc.process_inplace("math.fft.resample",{'n':nunbin})
-		#pks = pks_em.numpy().transpose()
 		pks = pks_em.numpy().copy().transpose()
 
 		try:
@@ -4697,9 +4700,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		try:
 			tempt_hdr = EMData(self.tmplt_le.text(),0,True)
 			mbin=tomo["apix_x"]/tempt_hdr["apix_x"]
-			pks_sz = int((tempt_hdr["nx"]/mbin)//2)
+			pks_sz = int((tempt_hdr["nx"]/mbin)//2)*0.7
 		except:
 			pks_sz = 8
+
 
 		pks_plt.setData(pks,pks_sz)
 
@@ -4717,6 +4721,53 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		# except Exception as e:
 		# 	print("Cannot show peaks region due to", e)
 		# 	return
+
+	# def draw_peaks_on_tomo(self):
+	#
+	# 	tomo = self.target.get_data()
+	# 	x,y,z= tomo.get_sizes()
+	#
+	# 	xf= Transform({'tx':-x//2,'ty':-y//2,'tz':-z//2,'mirror':0,'scale':1.0000,'type':'eman'})
+	# 	pks_plt=EMScatterPlot3D(transform=xf)
+	# 	pks_em = EMData("tmplt_match_local_pks.hdf")
+	# 	ccc = EMData("tmplt_match_ccc.hdf")
+	# 	nunbin = 1/int(self.tmplt_nshrink_le.text())
+	# 	ccc.process_inplace("math.fft.resample",{'n':nunbin})
+	# 	pks = pks_em.numpy().copy() #.transpose()
+	#
+	#
+	# 	# try:
+	# 	# 	pks[3] = 2*(pks[3]-min(pks[3]))/(max(pks[3])-min(pks[3]))
+	# 	# except:
+	# 	# 	pass
+	#
+	# 	try:
+	# 		tempt_hdr = EMData(self.tmplt_le.text(),0,True)
+	# 		mbin=tomo["apix_x"]/tempt_hdr["apix_x"]
+	# 		pks_sz = int(0.7*(tempt_hdr["nx"]/mbin)//2)
+	# 	except:
+	# 		pks_sz = 8
+	#
+	# 	print("LEN PKS",len(pks))
+	#
+	# 	for pts in pks:
+	# 		xrot, yrot, zrot = self.target.img_view.reverse_transform_point([pts[0],pts[1],self.target.img_view.nz//2+pts[2]], self.target.img_view.get_xform())
+	# 		xform=Transform({"type":"eman","alt":self.target.img_view.alt,"az":self.target.img_view.az,"tx":self.target.img_view.nx//2+xrot,"ty":self.target.img_view.ny//2+yrot,"tz":self.target.img_view.nz//2+zrot})
+	# 		subvol=self.target.img_view.get_full_annotation().get_rotated_clip(xform,(2*pks_sz,2*pks_sz,2*pks_sz),0)
+	# 		#subvol = from_numpy(np.ones((2*self.w_line,2*self.w_line,2*self.w_line)))
+	# 		fill_vol = subvol.process("mask.paint",{"x":pks_sz,"y":pks_sz,"z":pks_sz,"r1":pks_sz,"v1":4,"r2":pks_sz,"v2":4})
+	# 		#self.img_view.full_annotation.set_rotated_clip(xform,value*subvol.process("threshold.binaryrange",{"high":value+0.1,"low":value-0.1}))
+	# 		self.target.img_view.full_annotation.set_rotated_clip(xform,fill_vol)
+	# 	self.target.img_view.force_display_update()
+	# 	self.target.img_view.updateGL()
+
+
+
+
+
+
+	def insert_coarse_masks(self):
+		return
 
 
 	def insert_vol(self):
@@ -4753,22 +4804,11 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		insert_im.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
 		print("Vol of insert im is {}".format(insert_im.get_sizes()))
 		if len(self.pts) == 0 or len(self.xfs) == 0:
-			# try:
-			# 	js=js_open_dict("tmp_xfs.json")
-			# 	if len(js['p_xf_dict']) >0:
-			# 		p_xf_dict = json.loads(js['p_xf_dict'])
-			# 		print("Reading local search result from tmp_xfs.json ")
-			# 		#self.pts = list(p_xf_dict.keys())
-			# 		self.pts = []
-			# 		for s in list(p_xf_dict.keys()):
-			# 			x,y,z = s.split("~~~")
-			# 			self.pts.append((float(x),float(y),float(z)))
-			# 		self.xfs = list(p_xf_dict.values())
-			# 	else:
-			# 		self.do_local_search_thrds()
-			# except:
 			self.do_local_search_thrds()
 
+
+		#annotate = self.target.get_annotation()
+		#annotate = EMData("tmplt_match_temp_vol.hdf")
 
 		for i,loc in enumerate(self.pts):
 			vol = insert_im.copy()
@@ -4779,14 +4819,21 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 			vol.mult(val)
 			x,y,z = [int(i) for i in loc]
-			bs = insert_im["nx"]
-			reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
+			# bs = vol["nx"]
+			# reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
+			reg = Region(x-good_szs[0]//2,y-good_szs[1]//2,z-good_szs[2]//2,good_szs[0],good_szs[1],good_szs[2])
+			#reg = Region(x,y,z,good_szs[0],good_szs[1],good_szs[2])
+
 			try:
-				current_vol = self.target.get_annotation().get_clip(reg)
-				insert_vol=vol.process("math.max",{"with":current_vol})
+				#current_vol = self.target.get_annotation().get_clip(reg)
+				#current_vol = annotate.get_clip(reg)
+				current_vol = EMData(outfile, 0, False, reg)
+				#current_vol=annotate.get_rotated_clip(Transform(),reg)
+				insert_vol=current_vol.process("math.max",{"with":vol})
 			except:
 				insert_vol = vol
 			try:
+				#annotate.set_rotated_clip(Transform(),insert_vol)
 				insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
 				sys.stdout.write("\r{}/{} finished.".format(i, len(self.pts)))
 				sys.stdout.flush()
@@ -4794,8 +4841,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			except:
 				print("Invalid region at location",x,y,z,".Skip.")
 				continue
-		annotate = EMData(outfile)
-		self.target.img_view.set_data(self.target.data,annotate)
+		#annotate = EMData(outfile)
+		self.target.img_view.set_data(self.target.data,EMData(outfile))
+		self.target.img_view.updateGL()
 		print("Finishing segmentation")
 
 	def load_template(self):

@@ -21,6 +21,7 @@ def main():
 	parser.add_argument("--maxres", type=float,help="maximum resolution for the heterogeneity analysis. This will also be the starting resolution for the following focused alignment.", default=7)
 	parser.add_argument("--minres", type=float,help="min resolution for the heterogeneity analysis.", default=50)	
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="rigid body movement mode. still testing")
+	parser.add_argument("--remodel", action="store_true", default=False ,help="rebuild model after heterogeneity analysis for later focused refinement")
 
 	(options, args) = parser.parse_args()
 	
@@ -147,9 +148,13 @@ def main():
 	run(f"e2gmm_heter_ali.py --path {path} --mask {options.mask}")
 	run(f"e2refine_postprocess.py --even {path}/threed_01_even.hdf --res {res} --tophat localwiener --thread 32 --setsf sf.txt --align")
 	
-	run(f"e2segment3d.py {path}/threed_01.hdf --pdb {path}/model_01.pdb --process=segment.kmeans:nseg={rawnpt}:thr=3")
+	if options.remodel:
+		run(f"e2segment3d.py {path}/threed_01.hdf --pdb {path}/model_01.pdb --process=segment.kmeans:nseg={rawnpt}:thr=3")
+		inp=f"{path}/model_01.pdb"
+	else:
+		inp=f"{path}/model_00.txt"
 	
-	run(f"e2gmm_refine_iter.py {path}/threed_01.hdf --startres {res} --initpts {path}/model_01.pdb --mask {options.mask} --masksigma --path {path} --startiter 2 --niter {options.niter}")
+	run(f"e2gmm_refine_iter.py {path}/threed_01.hdf --startres {res} --initpts {inp} --mask {options.mask} --masksigma --path {path} --startiter 2 --niter {options.niter}")
 	
 	E2end(logid)
 	

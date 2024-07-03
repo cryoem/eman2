@@ -34,6 +34,8 @@ def main():
 	parser.add_argument("--breaksym", type=str,help="breaking symmetry. only works for --localrefine or --skipali", default="c1")
 
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
+	parser.add_argument("--alt_min", type=int,help="alt min", default=-1)
+	parser.add_argument("--alt_max", type=int,help="alt ax", default=-1)
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 
 	(options, args) = parser.parse_args()
@@ -101,10 +103,6 @@ def main():
 	
 	E2end(logid)
 
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
-	
 
 class SpaAlignTask(JSTask):
 	
@@ -225,6 +223,11 @@ class SpaAlignTask(JSTask):
 		
 		if options.curve:
 			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":0,"inc_mirror":1,"alt_min":80, "alt_max":100})
+		elif options.alt_max>0:
+			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1, "alt_min":options.alt_min, "alt_max":options.alt_max})
+			if options.alt_min==0:
+				xs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1, "alt_min":180-options.alt_max, "alt_max":180})
+				xfcrs+=xs
 		else:
 			xfcrs=sym.gen_orientations("eman",{"delta":astep,"phitoo":astep,"inc_mirror":1})
 		#print(np.unique([x.get_params("eman")['alt'] for x in xfcrs]))

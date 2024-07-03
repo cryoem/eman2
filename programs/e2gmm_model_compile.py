@@ -124,7 +124,7 @@ def main():
 			idx_res=[i for i in idx_res if atoms[i].get_id()=='P']
 			if len(idx_res)==0: continue
 			i2=idx_res[0]
-			bonds3.append([ai, i2, ncbond[0], ncbond[1]])
+			bonds3.append([ai, i2, dnabond[0], dnabond[1]])
 			
 	bonds0=np.array(bonds0).reshape(-1,4)
 	bonds1=np.array(bonds1).reshape(-1,4)
@@ -259,33 +259,34 @@ def main():
 			dihs_type.append(h[0])
 		
 		if len(aname_last)>0:
-			r0=atoms[aname_last['CA']].get_parent().get_id()[1]
-			r1=atoms[aname['CA']].get_parent().get_id()[1]
-			c0=atoms[aname_last['CA']].get_parent().get_parent().get_id()
-			c1=atoms[aname['CA']].get_parent().get_parent().get_id()
-			if r0+1==r1 and c0==c1:
-				dh0=[aname_last['CA'], aname_last['C'], aname['N'], aname['CA']]
-				dh1=[aname_last['O'], aname_last['C'], aname_last['CA'], aname['N']]
-				dihs.append(dh0)
-				dihs.append(dh1)
-				dihs_type.extend(['peptide','backbone'])
 			
+			if 'CA' in aname_last:
+				r0=atoms[aname_last['CA']].get_parent().get_id()[1]
+				r1=atoms[aname['CA']].get_parent().get_id()[1]
+				c0=atoms[aname_last['CA']].get_parent().get_parent().get_id()
+				c1=atoms[aname['CA']].get_parent().get_parent().get_id()
+				if r0+1==r1 and c0==c1:
+					dh0=[aname_last['CA'], aname_last['C'], aname['N'], aname['CA']]
+					dh1=[aname_last['O'], aname_last['C'], aname_last['CA'], aname['N']]
+					dihs.append(dh0)
+					dihs.append(dh1)
+					dihs_type.extend(['peptide','backbone'])
+					
 		aname_last=aname
 		
 	dihs=np.array(dihs, dtype=int)
 	dihs_type=np.array(dihs_type)
 	print("  {} planar dihedral angles.".format(len(dihs)))
 	
-	
-	pid=np.array([i for i,d in enumerate(dihs) if dihs_type[i]=="backbone"]).copy()
+	pid=[i for i,d in enumerate(dihs) if dihs_type[i]=="backbone"]
 	dihs_backbone=dihs[pid]
 	print("    backbone:  {}".format(len(dihs_backbone)))
 
-	pid=np.array([i for i,d in enumerate(dihs) if dihs_type[i]=="peptide"]).copy()
+	pid=[i for i,d in enumerate(dihs) if dihs_type[i]=="peptide"]
 	dihs_peptide=dihs[pid]
 	print("    peptide:   {}".format(len(dihs_peptide)))
 	
-	pid=np.array([i for i,d in enumerate(dihs) if dihs_type[i].startswith("C0")]).copy()
+	pid=[i for i,d in enumerate(dihs) if dihs_type[i].startswith("C0")]
 	dihs_sidechain=dihs[pid]
 	print("    sidechain: {}".format(len(dihs_sidechain)))
 	
@@ -297,18 +298,19 @@ def main():
 	print("  Average backbone/sidechain planar dihedral angle deviation: {:.2f} degrees".format(np.mean(rot)))
 	print("  {} angle outliers beyond 10 degrees".format(np.sum(rot>10)))
 	
-	pt=tf.gather(atom_pos[None,:], dihs_peptide[:,:4], axis=1)
-	rot=calc_dihedral_tf(pt)[0].numpy()
-	rot=np.sin(np.deg2rad(rot))
-	rot=np.degrees(np.arcsin(abs(rot)))
-	print("  Average peptide dihedral angle deviation: {:.2f} degrees".format(np.mean(rot)))
-	print("  {} angle outliers beyond 30 degrees".format(np.sum(rot>30)))
+	if len(dihs_peptide)>0:
+		pt=tf.gather(atom_pos[None,:], dihs_peptide[:,:4], axis=1)
+		rot=calc_dihedral_tf(pt)[0].numpy()
+		rot=np.sin(np.deg2rad(rot))
+		rot=np.degrees(np.arcsin(abs(rot)))
+		print("  Average peptide dihedral angle deviation: {:.2f} degrees".format(np.mean(rot)))
+		print("  {} angle outliers beyond 30 degrees".format(np.sum(rot>30)))
 	
 	np.savetxt(f"{path}/model_dih_plane.txt", dihs_plane.astype(int))
 	np.savetxt(f"{path}/model_dih_piptide.txt", dihs_peptide.astype(int))
 	
-	
-	dihs_chi_id=np.array([i for i,d in enumerate(dihs) if dihs_type[i].startswith("chi")])
+	chis=[f"chi{i}" for i in range(1,5)]
+	dihs_chi_id=list([i for i,d in enumerate(dihs) if dihs_type[i] in chis])
 	dihs_chi=dihs[dihs_chi_id]
 	dihs_chi_res=[atoms[i].get_parent().get_resname() for i in dihs_chi[:,1]]
 	dihs_chi_res=np.array([e2pc.restype_3_to_index[i] for i in dihs_chi_res])
@@ -317,6 +319,42 @@ def main():
 
 	tosave=np.hstack([dihs_chi, dihs_chi_res[:,None], chi_id[:,None]])
 	np.savetxt(f"{path}/model_dih_chi.txt", tosave.astype(int))
+	
+	#### RNA backbone...
+	residues=list(pdb.get_residues())
+	# bkb=["P", "O5'", "C5'", "C4'", "C3'", "O3'"]
+	idx_rna_dih=[]
+	for ir, res in enumerate(residues):
+		# print(ir, res)
+		if ir==0: continue
+		dic0=residues[ir-1].child_dict
+		dic1=res.child_dict
+		
+		b0=[dic0[b] for b in ["C5'", "C4'", "C3'", "O3'"]]
+		b1=[dic1[b] for b in ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]]
+		
+		bk=b0+b1
+		bk=[atoms.index(b) for b in bk]
+		
+		dih=[bk[i:i+4] for i in range(7)]
+		
+		idx_rna_dih.append(dih)
+		
+	idx_rna_dih=np.array(idx_rna_dih)
+	# print(idx_rna_dih.shape)
+	idx_rna_dih=idx_rna_dih.reshape((idx_rna_dih.shape[0], -1))
+# 	
+# 	rna={"alpha":0, "beta":1, "gamma":2, "delta":3, "eps":4, "zeta":5}
+# 	dihs_rna_id=list([i for i,d in enumerate(dihs) if dihs_type[i] in rna])
+# 	dihs_rna=dihs[dihs_rna_id]
+# 	dihs_rna_res=[atoms[i].get_parent().get_resname() for i in dihs_rna[:,1]]
+# 	dihs_rna_res=np.array([e2pc.restype_3_to_index[i] for i in dihs_rna_res])
+# 	rna_id=np.array([rna[i] for i in dihs_type[dihs_rna_id]])
+	print("{} RNA backbone angles".format(len(idx_rna_dih)))
+
+	# tosave=np.hstack([dihs_rna, dihs_rna_res[:,None], rna_id[:,None]])
+	np.savetxt(f"{path}/model_dih_rna.txt", idx_rna_dih.astype(int))
+	
 	print(f"Done. Parameters written in folder {path}")
 	E2end(logid)
 	

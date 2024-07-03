@@ -421,7 +421,9 @@ def compile_hydrogen(pdb):
 					ad=[adict[k] for k in h[1:4]]
 				except:
 					h1=[k for k in h[1:4] if k not in adict]
-					print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h1}")
+					h1=[k for k in h1 if k!='OP3']
+					if len(h1)>0:
+						print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h1}")
 					continue
 				
 			ad=[atom_dict[k] for k in ad]
@@ -454,7 +456,9 @@ def get_h_rotation_axis(atoms, bonds, h_ref):
 		nbd=np.logical_or(bonds[:,0]==h[0], bonds[:,1]==h[0])
 		if np.sum(nbd)==1:
 			## only rotate atoms connecting to one non-h atoms
-			h_rot.append([i, h[0], h[1]])
+			if atoms[h[0]].id=="O2'": ### rotate only O2' for now...
+				h_rot.append([i, h[0], h[1]])
+			# print(h_rot[-1], atoms[h[0]].id)
 			
 	h_rot=np.array(h_rot)
 	_, hi=np.unique(h_rot[:,1], return_index=True)
@@ -470,20 +474,23 @@ def get_h_rotation_axis(atoms, bonds, h_ref):
 		
 	rot_axish=np.array(rot_axish)
 	rotmat_idxh[rotmat_idxh==-1]=len(rot_axish)
+	print("$$$$$$$$$", len(rot_axish))
 	return rot_axish, rotmat_idxh
 
 
 def calc_atom_pos(conf, model, theta_all, options, training=False, addh=False, theta_h=[]):
 
 	pout=model(conf,training=training)
-	pout_rot=pout[:,:,:3]
-	for ii in range(4):
-		theta=theta_all[ii][None,:]
-		theta=tf.repeat(theta, conf.shape[0], axis=0)
-		# print("#####", pout_rot.shape, conf.shape,theta.shape)
-		pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
+	if theta_all!=None:
+		pout_rot=pout[:,:,:3]
+		for ii in range(4):
+			theta=theta_all[ii][None,:]
+			theta=tf.repeat(theta, conf.shape[0], axis=0)
+			# print("#####", pout_rot.shape, conf.shape,theta.shape)
+			pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
 
-	pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+		pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+		
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 	
 	if addh:
@@ -509,49 +516,77 @@ def eval_chem(model, theta_all, theta_h, options):
 	ang_df=(ang_val-options.angle[:,3])/options.angle[:,4]
 	ang_outlier=np.sum(abs(ang_df)-options.nstd_angle>0)
 	etc+=f"{ang_outlier} angle, "
-
-	pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
-	phi=calc_dihedral_tf(pt[:,:,:4])
-	psi=calc_dihedral_tf(pt[:,:,4:])
-	rama=eval_rama(phi, psi, options)
-	etc+="{}, {} Rama,".format(np.sum(rama>options.rama_thr0), np.sum(rama>options.rama_thr1))
 	
 	pt=tf.gather(atom_pos, options.idx_dih_plane, axis=1)
 	rot=calc_dihedral_tf(pt)
 	rot=tf.sin(rot*np.pi/180.)
 	rot=tf.maximum(0, abs(rot)-options.thr_plane)
 	plane_score=np.sum(rot>0)
+	
+	if options.has_protein==False:
+		etc+="no amino acid, "
+	else:
+		pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
+		phi=calc_dihedral_tf(pt[:,:,:4])
+		psi=calc_dihedral_tf(pt[:,:,4:])
+		rama=eval_rama(phi, psi, options)
+		etc+="{}, {} Rama,".format(np.sum(rama>options.rama_thr0), np.sum(rama>options.rama_thr1))
+	
+		pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
+		rot=calc_dihedral_tf(pt)
+		rot=tf.sin(rot*np.pi/180.)
+		rot=tf.maximum(0, abs(rot)-options.thr_piptide)
+		plane_score+=np.sum(rot>0)
+		
+		rotout=[]
+		for chin in range(4):
+			ii=options.chi_idx[chin].T.flatten()
+			ii_mat=options.chi_mat[chin][None,...]
 
-	pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
-	rot=calc_dihedral_tf(pt)
-	rot=tf.sin(rot*np.pi/180.)
-	rot=tf.maximum(0, abs(rot)-options.thr_piptide)
-	plane_score+=np.sum(rot>0)
+			ii=options.idx_dih_chi[ii][:,:4]
+			pt=tf.gather(atom_pos, ii, axis=1)
+			dih=calc_dihedral_tf(pt)%360
+			dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
+			dih=tf.transpose(dih, (0,2,1))
+
+			d=dih[:,:,None,:]-ii_mat[:,:,:,:chin+1]
+			d=d/ii_mat[:,:,:,chin+1:chin*2+2]
+			d=tf.reduce_sum(d**2, axis=-1)
+
+			d=tf.exp(-d)*ii_mat[:,:,:,-1]
+			d=tf.reduce_sum(d, axis=-1)
+			d=tf.maximum(0,d-.05)
+
+			rotout.append(np.sum(d<0.5/100))
+			
+		etc+=" {} rotamer outlier.".format(np.sum(rotout))
+	
 	etc+=" {} planarity,".format(plane_score)
 	
-	rotout=[]
-	for chin in range(4):
-		ii=options.chi_idx[chin].T.flatten()
-		ii_mat=options.chi_mat[chin][None,...]
-
-		ii=options.idx_dih_chi[ii][:,:4]
-		pt=tf.gather(atom_pos, ii, axis=1)
-		dih=calc_dihedral_tf(pt)%360
-		dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
-		dih=tf.transpose(dih, (0,2,1))
-
-		d=dih[:,:,None,:]-ii_mat[:,:,:,:chin+1]
-		d=d/ii_mat[:,:,:,chin+1:chin*2+2]
-		d=tf.reduce_sum(d**2, axis=-1)
-
-		d=tf.exp(-d)*ii_mat[:,:,:,-1]
-		d=tf.reduce_sum(d, axis=-1)
-		d=tf.maximum(0,d-.05)
-
-		rotout.append(np.sum(d<0.5/100))
+	if options.has_rna:
 		
-	etc+=" {} rotamer outlier.".format(np.sum(rotout))
-	
+		idx_rna_dih=options.idx_rna_dih
+		pt=tf.gather(atom_pos, idx_rna_dih, axis=1)
+		s=pt.shape
+		ang=calc_dihedral_tf(tf.reshape(pt, (s[0], s[1]*s[2], s[3], s[4])))
+		rna_angs=tf.reshape(ang, (s[0], s[1], s[2]))
+		suit_cnt=np.array([s[2::2] for s in e2pc.suitename], dtype=floattype)
+		
+		dt=rna_angs[:,:,None,:]-suit_cnt[None, None,:,:]
+		dt=dt%360
+		dt=tf.minimum(dt, 360-dt)
+		dt=dt/e2pc.suite_halfw
+		
+		ds0=tf.reduce_sum(dt**3, axis=3)
+		ds0=tf.math.pow(ds0,1.0/3.0)
+		
+		ds=(tf.math.cos(ds0*np.pi)+1)/2.
+		ds=ds*tf.cast(ds0<1, np.float32)
+		
+		scr=tf.reduce_max(ds, axis=2)
+		rna_score=tf.reduce_mean(scr)
+		etc+=f" RNA score {rna_score:.3f}"
+		
 	atom_pos=add_h(atom_pos,options.h_info)
 	arot=rotate_sidechain(atom_pos, options.rot_axish, theta_h[None,:], options.rotmat_idxh)
 	
@@ -570,7 +605,8 @@ def eval_chem(model, theta_all, theta_h, options):
 	ii=np.arange(len(clashid))
 	ii=np.repeat(ii[:,None], clashid.shape[1], axis=1)
 	ab=atype[clashid]*10+atype[ii]
-	clash_omask=np.logical_or(ab==3, ab==30)
+	clash_omask=np.sum([ab==k for k in [3,30, 2,20]], axis=0).astype(bool)
+	# clash_omask=np.logical_or(ab==3, ab==30)
 	clash_omask=clash_omask.astype(floattype)*.4
 	
 	options.clashid=clashid
@@ -578,8 +614,29 @@ def eval_chem(model, theta_all, theta_h, options):
 	options.clash_omask=clash_omask
 	
 	clash=find_clash(arot, options)
-	# c=tf.reduce_sum(tf.sign(clash))/2
 	etc+=" {} clashing atoms".format(np.sum(clash.numpy()>0)//2)
+	
+# 	clash=clash.numpy()[0]
+# 	print(clash.shape)
+# 	c0=np.array(np.where(clash>0)).T
+# 	for c in c0:
+# 		i0=c[0]
+# 		i1=options.clashid[c[0], c[1]]
+# 		hs=['','']
+# 		if i0>options.npt_noh:
+# 			i0=options.h_info[1][i0-options.npt_noh][0]
+# 			hs[0]='H'
+# 			
+# 		if i1>options.npt_noh:
+# 			i1=options.h_info[1][i1-options.npt_noh][0]
+# 			hs[1]='H'
+# 			
+# 		a0=get_info(options.atoms[i0], include_id=True)
+# 		a1=get_info(options.atoms[i1], include_id=True)
+# 		print(clash[c[0], c[1]], i0,i1, a0, a1, hs)
+# 	# print(c0)
+# 	print(etc)
+
 	return etc
 	
 def find_clash(atom_pos, options, relu=True):
@@ -597,8 +654,9 @@ def find_clash(atom_pos, options, relu=True):
 	return clash
 	
 def optimize_h(atom_pos, options, npos=24):
-	step=np.pi*2/npos
-	tt=np.arange(0, np.pi*2, step)
+	# step=np.pi*2/npos
+	# tt=np.arange(0, np.pi*2, step)
+	tt=np.array([0, np.pi], dtype=floattype)
 	tt=np.repeat(tt[:,None], len(options.rot_axish), axis=1).astype(floattype)
 	ap=tf.repeat(atom_pos, len(tt), axis=0)
 	arot=rotate_sidechain(ap, options.rot_axish, tt, options.rotmat_idxh)
@@ -747,17 +805,18 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			lossetc+=ang_outlier * options.weight["bond"]
 
 			######
-			pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
-			phi=calc_dihedral_tf(pt[:,:,:4])
-			psi=calc_dihedral_tf(pt[:,:,4:])
-			rama=eval_rama(phi, psi, options)
-			rama_score=tf.reduce_mean(rama)*.1
-			rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500
-			rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*1
-			# rama_outlier+=tf.reduce_mean(tf.sign(tf.maximum(0,rama-options.rama_thr1)))*1000
-			lossetc+=rama_score * options.weight["rama"]
-			lossetc+=rama_outlier * options.weight["rama"]
-			
+			if options.has_protein:
+				pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
+				phi=calc_dihedral_tf(pt[:,:,:4])
+				psi=calc_dihedral_tf(pt[:,:,4:])
+				rama=eval_rama(phi, psi, options)
+				rama_score=tf.reduce_mean(rama)*.1
+				rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500
+				rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*1
+				# rama_outlier+=tf.reduce_mean(tf.sign(tf.maximum(0,rama-options.rama_thr1)))*1000
+				lossetc+=rama_score * options.weight["rama"]
+				lossetc+=rama_outlier * options.weight["rama"]
+				
 			##########
 			pt=tf.gather(atom_pos, options.idx_dih_plane, axis=1)
 			rot=calc_dihedral_tf(pt)
@@ -765,47 +824,75 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			rot=tf.maximum(0, abs(rot)-options.thr_plane)
 			plane_score=tf.reduce_mean(rot)*1000
 			
-			pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
-			rot=calc_dihedral_tf(pt)
-			rot=tf.sin(rot*np.pi/180.)
-			rot=tf.maximum(0, abs(rot)-options.thr_piptide)
-			plane_score+=tf.reduce_mean(rot)*1000
+			if options.has_protein:
+				pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
+				rot=calc_dihedral_tf(pt)
+				rot=tf.sin(rot*np.pi/180.)
+				rot=tf.maximum(0, abs(rot)-options.thr_piptide)
+				plane_score+=tf.reduce_mean(rot)*1000
 			
 			lossetc+=plane_score * options.weight["plane"]
 			
 			##########
-			rota_out=[]
-			for chin in range(4):
-				ii=options.chi_idx[chin].T.flatten()
-				ii_mat=options.chi_mat[chin][None,...]
+			if options.has_protein:
+				rota_out=[]
+				for chin in range(4):
+					ii=options.chi_idx[chin].T.flatten()
+					ii_mat=options.chi_mat[chin][None,...]
 
-				ii=options.idx_dih_chi[ii][:,:4]
-				pt=tf.gather(atom_pos, ii, axis=1)
-				dih=calc_dihedral_tf(pt)%360
-				dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
-				dih=tf.transpose(dih, (0,2,1))
+					ii=options.idx_dih_chi[ii][:,:4]
+					pt=tf.gather(atom_pos, ii, axis=1)
+					dih=calc_dihedral_tf(pt)%360
+					dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
+					dih=tf.transpose(dih, (0,2,1))
 
-				d=dih[:,:,None,:]-ii_mat[:,:,:,:chin+1]
-				d=d/ii_mat[:,:,:,chin+1:chin*2+2]
-				d=tf.reduce_sum(d**2, axis=-1)
+					d=dih[:,:,None,:]-ii_mat[:,:,:,:chin+1]
+					d=d/ii_mat[:,:,:,chin+1:chin*2+2]
+					d=tf.reduce_sum(d**2, axis=-1)
 
-				d=tf.exp(-d)*ii_mat[:,:,:,-1]
-				d=tf.reduce_sum(d, axis=-1)
-				d=tf.maximum(0,d-.05)
+					d=tf.exp(-d)*ii_mat[:,:,:,-1]
+					d=tf.reduce_sum(d, axis=-1)
+					d=tf.maximum(0,d-.05)
 
-				rota_out.append(d)
+					rota_out.append(d)
 
-			rota_out=1-tf.concat(rota_out, axis=1)            
-			rota_score=tf.reduce_mean(rota_out)*5
+				rota_out=1-tf.concat(rota_out, axis=1)            
+				rota_score=tf.reduce_mean(rota_out)*5
 
-			r1=tf.maximum(0, rota_out-99/100.)
-			# r2=tf.maximum(0, rota_out-98/100.)
-			rota_outlier=tf.reduce_mean(r1)*5000
-			# rota_outlier+=tf.reduce_mean(r2)*10
+				r1=tf.maximum(0, rota_out-99/100.)
+				rota_outlier=tf.reduce_mean(r1)*5000
 
-			lossetc+=rota_score * options.weight["rotamer"]
-			lossetc+=rota_outlier * options.weight["rotamer"]
+				lossetc+=rota_score * options.weight["rotamer"]
+				lossetc+=rota_outlier * options.weight["rotamer"]
 				
+			#############
+			if options.has_rna:
+				
+				idx_rna_dih=options.idx_rna_dih
+				pt=tf.gather(atom_pos, idx_rna_dih, axis=1)
+				s=pt.shape
+				ang=calc_dihedral_tf(tf.reshape(pt, (s[0], s[1]*s[2], s[3], s[4])))
+				rna_angs=tf.reshape(ang, (s[0], s[1], s[2]))
+				suit_cnt=np.array([s[2::2] for s in e2pc.suitename], dtype=floattype)
+				
+				dt=rna_angs[:,:,None,:]-suit_cnt[None, None,:,:]
+				dt=dt%360
+				dt=tf.minimum(dt, 360-dt)
+				dt=dt/e2pc.suite_halfw
+				
+				ds0=tf.reduce_sum(dt**3, axis=3)
+				ds0=tf.math.pow(ds0,1.0/3.0)
+				
+				ds=(tf.math.cos(ds0*np.pi)+1)/2.
+				ds=ds*tf.cast(ds0<1, np.float32)
+				
+				scr=tf.reduce_max(ds, axis=2)
+				rna_score=tf.reduce_mean(scr)
+				lossetc+=(1-rna_score)*1000.
+				# etc+=f" RNA score {rna_score:.3f}"
+				
+				
+			#### clash
 			atom_pos=add_h(atom_pos,options.h_info)
 			tt=tf.repeat(theta_h[None,:], conf.shape[0], axis=0)
 			arot=rotate_sidechain(atom_pos, options.rot_axish, tt, options.rotmat_idxh)
@@ -813,8 +900,8 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			clash0=tf.maximum(0,clash)
 			clash1=tf.maximum(0,clash+options.vdroverlap-0.3)*1e-5
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0+clash1))/conf.shape[0]/2.*5.
-			# c=tf.reduce_sum(tf.sign(clash))
 			lossetc+=clash_score * options.weight["clash"]
+			
 			l=tf.math.log(lossetc)
 
 
@@ -826,9 +913,12 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 		etc=""
 		etc+=f", bond {bond_score:.3f},{bond_outlier:.3f}"
 		etc+=f", angle {ang_score:.3f},{ang_outlier:.3f}"
-		etc+=f", rama {rama_score:.3f},{rama_outlier:.3f}"
+		if options.has_protein:
+			etc+=f", rama {rama_score:.3f},{rama_outlier:.3f}"
+			etc+=f", rota {rota_score:.3f},{rota_outlier:.3f}"
+		if options.has_rna:
+			etc+=f", RNA {rna_score:.3f}"
 		etc+=f", clash {clash_score:.3f},{nclash:d}"
-		etc+=f", rota {rota_score:.3f},{rota_outlier:.3f}"
 		etc+=f", plane {plane_score:.3f}"
 
 
@@ -923,7 +1013,7 @@ def main():
 		pdbpar = MMCIFParser( QUIET = True) 
 	else:
 		pdbpar = PDBParser( QUIET = True) 
-	pdb = pdbpar.get_structure("model",options.model)
+	options.pdb = pdb = pdbpar.get_structure("model",options.model)
 	residue=list(pdb.get_residues())
 	for r in residue:
 		d=list(r.child_dict)
@@ -948,15 +1038,23 @@ def main():
 	pout=gen_model_full(conf)
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 	
+	options.has_protein=True
+	options.has_rna=False
+	
 	##########################################
-	idx_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
+	# idx_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
 	options.bonds=bonds=np.loadtxt(f"{path}/model_bond.txt").astype(floattype)
 	options.angle=np.loadtxt(f"{path}/model_angle.txt").astype(floattype)
 	vdwr=np.loadtxt(f"{path}/model_vdwr.txt").astype(floattype)
-	options.idx_dih_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
+	idx_rama=options.idx_dih_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
 	options.idx_dih_plane=np.loadtxt(f"{path}/model_dih_plane.txt").astype(int)
 	options.idx_dih_piptide=np.loadtxt(f"{path}/model_dih_piptide.txt").astype(int)
 	options.idx_dih_chi=np.loadtxt(f"{path}/model_dih_chi.txt").astype(int)
+	
+	if os.path.isfile(f"{path}/model_dih_rna.txt"):
+		idx_rna_dih=np.loadtxt(f"{path}/model_dih_rna.txt").astype(int)
+		options.idx_rna_dih=idx_rna_dih.reshape((idx_rna_dih.shape[0], -1, 4))
+		options.has_rna=True
 		
 	##########################################
 	options.thr_plane=np.sin(10*np.pi/180)
@@ -971,31 +1069,35 @@ def main():
 	
 	
 	##########################################
-	print("Compiling Ramachandran types...")
-	options.dih_type=dih_type=get_rama_types(atoms, idx_rama)
-	rt={"general":"General","gly":"GLY","protrans":"trans-PRO","procis":"cis-PRO","ile":"ILE/VAL","prepro":"pre-PRO"}
-	for k in dih_type:
-		print(f"  Ramachandran type {rt[k]:<10}:  {int(np.sum(dih_type[k]))} residues.")
+	if len(idx_rama)==0:
+		print("No protein residue. Skipping Ramachandran and rotamers")
+		theta_all=None
+		options.has_protein=False
+	else:
+		print("Compiling Ramachandran types...")
+		options.dih_type=dih_type=get_rama_types(atoms, idx_rama)
+		rt={"general":"General","gly":"GLY","protrans":"trans-PRO","procis":"cis-PRO","ile":"ILE/VAL","prepro":"pre-PRO"}
+		for k in dih_type:
+			print(f"  Ramachandran type {rt[k]:<10}:  {int(np.sum(dih_type[k]))} residues.")
 
-
-	##########################################
-	print("Compiling rotamers...")
-	options.chi_idx, options.chi_mat=compile_chi_matrix(options.idx_dih_chi)
+		##########################################
+		print("Compiling rotamers...")
+		options.chi_idx, options.chi_mat=compile_chi_matrix(options.idx_dih_chi)
+			
+		rot_axis=[]
+		rotmat_idx=[]
+		for i in range(4):
+			ra, ri=get_rotamer_angle(atoms, i)    
+			rot_axis.append(ra)
+			rotmat_idx.append(ri)
+			
+		options.rot_axis=rot_axis
+		options.rotmat_idx=rotmat_idx
+		for i,m in enumerate(options.chi_mat):
+			print(f"  rotamer chi = {i}, matrix shape: {m.shape}, total {len(rot_axis[i])} angles")
 		
-	rot_axis=[]
-	rotmat_idx=[]
-	for i in range(4):
-		ra, ri=get_rotamer_angle(atoms, i)    
-		rot_axis.append(ra)
-		rotmat_idx.append(ri)
-		
-	options.rot_axis=rot_axis
-	options.rotmat_idx=rotmat_idx
-	for i,m in enumerate(options.chi_mat):
-		print(f"  rotamer chi = {i}, matrix shape: {m.shape}, total {len(rot_axis[i])} angles")
-		
-	### additional rotation for each chi angle
-	theta_all=[np.zeros(len(rot_axis[ii]), dtype=floattype) for ii in range(4)]	
+		### additional rotation for each chi angle
+		theta_all=[np.zeros(len(rot_axis[ii]), dtype=floattype) for ii in range(4)]	
 	
 	
 	##########################################
@@ -1057,11 +1159,13 @@ def main():
 	
 	print("Optimizing H rotation...")
 	conf=np.zeros((1,options.nmid), dtype=floattype)+1
-	# atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
-	# theta_h=optimize_h(atom_pos, options, npos=24)
+	atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
+	theta_h=optimize_h(atom_pos, options, npos=24)
 	
 	etc=eval_chem(gen_model_full, theta_all, theta_h, options)
+	save_model_pdb(gen_model_full, theta_all, theta_h, options, f"{path}/model_00h")
 	print(etc)
+	# exit()
 	
 	if options.fixrotamer:
 		print("Fixing bad rotamers....")
@@ -1069,7 +1173,7 @@ def main():
 			fix_bad_rotamer(chin, gen_model_full, theta_all, theta_h, options)
 		
 		atom_pos=calc_atom_pos(conf, gen_model_full, theta_all, options, addh=True)
-		theta_h=optimize_h(atom_pos, options, npos=24)
+		# theta_h=optimize_h(atom_pos, options, npos=24)
 		etc=eval_chem(gen_model_full, theta_all, theta_h, options)
 		print(etc)
 		save_model_pdb(gen_model_full, theta_all, theta_h, options, f"{path}/model_01")

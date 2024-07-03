@@ -192,7 +192,8 @@ def main():
 	if options.parallel:				# run in parallel
 		taskids=etc.send_tasks(tasks)
 		alltaskids=taskids[:]
-
+		
+		towrite=[None for i in range(ncls)]
 		while len(taskids)>0 :
 			curstat=etc.check_task(taskids)
 			for i,j in enumerate(curstat):
@@ -206,11 +207,15 @@ def main():
 							rslt[1]["average"].process_inplace("mask.gaussian",{"inner_radius":old_div(nx,2)-old_div(nx,15),"outer_radius":old_div(nx,20)})
 							#rslt[1]["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 
+						# print(f"write {rslt[1]}")
 						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
 #						print("write",rslt[1]["n"])
-						if options.storebad : rslt[1]["average"].write_compressed(options.output,rslt[1]["n"],options.compressbits)
-						else: rslt[1]["average"].write_compressed(options.output,-1,options.compressbits)
-
+						if options.storebad : 
+							towrite[rslt[1]["n"]]=rslt[1]["average"].copy()
+							# print(towrite)
+							# rslt[1]["average"].write_compressed(options.output,rslt[1]["n"],options.compressbits)
+						else: 
+							rslt[1]["average"].write_compressed(options.output,-1,options.compressbits)
 
 						# Update the resultsmx if requested
 						if options.resultmx!=None:
@@ -255,7 +260,9 @@ def main():
 
 			time.sleep(3)
 
-
+		for i,w in enumerate(towrite):
+			w.write_compressed(options.output,i,options.compressbits)
+			
 		if options.verbose : print("Completed all tasks")
 
 	# single thread

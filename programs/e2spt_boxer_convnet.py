@@ -27,6 +27,7 @@ def main():
 	parser.add_argument("--gpuid", type=str,help="Specify the gpu to use", default="0",guitype='strbox',row=1, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--mult", type=float,help="multiply data by factor. useful for vpp data...", default=1)
 	parser.add_argument("--select", type=str,help="a list file for selected tomograms", default=None)
+	parser.add_argument("--spa", action="store_true", default=False ,help="mode for 2d particles")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -90,6 +91,8 @@ class NNet:
 	def __init__(self, boxsize=96, thick=9):
 		
 		pad='same'
+		if thick==0:
+			thick=3
 
 		ki=tf.keras.initializers.TruncatedNormal(stddev=0.01)
 		layers=[
@@ -162,6 +165,11 @@ class NNet:
 		
 	def apply_network(self, img):
 		bigbox=img.shape[1]
+		
+		print(img.shape)
+		m=from_numpy(img[0,:,:,0])
+		m.write_image("neuralnets/test.hdf")
+		
 		ly=tf.keras.layers.Conv2D(48, 9, activation="relu", input_shape=[bigbox,bigbox,self.thick//3])
 		modelbig=tf.keras.Sequential([ly]+self.layers[1:])
 		ly.weights[0].assign(self.layers[0].weights[0], read_value=False)
@@ -270,11 +278,14 @@ def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1):
 		b=bx=by=boxsz
 		
 	t=thick
-	
 	if len(pos)==0:
 		pos=[img["nx"]//2, img["ny"]//2, img["nz"]//2]
+			
+	if t==0:
+		m=img.get_clip(Region(pos[0]-b//2, pos[1]-b//2, b, b))
 	
-	m=img.get_clip(Region(pos[0]-b//2, pos[1]-b//2, pos[2]-t//2, b, b, t))
+	else:
+		m=img.get_clip(Region(pos[0]-b//2, pos[1]-b//2, pos[2]-t//2, b, b, t))
 	
 	if ncopy>1:
 		m.process_inplace("mask.soft",{"outer_radius":b//2-6,"width":4})
@@ -283,8 +294,11 @@ def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1):
 		rots=[0]
 		
 	ptcls=[]
-	for i in range(t//3):
-		ptcls.append(m.process("misc.directional_sum", {"axis":'z', "first":i*3, "last":i*3+3}))
+	if t==0:
+		ptcls.append(m)
+	else:
+		for i in range(t//3):
+			ptcls.append(m.process("misc.directional_sum", {"axis":'z', "first":i*3, "last":i*3+3}))
 		
 	imgs=[]
 	for r in rots:
@@ -354,7 +368,11 @@ class EMTomobox(QtWidgets.QMainWindow):
 		else:
 			self.references=[]
 			
-		self.path="tomograms/"
+		if options.spa:
+			self.path="micrographs/"
+		else:
+			self.path="tomograms/"
+		
 		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
 		
@@ -445,7 +463,11 @@ class EMTomobox(QtWidgets.QMainWindow):
 			self.boxsize=self.nnetsize
 		else:
 			self.boxsize=self.references[0]["boxsz"]
-		self.thick=9
+			
+		if self.options.spa:
+			self.thick=0
+		else:
+			self.thick=9
 		self.datafile=""
 		self.data=None
 		
@@ -528,17 +550,23 @@ class EMTomobox(QtWidgets.QMainWindow):
 			info={"id":len(self.imginfo), "name":name, "basename":basename, "nptcl":0, "gref":0, "bref":0, "clsid":-1}
 			js=js_open_dict(jsfile)
 			clsid=-1
-			if ("class_list" in js) and ("boxes_3d" in js):
-				cls=js["class_list"]
+			if self.options.spa:
+				if "boxes" in js:
+					ptcls=[p for p in js["boxes"]]
+					info["nptcl"]=len(ptcls)
 				
-				for k in list(cls.keys()):
-					vname=str(cls[k]["name"])
-					if vname==self.options.label:
-						clsid=int(k)
-						break
+			else:
+				if ("class_list" in js) and ("boxes_3d" in js):
+					cls=js["class_list"]
 					
-				ptcls=[p for p in js["boxes_3d"] if p[5]==clsid]
-				info["nptcl"]=len(ptcls)
+					for k in list(cls.keys()):
+						vname=str(cls[k]["name"])
+						if vname==self.options.label:
+							clsid=int(k)
+							break
+						
+					ptcls=[p for p in js["boxes_3d"] if p[5]==clsid]
+					info["nptcl"]=len(ptcls)
 			
 			refs=[r for r in self.references if base_name(r["fromtomo"])==basename]
 			info["gref"]=len([r for r in refs if r["label"]==1])
@@ -611,16 +639,29 @@ class EMTomobox(QtWidgets.QMainWindow):
 		
 		js=js_open_dict(self.infofile)
 		apix_cur=apix=self.data["apix_x"]
-		apix_unbin=js["apix_unbin"]
+		if self.options.spa:
+			apix_unbin=apix_cur
+		else:
+			apix_unbin=js["apix_unbin"]
 		self.apix_scale=apix_cur/apix_unbin
 		self.tomocenter= np.array([self.data["nx"],self.data["ny"],self.data["nz"]])/2
 		self.ptclimages=[]
-		if "boxes_3d" in js:
-			ptcls=np.array([p[:3] for p in js["boxes_3d"] if p[5]==self.curinfo["clsid"]])
-			if len(ptcls)>0:
-				ptcls= ptcls  / self.apix_scale + self.tomocenter
-				for p in ptcls.tolist():
-					self.add_ptcls(p[0], p[1], p[2])
+		if self.options.spa:
+			
+			if "boxes" in js:
+				print(js["boxes"])
+				ptcls=np.array([p[:2] for p in js["boxes"]])
+				print(ptcls)
+				if len(ptcls)>0:
+					for p in ptcls.tolist():
+						self.add_ptcls(p[0], p[1], 0)
+		else:
+			if "boxes_3d" in js:
+				ptcls=np.array([p[:3] for p in js["boxes_3d"] if p[5]==self.curinfo["clsid"]])
+				if len(ptcls)>0:
+					ptcls= ptcls  / self.apix_scale + self.tomocenter
+					for p in ptcls.tolist():
+						self.add_ptcls(p[0], p[1], p[2])
 		
 		js.close()
 		self.tomoinp=[]
@@ -771,18 +812,26 @@ class EMTomobox(QtWidgets.QMainWindow):
 		else:
 			data=self.data.copy()
 			scale=self.nnetsize/self.boxsize
-			data.scale(scale)
-			ts2=[int(t*scale) for t in ts]
+			# data.scale(scale)
+			data.process_inplace("math.fft.resample", {"n":self.boxsize/self.nnetsize})
+			ts=[data["nx"], data["ny"], data["nz"]]
+			# ts2=[int(t*scale) for t in ts]
 			#print(ts, ts2)
-			data=data.get_clip(Region(ts[0]//2-ts2[0]//2, ts[1]//2-ts2[1]//2, ts[2]//2-ts2[2]//2,  ts2[0], ts2[1], ts2[2]))
-			ts=ts2
+			# data=data.get_clip(Region(ts[0]//2-ts2[0]//2, ts[1]//2-ts2[1]//2, ts[2]//2-ts2[2]//2,  ts2[0], ts2[1], ts2[2]))
+			# ts=ts2
 			
 		if len(self.tomoinp)==0:
 			print("Preparing input...")
-			
-			m=[]
-			for i in range(0, ts[2],4):
-				m.extend(get_image(data, pos=[ts[0]//2, ts[1]//2, i], thick=self.thick, ncopy=1))
+			if self.options.spa:
+				data.write_image("neuralnets/test1.hdf")
+				m=get_image(data, pos=[], thick=0, ncopy=1)
+				m=np.array(m)
+				a=from_numpy(m[0,:,:,0])
+				
+			else:
+				m=[]
+				for i in range(0, ts[2],4):
+					m.extend(get_image(data, pos=[ts[0]//2, ts[1]//2, i], thick=self.thick, ncopy=1))
 				
 			self.tomoinp=np.array(m)
 
@@ -793,9 +842,14 @@ class EMTomobox(QtWidgets.QMainWindow):
 			#o=np.mean(o, axis=1)
 			o=out.transpose(0,2,1).copy()
 			o=from_numpy(o)
-			o=o.get_clip(Region(o["nx"]//2-ts[0]//8, o["ny"]//2-ts[1]//8, o["nz"]//2-ts[2]//8, ts[0]//4, ts[1]//4, ts[2]//4))
-			#o.scale(self.boxsize/self.nnetsize)
-			o.process_inplace("mask.zeroedge3d",{"x0":bx,"x1":bx,"y0":bx,"y1":bx,"z0":thk,"z1":thk})
+			
+			if self.options.spa:
+				o=o.get_clip(Region(o["nx"]//2-ts[0]//8, o["ny"]//2-ts[1]//8, ts[0]//4, ts[1]//4))
+			else:
+				o=o.get_clip(Region(o["nx"]//2-ts[0]//8, o["ny"]//2-ts[1]//8, o["nz"]//2-ts[2]//8, ts[0]//4, ts[1]//4, ts[2]//4))
+				#o.scale(self.boxsize/self.nnetsize)
+				o.process_inplace("mask.zeroedge3d",{"x0":bx,"x1":bx,"y0":bx,"y1":bx,"z0":thk,"z1":thk})
+				
 			o.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.5})
 			self.segout=o.copy()
 			o.write_image("neuralnets/segout.hdf")
@@ -808,7 +862,11 @@ class EMTomobox(QtWidgets.QMainWindow):
 		img[img<self.val_ptclthr.getval()]=0
 		
 		pnew=np.array(np.where(img>self.val_ptclthr.getval())).T
-		val=img[pnew[:,0], pnew[:,1], pnew[:,2]]
+		if self.options.spa:
+			val=img[pnew[:,0], pnew[:,1]]
+		else:
+			val=img[pnew[:,0], pnew[:,1], pnew[:,2]]
+			
 		pnew=pnew[np.argsort(-val)]
 
 		pnew=pnew[:, ::-1]*4#+4
@@ -840,7 +898,10 @@ class EMTomobox(QtWidgets.QMainWindow):
 		#pts=pnew[tokeep].tolist()
 
 		for p in pts:
-			self.add_ptcls(p[0], p[1], p[2])
+			if self.options.spa:
+				self.add_ptcls(p[0], p[1], 0)
+			else:
+				self.add_ptcls(p[0], p[1], p[2])
 			
 		print("Found {} particles...".format(len(pts)))
 		self.do_update()
@@ -900,8 +961,10 @@ class EMTomobox(QtWidgets.QMainWindow):
 			
 		else:
 			#### Used to be based on holding control, but that didn't work on all platforms
-			if mode=="Bad References": label=0
-			else : label=1
+			if mode=="Bad References" or event.modifiers()&Qt.ControlModifier: 
+				label=0
+			else : 
+				label=1
 			self.add_reference(label, x, y)
 			self.do_update()
 		
@@ -960,23 +1023,34 @@ class EMTomobox(QtWidgets.QMainWindow):
 			self.trainset=[]
 	
 	def add_reference(self, label, x, y, z=None):
-		if z==None:
-			z=self.imgview.list_idx
-		
-		
-		
-		if self.nnetsize==self.boxsize:
+		if self.options.spa:
 			b=self.boxsize
-			t=self.thick
-			img=self.data.get_clip(Region(x-b//2, y-b//2, z-t//2, b, b, t))
-			
+			z=0
+			img=self.data.get_clip(Region(x-b//2, y-b//2, b, b))
+			if self.nnetsize!=self.boxsize:
+				# print(self.boxsize/self.nnetsize)
+				img.process_inplace("math.fft.resample", {"n":self.boxsize/self.nnetsize})
+				# print(self.boxsize, self.nnetsize, img["nx"])
+				# img.scale(self.nnetsize/self.boxsize)
+				# b2=self.nnetsize
+				# img=img.get_clip(Region(b//2-b2//2, b//2-b2//2,  b2, b2))
+				
 		else:
-			b=self.boxsize
-			img=self.data.get_clip(Region(x-b//2, y-b//2, z-b//2, b, b, b))
-			img.scale(self.nnetsize/self.boxsize)
-			b2=self.nnetsize
 			t=self.thick
-			img=img.get_clip(Region(b//2-b2//2, b//2-b2//2, b//2-t//2,  b2, b2, t))
+			if z==None:
+				z=self.imgview.list_idx
+			
+			
+			if self.nnetsize==self.boxsize:
+				b=self.boxsize
+				img=self.data.get_clip(Region(x-b//2, y-b//2, z-t//2, b, b, t))
+				
+			else:
+				b=self.boxsize
+				img=self.data.get_clip(Region(x-b//2, y-b//2, z-b//2, b, b, b))
+				img.scale(self.nnetsize/self.boxsize)
+				b2=self.nnetsize
+				img=img.get_clip(Region(b//2-b2//2, b//2-b2//2, b//2-t//2,  b2, b2, t))
 			
 		img["pos"]=[x,y,z]
 		img["fromtomo"]=self.datafile
@@ -987,7 +1061,10 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.trainset=[]
 		
 	def add_boximage(self, img):
-		img2d=img.get_clip(Region(0, 0, img["nz"]//2, img["nx"], img["nx"], 1))
+		if self.options.spa:
+			img2d=img
+		else:
+			img2d=img.get_clip(Region(0, 0, img["nz"]//2, img["nx"], img["nx"], 1))
 		self.boximages.append(img2d)
 			
 	def add_ptcls(self, x, y, z):
@@ -1002,30 +1079,39 @@ class EMTomobox(QtWidgets.QMainWindow):
 		#print("Saving particles...")
 		js=js_open_dict(self.infofile)
 		label=self.options.label
-		pts=np.array([b["pos"] for b in self.ptclimages])
-		if len(pts)>0:
-			pts=(pts - self.tomocenter) * self.apix_scale
-		pts=np.round(pts).astype(int)
 		clsid=self.curinfo["clsid"]
 		print('save particles to {} : {}'.format(clsid, label))
-		if not "class_list" in js:
-			js["class_list"]={}
-		if not "boxes_3d" in js:
-			js["boxes_3d"]=[]
+		pts=np.array([b["pos"] for b in self.ptclimages])
+		if self.options.spa:
+			# print(pts)
+			boxes=[[p[0], p[1], "tomobox"] for p in pts.tolist()]
+			js["boxes"]=boxes
 			
-		clslst=js["class_list"]
-		if clsid==-1:
-			if len(clslst.keys())==0:
-				clsid=0
-			else:
-				clsid=max([int(k) for k in clslst.keys()])+1
-			clslst[str(clsid)]={"name":label, "boxsize": int(self.boxshapes.circlesize*8)}
-			js["class_list"]=clslst
-			self.curinfo["clsid"]=clsid
+		else:
+					
+			if len(pts)>0:
+				pts=(pts - self.tomocenter) * self.apix_scale
+			pts=np.round(pts).astype(int)
 			
-		boxes=[b for b in js["boxes_3d"] if b[5]!=clsid]
-		boxes=boxes+[[p[0], p[1], p[2], "tomobox", 0.0, clsid] for p in pts.tolist()]
-		js["boxes_3d"]=boxes
+			if not "class_list" in js:
+				js["class_list"]={}
+			if not "boxes_3d" in js:
+				js["boxes_3d"]=[]
+				
+			clslst=js["class_list"]
+			if clsid==-1:
+				if len(clslst.keys())==0:
+					clsid=0
+				else:
+					clsid=max([int(k) for k in clslst.keys()])+1
+				clslst[str(clsid)]={"name":label, "boxsize": int(self.boxshapes.circlesize*8)}
+				js["class_list"]=clslst
+				self.curinfo["clsid"]=clsid
+				
+			boxes=[b for b in js["boxes_3d"] if b[5]!=clsid]
+			boxes=boxes+[[p[0], p[1], p[2], "tomobox", 0.0, clsid] for p in pts.tolist()]
+			js["boxes_3d"]=boxes
+			
 		js.close()
 		#self.update_list()
 		

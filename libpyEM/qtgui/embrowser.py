@@ -64,7 +64,7 @@ def display_error(msg) :
 # This is a floating point number-finding regular expression
 # Documentation: https://regex101.com/r/68zUsE/4/
 #renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
-renumfind = re.compile(r"-?\d*\.?\d+[eE]?-?\d*")
+renumfind = re.compile(r"-?\d*\.?\d+[eE]?[+-]?\d*")
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
 	"""Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value"""
@@ -95,7 +95,8 @@ def size_sortable(s):
 def isprint(s) :
 	"""returns True if the string contains only printable ascii characters"""
 	# Seems like no isprint() in python, this does basically the same thing
-	s=s.decode("utf-8")
+	try: s=s.decode("utf-8")
+	except: return False
 	mpd = s.translate("AAAAAAAAABBAABAAAAAAAAAAAAAAAAAA"+"B"*95+"A"*129)
 
 	if "A" in mpd :
@@ -1021,7 +1022,7 @@ class EMPlotFileType(EMFileType) :
 			except: continue
 			if lnumc != 0 and lnumc != numc : return False				# 0 means the line contains no numbers, we'll live with that, but if there are numbers, it needs to match
 			if lnumc != 0 : numr += 1
-
+		
 		if numr<3 and numc<3: return False
 
 		return (size, "-", "%d x %d"%(numr, numc))
@@ -1046,7 +1047,6 @@ class EMPlotFileType(EMFileType) :
 				continue
 
 			if l[0] == "#" : continue
-
 			lnumc = len([float(i) for i in renumfind.findall(l)])
 
 			if lnumc != 0 and numc == 0 : numc = lnumc
