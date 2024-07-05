@@ -199,6 +199,7 @@ def main():
 			for i,j in enumerate(curstat):
 				if j==100 :
 					rslt=etc.get_results(taskids[i])
+					
 					if rslt[1]["average"]!=None:
 						rslt[1]["average"]["class_ptcl_src"]=options.input
 						if options.decayedge:
@@ -208,11 +209,11 @@ def main():
 							#rslt[1]["average"].process_inplace("mask.decayedge2d",{"width":nx/15})
 
 						# print(f"write {rslt[1]}")
-						if options.ref!=None : rslt[1]["average"]["projection_image"]=options.ref
+						if options.ref!=None : 
+							rslt[1]["average"]["projection_image"]=options.ref
 #						print("write",rslt[1]["n"])
 						if options.storebad : 
 							towrite[rslt[1]["n"]]=rslt[1]["average"].copy()
-							# print(towrite)
 							# rslt[1]["average"].write_compressed(options.output,rslt[1]["n"],options.compressbits)
 						else: 
 							rslt[1]["average"].write_compressed(options.output,-1,options.compressbits)
@@ -241,15 +242,17 @@ def main():
 								try: classmx[6][x,y]=xform["scale"]
 								except: pass
 					# failed average
-					elif options.storebad :
-						blk=EMData(options.ref,0)
-						apix=blk["apix_x"]
-						blk=EMData(blk["nx"],blk["ny"],1)
-						blk["apix_x"]=apix
-						blk.to_zero()
-						blk.set_attr("ptcl_repr", 0)
-						blk.set_attr("apix_x",apix)
-						blk.write_compressed(options.output,rslt[1]["n"],options.compressbits)
+					# elif options.storebad :
+					# 	print(rslt)
+					# 	exit()
+					# 	blk=EMData(options.ref,0)
+					# 	apix=blk["apix_x"]
+					# 	blk=EMData(blk["nx"],blk["ny"],1)
+					# 	blk["apix_x"]=apix
+					# 	blk.to_zero()
+					# 	blk.set_attr("ptcl_repr", 0)
+					# 	blk.set_attr("apix_x",apix)
+					# 	blk.write_compressed(options.output,rslt[1]["n"],options.compressbits)
 
 			taskids=[j for i,j in enumerate(taskids) if curstat[i]!=100]
 
@@ -260,9 +263,19 @@ def main():
 
 			time.sleep(3)
 
-		for i,w in enumerate(towrite):
-			w.write_compressed(options.output,i,options.compressbits)
-			
+		
+		if options.storebad:
+			for i,w in enumerate(towrite):
+				if w==None:
+					a=[e for e in towrite if e!=None]
+					if len(a)==0:
+						print("All class None. Something is wrong...")
+						exit()
+					w=a[0].copy()
+					w.to_zero()
+					
+				w.write_compressed(options.output,i,options.compressbits)
+				
 		if options.verbose : print("Completed all tasks")
 
 	# single thread
