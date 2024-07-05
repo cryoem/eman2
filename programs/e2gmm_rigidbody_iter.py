@@ -64,13 +64,15 @@ def main():
 			if options.expandsym:
 				run(f"e2proclst.py {path}/ptcls_00_{eo}.lst --sym {options.expandsym}")
 			
-			run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_{eo}.hdf --parallel thread:{options.thread} --keep 1 --sym c1")
-			e=EMData(f"{path}/threed_{iiter:02d}_{eo}.hdf")
-			e.write_image(f"{path}/threed_{iiter:02d}_raw_{eo}.hdf")
+			run(f"e2proc3d.py {oldpath}/threed_{olditer:02d}_{eo}.hdf {path}/threed_{iiter:02d}_{eo}.hdf")
+			run(f"e2proc3d.py {oldpath}/threed_raw_{eo}.hdf {path}/threed_{iiter:02d}_raw_{eo}.hdf")
 			
-		e=EMData(f"{oldpath}/mask.hdf")
-		e.write_image(f"{path}/mask_00.hdf")
-		run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread {options.thread} --setsf sf.txt --align --mask {path}/mask_00.hdf")
+			# run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_{eo}.hdf --parallel thread:{options.thread} --keep 1 --sym c1")
+			# e=EMData(f"{path}/threed_{iiter:02d}_{eo}.hdf")
+			# e.write_image(f"{path}/threed_{iiter:02d}_raw_{eo}.hdf")
+			
+		run(f"e2proc3d.py {oldpath}/mask.hdf {path}/mask_00.hdf")
+		# run(f"e2refine_postprocess.py --even {path}/threed_{iiter:02d}_even.hdf --res 5 --tophat localwiener --sym c1 --thread {options.thread} --setsf sf.txt --align --mask {path}/mask_00.hdf")
 		
 		
 		#### make masks
