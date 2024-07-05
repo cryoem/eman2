@@ -324,7 +324,7 @@ def main():
 			
 		else:		
 			## when there is a mask, sample more anchor points inside mask
-			pn=32
+			pn=options.npatch//4
 			km=KMeans(pn,max_iter=30)
 			km.fit(pcls[imsk<.1])
 			pc0=km.cluster_centers_
@@ -394,6 +394,19 @@ def main():
 		options.maxpx=maxboxsz//2
 		nbatch=int(trainset.cardinality())
 		
+	##########################################
+	idx_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
+	options.bonds=bonds=np.loadtxt(f"{path}/model_bond.txt").astype(floattype)
+	options.angle=np.loadtxt(f"{path}/model_angle.txt").astype(floattype)
+	options.vdwr_h=vdwr=np.loadtxt(f"{path}/model_vdwr.txt").astype(floattype)
+	options.idx_dih_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
+	options.idx_dih_plane=np.loadtxt(f"{path}/model_dih_plane.txt").astype(int)
+	options.idx_dih_piptide=np.loadtxt(f"{path}/model_dih_piptide.txt").astype(int)
+	options.idx_dih_chi=np.loadtxt(f"{path}/model_dih_chi.txt").astype(int)
+	
+	options.clash_nb=128
+	options.vdroverlap=.5
+	
 	##############
 	## first train morphing model
 	if niter[0]>0:
@@ -404,13 +417,14 @@ def main():
 		for bxn in [4,3,2]:
 			options.maxpx=maxboxsz//bxn
 			##########################################
-			etc=""
+			
 			print("  Max resolution {:.1f}".format(options.resolution*bxn/2))
 			
 			for itr in range(niter[0]):
 				cost=[]
 				costetc=[]
 				for pjr,pji,xf,md in trainset:
+					etc=""
 					if xf.shape[0]==1: continue
 					pj_cpx=(pjr,pji)
 					with tf.GradientTape() as gt:
@@ -424,6 +438,18 @@ def main():
 						imgs_cpx=pts2img(pout, xf)
 						fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
 						loss=-tf.reduce_mean(fval)
+						
+						
+						atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
+
+						bond_len=calc_bond(atom_pos, bonds[:,:2].astype(int))
+						bond_df=(bond_len-bonds[:,2])/bonds[:,3]
+						bond_outlier=tf.maximum(abs(bond_df)-4, 0)
+						bond_outlier=tf.reduce_mean(bond_outlier)
+						# lossetc=0.
+						lossetc=bond_outlier*1e-2
+						etc+=f" {lossetc:.4f} "
+						loss+=lossetc
 
 					cost.append(loss)  
 
@@ -457,18 +483,6 @@ def main():
 	pout=tf.constant(pts.copy()[None,:].astype(floattype))
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 
-	##########################################
-	idx_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
-	options.bonds=bonds=np.loadtxt(f"{path}/model_bond.txt").astype(floattype)
-	options.angle=np.loadtxt(f"{path}/model_angle.txt").astype(floattype)
-	options.vdwr_h=vdwr=np.loadtxt(f"{path}/model_vdwr.txt").astype(floattype)
-	options.idx_dih_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
-	options.idx_dih_plane=np.loadtxt(f"{path}/model_dih_plane.txt").astype(int)
-	options.idx_dih_piptide=np.loadtxt(f"{path}/model_dih_piptide.txt").astype(int)
-	options.idx_dih_chi=np.loadtxt(f"{path}/model_dih_chi.txt").astype(int)
-	
-	options.clash_nb=128
-	options.vdroverlap=.5
 
 	bd=bonds[:,:2].astype(int)
 	npt=len(atoms)

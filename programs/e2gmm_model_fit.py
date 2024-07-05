@@ -345,6 +345,11 @@ def main():
 	
 	##########################################
 	print("Compiling rotamers...")
+	if len(options.idx_dih_chi)==0:
+		print("No rotamers. Return")
+		E2end(logid)
+		return
+		
 	options.chi_idx, options.chi_mat=compile_chi_matrix(options.idx_dih_chi)
 
 	rot_axis=[]

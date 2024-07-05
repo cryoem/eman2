@@ -474,7 +474,7 @@ def get_h_rotation_axis(atoms, bonds, h_ref):
 		
 	rot_axish=np.array(rot_axish)
 	rotmat_idxh[rotmat_idxh==-1]=len(rot_axish)
-	print("$$$$$$$$$", len(rot_axish))
+
 	return rot_axish, rotmat_idxh
 
 
@@ -888,7 +888,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				
 				scr=tf.reduce_max(ds, axis=2)
 				rna_score=tf.reduce_mean(scr)
-				lossetc+=(1-rna_score)*1000.
+				lossetc+=(1-rna_score)*500. * options.weight["rna"]
 				# etc+=f" RNA score {rna_score:.3f}"
 				
 				
@@ -983,7 +983,7 @@ def main():
 	parser.add_argument("--model", type=str,help="alternative pdb model. default is model_input in path.", default=None)
 	parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
 	parser.add_argument("--niter", type=str, help="number of iteration for loose and tight constraints. default is 5,10",default="5,10")
-	parser.add_argument("--weight", type=str, help="relative weight for (bond/angle, Rama, rotamer, planarity, clash). Default is 1,1,1,1,1.",default="1,1,1,1,1")
+	parser.add_argument("--weight", type=str, help="relative weight for (bond/angle, Rama, rotamer, planarity, clash, RNA). Default is 1,1,1,1,1,1.",default="1,1,1,1,1,1")
 	parser.add_argument("--clash0", type=float,help="starting clashing threshold.", default=0.6)
 	parser.add_argument("--clash1", type=float,help="final clashing threshold.", default=0.35)
 	parser.add_argument("--fixrotamer", action="store_true", default=False ,help="select good rotamer before refinement")
@@ -1006,7 +1006,7 @@ def main():
 	options.nmid=4
 	niter=[int(i) for i in options.niter.split(',')]
 	w=[np.float32(i) for i in options.weight.split(',')]
-	options.weight={"bond":w[0], "rama":w[1], "rotamer":w[2], "plane":w[3], "clash":w[4]}
+	options.weight={"bond":w[0], "rama":w[1], "rotamer":w[2], "plane":w[3], "clash":w[4], "rna":w[5]}
 	print("Weighting: ", options.weight)
 	
 	if options.model.endswith(".cif"):
