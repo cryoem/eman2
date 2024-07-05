@@ -78,7 +78,7 @@ def main():
 	
 	data=initialize_data(options.input, options)
 	padvol=options.pad
-
+	prog=0.
 	from EMAN2PAR import EMTaskCustomer
 	if options.ref:
 		print("weighting by reference...")
@@ -104,13 +104,14 @@ def main():
 				return
 			tid=etc.send_task(task)
 			tids.append(tid)
-
+		
 		while 1:
 			st_vals = etc.check_task(tids)
 			E2progress(logger, .5*np.mean(st_vals)/100.)
 			if np.min(st_vals) == 100: break
 			time.sleep(5)
-			
+		prog=0.5
+		
 		wts=[0]*len(data)
 		for i in tids:
 			wt=etc.get_results(i)[1]
@@ -122,9 +123,7 @@ def main():
 				
 		
 		wts=np.array(wts)
-		# np.savetxt(options.output[:-4]+".txt", wts)
-# 		
-# 		wts[wts<0]=0
+		
 		r0=0; r1=-1
 		if options.minres>0:
 			r0=int(apix*ny/options.minres)
@@ -168,7 +167,7 @@ def main():
 
 	while 1:
 		st_vals = etc.check_task(tids)
-		E2progress(logger, .5+.5*np.mean(st_vals)/100.)
+		E2progress(logger, prog+(1-prog)*np.mean(st_vals)/100.)
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 		

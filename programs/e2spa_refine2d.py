@@ -17,12 +17,14 @@ def main():
 	parser.add_argument("--setsf", type=str,help="structure factor for sharpening", default=None)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--init", type=str,help="initial averages", default=None)
+	parser.add_argument("--mask", type=str,help="mask", default=None)
 	parser.add_argument("--ncls", type=int,help="number of classes", default=64)
 	parser.add_argument("--startiter", type=int,help="starting iteration", default=0)
 	parser.add_argument("--aliref", type=int,help="number of alignment references", default=10)
 	parser.add_argument("--maxres", type=float,help="max resolution", default=5)
 	parser.add_argument("--niter", type=float,help="number of iterations", default=6)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use. Default is thread:12", default="thread:32")
+	parser.add_argument("--tomo", action="store_true", default=False ,help="tomo averager.")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -55,6 +57,8 @@ def main():
 	cutoff=np.minimum(cutoff, maxabs)
 	print(cutoff)
 	maxalires=max(options.maxres, 10)
+	if options.mask:
+		mask=EMData(options.mask)
 	
 	for itr in range(options.startiter, options.niter):
 		
@@ -70,7 +74,10 @@ def main():
 			# data.process_inplace("filter.matchto",{"to":ref,"interpolate":1,"keephires":1})
 			data.process_inplace("filter.setstrucfac",{"apix":data["apix_x"],"strucfac":sf})
 			data.process_inplace("filter.lowpass.gauss",{"cutoff_abs":cutoff[itr]})
-			# data.process_inplace("normalize.edgemean")
+			
+			if options.mask:
+				data.process_inplace("normalize.edgemean")
+				data.mult(mask)
 			# data.process_inplace("mask.soft",{"outer_radius":-16})
 			# data.process_inplace("normalize.circlemean",{"radius":-10})
 			data.write_image(f"{path}/classes_{itr:02d}_sf.hdf", i)
@@ -134,7 +141,8 @@ def main():
 			break
 			
 		####
-		pca=PCA(12)
+		nbasis=min(len(imgs2), 12)
+		pca=PCA(nbasis)
 		# imgs3=[m.process("filter.lowpass.gauss",{"cutoff_abs":.25}) for m in imgs2]
 		imgs3=imgs2
 		imgsnp=np.array([m.numpy().copy() for m in imgs3])
@@ -198,7 +206,11 @@ def main():
 			a=from_numpy(tosv[:,[i]])
 			a.write_image(clsmx, i)
 			
-		run(f"e2classaverage.py --input={ptcls} --classmx={clsmx} --output={path}/classes_{itr+1:02d}.hdf --center xform.centerofmass --iter=5 --align=rotate_translate_tree:maxres={options.maxres} --averager=mean  --keep=.8 --cmp=frc --aligncmp=frc:maxres={options.maxres} --parallel {options.parallel} --resultmx {path}/resultmx_{itr+1:02d}.hdf")
+		avgr="mean"
+		if options.tomo:
+			avgr="mean.tomo"
+			
+		run(f"e2classaverage.py --input={ptcls} --classmx={clsmx} --output={path}/classes_{itr+1:02d}.hdf --center xform.centerofmass --iter=5 --align=rotate_translate_tree:maxres={options.maxres} --averager={avgr}  --keep=.8 --cmp=frc --aligncmp=frc:maxres={options.maxres} --parallel {options.parallel} --resultmx {path}/resultmx_{itr+1:02d}.hdf")
 		
 		
 	
