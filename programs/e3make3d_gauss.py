@@ -89,8 +89,9 @@ def main():
 			[256,32,  32,1.8, -1,2,.05, 1.0],
 			[256,64,  48,1.5, -2,1,.04,1.0],
 			[256,64,  48,1.5, -2,2,.02,0.5],
-			[256,128, 48,1.2, -3,4,.01,2],
-			[256,512, 48,1.2, -2,4,.01,3],
+			[256,128, 32,1.2, -3,4,.01,2],
+			[256,256, 32,1.2, -2,1,.01,3],
+			[256,512, 48,1.2, -2,1,.01,3],
 			[256,1024,48,1.2, -3,1,.004,5]
 		]
 	else:
@@ -278,6 +279,37 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 
 	return (step,float(qual),float(shift),float(sca))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+
+def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
+	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+
+	with tf.GradientTape() as gt:
+		gt.watch(gaus.tensor)
+		projs=gaus.project_simple(orts,ny,tytx=tytx)
+		projsf=projs.do_fft()
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+
+	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
+	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
+	shift=tf.math.reduce_std(grad[:,:3])	# translational std
+	imshift=tf.math.reduce_std(gradtytx)	# image shift std
+	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
+	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	tytxstep=gradtytx*relstep/(imshift*2000)
+	#print(f"{qual}\t{shift}\t{sca}")
+
+	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
+
 
 def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
