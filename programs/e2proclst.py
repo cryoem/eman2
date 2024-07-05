@@ -69,6 +69,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--mergeinterleave", type=str, default=None, help="Specify the output name here. Interleaves images from input .lst files, eg - A0,B0,C0,A1,B1,C1,... truncates based on size of smallest input, eg- 1000,500,300 -> 900")
 	parser.add_argument("--mergeeo", action="store_true", default=False, help="Merge even odd lst.")
 	parser.add_argument("--mergeref", type=str, default=None, help="reference lst file to determine the order for --create")
+	parser.add_argument("--replacexf", type=str, default=None, help="replace xform.projection or xform.align3d in the particle set with the same attribute from another set. Require --create")
 	parser.add_argument("--minhisnr", type=float, help="Integrated SNR from 1/10-1/4 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
@@ -257,6 +258,34 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				lst_all.extend(lout)
 				
 			save_lst_params(lst_all, options.create)
+			
+		elif options.replacexf:
+			lsts=[load_lst_params(a) for a in args]
+			lsts=sum(lsts, [])
+			
+			lxf=load_lst_params(options.replacexf)
+			dic={str((l['src'], l['idx'])):i for i,l in enumerate(lxf)}
+			if "xform.projection" in lxf[0]:
+				print("Using xform.projection")
+				xftag="xform.projection"
+			elif "xform.align3d" in lxf[0]:
+				print("Using xform.align3d")
+				xftag="xform.align3d"
+			else:
+				print("No xform attribute in", options.replacexf)
+				exit()
+			
+			for l in lsts:
+				ky=str((l['src'], l['idx']))
+				if ky not in dic:
+					print(f"{ky} not in {options.replacexf}")
+					continue
+					
+				i=dic[ky]
+				l[xftag]=lxf[i][xftag]
+				
+			save_lst_params(lsts, options.create)			
+			
 			
 		else:
 			for f in args:
