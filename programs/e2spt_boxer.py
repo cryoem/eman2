@@ -1179,16 +1179,30 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		pca=PCA(3)
 		pca.fit(pts);
 		c=pca.components_
-		t=Transform()
-		cc=c[2]
-		if cc[2]!=0:
-			cc*=np.sign(cc[2])
 		
-		t.set_rotation(c[2].tolist())
+		modifiers = QtWidgets.QApplication.keyboardModifiers()
+		if modifiers == QtCore.Qt.ShiftModifier:
+			axis=0
+			t2=Transform({"type":"xyz","ytilt":90, "ztilt":90})
+		else:
+			axis=2
+			t2=Transform()
+			
+		t=Transform()
+		cc=c[axis]
+		if cc[axis]!=0:
+			cc*=np.sign(cc[axis])
+		
+		t.set_rotation(c[axis].tolist())
 		t.invert()
+		
+		t=t2*t
 		xyz=t.get_params("xyz")
-		xyz["ztilt"]=0
-		print("xtilt {:.02f}, ytilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"]))
+		
+		if axis==2: xyz["ztilt"]=0
+		print("xtilt {:.02f}, ytilt {:.02f}, ztilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"], xyz["ztilt"]))
+# 		
+# 		print("xtilt {:.02f}, ytilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"]))
 		t=Transform(xyz)
 		self.globalxf=t
 		if self.wfilt.getValue()!=0.0:

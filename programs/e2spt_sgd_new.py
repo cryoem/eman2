@@ -25,11 +25,16 @@ def main():
 	parser.add_argument("--classify",action="store_true",help="classify particles to the best class. there is the risk that some classes may end up with no particle. by default each class will include the best batch particles, and different classes can overlap.",default=False)
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement.",default=False)
 	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
+	parser.add_argument("--membrane",action="store_true",help="mode for membrane protein.",default=False)
 	parser.add_argument("--refine",action="store_true",help="only refine from existing orientations.",default=False)
+	parser.add_argument("--realspace",action="store_true",help="gradient descent in real space.",default=False)
+	parser.add_argument("--fulldata", type=int,help="go through the entire dataset N times. Overwrite niter. By default just randomly select batches.", default=-1)
 	parser.add_argument("--breaksym", type=str,help="require --refine", default=None)
 	parser.add_argument("--skipali",action="store_true",help="require --breaksym.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
+	parser.add_argument("--mask", type=str,help="mask. real space only", default=None)
+	parser.add_argument("--maskfourier", type=str,help="mask in fourier space", default=None)
 	parser.add_argument("--threads", type=int,help="threads", default=24)
 
 	
@@ -45,7 +50,6 @@ def main():
 	
 	if options.path==None: options.path=num_path_new("sptsgd_")
 	path=options.path
-	
 	nptcl=int(batch*ncls/options.keep)
 	nthread=int(options.parallel.split(':')[1])
 	if nthread>nptcl:
@@ -63,18 +67,40 @@ def main():
 	
 	info2dname=f"{path}/particle_info_2d.lst"
 	info3dname=f"{path}/particle_info_3d.lst"
-	info2d, info3d = gather_metadata(ptcls)
-	save_lst_params(info3d, info3dname)
-	save_lst_params(info2d, info2dname)
+	info3dname_full=f"{path}/particle_info_3d_full.lst"
+	
+	if os.path.isfile(info2dname) and os.path.isfile(info3dname_full):
+		print("Using existing metadata")
+		info2d=load_lst_params(info2dname)
+		info3d=load_lst_params(info3dname_full)
+	else:
+		info2d, info3d = gather_metadata(ptcls)
+		save_lst_params(info3d, info3dname_full)
+		save_lst_params(info2d, info2dname)
 
 	
-	e=EMData(info3dname,0)
+	if options.mask!=None: options.mask=EMData(options.mask)
+	
+	e=EMData(info3dname_full,0)
 	if shrink>1:
 		e.process_inplace("math.meanshrink",{"n":shrink})
 	options.hdr=hdr=e.get_attr_dict()
 	options.sz=sz=e["nx"]#//shrink
 	#options.pad=pad=EMData(info2dname,0,True)["nx"]//shrink
 	options.pad=pad=good_size(sz*1.4)
+	
+	if options.maskfourier!=None:
+		msk=EMData(options.maskfourier)
+		msk.process_inplace("math.fft.resample",{"n":sz/pad})
+
+		b=msk.numpy().copy()
+		b/=np.max(b)
+		b=np.fft.fftshift(b, axes=(0,1))
+		b=b[:,:,pad//2:]
+		b=np.concatenate([b, np.ones((pad,pad,1))], axis=2)
+		msk=from_numpy(b)
+		options.mskf=msk.real2complex()
+		print(msk["nx"], msk["ny"], msk["nz"])
 
 	npt=len(info3d)
 	
@@ -116,10 +142,19 @@ def main():
 			thrd0=make_3d(ali2d, options)
 			avg0=post_process(thrd0, options)
 			avg0.write_image(f"{path}/output_cls{ic}.hdf")
-			avg0.write_compressed(fnames[ic], -1, 12, nooutliers=True)
-			thrd0s.append(thrd0)
+			avg0.write_compressed(fnames[ic], -1, 8, nooutliers=True)
+			if options.realspace:
+				thrd0s.append(avg0)
+			else:
+				thrd0s.append(thrd0)
 		
 	else:
+		if ',' in options.ref:
+			options.ref=options.ref.split(',')
+			ncls=len(options.ref)
+		else:
+			options.ref=[options.ref]*100
+# 			
 		for ic in range(ncls):
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
@@ -127,19 +162,44 @@ def main():
 			ali3d=[info3d[i] for i in idx]
 			save_lst_params(ali3d, info3dname)
 			
-			launch_childprocess(f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {options.ref} --path {path} --maxres {res} --parallel {options.parallel} --fromscratch --iter 0  --sym {options.sym}")
+			cmd=f"e2spt_align_subtlt.py {info3dname} {options.ref[ic]} --path {path} --maxres {res} --parallel {options.parallel} --iter 0  --sym {options.sym}"
+			if options.refine==False:
+				cmd+=" --fromscratch"
+			run(cmd)
 			ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
 			thrd0=make_3d(ali2d, options)
-			thrd0s.append(thrd0)
 			avg0=post_process(thrd0, options)
 			avg0.write_image(f"{path}/output_cls{ic}.hdf")
-			avg0.write_compressed(fnames[ic], -1, 12, nooutliers=True)
+			avg0.write_compressed(fnames[ic], -1, 8, nooutliers=True)
+			
+			if options.realspace:
+				thrd0s.append(avg0)
+			else:
+				thrd0s.append(thrd0)
+# 	
+	if options.fulldata>0:
+		idx_all=[]
+		for i in range(options.fulldata):
+			idx=np.arange(npt)
+			np.random.shuffle(idx)
+			idx_all.extend(idx.tolist())
+			
+		options.niter=ceil(len(idx_all)/nptcl)
+		print(options.niter, "batches total")
+		lst_all=[l.copy() for l in info3d]
+		for l in lst_all:
+			l["align_iter"]=0
+			l["xform.align3d"]=Transform()
+		
 	
 	for itr in range(options.niter):
-		#print(itr)
-		idx=np.arange(npt)
-		np.random.shuffle(idx)
-		idx=np.sort(idx[:nptcl])
+		if options.fulldata>0:
+			idx=idx_all[itr*nptcl:(itr+1)*nptcl]
+		else:
+			idx=np.arange(npt)
+			np.random.shuffle(idx)
+			idx=np.sort(idx[:nptcl])
+		
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
 		
@@ -147,11 +207,13 @@ def main():
 		a2dout=[]
 		for ic in range(ncls):
 			print(f"iter {itr}, class {ic}: ")
-			cmd=f"e2spt_align_subtlt.py {path}/particle_info_3d.lst {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
+			cmd=f"e2spt_align_subtlt.py {info3dname} {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
 			if options.curve:
 				cmd+=" --curve"
 			elif options.vector:
 				cmd+=" --vector"
+			elif options.membrane:
+				cmd+=" --membrane"
 			elif options.refine:
 				if options.breaksym:
 					cmd+=f" --breaksym {options.breaksym}"
@@ -174,6 +236,22 @@ def main():
 		score=np.array(score)
 		np.savetxt(f"{path}/score.txt", score.T)
 		clsid=np.argmin(score, axis=0)
+		
+		# print(clsid)
+		if options.fulldata>0:
+			for i in range(nptcl):
+				ix=idx[i]
+				ic=int(clsid[i])
+				a3=a3dout[ic][i]
+				# print(i, ix, ic, a3)
+				
+				lst_all[ix]["align_iter"]+=1
+				lst_all[ix]["xform.align3d"]=a3["xform.align3d"]
+				lst_all[ix]["score"]=a3["score"]
+				lst_all[ix]["class"]=ic
+			save_lst_params(lst_all, f"{path}/aliptcls3d_full.lst")
+			# exit()
+			
 		for ic in range(ncls):
 			if options.classify:
 				scrid=np.where(clsid==ic)[0]
@@ -189,12 +267,18 @@ def main():
 			thrd1=make_3d(ali2d, options)
 			thrd0=thrd0s[ic]
 			
-			out=thrd0*(1-lr)+thrd1*lr
-			avg=post_process(out, options)
-			avg.write_image(f"{path}/output_cls{ic}.hdf")
-			avg.write_compressed(fnames[ic], -1, 12, nooutliers=True)
+			
+			if options.realspace:
+				avg=post_process(thrd1, options)
+				avg=out=thrd0*(1-lr)+avg*lr
+				
+			else:
+				out=thrd0*(1-lr)+thrd1*lr
+				avg=post_process(out, options)
 
 			thrd0s[ic]=out.copy()
+			avg.write_image(f"{path}/output_cls{ic}.hdf")
+			avg.write_compressed(fnames[ic], -1, 8, nooutliers=True)
 			
 	E2end(logid)
 	
@@ -223,6 +307,8 @@ def make_3d(ali2d, options):
 		#recon.insert_slice(ep,xf,1)
 	
 	threed=recon.finish(False)
+	if options.maskfourier!=None:
+		threed=threed*options.mskf
 
 	return threed
 
@@ -257,7 +343,10 @@ def post_process(threed, options):
 	if options.shrink>1:
 		avg.process_inplace("math.fft.resample",{"n":1/options.shrink})
 	avg.process_inplace("normalize.edgemean")
-	avg.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
+	if options.mask==None:
+		avg.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
+	else:
+		avg.mult(options.mask)
 	
 	return avg
 	

@@ -36,11 +36,14 @@ def main():
 	
 	parser.add_argument("--maxshift", type=int, help="Maximum shift from the center of the box or the previous alignment. default box size//6",default=-1)
 	parser.add_argument("--maxang", type=int, help="Maximum angle difference from starting point. Ignored when --fromscratch is on.",default=30)
+	
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement. Still under testing. Ignored when --fromscratch is on.",default=False)
 	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
+	parser.add_argument("--membrane",action="store_true",help="Mode for membrane proteins.",default=False)
+	
 	parser.add_argument("--skipali",action="store_true",help="Skip alignment and only calculate the score. Incompatible with --fromscratch, but --breaksym will still be considered.",default=False)
 	parser.add_argument("--breaksym",type=str,default=None,help="Specify symmetry to break. Ignored when --fromscratch is on.")
-	
+
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -131,6 +134,7 @@ class SptAlignTask(JSTask):
 		#### this is loss function for scipy minimizer. 
 		##   need to define this inside the function to use some local variables
 		##     (options, initxf, mxsft, refsmall, pjxfsmall, imgsmallpjs, minp, maxp)
+		##     return_2d: return score for each 2d particle, instead of mean of all
 		def testxf(x, return_2d=False):
 			if isinstance(x, Transform):
 				txf=x
@@ -142,8 +146,15 @@ class SptAlignTask(JSTask):
 					t=Transform(initxf.inverse())
 					t.set_trans(t.get_trans()*ss/ny)
 					t=t*txf
+					
 					sft=np.linalg.norm(t.get_trans())
 					a=t.get_rotation("spin")["omega"]
+					
+					if options.membrane:
+						##  deal with off plane translation/rotation differently
+						sft+=abs(t.get_trans()[2])*8
+						a+=abs(t.get_rotation("eman")["alt"])*4
+						
 					if sft>mxsft or a>options.maxang: return 1
 					
 				else:
@@ -342,10 +353,14 @@ class SptAlignTask(JSTask):
 				ifirst=max(1,len(ssrg)-1)
 				localsearch=True
 			
+			if ifirst==len(ssrg):
+				ssrg.append(maxy)
 			ilast=len(ssrg)
 
 			#### 3d alignment loop. increase fourier box size and reduce solutions every iteration
-			if options.debug: print("Align particle ( {}, {} )".format(data["src"], data["idx"]))
+			if options.debug: 
+				print("Align particle ( {}, {} )".format(data["src"], data["idx"]))
+				
 			for si in range(ifirst, ilast):
 				ss=ssrg[si]
 				if ss>=maxy: 

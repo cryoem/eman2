@@ -345,7 +345,75 @@ def main():
 #### gather metadata from particles and return one dictionary for each 3d particle and one dictionary for each 2d one
 ##   for 3d particle, we keep the particle location coordinates, and a list of 2d particle indices that produces the 3d particle
 ##   for 2d particle, we keep the 3d particle index, the projection orientation with respect to the 3d particle, and the tilt id
+from multiprocessing import Pool
+
+def read_2d(d):
+	hdrs=EMData.read_images(d, [],IMAGE_UNKNOWN,True)
+	hdrs=[ [h["xform.projection"], h["tilt_id"]] for h in hdrs]
+	return hdrs
+	
 def gather_metadata(pfile, maxtilt=-1):
+	print("Gathering metadata...")
+	params=[]
+	# print("Loading 3D particles")
+	if pfile.endswith(".lst"):
+		lst=load_lst_params(pfile)
+		if "xform.align3d" in lst[0]:
+			params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
+		else:
+			params=[[l["src"], l["idx"]] for l in lst]
+		
+	else:
+		nptcl=EMUtil.get_image_count(pfile)
+		params=[[pfile, i] for i in range(nptcl)]
+	
+	
+	imgs=EMData.read_images(pfile,[],True)
+	src2d=np.unique([m["class_ptcl_src"] for m in imgs])
+	print(f"\rLoading 3D particles - {len(imgs)} particles from {len(src2d)} tomograms")
+	
+	pl=Pool(32)
+	ret=pl.map(read_2d, src2d)
+	hdr2d={s:ret[i] for i,s in enumerate(src2d)}
+		
+	
+	info3d=[]
+	info2d=[]
+	for ii,pm in enumerate(params):
+		img=imgs[ii]
+		imgsrc=img["class_ptcl_src"]
+		imgidx=img["class_ptcl_idxs"]
+		if img.has_attr("ptcl_source_coord"):
+			coord=img["ptcl_source_coord"]
+		else:
+			coord=[0,0,0]
+			
+		rhdrs=[hdr2d[imgsrc][j] for j in imgidx]
+		
+		idx2d=[]
+		for k,i in enumerate(imgidx): 
+			e=rhdrs[k]
+			alt=e[0].get_params("eman")["alt"]
+			if maxtilt>0 and alt>maxtilt:
+				continue
+			dc={"src":imgsrc,"idx":i,
+				"idx3d":ii, "xform.projection":e[0], "tilt_id":e[1]}
+			idx2d.append(len(info2d))
+			info2d.append(dc)
+		
+		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
+		if len(pm)>2:
+			dc["xform.align3d"]=pm[2]
+		
+		info3d.append(dc)
+
+		sys.stdout.write("\r {}/{}".format(ii+1, len(params)))
+		sys.stdout.flush()
+	print()
+		
+	return info2d, info3d
+
+def gather_metadata_singlethread(pfile, maxtilt=-1):
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):

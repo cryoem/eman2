@@ -4,7 +4,14 @@ from EMAN2 import *
 import numpy as np
 import scipy.spatial.distance as scipydist
 from scipy.optimize import minimize
+from multiprocessing import Pool
 
+def read_2d(d):
+	hdrs=EMData.read_images(d, [],IMAGE_UNKNOWN,True)
+	hdrs=[ [h["xform.projection"], h["tilt_id"]] for h in hdrs]
+	return hdrs
+	
+	
 def gather_metadata(options):
 	info3d=[]
 	info2d=[]
@@ -45,22 +52,30 @@ def gather_metadata(options):
 		xflst=True
 	else:
 		xflst=False
+	
+	print("Loading 3D particles")
+	imgs=EMData.read_images(options.ptcls,[],True)
+	src2d=np.unique([m["class_ptcl_src"] for m in imgs])
+	print(f"\rLoading 3D particles - {len(imgs)} particles from {len(src2d)} tomograms")
+	
+	pl=Pool(32)
+	ret=pl.map(read_2d, src2d)
+	
+	hdr2d={s:ret[i] for i,s in enumerate(src2d)}
 		
+
 	for ii,dt in enumerate(data):
-		img=EMData(dt["src"], dt["idx"], True)
+		img=imgs[ii]
 		imgsrc=img["class_ptcl_src"]
 		imgidx=img["class_ptcl_idxs"]
-
-		try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
-		except:
-			print(f"couldn't read {imgidx} from {imgsrc}")
-			return
+		
+		rhdrs=[hdr2d[imgsrc][j] for j in imgidx]
 
 		idx2d=[]
 		for k,i in enumerate(imgidx): 
 			e=rhdrs[k]
 			dc={"src":imgsrc,"idx":i,
-				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
+				"idx3d":ii, "xform.projection":e[0], "tilt_id":e[1]}
 			idx2d.append(len(info2d))
 			info2d.append(dc)
 		
@@ -79,10 +94,48 @@ def gather_metadata(options):
 		}
 
 		info3d.append(dc)
-
-		sys.stdout.write("\r {}/{}".format(ii+1, len(data)))
-		sys.stdout.flush()
+		if ii%100==0:
+			print(f"{ii}/{len(data)}", end='\r')
+			
 	print()
+	
+# 	for ii,dt in enumerate(data):
+# 		img=EMData(dt["src"], dt["idx"], True)
+# 		imgsrc=img["class_ptcl_src"]
+# 		imgidx=img["class_ptcl_idxs"]
+# 
+# 		try: rhdrs=EMData.read_images(imgsrc,imgidx,IMAGE_UNKNOWN,True)
+# 		except:
+# 			print(f"couldn't read {imgidx} from {imgsrc}")
+# 			return
+# 
+# 		idx2d=[]
+# 		for k,i in enumerate(imgidx): 
+# 			e=rhdrs[k]
+# 			dc={"src":imgsrc,"idx":i,
+# 				"idx3d":ii, "xform.projection":e["xform.projection"], "tilt_id":e["tilt_id"]}
+# 			idx2d.append(len(info2d))
+# 			info2d.append(dc)
+# 		
+# 		if xflst:
+# 			xfali=dt["xform.align3d"]
+# 		else:
+# 			xfali=img["xform.align3d"]
+# 		
+# 		if img.has_attr("orig_class"):
+# 			cls=img["orig_class"]
+# 		else:
+# 			cls=ii%2
+# 		dc={"src":dt["src"], "idx":dt["idx"],
+# 			"coord":img["ptcl_source_coord"], "idx2d":idx2d,
+# 			"class":cls, "xform.align3d":xfali
+# 		}
+# 
+# 		info3d.append(dc)
+# 
+# 		sys.stdout.write("\r {}/{}".format(ii+1, len(data)))
+# 		sys.stdout.flush()
+# 	print()
 	return info2d, info3d
 
 def main():

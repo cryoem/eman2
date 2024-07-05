@@ -153,9 +153,11 @@ class SptEvalGUI(QtWidgets.QWidget):
 		return
 
 	def plot_fscs(self):
-		for f in sorted(os.listdir(self.path)):
-			if "fsc_maskedtight_" in f:
-				self.fscplot.set_data_from_file("{}/{}".format(self.path,f))
+		fnames=[f for f in os.listdir(self.path) if "fsc_masked_" in f]
+		fnames=sorted(fnames)
+		f=fnames[-1]
+		# for f in sorted(fnames):
+		self.fscplot.set_data_from_file("{}/{}".format(self.path,f))
 		self.fscplot.show()
 		return
 
@@ -163,11 +165,10 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.fldlst=[]
 		self.paramlst={}
 		self.initialized=False
-		#foldersfx=["spt"]
 		
 		#for sfx in foldersfx:
 		sfx=str(self.dp_folder.currentText())
-		#print(sfx)
+		
 			
 		flds=[f for f in os.listdir('.') if (os.path.isdir(f) and f.startswith("{}_".format(sfx)))]
 		flds=sorted(flds)
@@ -192,7 +193,12 @@ class SptEvalGUI(QtWidgets.QWidget):
 			self.setspanel.addItem(item)
 			item.setCheckState(Qt.Checked)
 		
-		
+			#### only show some key columns at the begining...
+			if sfx=="spt":
+				if k not in ["path", "ptcls", "ref"]:
+					item.setCheckState(Qt.Unchecked)
+					self.paramlst[k]=False
+			
 		self.update_list()
 		self.initialized=True
 		return
@@ -271,6 +277,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 			self.wg_thumbnail.isonode = EMIsosurface(self.wg_thumbnail.newnode, transform=Transform())
 			self.wg_thumbnail.insertNewNode("Isosurface", self.wg_thumbnail.isonode, parentnode=self.wg_thumbnail.newnode)
 		self.wg_thumbnail.updateSG()
+		
 
 	def sortlst(self,col):
 		if col<0: return
