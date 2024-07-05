@@ -40,6 +40,7 @@ import sys
 from math import *
 import os.path
 from time import time
+import numpy as np
 from numpy import arange
 import traceback
 
@@ -138,6 +139,7 @@ def main():
 
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output as a series of numbered single image files", default=False)
 
+	parser.add_option("--fouriermult", type=str, metavar="inputfile", help="multiply given file in Fourier space. experimental.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	append_options = ["clip", "fftclip", "process", "filter", "filtertable",  "meanshrink", "medianshrink", "fouriershrink", "scale", "sym", "multfile", "addfile", "trans", "rot", "align","ralignzphi","alignctod"]
@@ -625,6 +627,20 @@ def main():
 				data.mult(mf)
 				mf=None
 				index_d[option1] += 1
+
+			elif option1 == "fouriermult":
+				#### do this through numpy since not sure how EMAN fourier coordinates work
+				data_np=data.numpy().copy()
+				ft=np.fft.fftshift(np.fft.fftn(np.fft.fftshift(data_np)))
+				mf=EMData(options.fouriermult,0)
+				mf_np=mf.numpy().copy()
+				ftmsk=ft*mf_np
+				imgmsk=np.fft.ifftshift(np.fft.ifftn(np.fft.ifftshift(ftmsk))).real
+				m=imgmsk.copy()
+				o=from_numpy(m)
+				o.set_attr_dict(data.get_attr_dict())
+				data=o.copy()
+				o=mf=None
 
 			elif option1 == "add":
 				data.add(options.add)
