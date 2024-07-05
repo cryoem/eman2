@@ -1003,6 +1003,7 @@ class EMPlotFileType(EMFileType) :
 			try:
 				numc = len([float(i) for i in numc])		# number of numeric columns
 			except:
+				numc=0
 				break
 
 			if numc > 0 : break			# just finding the number of columns
@@ -3634,6 +3635,7 @@ class SortSelTree(QtWidgets.QTreeView) :
 class EMSliceParamDialog(QtWidgets.QDialog):
 	"""This modal dialog asks the user for parameters required for the XYZ 3-D stack viewer"""
 	dlay=-1
+	dcnt=0
 	dlp="-1"
 	dhp="-1"
 	dmask=""
@@ -3679,7 +3681,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 
 		self.wspincenter=QtWidgets.QSpinBox()
 		self.wspincenter.setRange(-256,256)
-		self.wspincenter.setValue(0)
+		self.wspincenter.setValue(self.dcnt)
 		self.wspincenter.setToolTip("Center about which sum is generated, 0=center of volume")
 		self.fol.addRow("Center for sum on Z:",self.wspincenter)
 
@@ -3733,6 +3735,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		
 	def okpress(self,state):
 		EMSliceParamDialog.dlay=self.wspinlayers.value()
+		EMSliceParamDialog.dcnt=self.wspincenter.value()
 		EMSliceParamDialog.dlp=self.wlelp.text()
 		EMSliceParamDialog.dhp=self.wlehp.text()
 		EMSliceParamDialog.dmask=self.wlemask.text()
