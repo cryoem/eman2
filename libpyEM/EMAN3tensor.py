@@ -610,7 +610,7 @@ class Orientations():
 
 	def to_mx3d(self):
 		"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
-		rotated 3-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+		rotated 3-vectors. Typically used with Gaussians to generate projections.
 
 		To apply to a set of vectors:
 		mx=self.to_mx2d()
@@ -627,12 +627,12 @@ class Orientations():
 		l=tf.norm(self._data,axis=1)+1.0e-37
 
 		w=tf.cos(pi*l)  # cos "real" component of quaternion
-		s=tf.sin(pi*l)/l
+		s=tf.sin(-pi*l)/l
 		q=tf.transpose(self._data)*s		# transpose makes the vectorized math below work properly
 
 		mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
 		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
-		(2*q[0]*q[2]+2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
+		(2*q[0]*q[2]-2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
 		return mx
 
 
@@ -765,6 +765,63 @@ stddev=0.01"""
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
+	def project_ctf(self,orts,ctf_stack,boxsize,apix,defocus,dfrange,dfstep,tytx=None):
+		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+		orts-must be an Orientations object
+		tytx-is an optional Nx2+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians
+		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
+		dfrange-a tuple of (min defocus,max defocus) in the project
+		cs-The spherical abberation for the project
+		voltage-The voltage of the microscope for the project
+
+		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+		is used for comparisons should be resampled without any "clip" operations.
+		"""
+		global CTF_SIGN
+		self.coerce_tensor()
+
+		boxstep=dfstep*10000.0/apix
+		proj=tf.zeros((2*ceil((boxsize-boxstep)/(2*boxstep))+1,boxsize,boxsize))
+		proj2=[]
+		mx=orts.to_mx3d()
+
+		# iterate over projections
+		# TODO - Same as project_simple--at some point should be converted to a tensor axis for better performance
+		for j in range(len(orts)):
+			xfgauss=tf.reverse(tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3]),axis=[-1]) # xfgauss is z,y,x
+			if tytx is not None:
+				xfgauss=tf.concat([xfgauss[:,0,tf.newaxis],xfgauss[:,1:]+tytx[j,:2]],-1) # Translation, ignoring any other variables
+			xfgauss=(xfgauss+(0,0.5,0.5))*boxsize
+			# now xfgauss is z,y,x with z (-boxsize/2, boxsize/2) and x/y are (0, boxsize)
+
+			xfgaussf=tf.floor(xfgauss)
+			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
+			xfgaussf=xfgauss-xfgaussf 		# remainder used for bilinear interpolation
+			xfgaussi=tf.concat([tf.cast(tf.round(xfgauss[:,0]/boxstep),tf.int32)[:,tf.newaxis],xfgaussi[:,1:]], axis=-1)
+			# Now xfgaussi has z-layer, y, x
+
+			# messy tensor math here to implement bilinear interpolation
+			bamp0=self._data[:,3]*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])		# 0,0 corner
+			bamp1=self._data[:,3]*(xfgaussf[:,1])*(1.0-xfgaussf[:,2])		# 1,0 corner
+			bamp2=self._data[:,3]*(xfgaussf[:,1])*(xfgaussf[:,2])			# 1,1 corner
+			bamp3=self._data[:,3]*(1.0-xfgaussf[:,1])*(xfgaussf[:,2])		# 0,1 corner
+			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0) # TODO: This would be ,1 with loop subsumed
+			bposall=tf.concat([xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),0,0),xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),1,0),xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),1,1),xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),0,1)],0) # TODO: This too
+#			tf.print(bposall,summarize=-1)
+#			tf.print(bampall,summarize=-1)
+			projf=tf.signal.rfft2d(tf.tensor_scatter_nd_add(proj,bposall,bampall))
+#			tf.print(tf.tensor_scatter_nd_add(proj,bposall,bampall), summarize=-1)
+#			print("projf shape:",projf.shape)
+#			print("z-layer:", tf.unique(xfgaussi[:,0])[0])
+#			print("offset:", ceil((boxsize-boxstep)/(2*boxstep)))
+#			print("ctf shape:", ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-ceil((boxsize-boxstep)/(2*boxstep)):int(tf.round((defocus[j]-dfrange[0])/dfstep))+ceil((boxsize-boxstep)/(2*boxstep))+1].shape)
+#			print("center defocus:", defocus[j])
+			projf=projf*ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-ceil((boxsize-boxstep)/(2*boxstep)):int(tf.round((defocus[j]-dfrange[0])/dfstep))+ceil((boxsize-boxstep)/(2*boxstep))+1]
+			proj2.append(tf.reduce_sum(tf.signal.irfft2d(projf), axis=0))
+		return EMStack2D(tf.stack(proj2))
+
+
+
 	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_tensor()
 
@@ -793,6 +850,24 @@ stddev=0.01"""
 		return EMStack3D(vol)
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
+
+def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
+	"""Initializes the global CTF_SIGN variable with the required correction images
+	dfrange-a tuple of min defocus, max defocus in the project
+	voltage-The voltage of the microscope, in keV
+	cs-The spherical aberration of the microscope, in mm
+	ampcont-The amplitude contrast 10% should be 10
+	ny-The boxsize to make the correction images, should be the largest boxsize that could be used.
+	apix-The apix of the original image"""
+	dfstep=apix*apix/100
+	wl=12.2639/sqrt(voltage*1000.0+0.97845*voltage*voltage)
+	g1=(np.pi/2.0)*cs*1.0e7*pow(wl,3)
+	g2=np.pi*wl*10000.0
+	phase=np.pi/2.0-np.arcsin(ampcont/100.0)
+	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
+	dflist=tf.cast(tf.range(dfrange[0],dfrange[1],dfstep),tf.complex64) # TODO: Need to fix this range to split properly, this is for single particle (0.5-2)
+	ctf_sign=EMStack2D(tf.math.sign(tf.cos(-g1*rad2*rad2+g2*rad2*dflist[:,tf.newaxis,tf.newaxis]-phase)))
+	return ctf_sign, dfstep
 
 def tf_set_device(dev=0,maxmem=4096):
 	"""Sets maximum memory for a specific Tensorflow device and returns a device to use with "with:"
