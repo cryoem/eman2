@@ -781,7 +781,8 @@ stddev=0.01"""
 		self.coerce_tensor()
 
 		boxstep=dfstep*10000.0/apix
-		proj=tf.zeros((2*ceil((boxsize-boxstep)/(2*boxstep))+1,boxsize,boxsize))
+		offset=ceil((boxsize*sqrt(3)-boxstep)/(2*boxstep))
+		proj=tf.zeros((2*offset+1,boxsize,boxsize))
 		proj2=[]
 		mx=orts.to_mx3d()
 
@@ -806,17 +807,17 @@ stddev=0.01"""
 			bamp2=self._data[:,3]*(xfgaussf[:,1])*(xfgaussf[:,2])			# 1,1 corner
 			bamp3=self._data[:,3]*(1.0-xfgaussf[:,1])*(xfgaussf[:,2])		# 0,1 corner
 			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0) # TODO: This would be ,1 with loop subsumed
-			bposall=tf.concat([xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),0,0),xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),1,0),xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),1,1),xfgaussi+(ceil((boxsize-boxstep)/(2*boxstep)),0,1)],0) # TODO: This too
+			bposall=tf.concat([xfgaussi+(offset,0,0),xfgaussi+(offset,1,0),xfgaussi+(offset,1,1),xfgaussi+(offset,0,1)],0) # TODO: This too
 #			tf.print(bposall,summarize=-1)
 #			tf.print(bampall,summarize=-1)
 			projf=tf.signal.rfft2d(tf.tensor_scatter_nd_add(proj,bposall,bampall))
 #			tf.print(tf.tensor_scatter_nd_add(proj,bposall,bampall), summarize=-1)
 #			print("projf shape:",projf.shape)
 #			print("z-layer:", tf.unique(xfgaussi[:,0])[0])
-#			print("offset:", ceil((boxsize-boxstep)/(2*boxstep)))
-#			print("ctf shape:", ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-ceil((boxsize-boxstep)/(2*boxstep)):int(tf.round((defocus[j]-dfrange[0])/dfstep))+ceil((boxsize-boxstep)/(2*boxstep))+1].shape)
+#			print("offset:", offset)
+#			print("ctf shape:", ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-offset:int(tf.round((defocus[j]-dfrange[0])/dfstep))+offset+1].shape)
 #			print("center defocus:", defocus[j])
-			projf=projf*ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-ceil((boxsize-boxstep)/(2*boxstep)):int(tf.round((defocus[j]-dfrange[0])/dfstep))+ceil((boxsize-boxstep)/(2*boxstep))+1]
+			projf=projf*ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-offset:int(tf.round((defocus[j]-dfrange[0])/dfstep))+offset+1]
 			proj2.append(tf.reduce_sum(tf.signal.irfft2d(projf), axis=0))
 		return EMStack2D(tf.stack(proj2))
 
