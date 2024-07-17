@@ -73,7 +73,7 @@ class StackCache():
 		self.fp=open(filename,"wb+")		# erase file!
 		self.locs=np.zeros(n+1,dtype=np.int64)			# list of seek locations in the binary file for each image
 		self.orts=np.zeros((n,3),dtype=np.float32)		# orientations in spinvec format
-		self.tytx=np.zeros((n,2),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format
+		self.tytx=np.zeros((n,3),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format, third column used for per particle defocus
 		self.frcs=np.zeros((n),dtype=np.float32)+2.0	# FRCs from previous round, initialize to 2.0 (> 1.0 normal max)
 		self.cloc=0
 		self.locked=False
@@ -380,6 +380,8 @@ class EMStack2D(EMStack):
 			self._data=[imgs]
 			try: self._xforms=[imgs["xform.projection"]]
 			except: pass
+			try: self._df=[imgs["ctf"].to_dict()["defocus"]]
+			except: pass
 			self._npy_list=None
 		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
@@ -389,6 +391,8 @@ class EMStack2D(EMStack):
 			self._data=EMData.read_images(imgs)
 			try: self._xforms=[im["xform.projection"] for im in self._data]
 			except: pass
+			try: self._df=[im["ctf"].to_dict()["defocus"] for im in self._data]
+			except: pass
 			if self._data[0].get_ndim()!=2: raise Exception(f"EMStack2D only supports stacks of 2-D data. {imgs} is {self._data[0].get_ndim()}-D")
 			self._npy_list=None
 		else:
@@ -396,6 +400,8 @@ class EMStack2D(EMStack):
 				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
 				self._data=list(imgs)		# copy the list, not the elements of the list
 				try: self._xforms=[im["xform.projection"] for im in self._data]
+				except: pass
+				try: self._df=[im["ctf"].to_dict()["defocus"] for im in self._data]
 				except: pass
 				self._npy_list=None
 			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
@@ -414,6 +420,7 @@ class EMStack2D(EMStack):
 		if self._xforms is None: return None,None
 		orts=Orientations()
 		tytx=orts.init_from_transforms(self._xforms)
+		if self._df is not None: tytx=tf.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
 		return orts,tytx
 
 	def center_clip(self,size):
@@ -765,10 +772,11 @@ stddev=0.01"""
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-	def project_ctf(self,orts,ctf_stack,boxsize,apix,defocus,dfrange,dfstep,tytx=None):
+	def project_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
 		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
 		orts-must be an Orientations object
-		tytx-is an optional Nx2+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians
+		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
+			per particle defocus in the third
 		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
 		dfrange-a tuple of (min defocus,max defocus) in the project
 		cs-The spherical abberation for the project
@@ -815,9 +823,9 @@ stddev=0.01"""
 #			print("projf shape:",projf.shape)
 #			print("z-layer:", tf.unique(xfgaussi[:,0])[0])
 #			print("offset:", offset)
-#			print("ctf shape:", ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-offset:int(tf.round((defocus[j]-dfrange[0])/dfstep))+offset+1].shape)
-#			print("center defocus:", defocus[j])
-			projf=projf*ctf_stack[int(tf.round((defocus[j]-dfrange[0])/dfstep))-offset:int(tf.round((defocus[j]-dfrange[0])/dfstep))+offset+1]
+#			print("ctf shape:", ctf_stack[int(tf.round((tytx[j,2]-dfrange[0])/dfstep))-offset:int(tf.round((tytx[j,2]-dfrange[0])/dfstep))+offset+1].shape)
+#			print("center defocus:", tytx[j,2])
+			projf=projf*ctf_stack[int(tf.round((tytx[j,2]-dfrange[0])/dfstep))-offset:int(tf.round((tytx[j,2]-dfrange[0])/dfstep))+offset+1]
 			proj2.append(tf.reduce_sum(tf.signal.irfft2d(projf), axis=0))
 		return EMStack2D(tf.stack(proj2))
 

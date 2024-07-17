@@ -53,6 +53,9 @@ def main():
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
+	parser.add_argument("--ctf", action="store_true",help="Includes ctf in the projections")
+	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
+	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
@@ -71,6 +74,18 @@ def main():
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
 	else: zmax=0.5
+	if options.ctf:
+		if options.tomo:
+			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
+		else:
+			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
+			ctf=js["ctf"][0].to_dict()
+		cs=ctf["cs"]
+		voltage=ctf["voltage"]
+		ampcont=ctf["ampcont"]
+		dfrange=(options.dfmin,options.dfmax)
+		# Create the ctf stack
+		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix)
 
 	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit {zmax}. {nptcl} input images")
 
@@ -81,7 +96,7 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 6) step coef
+	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 7) step coef
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
@@ -167,6 +182,16 @@ def main():
 						qual+=qual0
 						shift+=shift0
 						sca+=sca0
+				elif options.ctf:
+					dsapix=apix*nxraw/ptclsfds.shape[1]
+					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
+					if j==0:
+						step,qual,shift,sca=step0,qual0,shift0,sca0
+					else:
+						step+=step0
+						qual+=qual0
+						shift+=shift0
+						sca+=sca
 				# optimize gaussians and image shifts
 				else:
 					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
@@ -342,6 +367,35 @@ def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 
 	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+
+def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
+	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+
+	with tf.GradientTape() as gt:
+		gt.watch(gaus.tensor)
+		projs=gaus.project_ctf(orts,ctf_stackds,ny,dsapix,dfrange,dfstep,tytx=tytx)
+		projsf=projs.do_fft()
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+
+	grad=gt.gradient(frcs,gaus._data)
+	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
+	shift=tf.math.reduce_std(grad[:,:3])	# translational std
+	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
+	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	#print(f"{qual}\t{shift}\t{sca}")
+
+	return (step,float(qual),float(shift),float(sca))
+
 
 
 if __name__ == '__main__':
