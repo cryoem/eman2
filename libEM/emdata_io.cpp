@@ -416,16 +416,19 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 
 EMData EMData::avg_images(const string & filename)
 {
+	int total_img = EMUtil::get_image_count(filename);
 
 	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
-	for (size_t j = 0; j < n; j++) {
+	decltype(&EerIO::get_coords) sum;
+
+	for (size_t j = 0; j < total_img; j++) {
 	}
 
 	EMUtil::close_imageio(filename, imageio);
 	imageio = 0;
 
-	return *(a[0].get());
+	return EMData();
 }
 
 bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData>> imgs,
