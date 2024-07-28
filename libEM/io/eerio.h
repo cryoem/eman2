@@ -38,6 +38,9 @@
 #include <bitset>
 
 
+typedef vector<pair<int, int>> COORDS;
+
+
 namespace EMAN
 {
 	template <class T>
@@ -186,6 +189,7 @@ namespace EMAN
 		int get_nimg();
 		bool is_single_image_format() const override;
 
+		COORDS get_coords(float *rdata, int image_index, const Region *area, bool);
 
 		DEFINE_IMAGEIO_FUNC;
 

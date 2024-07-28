@@ -44,8 +44,6 @@ auto Decoder::operator()(unsigned int count, unsigned int sub_pix) const {
 	return std::make_pair(x(count, sub_pix), y(count, sub_pix));
 }
 
-typedef vector<pair<int, int>> COORDS;
-
 auto decode_eer_data(EerWord *data, Decoder &decoder) {
 	EerStream is((data));
 	EerRle    rle;
@@ -252,6 +250,17 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	EXITFUNC;
 
 	return 0;
+}
+
+COORDS EerIO::get_coords(float *rdata, int image_index, const Region * area, bool)
+{
+	TIFFSetDirectory(tiff_file, image_index);
+
+	auto data = read_raw_data(tiff_file);
+
+	auto coords = decode_eer_data((EerWord *) data.data(), decoder);
+
+	return coords;
 }
 
 int EerIO::write_data(float *data, int image_index, const Region* area,
