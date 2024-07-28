@@ -257,9 +257,6 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 int EerIO::write_data(float *data, int image_index, const Region* area,
 					  EMUtil::EMDataType, bool use_host_endian)
 {
-	ENTERFUNC;
-
-	EXITFUNC;
 	return 0;
 }
 
