@@ -414,7 +414,7 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 	return v;
 }
 
-EMData EMData::avg_images(const string & filename)
+EMData EMData::sum_images(const string & filename)
 {
 	int total_img = EMUtil::get_image_count(filename);
 
