@@ -252,7 +252,7 @@ int EerIO::read_data(float *rdata, int image_index, const Region * area, bool)
 	return 0;
 }
 
-COORDS EerIO::get_coords(float *rdata, int image_index, const Region * area, bool)
+COORDS EerIO::get_coords(int image_index)
 {
 	TIFFSetDirectory(tiff_file, image_index);
 

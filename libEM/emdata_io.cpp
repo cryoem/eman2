@@ -418,15 +418,22 @@ EMData EMData::avg_images(const string & filename)
 {
 	int total_img = EMUtil::get_image_count(filename);
 
-	ImageIO *imageio = EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
+	EerIO *eerio = (EerIO*) EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
-	decltype(&EerIO::get_coords) sum;
+	map<pair<int, int>, int> sum;
 
-	for (size_t j = 0; j < total_img; j++) {
+	for (size_t i = 0; i < total_img; i++) {
+		auto coords = eerio->get_coords(i);
+		for(auto &v:coords) {
+			auto it = sum.insert({v, 0});
+			if (!it.second) {
+				it.first->second += 1;
+		}
+
 	}
 
-	EMUtil::close_imageio(filename, imageio);
-	imageio = 0;
+	EMUtil::close_imageio(filename, eerio);
+	eerio = 0;
 
 	return EMData();
 }
