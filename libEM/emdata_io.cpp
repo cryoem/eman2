@@ -432,10 +432,14 @@ EMData EMData::sum_images(const string & filename)
 
 	}
 
+	auto img = EMData(nx, ny);
+	for(const auto &c : sum)
+		img[c.first.first + c.first.second * ny] = c.second;
+
 	EMUtil::close_imageio(filename, eerio);
 	eerio = 0;
 
-	return EMData();
+	return img;
 }
 
 bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData>> imgs,
