@@ -426,7 +426,7 @@ EMData EMData::sum_images(const string & filename)
 		auto coords = eerio->get_coords(i);
 		for(auto &v:coords) {
 			auto it = sum.insert({v, 0});
-			if (!it.second) {
+			if (!it.second)
 				it.first->second += 1;
 		}
 
