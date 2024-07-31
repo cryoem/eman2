@@ -435,7 +435,7 @@ void EMData::sum_images(const string & filename)
 
 	map<pair<int, int>, int> sum;
 
-	for (size_t i = 0; i < 5; i++) {
+	for (size_t i = 0; i < total_img; i++) {
 		auto coords = eerio->get_coords(i);
 		for(auto &v:coords) {
 			auto it = sum.insert({v, 0});
