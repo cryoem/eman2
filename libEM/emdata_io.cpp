@@ -414,15 +414,28 @@ vector<shared_ptr<EMData>> EMData::read_images(const string & filename, vector<i
 	return v;
 }
 
-EMData EMData::sum_images(const string & filename)
+void EMData::sum_images(const string & filename)
 {
 	int total_img = EMUtil::get_image_count(filename);
 
 	EerIO *eerio = (EerIO*) EMUtil::get_imageio(filename, ImageIO::READ_ONLY);
 
+	int err = eerio->read_header(attr_dict);
+	if (err)
+		throw ImageReadException(eerio->get_filename(), "imageio read header failed");
+
+	nx = attr_dict["nx"];
+	ny = attr_dict["ny"];
+	nz = attr_dict["nz"];
+	attr_dict.erase("nx");
+	attr_dict.erase("ny");
+	attr_dict.erase("nz");
+
+	set_size(nx, ny, nz);
+
 	map<pair<int, int>, int> sum;
 
-	for (size_t i = 0; i < total_img; i++) {
+	for (size_t i = 0; i < 5; i++) {
 		auto coords = eerio->get_coords(i);
 		for(auto &v:coords) {
 			auto it = sum.insert({v, 0});
@@ -432,14 +445,14 @@ EMData EMData::sum_images(const string & filename)
 
 	}
 
-	auto img = EMData(nx, ny);
+//	auto img = EMData(nx, ny);
 	for(const auto &c : sum)
-		img[c.first.first + c.first.second * ny] = c.second;
+		rdata[c.first.first + c.first.second * ny] = c.second;
 
 	EMUtil::close_imageio(filename, eerio);
 	eerio = 0;
 
-	return img;
+//	return img;
 }
 
 bool EMData::write_images(const string & filename, vector<std::shared_ptr<EMData>> imgs,
