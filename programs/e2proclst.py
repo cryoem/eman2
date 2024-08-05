@@ -91,6 +91,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--getptcls", action="store_true", default=False, help="Get particles from input 2D class averages and put them in a lst specified in --create")
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 	parser.add_argument("--scalexf", type=float, help="scale the translation in xform in header.",default=-1)
+	parser.add_argument("--applyxf", type=str, help="apply the transform to a list of particles with xform.projection or align3d.",default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
@@ -285,7 +286,26 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				l[xftag]=lxf[i][xftag]
 				
 			save_lst_params(lsts, options.create)			
-			
+		
+		
+		elif options.applyxf:
+			lsts=[load_lst_params(a) for a in args]
+			lsts=sum(lsts, [])
+			if os.path.isfile(options.applyxf):
+				e=EMData(options.applyxf,0,True)
+				xf=e["xform.align3d"]
+			else:
+				xf=Transform(eval(options.applyxf))
+				
+			for l in lsts:
+				if "xform.projection" in l:
+					x=l["xform.projection"]*(xf.inverse())
+					l["xform.projection"]=x
+				elif "xform.align3d" in l:
+					x=xf*l["xform.align3d"]
+					l["xform.align3d"]=x
+					
+			save_lst_params(lsts, options.create)	
 			
 		else:
 			for f in args:
