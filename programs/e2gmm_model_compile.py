@@ -36,7 +36,8 @@ def main():
 		pdbpar = PDBParser( QUIET = True) 
 		
 	pdb = pdbpar.get_structure("model",options.model)
-	######## remove Hydrogen
+	
+	######## remove Hydrogen if they are present in model
 	residue=list(pdb.get_residues())
 	nh=0
 	for r in residue:
@@ -49,7 +50,7 @@ def main():
 		print(f"Removing {nh} H atoms")
 	atoms=list(pdb.get_atoms())
 	
-
+	##########################
 	atom_pos=np.array([a.get_coord() for a in atoms])
 	atom_res=np.array([a.get_parent().get_id()[1] for a in atoms])
 	atom_chn=np.array([a.get_parent().get_parent().get_id() for a in atoms])
@@ -60,6 +61,13 @@ def main():
 	else:
 		path=options.path
 		
+	##########################
+	options.cmd=' '.join(sys.argv)
+	fm=f"{options.path}/0_compile_params.json"
+	js=js_open_dict(fm)
+	js.update(vars(options))
+	js.close()	
+	
 	if options.model.endswith(".cif") or options.writecif:
 		io=MMCIFIO()
 		io.set_structure(pdb)
@@ -84,9 +92,9 @@ def main():
 	bonds3=[] # bonds between DNA/RNA base paris 
 	sgid=np.array([i for i,a in enumerate(atoms) if a.get_id()=='SG'])
 
-	ncbond=[1.336, 0.023] ## peptide bonds length and std
+	ncbond=[1.336, 0.018] ## peptide bonds length and std
 	ssbond=[2.033, 0.04] ## S-S bonds length and std
-	dnabond=[1.601, 0.012] ## peptide bonds length and std
+	dnabond=[1.601, 0.012] ## DNA/RNA bonds length and std
 	for ai,at in enumerate(atoms):
 		idx_res=(atom_chn==atom_chn[ai])*(atom_res==atom_res[ai])
 		idx_res=np.where(idx_res)[0]
@@ -260,7 +268,7 @@ def main():
 		
 		if len(aname_last)>0:
 			
-			if 'CA' in aname_last:
+			if ('CA' in aname_last) and  ('CA' in aname):
 				r0=atoms[aname_last['CA']].get_parent().get_id()[1]
 				r1=atoms[aname['CA']].get_parent().get_id()[1]
 				c0=atoms[aname_last['CA']].get_parent().get_parent().get_id()
@@ -286,7 +294,7 @@ def main():
 	dihs_peptide=dihs[pid]
 	print("    peptide:   {}".format(len(dihs_peptide)))
 	
-	pid=[i for i,d in enumerate(dihs) if dihs_type[i].startswith("C0")]
+	pid=[i for i,d in enumerate(dihs) if dihs_type[i].startswith("C")]
 	dihs_sidechain=dihs[pid]
 	print("    sidechain: {}".format(len(dihs_sidechain)))
 	
@@ -297,6 +305,9 @@ def main():
 	rot=np.degrees(np.arcsin(abs(rot)))
 	print("  Average backbone/sidechain planar dihedral angle deviation: {:.2f} degrees".format(np.mean(rot)))
 	print("  {} angle outliers beyond 10 degrees".format(np.sum(rot>10)))
+	# ir=np.where(rot>10)[0]
+	# for i in ir:
+	# 	print(get_info(atoms[dihs_plane[i,2]]), rot[i])
 	
 	if len(dihs_peptide)>0:
 		pt=tf.gather(atom_pos[None,:], dihs_peptide[:,:4], axis=1)
@@ -313,6 +324,8 @@ def main():
 	dihs_chi_id=list([i for i,d in enumerate(dihs) if dihs_type[i] in chis])
 	dihs_chi=dihs[dihs_chi_id]
 	dihs_chi_res=[atoms[i].get_parent().get_resname() for i in dihs_chi[:,1]]
+	# for i in dihs_chi[:,1]:
+	# 	print(get_info(atoms[i]))
 	dihs_chi_res=np.array([e2pc.restype_3_to_index[i] for i in dihs_chi_res])
 	chi_id=np.array([int(i[3]) for i in dihs_type[dihs_chi_id]])
 	print("{} sidechain rotamer chi angles".format(len(chi_id)))
@@ -333,9 +346,12 @@ def main():
 			if ir==0: continue
 			dic0=residues[ir-1].child_dict
 			dic1=res.child_dict
-			
-			b0=[dic0[b] for b in ["C5'", "C4'", "C3'", "O3'"]]
-			b1=[dic1[b] for b in ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]]
+			try:
+				b0=[dic0[b] for b in ["C5'", "C4'", "C3'", "O3'"]]
+				b1=[dic1[b] for b in ["P", "O5'", "C5'", "C4'", "C3'", "O3'"]]
+			except:
+				print("missing atoms at",res)
+				continue
 			
 			bk=b0+b1
 			bk=[atoms.index(b) for b in bk]
