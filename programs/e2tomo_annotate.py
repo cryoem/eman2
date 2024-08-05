@@ -148,10 +148,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			sys.exit(0)
 			return
 
-
-
-
-
 		print("Self.tom_file_list",self.tom_file_list)
 		for t in range(len(self.tom_file_list)):
 			file_name = self.tom_file_list[t]
@@ -162,10 +158,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			i = -1
 			seg_ls = sorted(os.listdir(self.seg_folder))
 			for seg_f in seg_ls:
-				# if seg_f.startswith(file_name[0:-4]) and seg_f.endswith(".hdf"):
 				data_file = str(os.path.join(self.tom_folder,file_name))
 				data_hdr = EMData(data_file, 0,True)
-				if seg_f.startswith(base_name(data_file)) and seg_f.endswith(".hdf"):
+				#if seg_f.startswith(base_name(data_file)) and seg_f.endswith(".hdf"):
+				if seg_f.endswith(".hdf") and base_name(seg_f)==base_name(data_file):
+
 					i +=1
 					hdr = EMData(os.path.join(self.seg_folder,seg_f), 0,True)
 					if [hdr["nx"],hdr["ny"],hdr["nz"]]!= [data_hdr["nx"],data_hdr["ny"],data_hdr["nz"]]:
@@ -176,15 +173,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 					seg_item = QtWidgets.QTreeWidgetItem()
 					tomo_tree_item.addChild(seg_item)
 					seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable))
-					#seg_item.setCheckState(0,0)
 					seg_button = QtWidgets.QRadioButton(seg_f)
 					self.seg_grps[t].addButton(seg_button,i)
 					self.tomo_tree.setItemWidget(seg_item,0,seg_button)
 
 			try:
 				self.seg_grps[t].button(0).setChecked(True)
-			except:#No seg file available for some tomograms
-				# seg_path = file_name[0:-4]+"_seg.hdf"
+			except:
 				print("No seg files available for tomogram", file_name)
 				pass
 
@@ -197,13 +192,18 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.nz=hdr["nz"]
 		self.apix = hdr["apix_x"]
 
+		seg_path = None
 		if self.tomo_tree.topLevelItem(0).childCount() > 0:
-			seg_path = os.path.join(self.seg_folder,self.seg_grps[0].checkedButton().text())
-			print("Seg file for current tomogram already exists at",seg_path)
+			try:
+				seg_path = os.path.join(self.seg_folder,self.seg_grps[0].checkedButton().text())
+				print("Seg file for current tomogram already exists at",seg_path)
 
-		else:
+			except Exception as e:
+				print("Cannot open the seg file from segs folder")
+
+		if self.tomo_tree.topLevelItem(0).childCount() == 0 or seg_path is None:
 			seg_path = os.path.join(self.seg_folder,base_name(self.data_file)+"_seg.hdf")
-			print("Create seg_file",seg_path)
+			print("Create new seg_file as",seg_path)
 			seg_out = EMData(self.nx,self.ny,self.nz)
 			seg_out.write_image(seg_path)
 			del seg_out
@@ -211,21 +211,17 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			try:
 				self.tomo_tree.topLevelItem(0).addChild(seg_item)
 				seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
-
-				#seg_item.setCheckState(0,0)
 				seg_button = QtWidgets.QRadioButton(os.path.basename(seg_path))
 				self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 				seg_button.setChecked(True)
 				self.tomo_tree.setItemWidget(seg_item,0,seg_button)
 			except Exception as e:
-				print("EXCEPTION when add child", e)
+				print("EXCEPTION when add child to current tomo item", e)
 				pass
 
-		#self.seg_path = seg_path
 		self.seg_path = "temp_fs_ann.hdf"
 		self.seg_info_path = self.seg_path[0:-4]+".json"
 		self.decompress_seg_file(seg_path)
-
 		try:
 			f = open(self.seg_info_path, 'x')
 		except:
@@ -276,9 +272,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view = EMAnnotate2DWidget(sizehint=(680,680))
 		self.img_view.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.img_view.setMinimumSize(680, 680)
-
-		#self.img_view.show()
-
 
 		#boxes for Boxer tab
 		self.boxes = []
@@ -1962,7 +1955,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def closeEvent(self,event):
 		"""Close everything when close the ImageViewer"""
-		print("Exiting")
+		print("Exiting successfully.")
 		#self.SaveJson()
 		try:
 			E2saveappwin("e2annotate","main",self)
