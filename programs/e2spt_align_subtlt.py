@@ -73,6 +73,8 @@ def main():
 	if options.debug:
 		tasks=tasks[:num_cpus*4]
 		
+	if len(tasks)<num_cpus:
+		num_cpus=len(tasks)
 	print("{} jobs on {} CPUs".format(len(tasks), num_cpus))
 	njob=num_cpus
 	
@@ -430,6 +432,7 @@ class SptAlignTask(JSTask):
 						if options.skipali:
 							x=x0
 							s=testxf(x)
+							
 							#s=-np.random.rand()
 							
 						else:

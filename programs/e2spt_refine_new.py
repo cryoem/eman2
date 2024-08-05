@@ -232,7 +232,11 @@ def main():
 			ptcls=info3dname
 			if options.localrefine and last3d:
 				ptcls=last3d
-				opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
+				if options.maxshift==0 and options.maxang==0:
+					opt+=" --skipali"
+				else:
+					opt+=f" --maxshift {options.maxshift} --maxang {options.maxang}"
+					
 			elif options.curve:
 				opt+=" --curve"
 			elif options.vector:

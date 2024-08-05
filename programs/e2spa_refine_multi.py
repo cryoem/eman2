@@ -158,7 +158,7 @@ def main():
 		
 		
 	if options.sgd>0:
-		itr=50
+		itr=options.niter-1
 		refs=[f"{path}/threed_{itr:02d}_{ic:02d}.hdf" for ic in range(ncls)]
 		sfile=f"{path}/score_final.txt"
 		run("e2spa_classify.py {rf} --ptclin {inp} --output {out} --maxres {rsx:.1f} --minres {rsn:.1f} --parallel {par} {etc}".format(rf=' '.join(refs), inp=f"{path}/ptcls_input.lst", out=sfile, rsx=options.maxres, rsn=options.minres, par=options.parallel, etc=etc))

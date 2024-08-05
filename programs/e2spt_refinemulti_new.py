@@ -38,6 +38,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="parallel options", default="thread:12")
 	parser.add_argument("--threads", type=int,help="threads for routines not supporting generic --parallel", default=10, guitype='intbox', row=20, col=1, rowspan=1, colspan=1, mode="model[4]")
 	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
+	parser.add_argument("--avgunmask",action="store_true", default=False ,help="average unmasked region for different classes. require maskalign")
 	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift for local alignment. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference for local alignment. ",default=-1)
@@ -146,16 +147,28 @@ def main():
 		print("#### iteration {}".format(itr))
 		
 		#### run alignment for each reference map
+		if options.avgunmask:
+			avgr=Averagers.get("mean")
+			for ir in range(nref):
+				o=EMData(f"{path}/threed_{itr-1:02d}_{ir:02d}.hdf")
+				avgr.add_image(o)
+			avg=avgr.finish()
+				
 		for ir in range(nref):
 			oref=f"{path}/threed_{itr-1:02d}_{ir:02d}.hdf"
 			ref=f"{path}/aliref_{ir:02d}.hdf"		# overwrite each iteration
 
 			modref=EMData(oref)
 			if options.maskalign!=None: 
-				# These initial filters are to reduce the artifacts produced by masking
-				if options.maxres>0: modref.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
-				if options.minres>0: modref.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
-				modref.mult(options.maskalign)
+				if options.avgunmask:
+					modref=modref*options.maskalign+avg*(1-options.maskalign)
+					if options.maxres>0: modref.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
+					if options.minres>0: modref.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
+				else:
+					# These initial filters are to reduce the artifacts produced by masking
+					if options.maxres>0: modref.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.maxres})
+					if options.minres>0: modref.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.minres})
+					modref.mult(options.maskalign)
 			modref.write_compressed(ref,0,12,erase=True)
 			
 			run(f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --parallel {options.parallel} {opt}")

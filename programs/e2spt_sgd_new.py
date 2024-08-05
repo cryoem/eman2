@@ -190,6 +190,8 @@ def main():
 		for l in lst_all:
 			l["align_iter"]=0
 			l["xform.align3d"]=Transform()
+			
+		print(np.min(idx_all), np.max(idx_all))
 		
 	
 	for itr in range(options.niter):
@@ -199,6 +201,7 @@ def main():
 			idx=np.arange(npt)
 			np.random.shuffle(idx)
 			idx=np.sort(idx[:nptcl])
+		
 		
 		ali3d=[info3d[i] for i in idx]
 		save_lst_params(ali3d, info3dname)
@@ -239,8 +242,7 @@ def main():
 		
 		# print(clsid)
 		if options.fulldata>0:
-			for i in range(nptcl):
-				ix=idx[i]
+			for i, ix in enumerate(idx):
 				ic=int(clsid[i])
 				a3=a3dout[ic][i]
 				# print(i, ix, ic, a3)
