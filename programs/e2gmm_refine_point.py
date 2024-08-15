@@ -88,6 +88,11 @@ def main():
 			print("Error: chunk specification out of range")
 			sys.exit(1)
 
+		if options.perturb>0 and options.chunk[0]>0:
+			print("perturb only used in first chunk, reset to 0")
+			options.perturb=0.0
+
+
 	logid=E2init(sys.argv,options.ppid)
 
 	gen_model=None
@@ -189,7 +194,7 @@ def main():
 			params=set_indices_boxsz(maxboxsz)
 			dcpx=get_clip(data_cpx, params["sz"], clipid)
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
-			trainset=trainset.batch(options.batchsz)
+			trainset=trainset.batch(options.batchsz,drop_remainder=True)
 
 			train_decoder(gen_model, trainset, params, options, pts)
 			pout=gen_model(tf.zeros((1,options.nmid), dtype=floattype)).numpy()[0]
@@ -310,7 +315,7 @@ def main():
 				chunkn=nptcl
 
 			trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
-			trainset=trainset.batch(bsz)
+			trainset=trainset.batch(bsz,drop_remainder=True)
 			allscr, allgrds=calc_gradient(trainset, pts, params, options )
 #			allscr, allgrds=calc_gqual(trainset, pts, params, options )
 
@@ -339,6 +344,9 @@ def main():
 
 	#### Heterogeneity analysis from particles
 	if options.ptclsin and options.heter:
+		if options.niter < options.nmid*2 :
+			raise Exception("niter must be > nmid * 2 and should generally be at least nmid * 3")
+
 		#### build deep networks and make sure they work
 		if options.encoderin is not None:
 			encode_model=tf.keras.models.load_model(f"{options.encoderin}",compile=False)
@@ -360,7 +368,7 @@ def main():
 		#### actual training
 		ptclidx=allscr>-1
 		trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
-		trainset=trainset.batch(bsz)
+		trainset=trainset.batch(bsz,drop_remainder=True)
 
 		train_heterg(trainset, pts, encode_model, decode_model, params, options)
 
@@ -741,12 +749,16 @@ def build_encoder(ninp,nmid,grps=None):
 	kinit="he_normal"
 
 	if grps is None:
-		print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
+		print(f"Encoder (no groups) {max(ninp//2,nmid*8)},{max(ninp//4,nmid*4)},{max(ninp//8,nmid*4)},{max(ninp//16,nmid*4)},{max(ninp//32,nmid*2)}")
 		layers=[
 		tf.keras.layers.Flatten(),
 		tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
-		tf.keras.layers.Dropout(.3),
+#		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dense(max(ninp//4,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+#		tf.keras.layers.Dropout(.2),
 		tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+#		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dense(max(ninp//16,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 		]
@@ -756,6 +768,7 @@ def build_encoder(ninp,nmid,grps=None):
 		# the goal is to produce something with the same input/output layers as the unsegmented network
 		# but connectivity from specific gaussians limited to specific latent variables
 		ngrp=[grps[i] for i in sorted(grps)]
+		print(f"Encoder (grouped) {ngrp} groups")
 		latpergrp=nmid//len(grps)
 		in1=tf.keras.layers.Input(ninp)
 		in2s=[]
@@ -765,9 +778,11 @@ def build_encoder(ninp,nmid,grps=None):
 			t+=i
 		# Add Dropout here?
 		drop=[tf.keras.layers.Dropout(0.3)(in2s[i]) for i in range(len(ngrp))]
-		mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
-		mid2=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
-		outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
+		mid=[tf.keras.layers.Dense(max(ngrp[i]//4,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
+		mid2=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
+		mid3=[tf.keras.layers.Dense(max(ngrp[i]//16,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
+		mid4=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid3[i]) for i in range(len(ngrp))]
+		outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid4[i]) for i in range(len(ngrp))]
 		out=tf.keras.layers.Concatenate()(outs)
 		encode_model=tf.keras.Model(inputs=in1,outputs=out)
 #		print(in1,in2s,mid,mid2,outs,out)
@@ -807,8 +822,13 @@ def build_decoder(nmid, pt ):
 		#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
 		tf.keras.layers.Dense(nmid*2,activation="relu",kernel_initializer=kinit,use_bias=True,bias_initializer=binit),
 		tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True),
-		tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True),
-		tf.keras.layers.Dropout(.3),
+		tf.keras.layers.Dense(min(nmid*8,nout//8),activation="relu",kernel_initializer=kinit,use_bias=True),
+#		tf.keras.layers.Dropout(.6),
+		tf.keras.layers.Dense(min(nmid*16,nout//4),activation="relu",kernel_initializer=kinit,use_bias=True),
+#		tf.keras.layers.Dropout(.6),
+		tf.keras.layers.Dense(min(nmid*32,nout),activation="relu",kernel_initializer=kinit,use_bias=True),
+#		tf.keras.layers.Dropout(.6),
+		tf.keras.layers.Dense(min(nmid*128,nout),activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.BatchNormalization(),
 		layer_output,
 		tf.keras.layers.Reshape((nout,4))
@@ -846,23 +866,21 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 	wts=gen_model.trainable_variables
 	
 	nbatch=0
-	for t in trainset: nbatch+=1
+	for pjr,pji,xf in trainset: nbatch+=1
 	
+	if options.decoderentropy: confs=tf.random.uniform((nbatch,xf.shape[0],options.nmid),minval=-0.05, maxval=0.05)
+	else: confs=tf.zeros((nbatch,xf.shape[0],options.nmid), dtype=floattype)
+
 	for itr in range(options.niter):
 		cost=[]
 		truecost=[]
+		n=-1
 		for pjr,pji,xf in trainset:
 			if xf.shape[0]==1: continue
+			n+=1
 			pj_cpx=(pjr,pji)
 			with tf.GradientTape() as gt:
-				# training entropy into the decoder by training individual particles towards random points in latent space
-#				if options.decoderentropy: conf=tf.random.normal((xf.shape[0],options.nmid),stddev=0.2)
-				if options.decoderentropy: conf=tf.random.uniform((xf.shape[0],options.nmid),minval=-0.02, maxval=0.02)
-				# normal behavior, training the neutral map to a latent vector of 0
-				else: conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
-
-				if options.decoderentropy: pout=gen_model(conf+tf.random.uniform((conf.shape[0],conf.shape[1]),minval=-0.02, maxval=0.02))
-				else: pout=gen_model(conf)
+				pout=gen_model(confs[n])
 				std=tf.reduce_mean(tf.math.reduce_std(pout, axis=1), axis=0)
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
@@ -903,7 +921,7 @@ def eval_model(gen_model, options):
 	xfs=[]
 	params=set_indices_boxsz(options.evalsize)
 	trainset=tf.data.Dataset.from_tensor_slices((xfsnp))
-	trainset=trainset.batch(8)
+	trainset=trainset.batch(8,drop_remainder=True)
 	for xf in trainset:
 		conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
 		pout=gen_model(conf)
@@ -1001,7 +1019,7 @@ def coarse_align(dcpx, pts, options):
 def refine_align(dcpx, xfsnp, pts, options, lr=1e-3):
 	nsample=dcpx[0].shape[0]
 	trainset=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
-	trainset=trainset.batch(options.batchsz)
+	trainset=trainset.batch(options.batchsz,drop_remainder=True)
 	nbatch=nsample//options.batchsz
 	
 	opt=tf.keras.optimizers.Adam(learning_rate=lr) 
@@ -1146,36 +1164,61 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	## initialize optimizer
 #	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 #	opt=tf.keras.optimizers.experimental.AdamW(learning_rate=options.learnrate)
-	opt=tf.keras.optimizers.Adamax()
+	opt=tf.keras.optimizers.Adamax(learning_rate=0.005)
+#	opt=tf.keras.optimizers.Adadelta(learning_rate=0.1)
+#	opt=tf.keras.optimizers.Lion()
 	wts=encode_model.trainable_variables + decode_model.trainable_variables
 	nbatch=0
 	for t in trainset: nbatch+=1
-	
+	nshrd=(options.niter//3)
+
+	# zero mask for middle layer. We force components of the vector to zero, gradually relaxing over iterations
+	# this should focus as much energy as possible into the earlier numbered dimensions, somewhat like
+	# PCA. eg - more variability will be accounted for by the first component, etc.
+	#TODO this might have undesirable effects on multi-masked training, need to consider that
+	focusepoch=min(6,max(1,(options.niter//2)//options.nmid)	)  # number of epochs before adding additional middle layer coordinates
+	trainmidmask=tf.constant([[1.0 if j*focusepoch<=i else 0.0 for j in range(options.nmid)] for i in range(options.niter)], dtype=floattype)
+
+	# this determines which iterations will be perturbed on which axes (the first iteration a new axis is brought in)
+	perturbmask=np.zeros((options.niter,options.nmid))
+	for i,j in enumerate(range(0,options.nmid*focusepoch,focusepoch)):
+		perturbmask[j][i]=1.0				# we perturb each axis for 2 epochs as each is brought in to the training
+		perturbmask[j+1][i]=1.0
+	perturbmask=tf.constant(perturbmask, dtype=floattype)
+
+	# print(trainmidmask)
+	# print(perturbmask)
+
+	print(f"Training, bringing each component in every {focusepoch} epochs.")
+
 	## Training
 	allcost=[]
+
 	for itr in range(options.niter):
-		
 		i=0
 		cost=[]
+#		tset=trainset.shard(nshrd,itr%nshrd)		# 8/14/24 - tried sharding to get significant speedup and as an alternative to particle batches, but training consistently worked poorly
+#		if itr==0: print(f"Training set has {tset.cardinality()} elements per epoch of {trainset.cardinality()} total.")
+		lennorm=0.5*sqrt(tf.math.reduce_sum(trainmidmask[itr])/options.nmid)		# we bring the latent space dim in sequentially, this adjusts the length bias so hopefully they all have roughly equal size
 		for grd,pjr,pji,xf in trainset:
 			pj_cpx=(pjr, pji)
 			with tf.GradientTape() as gt:
 				## from gradient input to the latent space
 				conf=encode_model(grd, training=True)
 				
-							
-				## regularization of the latent layer range
-				## ideally the output is within a 1-radius circle
-				## but we want to make the contraint more soft so it won't affect convergence
-				cl=tf.math.sqrt(tf.reduce_sum(conf**2, axis=1))
-				cl=tf.reduce_mean(tf.maximum(cl-1,0))
-				
-				
 				## perturb the conformation by a random value
 				## similar to the variational autoencoder,
 				## but we do not train the sigma of the random value here
 				## since we control the radius of latent space already, this seems enough
-				conf=(options.perturb*2.0/(itr+2.0))*tf.random.normal(conf.shape)+conf		# perturbation is reduced each iteration
+				conf=trainmidmask[itr]*(perturbmask[itr]*options.perturb*tf.random.normal(conf.shape)+conf)		# perturbation and masking
+
+				## regularization of the latent layer range
+				## ideally the output is within a 1-radius circle
+				## but we want to make the contraint more soft so it won't affect convergence
+				cl=tf.math.reduce_std(tf.math.sqrt(tf.math.reduce_sum(conf**2, axis=1)))		# standard deviation of the latent vector lengths
+				cl=(cl-lennorm)**2		# targeting vector length std of 0.5 in a continuous way
+#				cl=tf.reduce_mean(tf.maximum(cl-1,0))
+
 #				conf=.1*tf.random.normal(conf.shape)+conf
 				
 				## mask out the target columns based on --pas
@@ -1186,23 +1229,28 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 				## finally generate images and calculate frc
 				imgs_cpx=pts2img(pout, xf, params, sym=options.sym)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"],minpx=options.minressz)
-				loss=-tf.reduce_mean(fval)+cl*1e-2
-				
+				loss=-tf.reduce_mean(fval)
+				if cl>0.01 : loss+=cl*0.1
+
 				if options.modelreg>0: 
 					loss+=tf.reduce_sum((pout[:,:,:3]-pts[:,:,:3])**2)/len(pts)/xf.shape[0]*options.modelreg
 			
+			if tf.math.is_nan(loss) :
+				print("NaN loss function while training. Exiting.")
+				break
 			cost.append(loss)
 			grad=gt.gradient(loss, wts)
 			opt.apply_gradients(zip(grad, wts))
-			
+#			print(float(tf.math.reduce_std(grad[i])) for i in range(len(grad)))
+
 			i+=1
 			if i%10==0: 
-				sys.stdout.write("\r {}/{}\t{:.3f}         ".format(len(cost), nbatch, loss))
+				sys.stdout.write("\r {}/{}\t{:.3f}\t{:.3g}              ".format(len(cost), nbatch, loss,cl))
 				sys.stdout.flush()
 			
 		sys.stdout.write("\r")
 		
-		print("iter {}, loss : {:.4f}".format(itr, np.mean(cost)))
+		print("iter {}, loss : {:.4f}     last cl {:.4g}".format(itr, np.mean(cost),cl))
 		allcost.append(np.mean(cost))
 		
 	return allcost

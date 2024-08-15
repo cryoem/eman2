@@ -128,7 +128,7 @@ def main():
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	for i in range(0,nptcl,1000):
 		if options.verbose>1:
-			print(f" Caching {i}/{nptcl}\r")
+			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
 			sys.stdout.flush()
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)

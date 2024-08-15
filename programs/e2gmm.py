@@ -2219,7 +2219,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		except: pass
 		lsx=LSXFile(f"{self.gmm}/particles.lst",True)
 		lsxs=LSXFile(f"{self.gmm}/particles_subset.lst")
-		step=max(len(lsx)//10000,1)		# no more than ~10k particles in initial training
+		step=max(len(lsx)//2000,1)		# no more than ~2k particles in initial training
 		for i in range(0,len(lsx),step):
 			lsxs.write(-1,*lsx.read(i))
 		print(f"Subset of {len(lsxs)} particles extracted to train neutral model")
@@ -2228,7 +2228,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.05  --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -2303,6 +2303,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			showerror("Invalid mask. Comma separated list of filenames or blank!")
 			return
 
+		print(f"Group by mask: {masks}")
 		# put each Gaussian in the mask-based group it first matches
 		# results unspecified for overlapping masks
 		# group 0 corresponds to the unmasked region
