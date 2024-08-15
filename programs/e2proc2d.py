@@ -188,7 +188,6 @@ def main():
 	parser.add_argument("--first", metavar="n", type=int, default=0, help="the first image in the input to process [0 - n-1])")
 	parser.add_argument("--last", metavar="n", type=int, default=-1, help="the last image in the input to process")
 	parser.add_argument("--list", metavar="listfile", type=str, help="Works only on the image numbers in LIST file")
-	parser.add_argument("--select", metavar="selectname", type=str, help="Works only on the images in named selection set from bdb:select")
 	parser.add_argument("--randomn", metavar="n", type=int, default=0, help="Selects a random subset of N particles from the file to operate on.")
 	parser.add_argument("--inplace", action="store_true", help="Output overwrites input, USE SAME FILENAME, DO NOT 'clip' images.")
 	parser.add_argument("--interlv", metavar="interleave-file", type=str, help="Specifies a 2nd input file. Output will be 2 files interleaved.")
@@ -296,8 +295,6 @@ def main():
 
 		if outpattern.lower()=="none":
 			outfile=None
-			is_inp_bdb = False
-			is_out_bdb = False
 
 			if infile[0]==":": inp_ext=".hdf"
 			else: inp_ext = os.path.splitext(infile)[1]
@@ -305,14 +302,12 @@ def main():
 
 		else:
 			outfile = changed_file_name(infile, outpattern, inp_num, multiple_files)
-			is_inp_bdb = (len (infile)  >= 4 and infile.lower() [0:4] == "bdb:")
-			is_out_bdb = (len (outfile) >= 4 and outfile.lower()[0:4] == "bdb:")
 
 			if infile[0]==":": inp_ext=".hdf"
 			else: inp_ext = os.path.splitext(infile)[1]
 			out_ext = os.path.splitext(outfile)[1]
 
-			if out_ext == "" and multiple_files and not is_out_bdb:
+			if out_ext == "" and multiple_files:
 				out_ext = inp_ext
 				outfile = outfile + out_ext
 
@@ -322,9 +317,7 @@ def main():
 
 		is_single_2d_image = False
 
-		if is_inp_bdb:
-			num_inp_images = -1
-		elif infile[0] == ":": 	# special flag to create a new image
+		if infile[0] == ":": 	# special flag to create a new image
 			num_inp_images = 2
 		elif os.path.isfile(infile):
 			try:
@@ -483,16 +476,12 @@ def main():
 			print("%d images, processing %d-%d stepping by %d"%(nimg,n0,n1,options.step[1]))
 
 		# Now we deal with inclusion/exclusion lists
-		if options.list or options.select:
+		if options.list:
 			imagelist = [0]*nimg
 
 			if options.list:
 				for i in read_number_file(options.list): imagelist[i] = 1
 
-			if options.select:
-				db = db_open_dict("bdb:.#select",ro=True)
-
-				for i in db[options.select]: imagelist[i] = 1
 		elif options.randomn > 0:
 			imagelist = [0]*nimg
 			if options.randomn >= nimg:
@@ -661,11 +650,11 @@ def main():
 					if not param_dict : param_dict = {}
 
 					# Parse the options to convert the image file name to EMData object
-					# (for both plain image file and bdb file)
+					# (for plain image file)
 					for key in list(param_dict.keys()):
 						#print str(param_dict[key])
 
-						if str(param_dict[key]).find('bdb:') != -1 or not str(param_dict[key]).isdigit():
+						if not str(param_dict[key]).isdigit():
 							try:
 								param_dict[key] = EMData(param_dict[key])
 							except:
