@@ -243,7 +243,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if any([arg[0] != ':' and ':' in arg for arg in args]):
+	if any([arg[0] != ':' and ':' in arg for arg in args[:-1]]):
 		print("\nThe new filename syntax (using : after filename) is not yet supported in e2proc2d.py.\n")
 		sys.exit(1)
 
@@ -314,6 +314,11 @@ def main():
 			if out_ext == ".lst":
 				print("Output file extension may not be .lst: " + outfile)
 				continue
+
+		outfile_for_write_image = outfile
+
+		if ":" in outfile:
+			outfile, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(outfile)
 
 		is_single_2d_image = False
 
@@ -1048,7 +1053,7 @@ def main():
 								except:
 									pass
 
-								out3d_img.write_image(outfile, 0, out_type, False, None, out_mode, not_swap)
+								out3d_img.write_image(outfile_for_write_image, 0, out_type, False, None, out_mode, not_swap)
 								dummy = 1
 
 							if options.list or options.exclude:
@@ -1065,7 +1070,7 @@ def main():
 
 								region = Region(0, 0, i, d.get_xsize(), d.get_ysize(), 1)
 
-							d.write_image(outfile, 0, out_type, False, region, out_mode, not_swap)
+							d.write_image(outfile_for_write_image, 0, out_type, False, region, out_mode, not_swap)
 
 						elif options.unstacking:	# output a series numbered single image files
 							out_name = os.path.splitext(outfile)[0]+'-'+str(i+1).zfill(len(str(nimg)))+os.path.splitext(outfile)[-1]
@@ -1102,11 +1107,11 @@ def main():
 								if options.inplace:
 									if options.compressbits>=0:
 										d.write_compressed(outfile,i,options.compressbits,nooutliers=True)
-									else: d.write_image(outfile, i, out_type, False, None, out_mode, not_swap)
+									else: d.write_image(outfile_for_write_image, i, out_type, False, None, out_mode, not_swap)
 								else: # append the image
 									if options.compressbits>=0:
 										d.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
-									else: d.write_image(outfile, -1, out_type, False, None, out_mode, not_swap)
+									else: d.write_image(outfile_for_write_image, -1, out_type, False, None, out_mode, not_swap)
 
 		# end of image loop
 
@@ -1119,11 +1124,11 @@ def main():
 			if options.inplace:
 				if options.compressbits >= 0:
 					avg.write_compressed(outfile,0,options.compressbits,nooutliers=True)
-				else: avg.write_image(outfile,0)
+				else: avg.write_image(outfile_for_write_image,0)
 			else:
 				if options.compressbits >= 0:
 					avg.write_compressed(outfile,-1,options.compressbits,nooutliers=True)
-				else: avg.write_image(outfile,-1)
+				else: avg.write_image(outfile_for_write_image,-1)
 
 		if options.fftavg:
 			fftavg.mult(1.0 / sqrt(n1 - n0 + 1))
