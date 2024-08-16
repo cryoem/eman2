@@ -162,11 +162,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			i = -1
 			seg_ls = sorted(os.listdir(self.seg_folder))
 			for seg_f in seg_ls:
-				# if seg_f.startswith(file_name[0:-4]) and seg_f.endswith(".hdf"):
 				data_file = str(os.path.join(self.tom_folder,file_name))
 				data_hdr = EMData(data_file, 0,True)
-				#if seg_f.startswith(base_name(data_file)) and seg_f.endswith(".hdf"):
-				if seg_f.endswith(".hdf") and base_name(seg_f)==base_name(data_file):
+				if seg_f.endswith(".hdf") and base_name(seg_f)[:-4]==base_name(data_file):
+					#print("Names",base_name(seg_f)[:-4],base_name(data_file))
 					i +=1
 					hdr = EMData(os.path.join(self.seg_folder,seg_f), 0,True)
 					if [hdr["nx"],hdr["ny"],hdr["nz"]]!= [data_hdr["nx"],data_hdr["ny"],data_hdr["nz"]]:
@@ -177,7 +176,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 					seg_item = QtWidgets.QTreeWidgetItem()
 					tomo_tree_item.addChild(seg_item)
 					seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled)|Qt.ItemFlags(Qt.ItemIsUserCheckable))
-					#seg_item.setCheckState(0,0)
 					seg_button = QtWidgets.QRadioButton(seg_f)
 					self.seg_grps[t].addButton(seg_button,i)
 					self.tomo_tree.setItemWidget(seg_item,0,seg_button)
@@ -185,7 +183,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			try:
 				self.seg_grps[t].button(0).setChecked(True)
 			except:#No seg file available for some tomograms
-				# seg_path = file_name[0:-4]+"_seg.hdf"
 				print("No seg files available for tomogram", file_name)
 				pass
 
@@ -206,7 +203,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			#for seg_grp in self.seg_grps:
 			try:
 				seg_path = os.path.join(self.seg_folder,self.seg_grps[0].checkedButton().text())
-				#seg_path = os.path.join(self.seg_folder,seg_grp.checkedButton().text())
 				print("Seg file for current tomogram already exists at",seg_path)
 
 			except Exception as e:
@@ -407,8 +403,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ltlay.addWidget(self.points_label,0,0,2,2)
 		self.ltlay.addWidget(QtWidgets.QLabel("Line Width"),2,2,1,2)
 		self.ltlay.addWidget(self.tx_line_width,2,3,1,1)
-		#self.ltlay.addWidget(QtWidgets.QLabel("Ann Class"),3,2,1,2)
-		#self.ltlay.addWidget(self.tx_ann_class,3,3,1,1)
 		self.tx_interp=QtWidgets.QSpinBox(self)
 		self.tx_interp.setValue(20)
 		self.ltlay.addWidget(self.interp_button,0,2,1,1)
@@ -430,8 +424,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ctlay.addWidget(QtWidgets.QLabel("Draw line to annotate file"),2,0,1,2)
 		self.ctlay.addWidget(QtWidgets.QLabel("Line Width"),2,2,1,1)
 		self.ctlay.addWidget(self.ct_line_width,2,3,1,1)
-		# self.ctlay.addWidget(QtWidgets.QLabel("Ann Class"),3,2,1,1)
-		# self.ctlay.addWidget(self.ct_ann_class,3,3,1,1)
 		self.ctlay.addWidget(self.clear_contour_button,0,2,1,1)
 		self.ctlay.addWidget(self.fill_contour_checkbox,4,2,1,1)
 
@@ -471,8 +463,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 		self.basic_tab = QtWidgets.QTabWidget()
-		# self.test_seg_tab = EMSegTab(target=self.img_view)
-		# self.basic_tab.addTab(self.test_seg_tab,"Seg")
 		self.basic_tab.addTab(self.brush_tab,"Brush")
 		self.basic_tab.addTab(self.linear_tab,"Linear")
 		self.basic_tab.addTab(self.contour_tab,"Contour")
@@ -534,7 +524,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.button_gbl.addLayout(assisted_vbl,4,0,2,1)
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
-		#self.test_button.setCheckable(True)
 		self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
 
@@ -544,7 +533,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
 		inspector_vbl.addWidget(self.img_view_inspector)
 
-		#self.gbl.addLayout(tomo_vbl,1,0,1,1)
 		self.gbl.addWidget(self.img_view,0,0,1,2)
 		self.gbl.addLayout(inspector_vbl,0,2,1,1)
 		self.centralWidget.setLayout(self.gbl)
@@ -555,7 +543,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.control_panel.show()
 
 		self.test_button.clicked[bool].connect(self.test_drawing_function)
-		#self.undo_button.clicked[bool].connect(self.reverse_to_saved_state)
 
 		#Need to fix
 		self.lb_lines=QtWidgets.QLabel("")
@@ -582,7 +569,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		E2loadappwin("e2annotate","main",self)
 		E2loadappwin("e2annotate","controlpanel",self.control_panel)
 		E2loadappwin("e2annotate","tomograms",self.tomo_list_panel)
-		#self.update_label()
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
