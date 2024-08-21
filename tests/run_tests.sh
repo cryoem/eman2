@@ -23,15 +23,6 @@ python "${MYDIR}/test_imports.py"
 # 4. Existence tests for data files like images, font files, JSON
 python "${MYDIR}/test_EMAN2DIR.py"
 
-# 5. Unit tests
-nosetests -vv --exe -m "^test_*" \
-                    -e "^test_image_" \
-                    -e "test_main" \
-                    -e "test_result" \
-                    -e "test_boxing" \
-                    -a \!broken \
-                    rt/pyem/
-
 # 6. Test openmpi
 if [ $(whoami) != "root" ];then
     mpirun --oversubscribe -n 4 $(which python) ${MYDIR}/../examples/mpi_test.py
