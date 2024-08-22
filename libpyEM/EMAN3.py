@@ -910,7 +910,7 @@ def parsemodopt_logical(optstr):
 
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
 		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
-		print('Must be one of "==", "<=", ">=", "<", ">" "!=" or "\~=" ')
+		print('Must be one of "==", "<=", ">=", "<", ">" "!=" or "~=" ')
 		return (None,None,None)
 
 	return p_1[0], p_2[0], p_1[1]
