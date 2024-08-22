@@ -392,6 +392,48 @@ def rotate_sidechain(pout, rot_axis, theta, rotmat_idx):
 # 	pout_rot=tf.matmul(pout_trans[:,:,None,:], allmat)[:,:,0,:]
 # 	return pout_rot
 
+def compile_cbeta(pdb):
+	atoms=list(pdb.get_atoms())
+	residue=list(pdb.get_residues())	
+	atom_dict={a:i for i,a in enumerate(atoms)}
+	
+	h_ref=[]
+	h_offset=[]
+	for i,r in enumerate(residue):
+		adict=r.child_dict
+		res=r.resname
+		if res not in e2pc.cbeta:
+			continue
+		hp=e2pc.cbeta[res]
+		try:
+			ad=[adict['CA'], adict['C'], adict['N'], adict['CB']]
+		except:
+			continue
+		ad=[atom_dict[k] for k in ad]
+		h_ref.append(ad)
+		h_offset.append(hp)
+			
+	h_ref=np.array(h_ref, dtype=int)
+	h_offset=np.array(h_offset, dtype=floattype)
+	h_info=(h_ref, h_offset)
+	return h_info
+	
+def cb_loss(atom_pos, h_info):
+	h_ref, h_offset=h_info
+	v=tf.gather(atom_pos, h_ref[:,:3], axis=1)
+	vs=tf.reshape(v, (-1,3,3))
+	m=calc_rot_mat_tf(vs)
+	m=tf.transpose(m, (0,2,1))
+	m=tf.reshape(m, (atom_pos.shape[0], -1, 3,3))
+	h=tf.matmul(h_offset[None, :,None,:],m)[:,:,0]
+	hpos=h+v[:,:,0]
+
+	cb=tf.gather(atom_pos, h_ref[:,3], axis=1)
+	dcb=hpos-cb
+	dcb=tf.math.sqrt(tf.reduce_sum(dcb**2, axis=2))
+
+	return dcb
+	
 def compile_hydrogen(pdb):
 	atoms=list(pdb.get_atoms())
 	residue=list(pdb.get_residues())	
@@ -584,7 +626,12 @@ def eval_chem(model, theta_all, theta_h, options):
 		
 		scr=tf.reduce_max(ds, axis=2)
 		rna_score=tf.reduce_mean(scr)
-		etc+=f" RNA score {rna_score:.3f}"
+		etc+=f" RNA score {rna_score:.3f}, "
+		
+	if options.cbeta:
+		dcb=cb_loss(atom_pos, options.cb_info)
+		dcb=np.sum(dcb[0]>0.25)
+		etc+=f" C-beta outlier {dcb}, "
 		
 	atom_pos=add_h(atom_pos,options.h_info)
 	arot=rotate_sidechain(atom_pos, options.rot_axish, theta_h[None,:], options.rotmat_idxh)
@@ -950,6 +997,13 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				lossetc+=(1-rna_score)*500. * options.weight["rna"]
 				# etc+=f" RNA score {rna_score:.3f}"
 				
+			if options.cbeta and options.has_protein:
+				
+				dcb=cb_loss(atom_pos, options.cb_info)
+				cb_score=tf.reduce_mean(dcb)*10
+				cb_outlier=tf.reduce_mean(tf.maximum(0,dcb-0.25))*1000*20
+				lossetc+=cb_score
+				lossetc+=cb_outlier
 				
 			#### clash
 			atom_pos=add_h(atom_pos,options.h_info)
@@ -975,6 +1029,9 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 		if options.has_protein:
 			etc+=f", rama {rama_score:.2f},{rama_outlier:.2f}"
 			etc+=f", rota {rota_score:.2f},{rota_outlier:.2f}"
+			if options.cbeta:
+				etc+=f", cbeta {cb_score:.2f},{cb_outlier:.2f}"
+				
 		if options.has_rna:
 			etc+=f", RNA {rna_score:.2f}"
 		etc+=f", clash {clash_score:.2f},{nclash:d}"
@@ -1048,7 +1105,8 @@ def main():
 	parser.add_argument("--fixrotamer", action="store_true", default=False ,help="select good rotamer before refinement")
 	parser.add_argument("--fixrama", action="store_true", default=False ,help="fix bad rama angle before refinement")
 	parser.add_argument("--writeh", action="store_true", default=False ,help="write H atoms in the output file")
-	parser.add_argument("--nocis", action="store_true", default=False ,help="no cis peptide")
+	parser.add_argument("--nocis", action="store_true", default=False ,help="add extra penalty for cis peptide")
+	parser.add_argument("--cbeta", action="store_true", default=False ,help="force c-beta positions")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -1161,6 +1219,15 @@ def main():
 		
 		### additional rotation for each chi angle
 		theta_all=[np.zeros(len(rot_axis[ii]), dtype=floattype) for ii in range(4)]	
+		
+	#######
+	if options.cbeta:
+		print("compiling c-beta")
+		options.cb_info=compile_cbeta(pdb)
+		dcb=cb_loss(atom_pos, options.cb_info)
+		print(np.sum(dcb[0]>.25), "C-beta outlier")
+		# exit()
+		
 		
 	##########################################
 	print("Adding hydrogen...")

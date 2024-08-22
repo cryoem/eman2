@@ -24,7 +24,7 @@ floattype=np.float32
 from e2gmm_refine_new import *
 
 @tf.function()
-def rotpts(px, ang, msk):
+def rotpts(px, ang, msk, centerzero=False):
 	azp=-ang[:,0]*np.pi
 	altp=ang[:,1]*np.pi
 	phip=-ang[:,2]*np.pi
@@ -35,8 +35,11 @@ def rotpts(px, ang, msk):
 	matrix=tf.transpose(matrix)
 	matrix=tf.reshape(matrix, shape=[-1, 3,3])
 	matrix=tf.transpose(matrix, (0,2,1))
-
+	
 	cnt=tf.reduce_sum(px[0]*msk[:,None], axis=0)/tf.reduce_sum(msk)
+	if centerzero:
+		cnt*=0
+		
 	cs=tf.matmul(-cnt[None,:], matrix)+cnt
 	t=tf.concat([cs+trans, tf.ones((matrix.shape[0],1,1))], axis=2)
 	
