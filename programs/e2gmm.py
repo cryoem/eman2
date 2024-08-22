@@ -65,7 +65,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
 
 import traceback
 import tensorflow as tf
-import tensorflow.keras.models
+#import tensorflow.keras.models
 import numpy as np
 
 def butval(widg):
