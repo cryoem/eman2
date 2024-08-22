@@ -94,7 +94,7 @@ class StarFile3(dict):
 		self[self.curdata]=self.curdict
 		self.loops[self.curdata]=[]
 
-		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
+		matcher=re.compile(r"""("[^"]+")|('[^']+')|([^\s]+)""")
 
 		fin=open(self.filename,"r")
 
@@ -204,7 +204,7 @@ If not set, it will read the first block encountered. Value should be of the for
 		self.loops=[]
 		self.clear()
 		
-		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
+		matcher=re.compile(r"""("[^"]+")|('[^']+')|([^\s]+)""")
 		
 		# read the entire file into a buffer, this dramatically simplifies the logic, even if it eats a chunk of RAM
 		self.lines=[i for i in open(self.filename,"r") if len(i.strip())!=0 and i[0]!="#"]

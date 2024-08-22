@@ -1401,7 +1401,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param format The image file format
 		"""
 		image = self.grabFrameBuffer()
-		fregex = re.compile('\.\w{3,4}$')
+		fregex = re.compile(r'\.\w{3,4}$')
 		if re.findall(fregex, filename):
 			image.save(filename, re.findall(fregex, filename)[0][1:])
 		else:

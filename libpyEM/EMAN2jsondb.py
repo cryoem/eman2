@@ -546,7 +546,7 @@ class JSTask(object):
 
 # These two items are used to compact the file representation. Dict keys are separated by newlines,
 # but lists are all on one line.
-listrex=re.compile("\[[^\]\{]*\]")		# This regex will find all lists that don't contain dicts
+listrex=re.compile(r"\[[^\]\{]*\]")		# This regex will find all lists that don't contain dicts
 
 def denl(s):
 	"This will replace \n with nothing in a search match"

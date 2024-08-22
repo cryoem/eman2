@@ -1367,7 +1367,7 @@ class DragListWidget(QtWidgets.QListWidget):
 	def dropEvent(self,e):
 		if e.mimeData().hasText() :
 			sdata=str(e.mimeData().text()).split("\n")
-			rex=re.compile("\s*([0-9Ee\-\+\.]+)(?:[\s,;:]*)")		# regular expression for parsing text with any of these separators: <space>,;:
+			rex=re.compile(r"\s*([0-9Ee\-\+\.]+)(?:[\s,;:]*)")		# regular expression for parsing text with any of these separators: <space>,;:
 			# parse the data
 			data=None
 			for s in sdata:

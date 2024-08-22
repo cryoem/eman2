@@ -58,9 +58,9 @@ def main():
 #	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
 	parser.add_argument("--modelreg", type=float,help="regularizer for for Gaussian positions based on the starting model, ie the result will be biased towards the starting model when training the decoder (0-1 typ). Default 0", default=0)
 	parser.add_argument("--ampreg", type=float,help="regularizer for the Gaussian amplitudes in the first 1/2 of the iterations. Large values will encourage all Gaussians to have similar amplitudes. default = 0", default=0)
-	parser.add_argument("--niter", type=int,help="number of iterations", default=10)
+	parser.add_argument("--niter", type=int,help="number of iterations", default=32)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
-	parser.add_argument("--batchsz", type=int,help="batch size", default=256)
+	parser.add_argument("--batchsz", type=int,help="batch size", default=128)
 	parser.add_argument("--minressz", type=int,help="Fourier diameter associated with minimum resolution to consider. ", default=4)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
@@ -74,7 +74,7 @@ def main():
 	parser.add_argument("--ptclrepin", type=str,help="Load the per-particle representation from a file rather than recomputing", default="")
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. sigma is not supported in this version of the program. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
-	parser.add_argument("--nmid", type=int,help="size of the middle layer. If model is grouped becomes nmid*ngroup", default=4)
+	parser.add_argument("--nmid", type=int,help="size of the middle layer. If model is grouped must be divisible by ngroup", default=4)
 	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -370,7 +370,7 @@ def main():
 		trainset=tf.data.Dataset.from_tensor_slices((allgrds[ptclidx], dcpx[0][ptclidx], dcpx[1][ptclidx], xfsnp[ptclidx]))
 		trainset=trainset.batch(bsz,drop_remainder=True)
 
-		train_heterg(trainset, pts, encode_model, decode_model, params, options)
+		train_heterg(trainset, pts, encode_model, decode_model, params, options,grps)
 
 		if options.decoderout!=None:
 			decode_model.save(options.decoderout)
@@ -820,15 +820,15 @@ def build_decoder(nmid, pt ):
 		#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
 		#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
 		#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
-		tf.keras.layers.Dense(nmid*2,activation="relu",kernel_initializer=kinit,use_bias=True,bias_initializer=binit),
-		tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True),
-		tf.keras.layers.Dense(min(nmid*8,nout//8),activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(min(nmid*2,nout//16),activation="relu",kernel_initializer=kinit,use_bias=True,bias_initializer=binit),
+		tf.keras.layers.Dense(min(nmid*4,nout//16),activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(min(nmid*8,nout//16),activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.Dropout(.6),
-		tf.keras.layers.Dense(min(nmid*16,nout//4),activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(min(nmid*16,nout//8),activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.Dropout(.6),
-		tf.keras.layers.Dense(min(nmid*32,nout),activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(min(nmid*32,nout//4),activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.Dropout(.6),
-		tf.keras.layers.Dense(min(nmid*128,nout),activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(min(nmid*64,nout),activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.BatchNormalization(),
 		layer_output,
 		tf.keras.layers.Reshape((nout,4))
@@ -1156,7 +1156,7 @@ def calc_gradient(trainset, pts, params, options):
 	return allscr, allgrds
 
 #### train the conformation manifold from particles
-def train_heterg(trainset, pts, encode_model, decode_model, params, options):
+def train_heterg(trainset, pts, encode_model, decode_model, params, options,grps):
 	npt=pts.shape[1]
 	pas=[int(i) for i in options.pas]
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1]], dtype=floattype))
@@ -1176,18 +1176,29 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options):
 	# this should focus as much energy as possible into the earlier numbered dimensions, somewhat like
 	# PCA. eg - more variability will be accounted for by the first component, etc.
 	#TODO this might have undesirable effects on multi-masked training, need to consider that
-	focusepoch=min(6,max(1,(options.niter//2)//options.nmid)	)  # number of epochs before adding additional middle layer coordinates
-	trainmidmask=tf.constant([[1.0 if j*focusepoch<=i else 0.0 for j in range(options.nmid)] for i in range(options.niter)], dtype=floattype)
+	if grps is not None: ngrps=len(grps)
+	else: ngrps=0
 
-	# this determines which iterations will be perturbed on which axes (the first iteration a new axis is brought in)
-	perturbmask=np.zeros((options.niter,options.nmid))
-	for i,j in enumerate(range(0,options.nmid*focusepoch,focusepoch)):
-		perturbmask[j][i]=1.0				# we perturb each axis for 2 epochs as each is brought in to the training
-		perturbmask[j+1][i]=1.0
-	perturbmask=tf.constant(perturbmask, dtype=floattype)
+	if ngrps<=1:
+		focusepoch=min(6,max(1,(options.niter//2)//options.nmid)	)  # number of epochs before adding additional middle layer coordinates
+		trainmidmask=tf.constant([[1.0 if j*focusepoch<=i else 0.0 for j in range(options.nmid)] for i in range(options.niter)], dtype=floattype)
 
-	# print(trainmidmask)
-	# print(perturbmask)
+		# this determines which iterations will be perturbed on which axes (the first iteration a new axis is brought in)
+		perturbmask=np.zeros((options.niter,options.nmid))
+		for i,j in enumerate(range(0,options.nmid*focusepoch,focusepoch)):
+			perturbmask[j][i]=1.0				# we perturb each axis for 2 epochs as each is brought in to the training
+			perturbmask[j+1][i]=1.0
+		perturbmask=tf.constant(perturbmask, dtype=floattype)
+	else:
+		focusepoch=0
+		trainmidmask=tf.zeros((options.niter,options.nmid))+1.0
+
+		perturbmask=np.zeros((options.niter,options.nmid))
+		for i in range(2): perturbmask[i,:]=1.0
+		perturbmask=tf.constant(perturbmask, dtype=floattype)
+
+	print(trainmidmask)
+	print(perturbmask)
 
 	print(f"Training, bringing each component in every {focusepoch} epochs.")
 

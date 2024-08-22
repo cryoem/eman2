@@ -798,10 +798,10 @@ def parsesym(optstr):
 #
 #	return Symmetries.get(sym, dict)
 
-parseparmobj1=re.compile("([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
-parseparmobj2=re.compile("([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
-parseparmobj3=re.compile("[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3")
-parseparmobj4=re.compile("\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
+parseparmobj1=re.compile(r"([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
+parseparmobj2=re.compile(r"([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
+parseparmobj3=re.compile(r"[^:]\w*=*[-\w.]*") # This parses ("a:v1=2:v2=3") into ("a", "v1=2", "v2=3")
+parseparmobj4=re.compile(r"\w*[^=][\w.]*") # This parses ("v1=2") into ("v1", "2")
 
 def parse_transform(optstr):
 	"""This is used so the user can provide the rotation information and get the transform matrix in a convenient form.
@@ -885,10 +885,10 @@ def parsedict(dictstr):
 			cmpparms[keyval[0]] = keyval[1]
 	return cmpparms
 
-parseparmobj_op = re.compile("\+=|-=|\*=|\/=|%=")
-parseparmobj_logical = re.compile(">=|<=|==|~=|!=|<|>") 	# finds the logical operators <=, >=, ==, ~=, !=, <, >
-parseparmobj_op_words = re.compile("\w*[^=+-\/\*%][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"
-parseparmobj_logical_words = re.compile("\w*[^=!<>~][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"
+parseparmobj_op = re.compile(r"\+=|-=|\*=|\/=|%=")
+parseparmobj_logical = re.compile(r">=|<=|==|~=|!=|<|>") 	# finds the logical operators <=, >=, ==, ~=, !=, <, >
+parseparmobj_op_words = re.compile(r"\w*[^=+-\/\*%][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"
+parseparmobj_logical_words = re.compile(r"\w*[^=!<>~][\w.]*") # splits ("v1?2") into ("v1","2") where ? can be any combination of the characters "=!<>~"
 def parsemodopt_logical(optstr):
 
 	if not optstr or len(optstr)==0 : return (None)
@@ -910,7 +910,7 @@ def parsemodopt_logical(optstr):
 
 	if ( p_2[0] not in ["==", "<=", ">=", "!=", "~=", "<", ">"] ):
 		print("ERROR: parsemodopt_logical %s could not extract logical expression" %(p_2[0]))
-		print("Must be one of \"==\", \"<=\", \">=\", \"<\", \">\" \"!=\" or \~=\" ")
+		print('Must be one of "==", "<=", ">=", "<", ">" "!=" or "\~=" ')
 		return (None,None,None)
 
 	return p_1[0], p_2[0], p_1[1]
@@ -2090,6 +2090,10 @@ def error_exit(s) :
 	should still remain as a shortcut"""
 	print(s)
 	exit(1)
+
+def warning(s):
+	"""prints a warning message as appropriate. In future may support logging, etc."""
+	print(s)
 
 def write_test_boxing_images(name="test_box",num_im=10,type=0,n=100):
 	'''
