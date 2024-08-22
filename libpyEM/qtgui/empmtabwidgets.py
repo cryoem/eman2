@@ -52,7 +52,7 @@ class EMRefine2dTable(EMBrowserWidget):
 class EMRefine2dModel(EMFileItemModel):
 	""" Item model for the refinement data """
 	def __init__(self, startpath=None, dirregex=None):
-		regex = re.compile('^r2d')
+		regex = re.compile(r'^r2d')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
 
@@ -67,7 +67,7 @@ class EMValidateTable(EMBrowserWidget):
 class EMValidateModel(EMFileItemModel):
 	""" Item model for the refinement data """
 	def __init__(self, startpath=None, dirregex=None):
-		regex = re.compile('^TiltValidate')
+		regex = re.compile(r'^TiltValidate')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
 
@@ -82,7 +82,7 @@ class EMRefineTable(EMBrowserWidget):
 class EMRefineModel(EMFileItemModel):
 	""" Item model for the refinement data """
 	def __init__(self, startpath=None, dirregex=None):
-		regex = re.compile('^refine|^frealign')
+		regex = re.compile(r'^refine|^frealign')
 		EMFileItemModel.__init__(self, startpath=startpath, direntryclass=EMDirEntry, dirregex=regex)
 
 

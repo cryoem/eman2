@@ -254,14 +254,17 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				cp.write_image(ptclfname,ptclno)
 				nbx=good_size(int(options.clip*apix/1.8))
 				shr=cp.process("math.fft.resample",{"n":options.clip/nbx})
+				sxform.set_trans(sxform.get_trans()*(nbx/options.clip))
 				shr.write_image(ptclfsname,ptclno)
 			else:
 				imgc.write_image(ptclfname,ptclno)
 				nbx=good_size(int(imgc["nx"]*apix/1.8))
 				shr=imgc.process("math.fft.resample",{"n":imgc["nx"]/nbx})
+				sxform=Transform(xform)
+				sxform.set_trans(sxform.get_trans()*(nbx/imgc["nx"]))
 				shr.write_image(ptclfsname,ptclno)
 			lstf[-1]=(ptclno,ptclfname.split(":")[0],{"xform.projection":xform})
-			lstft[-1]=(ptclno,ptclfsname.split(":")[0],{"xform.projection":xform})
+			lstft[-1]=(ptclno,ptclfsname.split(":")[0],{"xform.projection":sxform})
 
 		lastctf=ctf.to_vector()
 

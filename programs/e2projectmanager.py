@@ -577,8 +577,8 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			return
 		begin = False
 		helpstr = ""
-		bregex = re.compile('usage\s*=\s*"""')
-		eregex = re.compile('"""')
+		bregex = re.compile(r'usage\s*=\s*"""')
+		eregex = re.compile(r'"""')
 		for line in f:
 			if re.search(eregex, line) and begin:
 				line = re.sub(eregex, "", line)
@@ -665,9 +665,9 @@ class EMProjectManager(QtWidgets.QMainWindow):
 	def json_strip_comments(self, data):
 		"""This method takes a JSON-serialized string and removes
 		JavaScript-style comments. These include // and /* */"""
-		r = re.compile('/\\*.*\\*/', flags=re.M|re.S)
+		r = re.compile(r'/\\*.*\\*/', flags=re.M|re.S)
 		data = r.sub("", data)
-		data = re.sub("\s//.*\n", "", data)
+		data = re.sub(r"\s//.*\n", "", data)
 		return data
 
 	def _tree_widget_click(self, item, col):
@@ -721,10 +721,10 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self.statusbar.setMessage("Can't open file '%s'"%e2program,"color:red;")
 			return
 		# Regex objects
-		lineregex = re.compile("^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
-		moderegex = re.compile("mode\s*=\s*[\"'].*%s[{0,1}.*]{0,1}.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
-		modedefre = re.compile("%s\[([\w\.\(\)\']*)\]"%mode,flags=re.I)
-		defaultre = re.compile("default\s*=\s*[^,]*")
+		lineregex = re.compile(r"^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
+		moderegex = re.compile(r"mode\s*=\s*[\"'].*%s[{0,1}.*]{0,1}.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.
+		modedefre = re.compile(r"%s\[([\w\.\(\)\']*)\]"%mode,flags=re.I)
+		defaultre = re.compile(r"default\s*=\s*[^,]*")
 
 		# Read line and do preprocessing (set mode defaults if desired)
 		for line in f:

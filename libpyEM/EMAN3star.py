@@ -93,7 +93,7 @@ class StarFile(dict):
 		self[self.curdata]=self.curdict
 		self.loops[self.curdata]=[]
 
-		matcher=re.compile("""("[^"]+")|('[^']+')|([^\s]+)""")
+		matcher=re.compile(r"""("[^"]+")|('[^']+')|([^\s]+)""")
 
 		fin=open(self.filename,"r")
 
