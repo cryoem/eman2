@@ -953,7 +953,7 @@ def read_number_file(path):
 	sequence of (0-9) in the file will be treated as a number. '#' is NOT respected as a comment character."""
 
 	try:
-		regex = re.compile("[0-9]+")
+		regex = re.compile(r"[0-9]+")
 		return [int(i) for i in regex.findall(open(path,"r").read())]
 	except:
 		return []
