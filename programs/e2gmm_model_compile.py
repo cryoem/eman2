@@ -274,8 +274,12 @@ def main():
 				c0=atoms[aname_last['CA']].get_parent().get_parent().get_id()
 				c1=atoms[aname['CA']].get_parent().get_parent().get_id()
 				if r0+1==r1 and c0==c1:
-					dh0=[aname_last['CA'], aname_last['C'], aname['N'], aname['CA']]
-					dh1=[aname_last['O'], aname_last['C'], aname_last['CA'], aname['N']]
+					try:
+						dh0=[aname_last['CA'], aname_last['C'], aname['N'], aname['CA']]
+						dh1=[aname_last['O'], aname_last['C'], aname_last['CA'], aname['N']]
+					except:
+						print(f"missing atoms in {ii} {res}")
+						continue
 					dihs.append(dh0)
 					dihs.append(dh1)
 					dihs_type.extend(['peptide','backbone'])

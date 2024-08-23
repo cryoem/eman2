@@ -41,12 +41,13 @@ def build_decoder(p0, options):
 		tf.keras.layers.Reshape(p0.shape),
 		]
 	
-	x0=tf.keras.Input(shape=(options.nmid))
+	x0=tf.keras.Input(shape=(options.nmid,))
 	
 	y0=x0
 	for l in layers:
 		y0=l(y0)
-	y0=y0+p0
+	# y0=y0+p0
+	y0=tf.keras.layers.Add()([y0, tf.constant(p0[None,:,:])])
 	model=tf.keras.Model(x0, y0)
 	
 	return model
@@ -166,7 +167,13 @@ def calc_clashid(pts, options,  pad=40):
 		d0=vdwr[nb]+vdwr[i]
 		vid=np.argsort(d-d0)[:nnb]
 		clashid.append(np.array(nb)[vid])
-
+	
+	l=[len(i) for i in clashid]
+	if np.max(l)>np.min(l):
+		n=np.min(l)
+		print(f"keeping {n} for clashing")
+		clashid=[c[:n] for c in clashid]
+		
 	clashid=np.array(clashid)
 	return clashid
 
@@ -640,8 +647,8 @@ def eval_chem(model, theta_all, theta_h, options):
 	clashid=calc_clashid(arot[0].numpy(), options, pad=60)
 	vdw_radius=tf.gather(options.vdwr_h, clashid)+options.vdwr_h[:,None]
 	
-	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4,'P':4,'M':9}
-	atype=np.array([atomdic[a.id[0]] for a in options.atoms])
+	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4,'P':4}
+	atype=np.array([atomdic[a.id[0]] if a.id[0] in atomdic else 9 for a in options.atoms])
 	atype=np.append(atype, np.zeros(len(options.h_info[0]), dtype=int))
 
 	ah0=options.h_info[1][:,0]

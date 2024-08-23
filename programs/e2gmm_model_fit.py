@@ -19,6 +19,11 @@ import tensorflow as tf
 from e2gmm_refine_new import set_indices_boxsz, load_particles, pts2img, calc_frc, get_clip
 from e2gmm_model_refine import calc_clashid, calc_bond, calc_angle, find_clash, compile_chi_matrix, get_rotamer_angle, rotate_sidechain, get_info, calc_dihedral_tf, eval_rama,get_rama_types, calc_rotamer
 
+
+class Layer_gather(tf.keras.Layer):
+	def call(self, x, ii, axis):
+		return tf.gather(x, ii, axis=1)
+
 def build_decoder_CA(pts, icls, ninp=4, meanzero=False, freeamp=False):
 	nc=int(np.max(icls))+1
 	print("building decoder with {} Gaussian, using {} anchor points".format(len(pts[0]), nc))
@@ -34,23 +39,26 @@ def build_decoder_CA(pts, icls, ninp=4, meanzero=False, freeamp=False):
 		tf.keras.layers.Reshape((nc,5))
 		]
 
-	x0=tf.keras.Input(shape=(ninp))
+	x0=tf.keras.Input(shape=(ninp,))
 
 	y0=x0
 	for l in layers:
 		y0=l(y0)
-
-	y0=tf.gather(y0, icls, axis=1)
-	y0*=[1,1,1,0,0]
-	if freeamp:
-		lz0=tf.keras.layers.Dense((len(pts[0])*5), activation="linear", kernel_initializer=kinit)
-		y1=lz0(x0)
-		y1=tf.reshape(y1, (-1, len(pts[0]), 5))
-		y1=y1*[0,0,0,1,1]
-		y0+=y1
+	
+	y0=Layer_gather()(y0, icls, axis=1)
+	y0=tf.keras.layers.Multiply()([y0, tf.constant([1,1,1,0,0])[None,None,:]])
+ # 
+	# y0=tf.gather(y0, icls, axis=1)
+	# y0*=[1,1,1,0,0]
+	# if freeamp:
+	# 	lz0=tf.keras.layers.Dense((len(pts[0])*5), activation="linear", kernel_initializer=kinit)
+	# 	y1=lz0(x0)
+	# 	y1=tf.reshape(y1, (-1, len(pts[0]), 5))
+	# 	y1=y1*[0,0,0,1,1]
+	# 	y0+=y1
 		
 	if meanzero==False:
-		y0=y0+pts
+		y0=tf.keras.layers.Add()([y0, tf.constant(pts)])
 	
 	model=tf.keras.Model(x0, y0)
 	return model
@@ -67,14 +75,14 @@ def build_decoder_BB(pts, msk_bb, ninp=4):
 		tf.keras.layers.Reshape((npt,5))
 		]
 
-	x0=tf.keras.Input(shape=(ninp))
+	x0=tf.keras.Input(shape=(ninp,))
 
 	y0=x0
 	for l in layers:
 		y0=l(y0)
 
-	y0*=[1,1,1,0,0]
-	y0*=msk_bb[:,None]
+	y0=tf.keras.layers.Multiply()([y0, tf.constant([1,1,1,0,0])[None,None,:]])
+	y0=tf.keras.layers.Multiply()([y0, tf.constant(msk_bb[None,:,None])])
 	
 	model=tf.keras.Model(x0, y0)
 	return model
@@ -104,7 +112,7 @@ def build_decoder_anchor(pts, capos, caidx, pcnt, ninp=4):
 		tf.keras.layers.Permute((2,1))
 		]
 
-	x0=tf.keras.Input(shape=(ninp))
+	x0=tf.keras.Input(shape=(ninp,))
 
 	y0=x0
 	for l in layers:
@@ -334,10 +342,10 @@ def main():
 		print("iter {}, loss : {:.4f}  {} ".format(itr, np.mean(cost),etc))
 		
 	if options.niter[0]==0 and options.load:
-		gen_model.load_weights(f"{path}/weights_morph.h5")
+		gen_model.load_weights(f"{path}/weights_morph.weights.h5")
 	else:
 		save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_00")
-		save_weights(gen_model,f"{path}/weights_morph.h5")
+		save_weights(gen_model,f"{path}/weights_morph.weights.h5")
 	
 	conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
 	pout=gen_model(conf, training=False)
@@ -352,7 +360,13 @@ def main():
 	options.idx_dih_rama=np.loadtxt(f"{path}/model_rama_angle.txt").astype(int)
 	options.idx_dih_plane=np.loadtxt(f"{path}/model_dih_plane.txt").astype(int)
 	options.idx_dih_piptide=np.loadtxt(f"{path}/model_dih_piptide.txt").astype(int)
-	options.dih_type=get_rama_types(atoms, options.idx_dih_rama)
+	if len(options.idx_dih_rama)==0:
+		print("No protein")
+		options.has_protein=False
+	else:
+		options.has_protein=True
+		options.dih_type=get_rama_types(atoms, options.idx_dih_rama)
+		
 	ramalevel=[0.0005,0.02]
 	options.rama_thr0=1-ramalevel[1]*1.1
 	options.rama_thr1=1-ramalevel[0]*2	
@@ -374,6 +388,7 @@ def main():
 	d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen)
 	options.connect_all=[np.where(i<=maxlen)[0] for i in d]
 	options.clashid=calc_clashid(atom_pos[0].numpy(), options, pad=60)
+	# print([len(i) for i in options.clashid])
 	options.vdw_radius=tf.gather(options.vdwr_h, options.clashid)+options.vdwr_h[:,None]
 	options.clash_omask=np.zeros_like(options.clashid)
 		
@@ -387,7 +402,7 @@ def main():
 	wts=[]
 	wts+=gen_model.trainable_variables
 	wts+=gen_model_ca.trainable_variables
-	save_weights(gen_model_ca, f"{path}/weights_ca_tmp.h5")
+	save_weights(gen_model_ca, f"{path}/weights_ca_tmp.weights.h5")
 	# weight_model=1e-4
 	weight_model=0
 	nstd=6.
@@ -457,217 +472,217 @@ def main():
 			weight_model=abs(d0/d1)*options.modelweight
 			print(f"iter 0: FRC loss decrease {d0:.3e}, geometry loss increase {d1:.3e}")
 			print(f"        using geometry weight {weight_model:.3e}")
-			gen_model.load_weights(f"{path}/weights_morph.h5")
-			gen_model_ca.load_weights(f"{path}/weights_ca_tmp.h5")
+			gen_model.load_weights(f"{path}/weights_morph.weights.h5")
+			gen_model_ca.load_weights(f"{path}/weights_ca_tmp.weights.h5")
 			print("iter,   loss,   bond outlier,  angle outlier, clash_score,  number of clash")
 		else:
 			print("iter {}, loss : {:.4f},  {} ".format(itr, np.mean(cost),etc))
 		
 	if options.niter[1]==0 and options.load:
-		gen_model_ca.load_weights(f"{path}/weights_ca.h5")
+		gen_model_ca.load_weights(f"{path}/weights_ca.weights.h5")
 	else:
 		save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_01")
-		save_weights(gen_model_ca, f"{path}/weights_ca.h5")
-		save_weights(gen_model, f"{path}/weights_morph.h5")
+		save_weights(gen_model_ca, f"{path}/weights_ca.weights.h5")
+		save_weights(gen_model, f"{path}/weights_morph.weights.h5")
 
 	##########################################
 	print("Compiling rotamers...")
 	if len(options.idx_dih_chi)==0:
-		print("No rotamers. Return")
-		E2end(logid)
-		return
+		print("No rotamers.")
+		theta_all_out=[np.zeros(0, dtype=floattype) for ii in range(4)]
 		
-	options.chi_idx, options.chi_mat=compile_chi_matrix(options.idx_dih_chi)
-
-	rot_axis=[]
-	rotmat_idx=[]
-	for i in range(4):
-		ra, ri=get_rotamer_angle(atoms, i)    
-		rot_axis.append(ra)
-		rotmat_idx.append(ri)
-
-	options.rot_axis=rot_axis
-	options.rotmat_idx=rotmat_idx
-	for i,m in enumerate(options.chi_mat):
-		print(f"  rotamer chi = {i}, matrix shape: {m.shape}, total {len(rot_axis[i])} angles")
-
-	### additional rotation for each chi angle
-	theta_all_out=[np.zeros(len(rot_axis[ii]), dtype=floattype) for ii in range(4)]
-	
-	if options.rebuild_rotamer:
-		chinid=[3,2,1,0]
-		trainset1=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
-		trainset1=trainset1.batch(32)
 	else:
-		chinid=[]
+		options.chi_idx, options.chi_mat=compile_chi_matrix(options.idx_dih_chi)
+
+		rot_axis=[]
+		rotmat_idx=[]
+		for i in range(4):
+			ra, ri=get_rotamer_angle(atoms, i)    
+			rot_axis.append(ra)
+			rotmat_idx.append(ri)
+
+		options.rot_axis=rot_axis
+		options.rotmat_idx=rotmat_idx
+		for i,m in enumerate(options.chi_mat):
+			print(f"  rotamer chi = {i}, matrix shape: {m.shape}, total {len(rot_axis[i])} angles")
+
+		### additional rotation for each chi angle
+		theta_all_out=[np.zeros(len(rot_axis[ii]), dtype=floattype) for ii in range(4)]
+		
+		if options.rebuild_rotamer:
+			print("Re-building rotamers...")
+			chinid=[3,2,1,0]
+			trainset1=tf.data.Dataset.from_tensor_slices((dcpx[0], dcpx[1], xfsnp))
+			trainset1=trainset1.batch(32)
+		else:
+			chinid=[]
 			
-	##########################################
-	print("Re-building rotamers...")
-	for chin in chinid:
-		print(f"chin = {chin}")
-		conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
-		pout=gen_model(conf, training=False)
-		pout=pout+gen_model_ca(conf, training=False)
+		##########################################
+		for chin in chinid:
+			print(f"chin = {chin}")
+			conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
+			pout=gen_model(conf, training=False)
+			pout=pout+gen_model_ca(conf, training=False)
 
-		pout_rot=pout[:,:,:3]
-		for ii in range(4):
-			theta=theta_all_out[ii][None,:]
-			pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
+			pout_rot=pout[:,:,:3]
+			for ii in range(4):
+				theta=theta_all_out[ii][None,:]
+				pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
 
-		pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+			pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
 
 
-		atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
+			atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 
-		clash=find_clash(atom_pos, options)
-		nclash00=tf.reduce_sum(tf.sign(clash))
+			clash=find_clash(atom_pos, options)
+			nclash00=tf.reduce_sum(tf.sign(clash))
 
-		for pjr,pji,xf in trainset1:
-			pj_cpx=(pjr,pji)
-			imgs_cpx=pts2img(pout, xf)
-			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
-			loss0=-tf.reduce_mean(fval)
-			break
+			for pjr,pji,xf in trainset1:
+				pj_cpx=(pjr,pji)
+				imgs_cpx=pts2img(pout, xf)
+				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+				loss0=-tf.reduce_mean(fval)
+				break
 
-		print(f"clash {nclash00:.0f}, loss {loss0:.4f}")
+			print(f"clash {nclash00:.0f}, loss {loss0:.4f}")
 
-		ii_mat=options.chi_mat[chin].copy()
-		ii=options.chi_idx[chin].copy()
-		iipro=ii_mat[:,-1,-1]==0
-		ii_mat=ii_mat[~iipro]
-		ii=ii[~iipro]
-		
-		ii=ii.T.flatten()
-		ii=options.idx_dih_chi[ii][:,:4]
-		rota_id=ii[:,1].reshape(chin+1, -1)[0]
-		at=[get_info(atoms[i],True) for i in rota_id]
-		rid_atoms=[res_atom_dict[a] for a in at]
+			ii_mat=options.chi_mat[chin].copy()
+			ii=options.chi_idx[chin].copy()
+			iipro=ii_mat[:,-1,-1]==0
+			ii_mat=ii_mat[~iipro]
+			ii=ii[~iipro]
+			
+			ii=ii.T.flatten()
+			ii=options.idx_dih_chi[ii][:,:4]
+			rota_id=ii[:,1].reshape(chin+1, -1)[0]
+			at=[get_info(atoms[i],True) for i in rota_id]
+			rid_atoms=[res_atom_dict[a] for a in at]
 
-		pt=tf.gather(atom_pos, ii, axis=1)
-		dih=calc_dihedral_tf(pt)%360
-		dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
-		dih=tf.transpose(dih, (0,2,1))[0]
-		
-		theta_idx=[]
-		keys=[get_info(atoms[i],True) for i in rota_id]
-		for ii in range(chin+1): 
-			ir=options.rot_axis[ii][:,0]
-			dic={get_info(atoms[r],True):i for i,r in enumerate(ir)}
-			ir=np.array([dic[k] for k in keys])
-			theta_idx.append(ir)
+			pt=tf.gather(atom_pos, ii, axis=1)
+			dih=calc_dihedral_tf(pt)%360
+			dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
+			dih=tf.transpose(dih, (0,2,1))[0]
+			
+			theta_idx=[]
+			keys=[get_info(atoms[i],True) for i in rota_id]
+			for ii in range(chin+1): 
+				ir=options.rot_axis[ii][:,0]
+				dic={get_info(atoms[r],True):i for i,r in enumerate(ir)}
+				ir=np.array([dic[k] for k in keys])
+				theta_idx.append(ir)
 
-		theta_idx=np.array(theta_idx).T
+			theta_idx=np.array(theta_idx).T
 
-		conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
-		pout=gen_model(conf, training=False)
-		pout=pout+gen_model_ca(conf, training=False)
+			conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
+			pout=gen_model(conf, training=False)
+			pout=pout+gen_model_ca(conf, training=False)
 
-		cost_rota=[]
-		for rotai in range(ii_mat.shape[1]):
+			cost_rota=[]
+			for rotai in range(ii_mat.shape[1]):
 
-			rota_target=ii_mat[:,rotai,:chin+1]
+				rota_target=ii_mat[:,rotai,:chin+1]
+				rota_cur=dih[:,:chin+1]
+				ddr=rota_cur-rota_target
+				ddr=ddr*np.pi/180.
+
+				cost=[]
+				for ir in range(len(ddr)):
+					theta_all=[t.copy() for t in theta_all_out]
+
+					for ii in range(chin+1):
+						theta_all[ii][theta_idx[ir,ii]]=ddr[ir,ii]
+
+					pout_rot=pout[:,:,:3]
+					for ii in range(4):
+						theta=theta_all[ii][None,:]
+						pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
+
+					atom_pos_rot=(pout_rot*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
+					clash=find_clash(atom_pos_rot, options)
+					nclash=tf.reduce_sum(tf.sign(clash))
+
+					pout1=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+					imgs_cpx=pts2img(pout1, xf)
+					fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+					loss1=-tf.reduce_mean(fval)
+					dloss=(loss1-loss0)*1e5
+					print(f"rota {rotai}/{ii_mat.shape[1]}, {ir}/{len(ddr)}: clash {nclash:.0f}, loss diff {dloss:.4f}", end='\r')
+
+					cost.append([nclash, dloss])
+
+				cost=np.array(cost)
+				c=cost[:,1]
+				d=cost[:,0]-float(nclash00)
+				d+=np.maximum(0, d-3)*10
+				c+=d*.1
+				
+				cost_rota.append(c.copy())
+			print()
+			
+			cr=np.array(cost_rota)
+			ci=np.argmin(cr, axis=0)
+			rota_target=ii_mat[np.arange(len(ii_mat)),ci,:chin+1]
 			rota_cur=dih[:,:chin+1]
 			ddr=rota_cur-rota_target
 			ddr=ddr*np.pi/180.
+			ddr=ddr.numpy()
+			
+			cc=np.min(cr, axis=0)
+			# print("accepting {}/{} rotamers...".format(np.sum(cc>0), len(cc)))
+			# ddr[cc>0,:]*=0
 
+			theta_all=[t.copy() for t in theta_all_out]
+			for ii in range(chin+1):
+				theta_all[ii][theta_idx[:,ii]]=ddr[:,ii]
+
+			pout_rot=pout[:,:,:3]
+			for ii in range(4):
+				theta=theta_all[ii][None,:]
+				pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
+
+			pout1=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+			atom_pos_rot=(pout_rot*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
+			clash=find_clash(atom_pos_rot, options)
+
+			cl=clash[0].numpy()
+			rid_clash=np.array([np.sum(cl[i]>0) for i in rid_atoms])    
+			
+			for ii in range(chin+1):
+				it=theta_all[ii]!=0
+				theta_all_out[ii][it]=theta_all[ii][it]
+
+			conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
+			pout=gen_model(conf, training=False)
+			pout=pout+gen_model_ca(conf, training=False)
+
+			pout_rot=pout[:,:,:3]
+			for ii in range(4):
+				theta=theta_all_out[ii][None,:]
+				pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
+
+			pout1=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+		
+			
 			cost=[]
-			for ir in range(len(ddr)):
-				theta_all=[t.copy() for t in theta_all_out]
+			for pjr,pji,xf in trainset:
+				pj_cpx=(pjr,pji)
+				imgs_cpx=pts2img(pout, xf)
+				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+				loss0=-tf.reduce_mean(fval)
 
-				for ii in range(chin+1):
-					theta_all[ii][theta_idx[ir,ii]]=ddr[ir,ii]
-
-				pout_rot=pout[:,:,:3]
-				for ii in range(4):
-					theta=theta_all[ii][None,:]
-					pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
-
-				atom_pos_rot=(pout_rot*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
-				clash=find_clash(atom_pos_rot, options)
-				nclash=tf.reduce_sum(tf.sign(clash))
-
-				pout1=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
 				imgs_cpx=pts2img(pout1, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
 				loss1=-tf.reduce_mean(fval)
-				dloss=(loss1-loss0)*1e5
-				print(f"rota {rotai}/{ii_mat.shape[1]}, {ir}/{len(ddr)}: clash {nclash:.0f}, loss diff {dloss:.4f}", end='\r')
 
-				cost.append([nclash, dloss])
+				cost.append([loss0, loss1])
 
 			cost=np.array(cost)
-			c=cost[:,1]
-			d=cost[:,0]-float(nclash00)
-			d+=np.maximum(0, d-3)*10
-			c+=d*.1
+			d=cost[:,0]-cost[:,1]
+			print(" loss from {:.3f} to {:.3f}".format(np.mean(cost[:,0]), np.mean(cost[:,1])))
+		
+			save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_02", theta_all_out)
 			
-			cost_rota.append(c.copy())
-		print()
-		
-		cr=np.array(cost_rota)
-		ci=np.argmin(cr, axis=0)
-		rota_target=ii_mat[np.arange(len(ii_mat)),ci,:chin+1]
-		rota_cur=dih[:,:chin+1]
-		ddr=rota_cur-rota_target
-		ddr=ddr*np.pi/180.
-		ddr=ddr.numpy()
-		
-		cc=np.min(cr, axis=0)
-		# print("accepting {}/{} rotamers...".format(np.sum(cc>0), len(cc)))
-		# ddr[cc>0,:]*=0
-
-		theta_all=[t.copy() for t in theta_all_out]
-		for ii in range(chin+1):
-			theta_all[ii][theta_idx[:,ii]]=ddr[:,ii]
-
-		pout_rot=pout[:,:,:3]
-		for ii in range(4):
-			theta=theta_all[ii][None,:]
-			pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
-
-		pout1=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
-		atom_pos_rot=(pout_rot*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
-		clash=find_clash(atom_pos_rot, options)
-
-		cl=clash[0].numpy()
-		rid_clash=np.array([np.sum(cl[i]>0) for i in rid_atoms])    
-		
-		for ii in range(chin+1):
-			it=theta_all[ii]!=0
-			theta_all_out[ii][it]=theta_all[ii][it]
-
-		conf=tf.zeros((1,options.nmid), dtype=floattype)+1.
-		pout=gen_model(conf, training=False)
-		pout=pout+gen_model_ca(conf, training=False)
-
-		pout_rot=pout[:,:,:3]
-		for ii in range(4):
-			theta=theta_all_out[ii][None,:]
-			pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
-
-		pout1=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
-		
-		
-		cost=[]
-		for pjr,pji,xf in trainset:
-			pj_cpx=(pjr,pji)
-			imgs_cpx=pts2img(pout, xf)
-			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
-			loss0=-tf.reduce_mean(fval)
-
-			imgs_cpx=pts2img(pout1, xf)
-			fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
-			loss1=-tf.reduce_mean(fval)
-
-			cost.append([loss0, loss1])
-
-		cost=np.array(cost)
-		d=cost[:,0]-cost[:,1]
-		print(" loss from {:.3f} to {:.3f}".format(np.mean(cost[:,0]), np.mean(cost[:,1])))
-	
-		save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_02", theta_all_out)
-		
-		np.savetxt(f"{path}/chi_theta.txt", np.concatenate(theta_all_out))
+			np.savetxt(f"{path}/chi_theta.txt", np.concatenate(theta_all_out))
 		
 	if options.rebuild_rotamer==False and options.load==True:
 		print("load rotamer from file")
@@ -679,23 +694,26 @@ def main():
 		
 	##########################################
 	print("Full atom refinement...")	
-	tf_theta=[tf.Variable(t) for t in theta_all_out]
+	tf_theta=[]
 	gen_model_bb=build_decoder_BB(pts[None,...],  msk_bb)
 	if options.load:
-		gen_model_bb.load_weights(f"{path}/weights_bb.h5")
+		gen_model_bb.load_weights(f"{path}/weights_bb.weights.h5")
 	
-	save_weights(gen_model_bb, f"{path}/weights_bb.h5")
+	save_weights(gen_model_bb, f"{path}/weights_bb.weights.h5")
 	conf=tf.zeros((2,4), dtype=floattype)+1.
 	d=gen_model_bb(conf)[0]
 		
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	wts=[]
-	wts+=tf_theta
+	if options.has_protein:
+		tf_theta=[tf.Variable(t) for t in theta_all_out]
+		wts+=tf_theta
 	wts+=gen_model.trainable_variables
 	wts+=gen_model_ca.trainable_variables
 	wts+=gen_model_bb.trainable_variables
 	
 	weight_model=0
+	rota_score=rota_outlier=plane_score=rama_score=rama_outlier=0
 	
 	for itr in range(options.niter[2]):
 			
@@ -710,14 +728,15 @@ def main():
 				pout=gen_model(conf, training=True)
 				pout=pout+gen_model_ca(conf, training=True)
 				pout=pout+gen_model_bb(conf, training=True)
+				
+				if options.has_protein:
+					pout_rot=pout[:,:,:3]
+					for ii in range(4):
+						theta=tf_theta[ii][None,:]
+						theta=tf.repeat(theta, conf.shape[0], axis=0)
+						pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
 
-				pout_rot=pout[:,:,:3]
-				for ii in range(4):
-					theta=tf_theta[ii][None,:]
-					theta=tf.repeat(theta, conf.shape[0], axis=0)
-					pout_rot=rotate_sidechain(pout_rot, options.rot_axis[ii], theta, options.rotmat_idx[ii])
-
-				pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
+					pout=tf.concat([pout_rot, pout[:,:,3:]], axis=-1)
 				
 				imgs_cpx=pts2img(pout, xf)
 				fval=calc_frc(pj_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
@@ -745,17 +764,18 @@ def main():
 				clash_score=tf.reduce_sum(clash)/conf.shape[0]/2.
 				lossetc+=clash_score
 				
-				##############
-				pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
-				phi=calc_dihedral_tf(pt[:,:,:4])
-				psi=calc_dihedral_tf(pt[:,:,4:])
-				rama=eval_rama(phi, psi, options)
-				rama_score=tf.reduce_mean(rama)*.1
-				rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500*5
-				rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*5
+				if options.has_protein:
+					##############
+					pt=tf.gather(atom_pos, options.idx_dih_rama, axis=1)
+					phi=calc_dihedral_tf(pt[:,:,:4])
+					psi=calc_dihedral_tf(pt[:,:,4:])
+					rama=eval_rama(phi, psi, options)
+					rama_score=tf.reduce_mean(rama)*.1
+					rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500*5
+					rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*5
 
-				lossetc+=rama_score 
-				lossetc+=rama_outlier 
+					lossetc+=rama_score 
+					lossetc+=rama_outlier 
 				
 				##############
 				pt=tf.gather(atom_pos, options.idx_dih_plane, axis=1)
@@ -764,29 +784,33 @@ def main():
 				rot=tf.maximum(0, abs(rot)-options.thr_plane)
 				plane_score=tf.reduce_mean(rot)*1000
 				
-				pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
-				rot=calc_dihedral_tf(pt)
-				rot=tf.sin(rot*np.pi/180.)
-				rot=tf.maximum(0, abs(rot)-options.thr_piptide)
-				plane_score+=tf.reduce_mean(rot)*1000
+				if options.has_protein:
+					##############
+					pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
+					rot=calc_dihedral_tf(pt)
+					rot=tf.sin(rot*np.pi/180.)
+					rot=tf.maximum(0, abs(rot)-options.thr_piptide)
+					plane_score+=tf.reduce_mean(rot)*1000
 				
 				lossetc+=plane_score
 				
-				##########
-				rota_out=[]
-				for chin in range(4):
-					d=calc_rotamer(atom_pos, chin, options)
-					rota_out.append(d)
-
-				big=np.log(options.small+1)-np.log(options.small)
-				rota_out=tf.concat(rota_out, axis=1)            
-				rota_score=tf.reduce_mean(big-rota_out)
-
-				r1=tf.maximum(0,options.rota_thr-rota_out)
-				rota_outlier=tf.reduce_mean(r1)*10000
 				
-				lossetc+=rota_score
-				lossetc+=rota_outlier
+				if options.has_protein:
+					##############
+					rota_out=[]
+					for chin in range(4):
+						d=calc_rotamer(atom_pos, chin, options)
+						rota_out.append(d)
+
+					big=np.log(options.small+1)-np.log(options.small)
+					rota_out=tf.concat(rota_out, axis=1)            
+					rota_score=tf.reduce_mean(big-rota_out)
+
+					r1=tf.maximum(0,options.rota_thr-rota_out)
+					rota_outlier=tf.reduce_mean(r1)*10000
+					
+					lossetc+=rota_score
+					lossetc+=rota_outlier
 
 				l=loss*1+lossetc*weight_model
 				
@@ -818,13 +842,16 @@ def main():
 			weight_model=abs(d0/d1)*options.modelweight
 			print(f"\niter 1: FRC loss {c0:.4f}, decrease {d0:.3e}, geometry loss {c1:.2f}, increase {d1:.3e}")
 			print(f"        using geometry weight {weight_model:.3e}")
-			tf_theta=[tf.Variable(t) for t in theta_all_out]
-			gen_model.load_weights(f"{path}/weights_morph.h5")
-			gen_model_ca.load_weights(f"{path}/weights_ca.h5")
-			gen_model_bb.load_weights(f"{path}/weights_bb.h5")
+			
+			gen_model.load_weights(f"{path}/weights_morph.weights.h5")
+			gen_model_ca.load_weights(f"{path}/weights_ca.weights.h5")
+			gen_model_bb.load_weights(f"{path}/weights_bb.weights.h5")
 			
 			wts=[]
-			wts+=tf_theta
+			if options.has_protein: 
+				tf_theta=[tf.Variable(t) for t in theta_all_out]
+				wts+=tf_theta
+				
 			wts+=gen_model.trainable_variables
 			wts+=gen_model_ca.trainable_variables
 			wts+=gen_model_bb.trainable_variables
@@ -834,10 +861,11 @@ def main():
 		
 	save_model_pdb(gen_model, gen_model_ca, options, f"{path}/fit_03", tf_theta)
 	if options.niter[2]>0:
-		save_weights(gen_model, f"{path}/weights_morph.h5")
-		save_weights(gen_model_ca, f"{path}/weights_ca.h5")
-		save_weights(gen_model_bb,f"{path}/weights_bb.h5")
-		np.savetxt(f"{path}/chi_theta.txt", np.concatenate([t.numpy() for t in tf_theta]))
+		save_weights(gen_model, f"{path}/weights_morph.weights.h5")
+		save_weights(gen_model_ca, f"{path}/weights_ca.weights.h5")
+		save_weights(gen_model_bb,f"{path}/weights_bb.weights.h5")
+		if options.has_protein: 
+			np.savetxt(f"{path}/chi_theta.txt", np.concatenate([t.numpy() for t in tf_theta]))
 		
 	E2end(logid)
 	
