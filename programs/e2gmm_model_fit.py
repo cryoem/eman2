@@ -846,7 +846,7 @@ def main():
 			gen_model.load_weights(f"{path}/weights_morph.weights.h5")
 			gen_model_ca.load_weights(f"{path}/weights_ca.weights.h5")
 			gen_model_bb.load_weights(f"{path}/weights_bb.weights.h5")
-			
+			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 			wts=[]
 			if options.has_protein: 
 				tf_theta=[tf.Variable(t) for t in theta_all_out]

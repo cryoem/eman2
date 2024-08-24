@@ -437,7 +437,7 @@ def cb_loss(atom_pos, h_info):
 
 	cb=tf.gather(atom_pos, h_ref[:,3], axis=1)
 	dcb=hpos-cb
-	dcb=tf.math.sqrt(tf.reduce_sum(dcb**2, axis=2))
+	dcb=tf.math.sqrt(tf.maximum(0, tf.reduce_sum(dcb**2, axis=2)))
 
 	return dcb
 	
