@@ -94,7 +94,7 @@ def main():
 	parser.add_argument("--norewrite", action="store_true", default=False ,help="skip existing files. do not rewrite.")
 	parser.add_argument("--append", action="store_true", default=False ,help="append to existing files.")
 	parser.add_argument("--parallel", type=str,help="parallel", default="")
-	parser.add_argument("--postxf", type=str,help="a file listing post transforms (see http://eman2.org/e2tomo_more), or for simple symmetry, <sym>,<cx>,<cy>,<cz> where the coordinates specify the center of a single subunit", default=None)
+	parser.add_argument("--postxf", type=str,help="a file listing post transforms (see http://eman2.org/e2tomo_more), or for simple symmetry, <sym>,<cx>,<cy>,<cz> where the coordinates specify the center of a single subunit, with optional ,<az>,<alt>,<phi> appended specifying rotation", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="do not make 3d particles. only generate 2d particles and 3d header. ")
 	parser.add_argument("--loadali2d", type=str,help="extract polished particles using existing subtilt alignment. Only works with --jsonali within the same refinement", default="")
@@ -968,18 +968,29 @@ def parse_json(options):
 					postxfs.append(Transform(eval(l)))
 		else:
 			try:
-				xfsym,xc,yc,zc=xffile.split(",")
+				rotation_check = len( xffile.split( "," ) ) == 7
+				if rotation_check:
+					xfsym,xc,yc,zc,az,alt,phi = xffile.split( "," )
+					az = float( az )
+					alt = float( alt )
+					phi = float( phi )
+				else: 
+					xfsym,xc,yc,zc=xffile.split(",")
+
 				xc=float(xc)
 				yc=float(yc)
 				zc=float(zc)
 
 				sym=Symmetries.get(xfsym)
-				xf0=Transform({"type":"eman", "tx":xc, "ty":yc, "tz":zc})
+				if rotation_check:
+					xf0=Transform({"type":"eman", "tx":xc, "ty":yc, "tz":zc, "az":az, "alt":alt, "phi":phi})
+				else:
+					xf0=Transform({"type":"eman", "tx":xc, "ty":yc, "tz":zc})
 				for i in range(sym.get_nsym()):
     					postxfs.append(sym.get_sym(i)*xf0)
 					
 			except:
-				print("ERROR: --postxf must be a filename or <sym>,<cx>,<cy>,<cz>")
+				print("ERROR: --postxf must be a filename or <sym>,<cx>,<cy>,<cz> or <sym>,<cx>,<cy>,<cz>,<az>,<alt>,<phi>")
 				sys.exit(1)
 
 		print("Extracting {} sub-particles per original particle".format(len(postxfs)))
