@@ -1127,7 +1127,7 @@ class TheHelp(QtWidgets.QWidget):
 			helpdoc += "</UL>"
 			
 		if search:
-			helpdoc=re.sub("(>[^>]*)({})([^>]*<)".format(search),"\g<1><SEARCH style='background-color:Yellow;'>\g<2></SEARCH>\g<3>", helpdoc, flags=re.IGNORECASE)
+			helpdoc=re.sub(r"(>[^>]*)({})([^>]*<)".format(search),"\g<1><SEARCH style='background-color:Yellow;'>\g<2></SEARCH>\g<3>", helpdoc, flags=re.IGNORECASE)
 			#helpdoc=helpdoc.replace(search, "<SEARCH style='background-color:Yellow;'>{}</SEARCH>".format(search))
 
 		self.textbox.setHtml(helpdoc)

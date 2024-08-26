@@ -406,7 +406,7 @@ def organizetilts( options, intilts, raworder=False ):
 			print('\n(e2spt_tomostacker)(organizetilts) parsedname is',parsedname)
 			angle = parsedname[options.anglesindxinfilename]
 			try:
-				angle = float( re.sub('[^\d\.\-]', '', parsedname[options.anglesindxinfilename]).rstrip('.') ) #remove strings from number except dots and minuses, and any leftover trailing dots
+				angle = float( re.sub(r'[^\d\.\-]', '', parsedname[options.anglesindxinfilename]).rstrip('.') ) #remove strings from number except dots and minuses, and any leftover trailing dots
 			except:
 				print("\n(e2spt_tomostacker)(organizetilts) invalid angle={}. make sure --anglesindxinfilename is correct! Remember, indexes start from 0".format(parsedname[options.anglesindxinfilename]))
 				sys.exit(1)
