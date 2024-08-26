@@ -641,7 +641,7 @@ def buid_decoder_graph(pts, options, nlayer=4, existlayer=[], kk=1, ptpool=[]):
 	else:
 		declayers=existlayer
 	
-	x0=tf.keras.Input(shape=(4))
+	x0=tf.keras.Input(shape=(4,))
 	y1=x0
 	print(y1.shape)
 
@@ -698,7 +698,7 @@ def build_decoder(pts, mid=512, ninp=4, conv=False, heterg=False):
 		npt=len(pts)
 		initpts=True
 	
-	x0=tf.keras.Input(shape=(ninp))
+	x0=tf.keras.Input(shape=(ninp,))
 	
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
@@ -765,7 +765,7 @@ def build_decoder_anchor(pts, cnt, ninp ):
 	dwt=tf.exp(-dwt*50)#*tf.constant(msk, dtype=float)
 	dwt=tf.transpose(dwt)
 	
-	x0=tf.keras.Input(shape=(ninp))
+	x0=tf.keras.Input(shape=(ninp,))
 	kinit=tf.keras.initializers.RandomNormal(0,1e-3)
 	l2=tf.keras.regularizers.l2(1e-3)
 	layer_output=tf.keras.layers.Dense(pts.shape[1], activation="linear",
@@ -801,7 +801,7 @@ def build_decoder_anchor(pts, cnt, ninp ):
 def build_decoder_rigidbody(pts, ninp, foci):
 	print("building decoder with rigid body movement constraints...")
 	
-	x0=tf.keras.Input(shape=(ninp))
+	x0=tf.keras.Input(shape=(ninp,))
 	kinit=tf.keras.initializers.RandomNormal(0,1e-2)
 	l2=tf.keras.regularizers.l2(1e-3)
 	

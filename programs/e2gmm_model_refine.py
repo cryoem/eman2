@@ -465,7 +465,11 @@ def compile_hydrogen(pdb):
 					continue
 					
 				at0=r0.child_dict
-				ad=[adict['N'], at0['C'], at0['O']]
+				try:
+					ad=[adict['N'], at0['C'], at0['O']]
+				except:
+					print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h}")
+					continue
 			
 			else:
 				try:
