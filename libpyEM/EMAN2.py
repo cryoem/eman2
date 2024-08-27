@@ -32,6 +32,7 @@
 import traceback
 #traceback.print_stack()
 
+
 from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
@@ -41,6 +42,8 @@ import sys
 from math import *
 from sys import exit
 import os
+os.environ["TF_USE_LEGACY_KERAS"]="1"	# TensorFlow 2.16 switched to Keras 3.0, which isn't backwards compatible, until we fix all programs this is the default
+
 import time
 import shelve
 import re
@@ -62,6 +65,9 @@ import traceback
 from pathlib import Path
 
 import threading
+
+
+
 #from Sparx import *
 
 ### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.

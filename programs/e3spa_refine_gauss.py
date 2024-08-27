@@ -201,10 +201,20 @@ def main():
 
 			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
 
+
 		# reseed orientations of particles with low FRCs
 		# we do this by finding the best orientation with fixed angular sampling and a fixed box size of 24
 		nseeded=0
 		if stage[8]<9:
+
+			if options.verbose: print(f"Adjusting translational alignment of particles")
+			for j in range(0,len(nliststg),500):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
+				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
+				oldtytx=tytx
+				tytx=ccf_step_align(gaus,ptclsfds,orts,tytx)
+				ccache.tytx[nliststg[j:j+500],:2]=tytx
+				dif=(tytx-oldtytx[:,:2])**2
+				print(f"{j}-{j+500}: shift rmsd: {sqrt(tf.math.reduce_mean(dif)):.2f}")
 
 			frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
 			lowfrc=frcs[frcs<1.5]
@@ -228,7 +238,6 @@ def main():
 					#ccache.tytx[ii]=(0,0)			# just keep the current center?
 				print(f"{nseeded} orts reseeded ({frcm+frcsg*stage[8]} thr)   {local_datetime()}")
 
-		if stage[8]<9:
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
 			fout=open(f"{options.path}/fscs.txt","w")
 			for i in range(stage[2]):		# training epochs
@@ -365,6 +374,13 @@ def gradient_step_ort(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	stdtytx=tf.math.reduce_std(gradtytx)	# tytx std
 
 	return (gradort*relstep/(stdort*1000),gradtytx*relstep/(stdtytx*1000),float(qual),float(stdort),float(stdtytx),frcs)
+
+def ccf_step_align(gaus,ptclsfds,orts,tytx):
+	"""Uses CCF to update all translational alignments in one step with CCF"""
+	ny=ptclsfds.shape[1]
+	projsf=gaus.project_simple(orts,ny,tytx=tytx).do_fft()
+	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(ny)
+	return newtytx
 
 if __name__ == '__main__':
 	main()

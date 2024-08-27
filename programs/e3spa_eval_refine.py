@@ -126,6 +126,7 @@ def main():
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
 	parser.add_argument("--itr", type=int, default=None, help="If a r3d_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
+	parser.add_argument("--refitr", type=int, default=None, help="If a r3d_XX folder is being used, this selects a reference refinement iteration. Otherwise itr-1 is used.")
 	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual and other options. May be useful for separating heterogeneous data.", default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells, default from refine_xx parms", default=None)
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
@@ -156,7 +157,7 @@ def main():
 	if len(args)>0 and args[0][:4]=="r3d_":
 		fls=os.listdir(args[0])
 		try:
-			itrs=sorted([extr_num(i) for i in fls if i.beginswith("threed_") and len(i)<15])		# parse the iteration number from threed_xx.hdf
+			itrs=sorted([extr_num(i) for i in fls if i.startswith("threed_") and len(i)<15])		# parse the iteration number from threed_xx.hdf
 		except:
 			error_exit("ERROR: could not identify a complete iteration in ",args[0])
 
@@ -166,6 +167,13 @@ def main():
 			else:
 				error_exit(f"ERROR: requested iteration {options.itr} does not exist in {args[0]}")
 
+		if options.refitr==None: refitr=itr-1
+		else:
+			if options.refitr in itrs: refitr=options.refitr
+			else:
+				error_exit(f"ERROR: requested iteration {options.refitr} does not exist in {args[0]}")
+
+
 		print("Using --itr=",itr)
 	else:
 		error_exit("ERROR: please specify the name of the r3d_XX folder to operate on")
@@ -174,10 +182,14 @@ def main():
 	logid=E3init(sys.argv,options.ppid)
 
 	if options.ptcltrace :
-		pt0=LSXFile(f"{args[0]}/ptcls_{itr-1:02d}")
-		pt1=LSXFile(f"{args[1]}/ptcls_{itr:02d}")
+		pt0=LSXFile(f"{args[0]}/ptcls_{refitr:02d}.lst")
+		pt1=LSXFile(f"{args[0]}/ptcls_{itr:02d}.lst")
+
+		out=open(f"trace_{args[0]}_{refitr}_{itr}.txt","w")
+		out.write("#az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
 
 		n=len(pt0)
+		print(f"  with {n} particles")
 		for i in range(n):
 			extn0,extf0,dct0=pt0[i]
 			extn1,extf1,dct1=pt1[i]
@@ -186,12 +198,15 @@ def main():
 			xf1=dct1["xform.projection"]
 			em0=xf0.get_rotation("eman")
 			em1=xf1.get_rotation("eman")
-			sv0=xf0.get_rotation("spinvec")
-			sv1=xf1.get_rotation("spinvec")
+			dif=(xf0*xf1.inverse()).get_rotation("spin")["omega"]
 			tr0=xf0.get_trans_2D()
 			tr1=xf1.get_trans_2D()
-			sv0=np.array([sv0["v1"],sv0["v2"],sv0["v3"])
-			sv1=np.array([sv1["v1"],sv1["v2"],sv1["v3"])
+			try: sc0=dct0["score"]
+			except: sc0=2.0
+			try: sc1=dct1["score"]
+			except: sc1=2.0
+
+			out.write(f"{i}\t{em0["az"]}\t{em1["az"]}\t{em0["alt"]}\t{em1["alt"]}\t{em0["phi"]}\t{em1["phi"]}\t{tr0[0]}\t{tr1[0]}\t{tr0[1]}\t{tr1[1]}\t{dif}\t{hypot(tr0[0]-tr1[0],tr0[1]-tr1[1])}\t{sc0}\t{sc1}\n")
 
 	if options.anisotropy>=0 :
 		print("Anisotropy evaluation mode")
@@ -350,90 +365,6 @@ def main():
 				fout.write("{}\t{}\t{}\n".format(angle,ai,old_div(esum,(nptcl[0]+nptcl[1]))))
 
 			print(best)
-
-	# This will extract particles with final orientation information into a new file. If the output is a HDF file
-	# it will have xform.align3d set in the header, such that e2make3d could be used to reconstruct the particles
-	if options.extractorientptcl!=None:
-		print("Oriented particle extraction mode")
-		error_exit("UNIMPLEMENTED")
-
-		jsparm=js_open_dict(args[0]+"/0_refine_parms.json")
-
-		if options.iter==None:
-			try:
-				options.iter=int(jsparm["last_map"].split("_")[-1][:2])
-				options.sym=jsparm["sym"]
-			except:
-				print("Could not find a completed iteration in ",args[0])
-				sys.exit(1)
-		
-		# This is not great programming process, but greatly simplifies threading, and reduces potential memory usage
-
-		try:
-			pathmx=["{}/classmx_{:02d}_even.hdf".format(args[0],options.iter),"{}/classmx_{:02d}_odd.hdf".format(args[0],options.iter)]
-			classmx=[EMData(f,0) for f in pathmx]
-			nptcl=[classmx[i]["ny"] for i in range(len(pathmx))]
-			cmxtx=[EMData(f,2) for f in pathmx]
-			cmxty=[EMData(f,3) for f in pathmx]
-			cmxalpha=[EMData(f,4) for f in pathmx]
-			cmxmirror=[EMData(f,5) for f in pathmx]
-
-		except:
-			traceback.print_exc()
-			print("====\nError reading classification matrix. Must be full classification matrix with alignments")
-			sys.exit(1)
-
-		if options.verbose: print("{} even and {} odd particles in classmx".format(nptcl[0],nptcl[1]))
-
-
-		# path to the even/odd particles used for the refinement
-		cptcl=jsparm["input"]
-		cptcl=[str(i) for i in cptcl]
-
-		# this reads all of the EMData headers from the projections, should normally be the same for even and odd, and assume same across iterations
-		pathprj="{}/projections_{:02d}_even.hdf".format(args[0],options.iter)
-		nref=EMUtil.get_image_count(pathprj)
-		eulers=[EMData(pathprj,i,1)["xform.projection"] for i in range(nref)]
-
-		tlast=time()
-		# Put particles in class lists
-		classptcls={}
-		for eo in range(2):
-			for j in range(nptcl[eo]):
-				cls=int(classmx[eo][0,j])
-				try: classptcls[cls].append((eo,j))
-				except: classptcls[cls]=[(eo,j)]
-
-#		pts=set()
-		fsp=options.extractorientptcl
-		if fsp.split(".")[-1]=="hdf":
-			for c,cpl in classptcls.items():
-				if options.verbose: print(f"Class: {c} ({len(cpl)})")
-				for k in range(len(cpl)):
-					eo=cpl[k][0]
-					j=cpl[k][1]
-					ptcl=EMData(cptcl[eo],j)
-					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
-					clsxf=eulers[c]
-					ptcl["xform.projection"]=ptclxf*clsxf
-					ptcl.write_compressed(fsp,eo+2*j,bits=8,nooutliers=False)
-					#if c==99 :
-						#ptcl.process_inplace("xform",{"transform":ptclxf.inverse()})
-						#ptcl.write_image("cls1.hdf",-1)
-#					pts.add(eo+2*j)
-		elif fsp.split(".")[-1]=="lst":
-			lsx=LSXFile(fsp)
-			for c,cpl in classptcls.items():
-				if options.verbose: print(f"Class: {c} ({len(cpl)})")
-				for k in range(len(cpl)):
-					eo=cpl[k][0]
-					j=cpl[k][1]
-					ptclxf=Transform({"type":"2d","alpha":cmxalpha[eo][0,j],"mirror":int(cmxmirror[eo][0,j]),"tx":cmxtx[eo][0,j],"ty":cmxty[eo][0,j]}).inverse()
-					clsxf=eulers[c]
-					lsx.write(eo+2*j,j,cptcl[eo],{"xform.projection":(ptclxf*clsxf), "class":eo})
-		else: print("ERROR: currently only HDF or LST are supported for output of --extractorientptcl")
-		
-#		print(set(range(max(pts)+1))-pts)
 		
 	if options.evalptclqual:
 #		from multiprocessing import Pool
@@ -642,67 +573,6 @@ def main():
 		print("{}/{} kept as good".format(ngood,len(quals)))
 
 		print("Evaluation complete.\nParticles best resembling results from {} at low/intermediate resolution have been saved in {} and can be used in further refinements.\nNote that this method will identify the worst particles as bad, regardless of whether they actually are (bad), and that it may be wise to do your own classification on these results instead, as described in the tutorial.".format(args[0],nameg))
-
-
-
-	if options.evalclassqual:
-		print("Class quality evaluation mode")
-		error_exit("UNIMPLEMENTED")
-
-
-		classes=["{}/classes_{:02d}_{}.hdf".format(args[0],options.iter,i) for i in ("even","odd")]
-		projections=["{}/projections_{:02d}_{}.hdf".format(args[0],options.iter,i) for i in ("even","odd")]
-		n=EMUtil.get_image_count(projections[0])
-		timg=EMData(projections[0],0)
-
-		# path to the even/odd particles used for the refinement
-		cptcl=jsparm["input"]
-		cptcl=[str(i) for i in cptcl]
-
-		# The mask applied to the reference volume, used for 2-D masking of particles for better power spectrum matching
-		nx=timg["nx"]
-		apix=timg["apix_x"]
-
-		rings=[int(old_div(2*nx*apix,res)) for res in (100,30,12,7,3)]
-#		rings=[int(2*nx*apix/res) for res in (100,60,30,15,10,6,4)]
-		print(("Frequency Bands: {}".format(rings)))
-
-		classfsc="classfsc_{}_{}.txt".format(args[0][-2:],options.iter)
-		fout=open(classfsc,"w")
-		fout.write("# 100-30 A; 30-12 A; 12-7 A; 7-3 A; (30-12)/(100-30); Nptcl; az; alt; phi; SSNR/Nptcl 100-30 A; SSNR/Nptcl 30-15 A; SSNR/Nptcl 15-8 A\n")
-		for eo in range(2):
-			for i in range(n):
-				cl=EMData(classes[eo],i)
-				pr=EMData(projections[eo],i)
-				alt=pr["xform.projection"].get_rotation("eman")["alt"]
-				az=pr["xform.projection"].get_rotation("eman")["az"]
-				try:
-					phi=cl["xform.projection"].get_rotation("eman")["phi"]
-				except: phi=0
-				
-				fsc = cl.calc_fourier_shell_correlation(pr)
-
-				third = old_div(len(fsc),3)
-				fsc=array(fsc[third:third*2])
-				#sums=[sum(fsc[rings[k]:rings[k+1]])/(rings[k+1]-rings[k]) for k in xrange(4)]		# sum the fsc into 5 range values
-				#fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],cl["ptcl_repr"],alt,az,phi,sums[0]/(1.0001-sums[0])/(cl["ptcl_repr"]+0.01),sums[1]/(1.0001-sums[1])/(cl["ptcl_repr"]+0.01),sums[2]/(1.0001-sums[2])/(cl["ptcl_repr"]+0.01),i,classes[eo],i,projections[eo]))
-				sums=[old_div(sum(fsc[rings[k]:rings[k+1]]),(rings[k+1]-rings[k])) for k in range(4)]		# sum the fsc into 5 range values
-				fout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t# {};{};{};{}\n".format(sums[0],sums[1],sums[2],sums[3],safediv(sums[1],sums[0]),cl["ptcl_repr"],alt,az,phi,safediv(safediv(sums[0],(1.0-sums[0])),cl["ptcl_repr"]),safediv(safediv(sums[1],(1.0-sums[1])),cl["ptcl_repr"]),safediv(safediv(sums[2],(1.0-sums[2])),cl["ptcl_repr"]),i,classes[eo],i,projections[eo]))
-
-				if options.evalclassdetail and eo==0:
-					out=open("cfsc{:04d}.txt".format(i),"w")
-					fsc=cl.calc_fourier_shell_correlation(pr)
-					third=old_div(len(fsc),3)
-					ssnr=[fsc[third+1]]*5+fsc[third+1:third*2]+[fsc[third*2-1]]*4		# we extend the list by replication to make the running average more natural
-#					print(len(ssnr),third)
-					npnt=[fsc[third*2+1]]*5+fsc[third*2+1:third*3]+[fsc[-1]]*4	# number of points in each average
-					try:
-						ssnr=[old_div(sum([ssnr[k]*npnt[k] for k in range(j-4,j+5)]),sum([npnt[k] for k in range(j-4,j+5)])) for j in range(4,third+4)]			# smoothing by weighted running average
-					except:
-						ssnr=[0,0]
-					ssnr=[old_div(v,(1.0-min(v,.999999))) for v in ssnr]							# convert FSC to pseudo SSNR
-					for x,v in enumerate(ssnr): out.write("{}\t{}\n".format(x,v))
-					out.close()
 				
 
 	if options.resolution:
