@@ -162,7 +162,7 @@ class MixedColor(object):
 		glMaterial(GL_FRONT,GL_DIFFUSE,diffuse)
 		glMaterial(GL_FRONT,GL_SPECULAR,specular)
 		glMaterial(GL_FRONT,GL_EMISSION,emission)
-		glMaterial(GL_FRONT,GL_SHININESS,shininess)
+#		glMaterial(GL_FRONT,GL_SHININESS,shininess)
 	
 	def load_color_2(self):
 		glColor(self.a2)
@@ -170,7 +170,7 @@ class MixedColor(object):
 		glMaterial(GL_FRONT,GL_DIFFUSE,self.d2)
 		glMaterial(GL_FRONT,GL_SPECULAR,self.s2)
 		glMaterial(GL_FRONT,GL_EMISSION,self.e2)
-		glMaterial(GL_FRONT,GL_SHININESS,self.h2)
+#		glMaterial(GL_FRONT,GL_SHININESS,self.h2)
 	
 
 class EulerData(object):
@@ -570,14 +570,14 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
 		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
 		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
-		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+#		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 	
 	def gl_color(self,color):
 		glColor(*color)
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,color)
 		glMaterial(GL_FRONT,GL_SPECULAR,[0,0,0,1])
 		glMaterial(GL_FRONT,GL_EMISSION,(0,0,0,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,64.0)
+#		glMaterial(GL_FRONT,GL_SHININESS,64.0)
 
 	def trace_great_arcs(self, points):
 		
