@@ -379,7 +379,7 @@ def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""
 	ny=ptclsfds.shape[1]
 	projsf=gaus.project_simple(orts,ny,tytx=tytx).do_fft()
-	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(ny)
+	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(-ny)
 	return newtytx
 
 if __name__ == '__main__':

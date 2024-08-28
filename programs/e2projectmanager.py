@@ -132,7 +132,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		jsonfile = open(EMAN2DIR+'/lib/pmconfig/icons.json', 'r')
 		data = jsonfile.read()
-		data = self.json_strip_comments(data)
+#		data = self.json_strip_comments(data)
 		tree = json.loads(data)
 		jsonfile.close()
 		icons=tree[0]
@@ -476,7 +476,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		jsonfile = open(e2getinstalldir()+self.getProgramWizardFile(), 'r')
 		data = jsonfile.read()
-		data = self.json_strip_comments(data)
+#		data = self.json_strip_comments(data)
 		wizarddata = json.loads(data)
 		jsonfile.close()
 
@@ -598,7 +598,8 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		Recursive helper function for loadTree
 		"""
 		for child in toplevel["CHILDREN"]:
-			qtreewidget = PMQTreeWidgetItem([child["NAME"]])
+			try: qtreewidget = PMQTreeWidgetItem([child["NAME"]])
+			except: raise Exception(f"NAME missing in {child}")
 			if "ICON" in  child: qtreewidget.setIcon(0, self.icons[child["ICON"]])
 			# Optional program
 			if "PROGRAM" in child: qtreewidget.setProgram(child["PROGRAM"])
@@ -614,7 +615,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			if "WIZARD" in child: qtreewidget.setWizardFile(child["WIZARD"])
 			# Optional expertmode, to enable expert mode GUI widgets
 			if "EXPERT" in child:  qtreewidget.setExpertMode(child["EXPERT"])
-			self._add_children(child, qtreewidget)
+			if len(child["CHILDREN"])>0 : self._add_children(child, qtreewidget)
 			widgetitem.addChild(qtreewidget)
 
 
@@ -631,7 +632,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self.statusbar.setMessage("Can't open configuration file '%s'"%filename,"color:red;")
 			return
 		data = jsonfile.read()
-		data = self.json_strip_comments(data)
+#		data = self.json_strip_comments(data)
 		tree = json.loads(data)
 		jsonfile.close()
 
@@ -662,6 +663,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		return QTree
 
+	# This broke in Python 3.12, stopped using it rather than fixing. Likely due to the raw string issue
 	def json_strip_comments(self, data):
 		"""This method takes a JSON-serialized string and removes
 		JavaScript-style comments. These include // and /* */"""
@@ -1127,7 +1129,7 @@ class TheHelp(QtWidgets.QWidget):
 			helpdoc += "</UL>"
 			
 		if search:
-			helpdoc=re.sub(r"(>[^>]*)({})([^>]*<)".format(search),"\g<1><SEARCH style='background-color:Yellow;'>\g<2></SEARCH>\g<3>", helpdoc, flags=re.IGNORECASE)
+			helpdoc=re.sub(r"(>[^>]*)({})([^>]*<)".format(search),r"\g<1><SEARCH style='background-color:Yellow;'>\g<2></SEARCH>\g<3>", helpdoc, flags=re.IGNORECASE)
 			#helpdoc=helpdoc.replace(search, "<SEARCH style='background-color:Yellow;'>{}</SEARCH>".format(search))
 
 		self.textbox.setHtml(helpdoc)
@@ -1902,8 +1904,8 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 	def updateGUIFromCmd(self, cmd):
 		""" Update the GUI from a command """
 		if self.errorstate or not cmd: return
-		options = re.findall('\s--\S*',cmd)
-		args = re.findall('\s[^-]{2}\S*',cmd)
+		options = re.findall(r'\s--\S*',cmd)
+		args = re.findall(r'\s[^-]{2}\S*',cmd)
 		widgethash = dict(self.widgethash)	# Make a copy of the widget hash
 
 		# Process
