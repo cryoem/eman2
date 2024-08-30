@@ -170,8 +170,9 @@ def main():
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 		ccache=caches[stage[1]]
 
-		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-#		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+#		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage
+		nliststg=range(0,min(nptcl,stage[0]))		# all of the particles to use in the current stage, bad strategy here for testing
 		norm=len(nliststg)//500+1
 
 #	print(ptclsfds.shape,tytx.shape)
@@ -208,13 +209,22 @@ def main():
 		if stage[8]<9:
 
 			if options.verbose: print(f"Adjusting translational alignment of particles")
-			for j in range(0,len(nliststg),500):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
+			for j in range(0,len(nliststg),1000):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
 				oldtytx=tytx
 				tytx=ccf_step_align(gaus,ptclsfds,orts,tytx)
 				ccache.tytx[nliststg[j:j+500],:2]=tytx
 				dif=(tytx-oldtytx[:,:2])**2
 				print(f"{j}-{j+500}: shift rmsd: {sqrt(tf.math.reduce_mean(dif)):.2f}")
+
+			# This is for testing translational alignment only. TODO: remove
+			lsxout=LSXFile(f"{options.path}/tst_ptcls_{sn:02d}.lst")
+			for i in range(len(lsxin)):
+				a,b,c=lsxin[i]
+				lsxout[i]=(a,b,{"xform.projection":Transform({"type":"spinvec","v1":float(ccache.orts[i][0]),"v2":float(ccache.orts[i][1]),"v3":float(ccache.orts[i][2]),"tx":float(ccache.tytx[i][1]*nxraw),"ty":float(ccache.tytx[i][0]*nxraw)}),"frc":float(ccache.frcs[i])})
+			lsxout=None
+
+
 
 			frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
 			lowfrc=frcs[frcs<1.5]
@@ -378,7 +388,8 @@ def gradient_step_ort(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""
 	ny=ptclsfds.shape[1]
-	projsf=gaus.project_simple(orts,ny,tytx=tytx).do_fft()
+	# we are determining absolute shifts, so we get rid of the original shift
+	projsf=gaus.project_simple(orts,ny,None).do_fft()
 	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(-ny)
 	return newtytx
 
