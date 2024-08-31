@@ -199,7 +199,7 @@ def main():
 			except: pt1=LSXFile(options.itr,True)
 
 		out=open(f"trace_{args[0]}_{refitr}_{itr}.txt","w")
-		out.write("#az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
+		out.write("#n; az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
 
 		n=len(pt0)
 		print(f"  with {n} particles")

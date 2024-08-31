@@ -66,7 +66,10 @@ from pathlib import Path
 
 import threading
 
-
+# This is a floating point number-finding regular expression
+# Documentation: https://regex101.com/r/68zUsE/4/
+#renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
+renumfind = re.compile(r"-?\d*\.?\d+[eE]?[+-]?\d*")
 
 #from Sparx import *
 
