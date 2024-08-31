@@ -344,7 +344,12 @@ class EMPlot2DWidget(EMGLWidget):
 		if comments!=None:
 			self.comments[key]=comments
 
-		if column_labels!=None: self.column_labels[key]=column_labels
+		if column_labels!=None:
+			self.column_labels[key]=column_labels
+			xa,ya=self.axes[key][:2]
+			try:
+				if xa>=0 and ya>=0: self.setAxisParms(str(self.column_labels[key][xa]),str(self.column_labels[key][ya]),quiet=True)
+			except: pass
 
 		self.autoscale()
 
@@ -827,7 +832,9 @@ class EMPlot2DWidget(EMGLWidget):
 		if self.column_labels is not None :
 			# if xa>=0: self.xlabel.setText(str(self.column_labels[key][xa]))
 			# if ya>=0: self.ylabel.setText(str(self.column_labels[key][ya]))
-			if xa>=0 and ya>=0: self.setAxisParms(str(self.column_labels[key][xa]),str(self.column_labels[key][ya]),quiet=quiet)
+			try:
+				if xa>=0 and ya>=0: self.setAxisParms(str(self.column_labels[key][xa]),str(self.column_labels[key][ya]),quiet=quiet)
+			except: pass
 		else:
 			self.needupd=1
 			if not quiet : self.updateGL()
