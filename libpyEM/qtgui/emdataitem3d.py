@@ -411,7 +411,7 @@ class EMSliceItem3D(EMItem3D):
 			temp_data.mult(self.contrast)
 
 			if self.texture2d_name != 0:
-				GL.glDeleteTextures(self.texture2d_name)
+				GL.glDeleteTextures([self.texture2d_name])
 
 			self.texture2d_name = GLUtil.gen_gl_texture(temp_data, GL.GL_LUMINANCE)
 

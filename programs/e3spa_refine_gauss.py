@@ -209,7 +209,7 @@ def main():
 		if stage[8]<9:
 
 			if options.verbose: print(f"Adjusting translational alignment of particles")
-			for j in range(0,len(nliststg),1000):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
+			for j in range(0,len(nliststg),500):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
 				oldtytx=tytx
 				tytx=ccf_step_align(gaus,ptclsfds,orts,tytx)
@@ -391,6 +391,26 @@ def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	# we are determining absolute shifts, so we get rid of the original shift
 	projsf=gaus.project_simple(orts,ny,None).do_fft()
 	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(-ny)
+
+	# if ny>64:
+	# 	out=open("dbug_xy.txt","w")
+	# 	out.write("# dx;dy\n")
+	# 	for i in range(newtytx.shape[0]): out.write(f"{newtytx[i][1]}\t{newtytx[i][0]}\n")
+ #
+	# 	projsf=gaus.project_simple(orts,ny,newtytx).do_fft()
+	# 	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(-ny)
+ #
+	# 	out=open("dbug_xy2.txt","w")
+	# 	out.write("# dx;dy\n")
+	# 	for i in range(newtytx.shape[0]): out.write(f"{newtytx[i][1]}\t{newtytx[i][0]}\n")
+	# 	# ccf=projsf.calc_ccf(ptclsfds).do_ift()
+	# 	# ccf.write_images("dbug_ccf.hdf",0)
+	# 	# projs=projsf.do_ift()
+	# 	# ptclsds=ptclsfds.do_ift()
+	# 	# projs.write_images("dbug_prj.hdf")
+	# 	# ptclsds.write_images("dbug_ptcl.hdf")
+	# 	sys.exit(1)
+
 	return newtytx
 
 if __name__ == '__main__':

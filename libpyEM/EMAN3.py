@@ -2507,6 +2507,7 @@ if the lst file does not exist."""
 		if len(comments)==0:
 			comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
 
+		self.ptr=None
 		if os.path.isfile(path):
 			self.ptr=open(path,"r+")		# file exists
 		else:
