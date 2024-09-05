@@ -215,9 +215,13 @@ def main():
 			tr0=xf0.get_trans_2D()
 			tr1=xf1.get_trans_2D()
 			try: sc0=dct0["score"]
-			except: sc0=2.0
+			except:
+				try: sc0=dct0["frc"]
+				except: sc0=2.0
 			try: sc1=dct1["score"]
-			except: sc1=2.0
+			except:
+				try: sc1=dct1["frc"]
+				except: sc1=2.0
 
 			out.write(f"{i}\t{em0["az"]}\t{em1["az"]}\t{em0["alt"]}\t{em1["alt"]}\t{em0["phi"]}\t{em1["phi"]}\t{tr0[0]}\t{tr1[0]}\t{tr0[1]}\t{tr1[1]}\t{dif}\t{hypot(tr0[0]-tr1[0],tr0[1]-tr1[1])}\t{sc0}\t{sc1}\n")
 

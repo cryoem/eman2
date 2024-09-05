@@ -451,8 +451,11 @@ def main():
 				third = old_div(len(fsc),3)
 				xaxis = fsc[0:third]
 				fsc = fsc[third:2*third]
-				saxis = [old_div(x,apix) for x in xaxis]
+				saxis = [x/apix for x in xaxis]
 				Util.save_data(saxis[1],saxis[1]-saxis[0],fsc[1:-1],args[1])
+				out=open(args[1],"w")
+				out.write("#Spatial Freq (1/A); FSC\n")
+				for i in range(1,len(fsc)): out.write(f"{saxis[i]:.6f}\t{fsc[i]:.5f}\n")
 				if options.verbose: print("Exiting after FSC calculation")
 				sys.exit(0)
 
