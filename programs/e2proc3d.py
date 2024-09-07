@@ -148,7 +148,7 @@ def main():
 
 	(options, args) = parser.parse_args()
 
-	if any([arg[0] != ':' and ':' in arg for arg in args]):
+	if any([arg[0] != ':' and ':' in arg for arg in args[:-1]]):
 		print("\nThe new filename syntax (using : after filename) is not yet supported in e2proc3d.py.\n")
 		sys.exit(1)
 
@@ -174,6 +174,12 @@ def main():
 
 	infile = args[0]
 	outfile = args[1]
+
+	outfile_for_write_image = outfile
+
+	if ":" in outfile:
+		outfile, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(outfile)
+
 	is_new_file = not os.path.isfile(outfile)
 
 	out_ext = os.path.splitext(outfile)[1]
@@ -201,7 +207,7 @@ def main():
 			seg2=seg.process("threshold.binaryrange",{"low":i-0.1,"high":i+0.1})    # by subtracting 1, we don't remove anything from the first map
 			seg2.process_inplace("math.linear",{"scale":-1.0,"shift":1.0})
 			map2=map*seg2
-			map2.write_image(outfile,i)
+			map2.write_image(outfile_for_write_image,i)
 		seg=None                # free up memory
 		seg2=None
 		model2=None
@@ -248,10 +254,10 @@ def main():
 		if options.compressbits>=0:
 			out.write_compressed(outfile,0,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 		else:
-			try: out.write_image(outfile,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
+			try: out.write_image(outfile_for_write_image,0,IMAGE_UNKNOWN,0,None,EMUtil.EMDataType(stype))
 			except:
 				print("Failed to write in file mode matching input, reverting to floating point output")
-				out.write_image(outfile,0)
+				out.write_image(outfile_for_write_image,0)
 
 		print("Complete !")
 		sys.exit(0)
@@ -271,24 +277,24 @@ def main():
 			# Create an empty file of the correct size
 			tmp=EMData()
 			tmp.set_size(nx,nz,ny)
-			tmp.write_image(outfile,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
+			tmp.write_image(outfile_for_write_image,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
 
 			# Write the output volume slice by slice
 			for z in range(ny):
 				slice=EMData(infile,0,False,Region(0,z,0,nx,1,nz))
-				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,ny-z-1,nx,nz,1),EM_UCHAR)
+				slice.write_image(outfile_for_write_image,0,IMAGE_UNKNOWN,False,Region(0,0,ny-z-1,nx,nz,1),EM_UCHAR)
 
 			# Write
 		else:
 			# Create an empty file of the correct size
 			tmp=EMData()
 			tmp.set_size(nx,ny,nz)
-			tmp.write_image(outfile,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
+			tmp.write_image(outfile_for_write_image,0,IMAGE_UNKNOWN,False,None,EM_UCHAR)
 
 			# write the output volume slice by slice
 			for z in range(ny):
 				slice=EMData(infile,0,False,Region(0,0,z,nx,nz,1))
-				slice.write_image(outfile,0,IMAGE_UNKNOWN,False,Region(0,0,z,nx,nz,1),EM_UCHAR)
+				slice.write_image(outfile_for_write_image,0,IMAGE_UNKNOWN,False,Region(0,0,z,nx,nz,1),EM_UCHAR)
 
 		print("Complete !")
 		sys.exit(0)
@@ -354,7 +360,7 @@ def main():
 		if options.compressbits>=0:
 			avg.write_compressed(outfile,0,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 		else:
-			avg.write_image(outfile,0)
+			avg.write_image(outfile_for_write_image,0)
 		sys.exit(1)
 
 	index_d = {}
@@ -797,12 +803,12 @@ def main():
 				if options.compressbits>=0:
 					data.write_compressed(outfile,-1,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 				else:
-					data.write_image(outfile, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
+					data.write_image(outfile_for_write_image, -1, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 			else:
 				if options.compressbits>=0:
 					data.write_compressed(outfile,img_index,options.compressbits,nooutliers=options.nooutliers,erase=erase)
 				else:
-					data.write_image(outfile, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
+					data.write_image(outfile_for_write_image, img_index, EMUtil.get_image_ext_type(options.outtype), False, None, file_mode_map[options.outmode], not(options.swap))
 
 		img_index += 1
 		for append_option in append_options:	#clean up the multi-option counter for next image
