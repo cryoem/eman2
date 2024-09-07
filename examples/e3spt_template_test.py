@@ -9,10 +9,10 @@ import time
 #from EMAN3tensor import *
 
 
-nthreads=12
-base="out4_"
+nthreads=32
+base="out8s1n_"
 
-# standard CCF variant
+# standard CCF variant, this computes the CCF for a single orientation in a thread and returns the result on jsd
 def compute(jsd,targetf,template,az,alt,n):
 	nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
 	clp=template["nx"]
@@ -35,7 +35,7 @@ def compute_flcf(jsd,target,template,az,alt,n):
 
 
 def main():
-	target=EMData("lamella_8_3__bin4.hdf",0)
+	target=EMData("lamella_8_3__bin8.hdf",0)
 	target.mult(-1.0)
 	nx,ny,nz=target["nx"],target["ny"],target["nz"]
 	targetf=target.do_fft()
@@ -52,8 +52,8 @@ def main():
 	# these start as arguments, but get replaced with actual threads
 	thrds=[]
 	i=0
-	for az in range(0,360,3):
-		for alt in range(0,180,3):
+	for alt in range(70,90,1):
+		for az in range(0,360,1):
 			thrds.append((jsd,targetf,templatesca,az,alt,i))
 			i+=1
 
@@ -72,6 +72,7 @@ def main():
 			ccf,az,alt,i=jsd.get()
 			ccf["ortid"]=len(orts)
 			orts.append((az,alt))
+			ccf.process_inplace("normalize")
 			avg.add_image(ccf)
 			thrds[i].join()
 
