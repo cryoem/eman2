@@ -10,28 +10,28 @@ import time
 
 
 nthreads=32
-base="out8s1n_"
+base="out83n_"
 
 # standard CCF variant, this computes the CCF for a single orientation in a thread and returns the result on jsd
-def compute(jsd,targetf,template,az,alt,n):
+def compute(jsd,targetf,template,phi,alt,n):
 	nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
 	clp=template["nx"]
-	trot=template.process("xform",{"transform":Transform({"type":"eman","az":az,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
+	trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
 	trot.process_inplace("xform.phaseorigin.tocorner")
 	trotf=trot.do_fft()
 	ccf=targetf.calc_ccf(trotf)
 #	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
-	jsd.put((ccf,az,alt,n))
+	jsd.put((ccf,phi,alt,n))
 
 # FLCF variant
-def compute_flcf(jsd,target,template,az,alt,n):
-	trot=template.process("xform",{"transform":Transform({"type":"eman","az":az,"alt":alt})})
+def compute_flcf(jsd,target,template,phi,alt,n):
+	trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})})
 #	trot.process_inplace("xform.phaseorigin.tocorner")
 #	trotf=trot.do_fft()
 	ccf=target.calc_flcf(trot)
 #	ccf.process_inplace("xform.phaseorigin.tocenter")
 #	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
-	jsd.put((ccf,az,alt,n))
+	jsd.put((ccf,phi,alt,n))
 
 
 def main():
@@ -41,6 +41,7 @@ def main():
 	targetf=target.do_fft()
 
 	template=EMData("long_tmplt.hdf",0)
+#	template=EMData("long_tmplt_fromtomo.hdf",0)
 	templatesca=template.process("math.fft.resample",{"n":target["apix_x"]/template["apix_x"]})
 	nxt1=templatesca["nx"]
 
@@ -52,9 +53,9 @@ def main():
 	# these start as arguments, but get replaced with actual threads
 	thrds=[]
 	i=0
-	for alt in range(70,90,1):
-		for az in range(0,360,1):
-			thrds.append((jsd,targetf,templatesca,az,alt,i))
+	for alt in range(0,90,3):
+		for phi in range(0,360,3):
+			thrds.append((jsd,targetf,templatesca,phi,alt,i))
 			i+=1
 
 	thrtolaunch=0
@@ -69,14 +70,14 @@ def main():
 
 		# return is [N,dict] a dict of image# keyed processed images
 		while not jsd.empty():
-			ccf,az,alt,i=jsd.get()
+			ccf,phi,alt,i=jsd.get()
 			ccf["ortid"]=len(orts)
-			orts.append((az,alt))
+			orts.append((phi,alt))
 			ccf.process_inplace("normalize")
 			avg.add_image(ccf)
 			thrds[i].join()
 
-			print(f"\n{az},{alt} done {thrtolaunch} {threading.active_count()}/{nthreads}")
+			print(f"\n{phi},{alt} done {thrtolaunch} {threading.active_count()}/{nthreads}")
 
 	peaks=avg.finish()
 	global base
@@ -85,7 +86,7 @@ def main():
 	target.write_image(f"{base}_targ.hdf:12")
 	templatesca.write_image(f"{base}_tmpl.hdf:12",0)
 	out=open(f"{base}_orts.txt","w")
-	for i,azalt in enumerate(orts): out.write(f"{i}\t{azalt[0]}\t{azalt[1]}\n")
+	for i,phialt in enumerate(orts): out.write(f"{i}\t{phialt[0]}\t{phialt[1]}\n")
 
 
 main()
