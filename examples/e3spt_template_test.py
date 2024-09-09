@@ -10,7 +10,7 @@ import time
 
 
 nthreads=32
-base="out83n_"
+base="out83tn_sigma"
 
 # standard CCF variant, this computes the CCF for a single orientation in a thread and returns the result on jsd
 def compute(jsd,targetf,template,phi,alt,n):
@@ -20,6 +20,32 @@ def compute(jsd,targetf,template,phi,alt,n):
 	trot.process_inplace("xform.phaseorigin.tocorner")
 	trotf=trot.do_fft()
 	ccf=targetf.calc_ccf(trotf)
+#	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
+	jsd.put((ccf,phi,alt,n))
+
+# standard CCF with local normalization
+def compute_local(jsd,targetf,template,targetsqf,templatemask,phi,alt,n):
+	nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
+	clp=template["nx"]
+
+	# rotate template, pad, fft
+	trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
+	trot.process_inplace("xform.phaseorigin.tocorner")
+	trotf=trot.do_fft()
+
+	# actual CCF
+	ccf=targetf.calc_ccf(trotf)
+
+	# rotate, pad, fft for mask
+	mrot=templatemask.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
+	mrot.process_inplace("xform.phaseorigin.tocorner")
+	mrotf=mrot.do_fft()
+
+	# CCF of mask with squared volume
+	ccfn=targetsqf.calc_ccf(mrotf)
+	ccfn.process_inplace("math.sqrt")
+	ccf.div(ccfn)
+
 #	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
 	jsd.put((ccf,phi,alt,n))
 
@@ -39,11 +65,15 @@ def main():
 	target.mult(-1.0)
 	nx,ny,nz=target["nx"],target["ny"],target["nz"]
 	targetf=target.do_fft()
+	targetsq=target.process("math.squared")
+	targetsqf=targetsq.do_fft()
 
-	template=EMData("long_tmplt.hdf",0)
-#	template=EMData("long_tmplt_fromtomo.hdf",0)
+#	template=EMData("long_tmplt.hdf",0)
+	template=EMData("long_tmplt_fromtomo.hdf",0)
 	templatesca=template.process("math.fft.resample",{"n":target["apix_x"]/template["apix_x"]})
+	templatemask=templatesca.process("mask.auto3d",{"nmaxseed":5,"nshells":2,"radius":5,"return_mask":True,"sigma":1.5})
 	nxt1=templatesca["nx"]
+	templatemask=templatesca.process("mask.auto3d",{"nmaxseed":8,"nshells":2,"radius":nxt1//10,"return_mask":True,"sigma":1.5})
 
 	owner=EMData(target["nx"],target["ny"],target["nz"])
 	avg=Averagers.get("minmax",{"max":True,"owner":owner})
@@ -55,7 +85,8 @@ def main():
 	i=0
 	for alt in range(0,90,3):
 		for phi in range(0,360,3):
-			thrds.append((jsd,targetf,templatesca,phi,alt,i))
+#			thrds.append((jsd,targetf,templatesca,phi,alt,i))
+			thrds.append((jsd,targetf,templatesca,targetsqf,templatemask,phi,alt,i))
 			i+=1
 
 	thrtolaunch=0
@@ -63,7 +94,8 @@ def main():
 		if thrtolaunch<len(thrds):
 			while (threading.active_count()>=nthreads) : time.sleep(0.1)
 			print("\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)), end=' ',flush=True)
-			thrds[thrtolaunch]=threading.Thread(target=compute,args=thrds[thrtolaunch])		# replace args
+#			thrds[thrtolaunch]=threading.Thread(target=compute,args=thrds[thrtolaunch])		# replace args
+			thrds[thrtolaunch]=threading.Thread(target=compute_local,args=thrds[thrtolaunch])		# replace args
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(0.1)
