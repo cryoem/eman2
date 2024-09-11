@@ -633,8 +633,8 @@ def EMSelectorBaseTemplate(Type):
 			filters = str(self.filter_combo.currentText()).split(",")
 			
 			for j,f in enumerate(filters):
-				s = f.replace("*","\w*")
-				s = s.replace(".","\.")
+				s = f.replace("*",r"\w*")
+				s = s.replace(".",r"\.")
 				filters[j] = s
 			
 			reg_exp = []
@@ -1241,8 +1241,8 @@ class EMFileSystemDelegate(EMBrowseDelegate):
 		filters = filt.split(",")
 
 		for j,f in enumerate(filters):
-			s = f.replace("*","\w*")
-			s = s.replace(".","\.")
+			s = f.replace("*",r"\w*")
+			s = s.replace(".",r"\.")
 			filters[j] = s
 		
 		reg_exp = []

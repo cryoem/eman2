@@ -144,6 +144,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.selectpoints=True		# if set, points nearest the cursor will be "selected" and displayed
 		self.selected=[]
 		self.comments={}			# IF reading from a file which contains per-point comments, this dictionary contains a list of comments for each point
+		self.column_labels={}		# if there is a line at the beginning of the file defining column labels, they will be a list of strings
 
 		self.data={}				# List of Lists to plot
 		self.visibility = {}  	   	# Same entries as in self.data, but entries are true or False to indicate visibility
@@ -233,7 +234,7 @@ class EMPlot2DWidget(EMGLWidget):
 	def set_selectpoints(self,tf):
 		self.selectpoints=bool(tf)
 
-	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=6,comments=None,contoursteps=-1,contourlevels=-1):
+	def set_data(self,input_data,key="data",replace=False,quiet=False,color=-1,linewidth=1,linetype=-2,symtype=-2,symsize=6,comments=None,contoursteps=-1,contourlevels=-1,column_labels=None):
 		"""Set a keyed data set. The key should generally be a string describing the data.
 		'data' is a tuple/list of tuples/list representing all values for a particular
 		axis. eg - the points: 1,5; 2,7; 3,9 would be represented as ((1,2,3),(5,7,9)).
@@ -262,6 +263,8 @@ class EMPlot2DWidget(EMGLWidget):
 				self.axes.pop(key)
 			except: pass
 			try: self.comments.pop(key)
+			except: pass
+			try: self.column_labels.pop(key)
 			except: pass
 			if self.inspector: self.inspector.datachange()
 			if not quiet: self.updateGL()
@@ -341,6 +344,13 @@ class EMPlot2DWidget(EMGLWidget):
 		if comments!=None:
 			self.comments[key]=comments
 
+		if column_labels!=None:
+			self.column_labels[key]=column_labels
+			xa,ya=self.axes[key][:2]
+			try:
+				if xa>=0 and ya>=0: self.setAxisParms(str(self.column_labels[key][xa]),str(self.column_labels[key][ya]),quiet=True)
+			except: pass
+
 		self.autoscale()
 
 		if self.inspector: self.inspector.datachange()
@@ -365,7 +375,7 @@ class EMPlot2DWidget(EMGLWidget):
 		file_type = Util.get_filename_ext(filename)
 		em_file_type = EMUtil.get_image_ext_type(file_type)
 
-		if em_file_type != IMAGE_UNKNOWN or filename[:4]=="bdb:" :
+		if em_file_type != IMAGE_UNKNOWN:
 
 			im=EMData.read_images(filename)
 			if len(im) == 1:
@@ -402,23 +412,30 @@ class EMPlot2DWidget(EMGLWidget):
 			self.set_data(data,filename,quiet=quiet)
 		else:
 			try:
-				# this should probably be replaced with something more flexible
-				fin=open(filename)
+				fin=open(filename,"r")
+
+				# the one line multicolumn file parser!
+				rdata=[[float(i) for i in re.split(r"[\s,;]+",line.split("#")[0]) if len(i)>0] for line in fin if line[0]!="#"]
+				rdata=np.array(rdata).transpose()
+
 				fin.seek(0)
-				rdata=fin.readlines()
-				if '#' in rdata[0]:
-					try: comments=[i.split("#",1)[1].strip() for i in rdata if i[0]!="#"]
-					except: comments=None
-				else: comments=None
-				rdata=[i.split("#")[0] for i in rdata if i[0]!='#']
-				from . import embrowser
-				rdata=[list(map(safe_float, embrowser.renumfind.findall(i))) for i in rdata if embrowser.renumfind.search(i)]
+				col_lbls=None
+				docom=False
+				for line in fin:
+					if line[0]!="#" and line[0]!=";":
+						if "#" in line: docom=True			# must have some per-point comments
+						break
+					if ";" in line[1:]: col_lbls=[i.strip() for i in line[1:].split(";")]
+					elif "#" in line[1:]: col_lbls=[i.strip() for i in line[1:].split("#")]
+					elif "," in line[1:]: col_lbls=[i.strip() for i in line[1:].split(",")]
 
-				nx=len(rdata[0])
-				ny=len(rdata)
-				data=[[rdata[j][i] for j in range(ny)] for i in range(nx)]
+				# These are per-line comments, there should none, or one on every data line, lest chaos reign
+				comments=None
+				if docom:
+					fin.seek(0)
+					comments=[line.split("#")[1] for line in fin if line[0]!="#" and "#" in line[1:]]
 
-				self.set_data(data,display_path(filename),quiet=quiet,comments=comments)
+				self.set_data(rdata,display_path(filename),quiet=quiet,comments=comments,column_labels=col_lbls)
 			except:
 				traceback.print_exc()
 				print("couldn't read",filename)
@@ -795,25 +812,32 @@ class EMPlot2DWidget(EMGLWidget):
 		self.needupd=1
 		self.del_shapes(("xcross","ycross","lcross","Circle"))
 
-	def setTitle(self,plottitle):
+	def setTitle(self,plottitle,quiet=False):
 		if plottitle!=self.plottitle:
 			self.plottitle=plottitle
 			self.needupd=1
-			self.updateGL()
+			if not quiet: self.updateGL()
 
-	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear"):
+	def setAxisParms(self,xlabel,ylabel,xlog="linear",ylog="linear",quiet=False):
 # skip this since we want a guaranteed redraw somewhere
 #		if self.axisparms==(xlabel,ylabel,xlog,ylog): return
 		self.axisparms=(xlabel,ylabel,xlog,ylog)
 		self.needupd=1
-		self.updateGL()
+		if not quiet: self.updateGL()
 
 	def setAxes(self,key,xa,ya=-1,za=-2,sa=-2,quiet=False):
 		if self.axes[key]==(xa,ya,za,sa) : return
 		self.axes[key]=(xa,ya,za,sa)
 		self.autoscale(True)
-		self.needupd=1
-		if not quiet : self.updateGL()
+		if self.column_labels is not None :
+			# if xa>=0: self.xlabel.setText(str(self.column_labels[key][xa]))
+			# if ya>=0: self.ylabel.setText(str(self.column_labels[key][ya]))
+			try:
+				if xa>=0 and ya>=0: self.setAxisParms(str(self.column_labels[key][xa]),str(self.column_labels[key][ya]),quiet=quiet)
+			except: pass
+		else:
+			self.needupd=1
+			if not quiet : self.updateGL()
 
 	def setXAxisAll(self,xa,quiet=False):
 		for k in self.axes.keys():
@@ -3029,8 +3053,8 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		if self.ylogtog.isChecked() : yl="log"
 		else : yl="linear"
 		names = [str(item.text()) for item in self.setlist.selectedItems()]
-		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl)
-		self.target().setTitle(str(self.plottitle.text()))
+		self.target().setAxisParms(self.xlabel.text(),self.ylabel.text(),xl,yl,quiet=True)
+		self.target().setTitle(str(self.plottitle.text()),quiet=True)
 		self.target().autoscale(True)
 		if len(names)==1:
 			self.target().setPlotParms(names[0],self.color.currentIndex(),self.lintog.isChecked(),
