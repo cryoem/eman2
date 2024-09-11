@@ -291,7 +291,7 @@ class EMBallStickModel(EMPDBItem3D):
 		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
 		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
 		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
-		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+#		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 	
 	def setLabel(self, label): self.label = label
 	def current_text(self):  return self.text
@@ -519,7 +519,7 @@ class EMBallStickModel(EMPDBItem3D):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		if self.first_render_flag: self.first_render_flag = False
 		glPushMatrix()
@@ -1102,7 +1102,7 @@ class EMSphereModel(EMPDBItem3D):
 		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
 		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
 		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
-		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+#		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 
 	def getEvalString(self):
 		return "EMSphereModel()"
@@ -1169,7 +1169,7 @@ class EMSphereModel(EMPDBItem3D):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		if self.first_render_flag: self.first_render_flag = False
 		glPushMatrix()

@@ -130,13 +130,13 @@ class EMLightsDrawer(object):
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors["emerald"]["ambient"])
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["emerald"]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors["emerald"]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors["emerald"]["shininess"])
+#		glMaterial(GL_FRONT, GL_SHININESS, self.colors["emerald"]["shininess"])
 		glutSolidTorus(.05,0.25,16,16)
 		glScalef(0.2,0.2,length)
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors["ruby"]["ambient"])
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["ruby"]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors["ruby"]["specular"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors["ruby"]["shininess"])
+#		glMaterial(GL_FRONT, GL_SHININESS, self.colors["ruby"]["shininess"])
 		glCallList(self.cylinderdl) #FIXME: this cylinder isn't visible on Mac OS
 		glPopMatrix()
 
@@ -170,7 +170,7 @@ class EMLightsDrawer(object):
 			glMaterial(GL_FRONT, GL_DIFFUSE, self.colors["obsidian"]["diffuse"])
 			glMaterial(GL_FRONT, GL_SPECULAR, self.colors["obsidian"]["specular"])
 			glMaterial(GL_FRONT, GL_EMISSION, self.colors["obsidian"]["emission"])
-			glMaterial(GL_FRONT, GL_SHININESS, self.colors["obsidian"]["shininess"])
+#			glMaterial(GL_FRONT, GL_SHININESS, self.colors["obsidian"]["shininess"])
 			
 			glPushMatrix()
 			n = 12
@@ -183,7 +183,7 @@ class EMLightsDrawer(object):
 				glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[color]["diffuse"])
 				glMaterial(GL_FRONT, GL_SPECULAR, self.colors[color]["specular"])
 				glMaterial(GL_FRONT, GL_EMISSION, self.colors[color]["emission"])
-				glMaterial(GL_FRONT, GL_SHININESS, self.colors[color]["shininess"])
+#				glMaterial(GL_FRONT, GL_SHININESS, self.colors[color]["shininess"])
 				rot = 180.0*i/(n-1)
 				glPushMatrix()
 				glTranslate(0,0,-.5)
@@ -292,7 +292,7 @@ class EMLightsDrawer(object):
 		glMaterial(GL_FRONT, GL_DIFFUSE, yellow)
 		glMaterial(GL_FRONT, GL_SPECULAR, yellow)
 		glMaterial(GL_FRONT, GL_EMISSION, [0,0,0,0])
-		glMaterial(GL_FRONT, GL_SHININESS, 32)
+#		glMaterial(GL_FRONT, GL_SHININESS, 32)
 		glColor(*yellow)
 		
 		glEnable(GL_BLEND)
@@ -354,7 +354,7 @@ class EMLightsDrawer(object):
 		glMaterial(GL_FRONT, GL_DIFFUSE, yellow)
 		glMaterial(GL_FRONT, GL_SPECULAR, yellow)
 		glMaterial(GL_FRONT, GL_EMISSION, [0,0,0,0])
-		glMaterial(GL_FRONT, GL_SHININESS, 32)
+#		glMaterial(GL_FRONT, GL_SHININESS, 32)
 		glColor(*yellow)
 		
 		glEnable(GL_BLEND)
@@ -597,7 +597,7 @@ class EMLights(EMLightsDrawer,EM3DModel):
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
 		glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.currentcolor]["emission"])
-		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
+#		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 		glColor(self.colors[self.currentcolor]["ambient"])
 		
 		glEnable(GL_NORMALIZE)

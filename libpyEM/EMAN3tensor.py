@@ -393,7 +393,9 @@ class EMStack2D(EMStack):
 			except: pass
 			try: self._df=[im["ctf"].to_dict()["defocus"] for im in self._data]
 			except: pass
-			if self._data[0].get_ndim()!=2: raise Exception(f"EMStack2D only supports stacks of 2-D data. {imgs} is {self._data[0].get_ndim()}-D")
+			if self._data[0].get_ndim()!=2:
+				if len(self._data)!=1 : raise Exception(f"EMStack2D only supports stacks of 2-D data or a single volume. {imgs} is a stack of {self._data[0].get_ndim()}-D")
+				self._data=to_tf(self._data[0])
 			self._npy_list=None
 		else:
 			try:
@@ -404,7 +406,7 @@ class EMStack2D(EMStack):
 				try: self._df=[im["ctf"].to_dict()["defocus"] for im in self._data]
 				except: pass
 				self._npy_list=None
-			except: raise Exception("EMDataStack may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Z,Y,X}")
+			except: raise Exception("EMStack2D may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Y,X}")
 
 	def __len__(self): return len(self._data)
 
