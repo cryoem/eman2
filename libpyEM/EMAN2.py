@@ -42,7 +42,7 @@ import sys
 from math import *
 from sys import exit
 import os
-os.environ["TF_USE_LEGACY_KERAS"]="1"	# TensorFlow 2.16 switched to Keras 3.0, which isn't backwards compatible, until we fix all programs this is the default
+# os.environ["TF_USE_LEGACY_KERAS"]="1"	# TensorFlow 2.16 switched to Keras 3.0, which isn't backwards compatible, until we fix all programs this is the default
 
 import time
 import shelve

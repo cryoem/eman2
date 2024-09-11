@@ -7,7 +7,7 @@ from EMAN2 import *
 
 if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	# so we can decide which gpu to use with environmental variable
-	os.environ["CUDA_VISIBLE_DEVICES"]='1' 
+	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 	
 #### do not occupy the entire GPU memory at once
 ##   seems necessary to avoid some errors...
@@ -100,7 +100,7 @@ def main():
 	options.minpx=max(1, options.minpx)
 	options.maxpx=options.maxboxsz//2
 	data_cpx, xfsnp=load_particles(options)
-	print(f"particle size {raw_boxsz}, clip to {options.maxboxsz}, shrink to {options.maxboxsz}")
+	print(f"particle size {raw_boxsz}, clip to {options.clip}, shrink to {options.maxboxsz}")
 	print(f"compare {options.minpx} to {options.maxpx} Fourier pixels")
 
 	clipid=set_indices_boxsz(data_cpx[0].shape[1], options.apix, True)

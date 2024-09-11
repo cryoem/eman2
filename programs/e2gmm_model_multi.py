@@ -23,8 +23,8 @@ import tensorflow as tf
 emdir=e2getinstalldir()
 sys.path.insert(0,os.path.join(emdir,'bin'))
 from e2gmm_refine_new import set_indices_boxsz, load_particles, pts2img, calc_frc, get_clip, make_mask_gmm
-from e2gmm_model_refine import calc_clashid, calc_bond, calc_angle, compile_chi_matrix, get_rotamer_angle, rotate_sidechain, get_info, calc_dihedral_tf, eval_rama, get_rama_types, compile_hydrogen, add_h, get_h_rotation_axis, optimize_h
-from e2gmm_model_fit import build_decoder_anchor
+from e2gmm_model_refine import calc_clashid, calc_bond, calc_angle, compile_chi_matrix, get_rotamer_angle, rotate_sidechain, get_info, calc_dihedral_tf, eval_rama, get_rama_types, compile_hydrogen, add_h, get_h_rotation_axis, optimize_h, calc_rotamer
+from e2gmm_model_fit import build_decoder_anchor, build_decoder_CA
 
 #### slightly different version than the one in e2gmm_model_refine
 def save_model_pdb(pout, options, fname, thetas=[]):
@@ -89,14 +89,14 @@ def find_clash(atom_pos, options, relu=True, clashid=[], subset=[], clashomask=[
 			ac=tf.gather(atom_pos, subset, axis=1)
 		pc=pc-ac[:,:,None, :]
 		
-	pc=tf.math.sqrt(tf.reduce_sum(pc*pc, axis=3))
+	pc=tf.math.sqrt(tf.maximum(1e-8, tf.reduce_sum(pc*pc, axis=3)))
 	
 	if len(vdw)==0:
 		vdw=options.vdw_radius
 	if len(clashomask)==0:
 		clashomask=options.clash_omask
 		
-	clash=vdw-pc-options.vdroverlap
+	clash=vdw-pc-options.vdwoverlap
 	clash=clash-clashomask
 		
 	if relu:
@@ -104,24 +104,24 @@ def find_clash(atom_pos, options, relu=True, clashid=[], subset=[], clashomask=[
 	return clash
 
 def build_decoder_full(p0, options):
-	kinit=tf.keras.initializers.RandomNormal(0,1e-7)
+	kinit=tf.keras.initializers.RandomNormal(0,1e-4)
 
 	layers=[
 		tf.keras.layers.Dense(128, activation="relu"),
 		tf.keras.layers.Dense(256, activation="relu"),
-		# tf.keras.layers.Dropout(.1),
 		tf.keras.layers.Dense(512, activation="relu"),
 		tf.keras.layers.Dropout(.1),
 		tf.keras.layers.Dense(np.prod(p0.shape), activation="linear", kernel_initializer=kinit),
 		tf.keras.layers.Reshape(p0.shape),
 		]
 
-	x0=tf.keras.Input(shape=(options.nmid))
+	x0=tf.keras.Input(shape=(options.nmid,))
 
 	y0=x0
 	for l in layers:
 		y0=l(y0)
-
+		
+	y0=y0*1e-2
 	model=tf.keras.Model(x0, y0)
 
 	return model
@@ -171,9 +171,12 @@ def main():
 	parser.add_argument("--projections", type=str,help="projections of the map stack. This will be generated if the specified file does not exist. Otherwise the program will read the existing file and ignore --map. Default is <path>/projections_stack.hdf .", default=None)
 	parser.add_argument("--mask", type=str,help="mask for the focused region of heterogeneity analysis.", default=None)
 	parser.add_argument("--resolution", type=float,help="target resolution.", default=8.)
-	# parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
+	parser.add_argument("--learnrate", type=float,help="learning rate.", default=1e-5)
+	parser.add_argument("--vdwoverlap", type=float,help="vdw overlap.", default=.35)
+	parser.add_argument("--modelweight", type=float,help="model weight.", default=1e-6)
 	parser.add_argument("--npatch", type=int,help="number of patch for large scale flexible fitting. default is 64", default=64)
-	parser.add_argument("--ndim", type=int,help="number of dimension of the input movement. Currently only support: 1 -> linear trajectory, 2 -> circular trajectory", default=2)
+	parser.add_argument("--ndim", type=int,help="number of dimension of the input movement. Currently only support: 1 -> linear trajectory, 2 -> circular trajectory", default=1)
+	parser.add_argument("--addnn", type=int,help="adding extra DNN", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size. default is 16", default=16)
 	parser.add_argument("--load", action="store_true", default=False ,help="load existing networks")
 	parser.add_argument("--evalmodel", type=int, help="Skip training and only generate models. Specify the number of frame here.",default=-1)
@@ -340,9 +343,10 @@ def main():
 		np.savetxt(afile, pcnt)
 		print(f"Anchor points saved to {afile}")
 		
+	pcls=pcls[:,:pcnt.shape[1]]
 	d=scipydist.cdist(pcls, pcnt)
 	klb=np.argmin(d, axis=1)
-	options.learnrate=1e-5
+	# options.learnrate=1e-5
 	icls=np.zeros(len(pts), dtype=int)
 	# options.batchsz=16
 	for i in range(options.npatch):
@@ -356,13 +360,14 @@ def main():
 	##########################################
 	## first model for large scale morphing
 	options.nmid=4
-	gen_model=build_decoder_anchor(pts[None,...], icls, options.nmid, meanzero=True)
+	gen_model=build_decoder_CA(pts[None,...], icls, options.nmid, meanzero=True)
 	conf=tf.zeros((2, options.nmid,), dtype=floattype)+1.
 	pout=gen_model(conf)
-	wfile0=f"{path}/weights_morph.h5"
-	wfile1=f"{path}/weights_ca.h5"
-	wfile2=f"{path}/weights_full.h5"
+	wfile0=f"{path}/weights_morph.weights.h5"
+	wfile1=f"{path}/weights_ca.weights.h5"
+	wfile2=f"{path}/weights_full.weights.h5"
 	if options.load and os.path.isfile(wfile0):
+		print(f"Loading {wfile0}")
 		gen_model.load_weights(wfile0)
 	
 	
@@ -381,7 +386,8 @@ def main():
 		t=rr*np.vstack([np.cos(a), np.cos(a), np.sin(a), np.sin(a)]).T
 		# print(np.round(t,3))
 		mid00=t.copy()
-		mid2=mid00[::2].copy()
+		# mid2=mid00[::2].copy()
+		mid2=mid00.copy()
 	
 	midii=np.arange(nptcl)//(nptcl/n)
 	midpos=mid00[midii.astype(int)].astype(floattype)
@@ -405,7 +411,7 @@ def main():
 	options.idx_dih_chi=np.loadtxt(f"{path}/model_dih_chi.txt").astype(int)
 	
 	options.clash_nb=128
-	options.vdroverlap=.5
+	# options.vdroverlap=.5
 	
 	##############
 	## first train morphing model
@@ -473,11 +479,12 @@ def main():
 		gen_model.save_weights(wfile0)
 
 	#### now build model for C-alpha movement
-	gen_model_ca=build_decoder_anchor(pts[None,...], caidx, meanzero=True, freeamp=False)
+	gen_model_ca=build_decoder_CA(pts[None,...], caidx, meanzero=True, freeamp=False)
 	conf=tf.zeros((2,4), dtype=floattype)+1.
 	d=gen_model_ca(conf)[0]
 	
 	if options.load and os.path.isfile(wfile1):
+		print(f"Loading {wfile1}")
 		gen_model_ca.load_weights(wfile1)
 	
 	pout=tf.constant(pts.copy()[None,:].astype(floattype))
@@ -501,9 +508,8 @@ def main():
 
 	if niter[1]>0:
 		wts=gen_model_ca.trainable_variables	
-		options.learnrate=1e-5
 		opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
-		weight_model=1e-6
+		weight_model=options.modelweight
 		costall=[]
 		print("C-alpha model refinement...")
 		print("iter,   loss,   bond outlier,  angle outlier, clash_score,  number of clash")
@@ -586,7 +592,14 @@ def main():
 	if options.evalmodel>0:
 		gen_model_full=build_decoder_full(pts, options)
 		gen_model_full.load_weights(wfile2)
-			
+		if options.addnn>0:
+			gen_model_add=[]
+			for i in range(options.addnn):
+				gm=build_decoder_full(pts, options)
+				wf=f"{path}/weights_add_{i:02d}.weights.h5"
+				gm.load_weights(wf)
+				gen_model_add.append(gm)
+				
 		n=options.evalmodel
 		a=np.arange(n)/(n-1)
 		
@@ -603,13 +616,14 @@ def main():
 			pout=pout+gen_model_ca(conf, training=False)
 			pout=pout*imsk[None,:,None]
 			pout=pout+gen_model_full(conf, training=False)    
+			if options.addnn>0:
+				for i,gm in enumerate(gen_model_add): 
+					pout+=gm(conf, training=False) 
 			pout+=pts
 			
 			df=np.diff(pout[:,:,:3], axis=0)
 			df=np.linalg.norm(df, axis=2)
-			
 			df=np.max(df, axis=1)
-			# print(df)
 			
 			a=np.append(0,np.cumsum(np.diff(a)/df))
 			a=a/a[-1]
@@ -641,9 +655,9 @@ def main():
 	##########################################
 	options.thr_plane=np.sin(10*np.pi/180)
 	options.thr_piptide=np.sin(30*np.pi/180)
-	options.nstd_bond=4.5
-	options.nstd_angle=4.5
-	options.vdroverlap=0.35
+	options.nstd_bond=4.9
+	options.nstd_angle=4.9
+	# options.vdroverlap=0.35
 	ramalevel=[0.0005,0.02]
 	options.rama_thr0=1-ramalevel[1]*1.1
 	options.rama_thr1=1-ramalevel[0]*2	
@@ -651,15 +665,40 @@ def main():
 
 	print("Building full atom model...")
 	gen_model_full=build_decoder_full(pts, options)
+	if options.load and os.path.isfile(wfile2):
+		print(f"Loading {wfile2}")
+		gen_model_full.load_weights(wfile2)
+		
 	wts=gen_model_full.trainable_variables
+	wts+=gen_model_ca.trainable_variables
+	# wts+=gen_model.trainable_variables
+	
+	if options.addnn>0:
+		gen_model_add=[]
+		for i in range(options.addnn):
+			print(f"Adding network {i}")
+			gm=build_decoder_full(pts, options)
+			if options.load:
+				wf=f"{path}/weights_add_{i:02d}.weights.h5"
+				if os.path.isfile(wf):
+					print(f"   load from {wf}")
+					gm.load_weights(wf)
+					
+			wts+=gm.trainable_variables
+			gen_model_add.append(gm)
+			
+	
 	cost=[]
-	optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5)
+	optimizer=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 	
 	conf=mid2
 	pout=gen_model(conf, training=False)
 	pout=pout+gen_model_ca(conf, training=False)
 	pout=pout*imsk[None,:,None]
 	pout=pout+gen_model_full(conf, training=False)    
+	if options.addnn>0:
+		for gm in gen_model_add: pout+=gm(conf, training=False)    
+			
 	pout+=pts
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 	
@@ -688,7 +727,7 @@ def main():
 	#### dihedral rotationfor H
 	options.rot_axish, options.rotmat_idxh=get_h_rotation_axis(atoms, bonds, h_ref)
 	print(f"  total {len(options.rot_axish)} angles for H rotation")
-	
+	# print("!!!!!", mid2)
 	#### do not consider collision between atoms that are 3 bonds apart
 	maxlen=3
 	npt=npt_h+npt_noh
@@ -703,9 +742,6 @@ def main():
 		print(len(options.connect_all),npt, end='\r')	
 	
 	print()
-	
-	if options.load and os.path.isfile(wfile2):
-		gen_model_full.load_weights(wfile2)
 	
 	options.clash_nb=128
 	
@@ -725,7 +761,9 @@ def main():
 	options.clashid=clashid
 	options.vdw_radius=vdw_radius
 	
-	
+	options.rota_thr=0.005	
+	options.small=small=0.001
+	options.rota_thr=np.log(small+options.rota_thr)-np.log(small)
 	#### consider more points for the clashing of moving domain
 	hi=options.h_info[1][:,0]
 	m0=imsk>.5
@@ -734,8 +772,8 @@ def main():
 	pts_sub=np.where(m2>0)[0]
 	
 	print("Starting full model refinement...")
-	niter=5000*niter[2]
-	checkpoint=[0, 500, 2000, 8000]
+	niter=4000*niter[2]
+	checkpoint=np.arange(100)*500#[0, 500, 2000, 8000]
 	c0=len(cost)+niter
 	for itr in range(niter):
 		
@@ -746,6 +784,8 @@ def main():
 			pout=pout+gen_model_ca(conf, training=False)
 			pout=pout*imsk[None,:,None]
 			pout=pout+gen_model_full(conf, training=False)    
+			if options.addnn>0:
+				for gm in gen_model_add: pout+=gm(conf, training=False)    
 			pout+=pts
 			atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 			atom_pos_h=add_h(atom_pos, options.h_info)
@@ -756,19 +796,6 @@ def main():
 			if options.mask!=None:
 				print("Clash indices for moving domain")	
 				clashid1, vdwr1, omask1=calc_clashid_multi(atom_pos_h, options, nnb=128*3, subset=pts_sub)
-# 
-# 			print("conf, clash0, clash1")
-# 			nclash1=0
-# 			for i in range(len(mid2)):
-# 				clash=find_clash(atom_pos_h[i][None,:], options, clashid=clashid0, subset=[], clashomask=omask0, vdw=vdwr0)
-# 				nclash=np.sum(clash.numpy()>0)//clash.shape[0]
-# 				
-# 				if options.mask!=None:
-# 					clash1=find_clash(atom_pos_h[i][None,:], options, clashid=clashid1, subset=pts_sub, clashomask=omask1, vdw=vdwr1)
-# 					nclash1=np.sum(clash1.numpy()>0)//clash1.shape[0]
-# 					
-# 				print(i, nclash, nclash1)
-
 		
 		with tf.GradientTape() as gt:
 			
@@ -782,13 +809,13 @@ def main():
 				a=tf.random.uniform((options.batchsz,1))*np.pi*2
 				conf=r*tf.concat([tf.sin(a), tf.sin(a), tf.cos(a), tf.cos(a)],axis=1)
 			
+			# conf=mid2#[:2]
 			pout=gen_model(conf, training=False)
-			pout=pout+gen_model_ca(conf, training=False)
-			
+			pout=pout+gen_model_ca(conf, training=False)			
 			pout=pout*imsk[None,:,None]
-			# print(conf.shape, pout.shape)
-			# pout=pout+gen_model_full(conf, training=False)
-			pout=pout+gen_model_full(conf, training=True)       
+			pout=pout+gen_model_full(conf, training=True)      
+			if options.addnn>0:
+				for gm in gen_model_add: pout+=gm(conf, training=True)    
 			pout+=pts
 			atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
 			
@@ -798,7 +825,7 @@ def main():
 			bond_len=calc_bond(atom_pos, options.bonds[:,:2].astype(int))
 			bond_df=(bond_len-options.bonds[:,2])/options.bonds[:,3]
 			bond_score=tf.reduce_mean(tf.exp(-5*bond_df**2))
-			bond_outlier=tf.reduce_mean(tf.maximum(0,abs(bond_df)-options.nstd_bond))*50
+			bond_outlier=tf.reduce_mean(tf.maximum(0,abs(bond_df)-options.nstd_bond))*5000
 			# bond_outlier+=tf.reduce_mean(tf.maximum(0,-bond_df-options.nstd_bond*.8))*50
 			lossetc+=bond_score
 			lossetc+=bond_outlier
@@ -835,37 +862,21 @@ def main():
 			rot=tf.maximum(0, abs(rot)-options.thr_piptide)
 			plane_score+=tf.reduce_mean(rot)*1000
 
-			lossetc+=plane_score            
+			lossetc+=plane_score*5            
 
-			##########
+			######
+
 			rota_out=[]
+			big=np.log(options.small+1)-np.log(options.small)
 			for chin in range(4):
-				ii=options.chi_idx[chin].T.flatten()
-				ii_mat=options.chi_mat[chin][None,...]
-
-				ii=options.idx_dih_chi[ii][:,:4]
-				pt=tf.gather(atom_pos, ii, axis=1)
-				dih=calc_dihedral_tf(pt)%360
-				dih=tf.reshape(dih, (atom_pos.shape[0], chin+1, -1))
-				dih=tf.transpose(dih, (0,2,1))
-
-				d=dih[:,:,None,:]-ii_mat[:,:,:,:chin+1]
-				d=d/ii_mat[:,:,:,chin+1:chin*2+2]
-				d=tf.reduce_sum(d**2, axis=-1)
-
-				d=tf.exp(-d)*ii_mat[:,:,:,-1]
-				d=tf.reduce_sum(d, axis=-1)
-				d=tf.maximum(0,d-.05)
-
+				d=calc_rotamer(atom_pos, chin, options)
 				rota_out.append(d)
 
-			rota_out=1-tf.concat(rota_out, axis=1)            
-			rota_score=tf.reduce_mean(rota_out)*5
+			rota_out=tf.concat(rota_out, axis=1)            
+			rota_score=tf.reduce_mean(big-rota_out)
 
-			r1=tf.maximum(0, rota_out-99/100.)
-			# r2=tf.maximum(0, rota_out-98/100.)
-			rota_outlier=tf.reduce_mean(r1)*5000
-			# rota_outlier+=tf.reduce_mean(r2)*10
+			r1=tf.maximum(0,options.rota_thr-rota_out)
+			rota_outlier=tf.reduce_mean(r1)*10000
 
 			lossetc+=rota_score
 			lossetc+=rota_outlier
@@ -873,8 +884,8 @@ def main():
 
 			atom_pos_h=add_h(atom_pos, options.h_info)
 			clash0=find_clash(atom_pos_h, options, clashid=clashid0, subset=[], clashomask=omask0, vdw=vdwr0)			
+			# clash_score=(tf.reduce_mean(tf.sign(clash0)*.1+clash0))/conf.shape[0]*200000
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0))/conf.shape[0]/2.*5.
-			
 			if options.mask!=None:
 				clash1=find_clash(atom_pos_h, options, clashid=clashid1, subset=pts_sub, clashomask=omask1, vdw=vdwr1)
 			
@@ -884,13 +895,9 @@ def main():
 			lossetc+=clash_score
 			l=tf.math.log(lossetc)
 
-
-		assert np.isnan(l.numpy())==False
 		nclash=np.sum(clash0.numpy()>0)//conf.shape[0]
 		if options.mask!=None: nclash+=np.sum(clash1.numpy()>0)//conf.shape[0]
-
-		grad=gt.gradient(l, wts)
-		optimizer.apply_gradients(zip(grad, wts))
+		
 		etc=""
 		etc+=f", bond {bond_score:.3f},{bond_outlier:.3f}"
 		etc+=f", angle {ang_score:.3f},{ang_outlier:.3f}"
@@ -899,8 +906,12 @@ def main():
 		etc+=f", rota {rota_score:.3f},{rota_outlier:.3f}"
 		etc+=f", plane {plane_score:.3f}"
 
-
 		print("{}/{}\t{:.3f}{}".format(len(cost), niter, l, etc), end='\r')
+		
+		assert np.isnan(l.numpy())==False
+
+		grad=gt.gradient(l, wts)
+		optimizer.apply_gradients(zip(grad, wts))
 		cost.append(l) 
 	
 	print()
@@ -911,6 +922,14 @@ def main():
 	pout=pout+gen_model_ca(conf, training=False)
 	pout=pout*imsk[None,:,None]
 	pout=pout+gen_model_full(conf, training=False)    
+	if options.addnn>0:
+		for i,gm in enumerate(gen_model_add): 
+			pout+=gm(conf, training=False)  
+			wf=f"{path}/weights_add_{i:02d}.weights.h5"
+			if os.path.isfile(wf):
+				os.remove(wf)
+			gm.save_weights(wf)
+				
 	pout+=pts
 
 	atom_pos=(pout[:,:,:3]*[1,-1,-1]+0.5)*options.apix*options.maxboxsz
@@ -919,6 +938,12 @@ def main():
 	print(pout.shape, atom_pos_h.shape)
 	for i,pp in enumerate(atom_pos_h):
 		save_model_pdb(pp[None,:], options, f"{path}/fit01_flex2_{i:02d}")
+	
+	if os.path.isfile(wfile0): os.remove(wfile0)
+	gen_model.save_weights(wfile0)
+	
+	if os.path.isfile(wfile1): os.remove(wfile1)
+	gen_model_ca.save_weights(wfile1)
 	
 	if os.path.isfile(wfile2): os.remove(wfile2)
 	gen_model_full.save_weights(wfile2)

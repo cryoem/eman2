@@ -380,15 +380,24 @@ def main():
 	options.small=small=0.001
 	options.rota_thr=np.log(small+options.rota_thr)-np.log(small)
 	
-	bd=bonds[:,:2].astype(int)
-	npt=len(atoms)
+	
+	##########################################
+	print("Finding clashing atoms...")
+	#### bond connectivity 
 	maxlen=3
-	bonds_matrix=scipysparse.csr_matrix((np.ones(len(bd)), (bd[:,0], bd[:,1])), shape=(npt,npt))
-
-	d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen)
-	options.connect_all=[np.where(i<=maxlen)[0] for i in d]
-	options.clashid=calc_clashid(atom_pos[0].numpy(), options, pad=60)
-	# print([len(i) for i in options.clashid])
+	npt=len(atoms)
+	bd=bonds[:,:2].astype(int)
+	bonds_matrix=scipysparse.csr_matrix((np.ones(len(bd)), (bd[:,0], bd[:,1])), shape=(npt,npt), dtype=np.float32)
+	
+	#### since dijkstra return full matrix, we do this piece by piece to avoid CPU memory issues
+	options.connect_all=[]
+	for i in range(0,npt, 5000):
+		d = scipysparse.csgraph.dijkstra(bonds_matrix, directed=False, limit=maxlen, indices=np.arange(i,min(i+5000, npt)))
+		options.connect_all.extend([np.where(i<=maxlen)[0] for i in d])
+		print(len(options.connect_all),npt, end='\r')	
+	
+	print()
+	options.clashid=clashid=calc_clashid(atom_pos[0].numpy(), options, pad=60)
 	options.vdw_radius=tf.gather(options.vdwr_h, options.clashid)+options.vdwr_h[:,None]
 	options.clash_omask=np.zeros_like(options.clashid)
 		
