@@ -9,8 +9,8 @@ import time
 #from EMAN3tensor import *
 
 
-nthreads=32
-base="out83tn_sigma"
+nthreads=12
+base="actin31k_bin2crop_sigma"
 
 # standard CCF variant, this computes the CCF for a single orientation in a thread and returns the result on jsd
 def compute(jsd,targetf,template,phi,alt,n):
@@ -61,7 +61,8 @@ def compute_flcf(jsd,target,template,phi,alt,n):
 
 
 def main():
-	target=EMData("lamella_8_3__bin8.hdf",0)
+#	target=EMData("lamella_8_3__bin8.hdf",0)
+	target=EMData("lamella_3_1_03262024_crop__bin2.hdf",0)
 	target.mult(-1.0)
 	nx,ny,nz=target["nx"],target["ny"],target["nz"]
 	targetf=target.do_fft()
@@ -69,9 +70,9 @@ def main():
 	targetsqf=targetsq.do_fft()
 
 #	template=EMData("long_tmplt.hdf",0)
-	template=EMData("long_tmplt_fromtomo.hdf",0)
+#	template=EMData("long_tmplt_fromtomo.hdf",0)emd_26214_actin.hdf
+	template=EMData("emd_26214_actin.hdf",0)
 	templatesca=template.process("math.fft.resample",{"n":target["apix_x"]/template["apix_x"]})
-	templatemask=templatesca.process("mask.auto3d",{"nmaxseed":5,"nshells":2,"radius":5,"return_mask":True,"sigma":1.5})
 	nxt1=templatesca["nx"]
 	templatemask=templatesca.process("mask.auto3d",{"nmaxseed":8,"nshells":2,"radius":nxt1//10,"return_mask":True,"sigma":1.5})
 
