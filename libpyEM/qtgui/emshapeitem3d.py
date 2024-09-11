@@ -228,7 +228,7 @@ class EMRuler(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		glEnable(GL_BLEND)
@@ -310,7 +310,7 @@ class EMCube(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		# The box itself along with normal vectors
@@ -411,7 +411,7 @@ class EMSphere(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		quadratic = gluNewQuadric()
@@ -481,7 +481,7 @@ class EMScatterPlot3D(EMShapeBase):
 		#glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		#glColor(1.0,1.0,1.0)
 		if len(self.data)>3:
@@ -581,7 +581,7 @@ class EMCylinder(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		glPushMatrix()
@@ -782,7 +782,7 @@ class EMLine(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		glPushMatrix()
@@ -865,7 +865,7 @@ class EMCone(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		glPushMatrix()
@@ -983,7 +983,7 @@ class EM3DText(EMShapeBase):
 		glDisable(GL_COLOR_MATERIAL)
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-#		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		
 		glEnable(GL_NORMALIZE)

@@ -170,21 +170,16 @@ def main():
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 		ccache=caches[stage[1]]
 
-#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-#		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage
-#		nliststg=range(0,min(nptcl,stage[0]))		# all of the particles to use in the current stage, bad strategy here for testing
-#		norm=len(nliststg)//500+1
+		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+#		nliststg=range(0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
+		norm=len(nliststg)//500+1
 
 #	print(ptclsfds.shape,tytx.shape)
 		
 		if options.verbose: print(f"\tIterating Gaussian parms x{stage[2]} at size {stage[1]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad")
 		lqual=-1.0
 		rstep=1.0
-		nstep=max(1,nptcl//stage[0])
 		for i in range(stage[2]):		# training epochs
-			nliststg=range((sn+i)%nstep,nptcl,nstep)		# all of the particles to use in the current stage, sn start gives some stochasticity
-			norm=len(nliststg)//500+1
-
 			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
 				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
 				step0,qual0,shift0,sca0=gradient_step_gauss(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
@@ -207,29 +202,20 @@ def main():
 			print(f"{i}: {qual:1.4f}\t{shift:1.4f}\t\t{sca:1.4f}")
 
 
+		# reseed orientations of particles with low FRCs
+		# we do this by finding the best orientation with fixed angular sampling and a fixed box size of 24
+		nseeded=0
 		if stage[8]<9:
 
 			if options.verbose: print(f"Adjusting translational alignment of particles")
-			for j in range(0,nptcl,1000):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
-				ptclsfds,orts,tytx=ccache.read(range(j,min(j+1000,nptcl)))
+			for j in range(0,len(nliststg),500):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
+				ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
 				oldtytx=tytx
 				tytx=ccf_step_align(gaus,ptclsfds,orts,tytx)
-				ccache.tytx[range(j,min(j+1000,nptcl)),:2]=tytx
+				ccache.tytx[nliststg[j:j+500],:2]=tytx
 				dif=(tytx-oldtytx[:,:2])**2
-				print(f"{j}-{j+1000}: shift rmsd: {sqrt(tf.math.reduce_mean(dif))*nxraw:.2f}")
+				print(f"{j}-{j+500}: shift rmsd: {sqrt(tf.math.reduce_mean(dif)):.2f}")
 
-			# This is for testing translational alignment only. TODO: remove
-			# lsxout=LSXFile(f"{options.path}/tst_ptcls_{sn:02d}.lst")
-			# for i in range(len(lsxin)):
-			# 	a,b,c=lsxin[i]
-			# 	lsxout[i]=(a,b,{"xform.projection":Transform({"type":"spinvec","v1":float(ccache.orts[i][0]),"v2":float(ccache.orts[i][1]),"v3":float(ccache.orts[i][2]),"tx":float(ccache.tytx[i][1]*nxraw),"ty":float(ccache.tytx[i][0]*nxraw)}),"frc":float(ccache.frcs[i])})
-			# lsxout=None
-
-
-
-			# reseed orientations of particles with low FRCs
-			# we do this by finding the best orientation with fixed angular sampling and a fixed box size of 24
-			nseeded=0
 			frcs=ccache.frcs			# not ideal, stealing the actual list from the object, but good enough for now
 			lowfrc=frcs[frcs<1.5]
 			if len(lowfrc)>0:
@@ -255,8 +241,6 @@ def main():
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
 			fout=open(f"{options.path}/fscs.txt","w")
 			for i in range(stage[2]):		# training epochs
-				nliststg=range((sn+i)%nstep,nptcl,nstep)		# all of the particles to use in the current stage, sn start gives some stochasticity
-				norm=len(nliststg)//500+1
 				for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
 					ptclsfds,orts,tytx=ccache.read(nliststg[j:j+500])
 					ortstep,dydxstep,qual0,ortstd0,dydxstd0,frcs=gradient_step_ort(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
@@ -394,29 +378,8 @@ def gradient_step_ort(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""
 	ny=ptclsfds.shape[1]
-	# we are determining absolute shifts, so we get rid of the original shift
-	projsf=gaus.project_simple(orts,ny,None).do_fft()
+	projsf=gaus.project_simple(orts,ny,tytx=tytx).do_fft()
 	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(-ny)
-
-	# if ny>64:
-	# 	out=open("dbug_xy.txt","w")
-	# 	out.write("# dx;dy\n")
-	# 	for i in range(newtytx.shape[0]): out.write(f"{newtytx[i][1]}\t{newtytx[i][0]}\n")
- #
-	# 	projsf=gaus.project_simple(orts,ny,newtytx).do_fft()
-	# 	newtytx=tf.cast(ptclsfds.align_translate(projsf),tf.float32)/float(-ny)
- #
-	# 	out=open("dbug_xy2.txt","w")
-	# 	out.write("# dx;dy\n")
-	# 	for i in range(newtytx.shape[0]): out.write(f"{newtytx[i][1]}\t{newtytx[i][0]}\n")
-	# 	# ccf=projsf.calc_ccf(ptclsfds).do_ift()
-	# 	# ccf.write_images("dbug_ccf.hdf",0)
-	# 	# projs=projsf.do_ift()
-	# 	# ptclsds=ptclsfds.do_ift()
-	# 	# projs.write_images("dbug_prj.hdf")
-	# 	# ptclsds.write_images("dbug_ptcl.hdf")
-	# 	sys.exit(1)
-
 	return newtytx
 
 if __name__ == '__main__':

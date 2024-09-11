@@ -10,13 +10,11 @@ from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
 from PyQt5.QtWidgets import QSplitter, QHBoxLayout
 from PyQt5.QtCore import Qt
 from EMAN2 import *
-from EMAN2_utils import interp_points, base_name
+from EMAN2_utils import interp_points
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-#from annotate_utils import UNet
 from eman2_gui.emannotate2d import EMAnnotate2DWidget,EMSegTab
-#from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emshapeitem3d import EMScatterPlot3D
@@ -39,12 +37,13 @@ from tensorflow.keras.callbacks import History
 import numpy as np
 from eman2_gui.valslider import ValSlider
 import weakref
+
 from matplotlib.patches import Circle
 import matplotlib.path as mplPath
 import matplotlib.pyplot as plt
+
 import queue
 from scipy.spatial import KDTree
-
 
 def main():
 	usage="""annotate tomograms in a folder. annotated images will be saved in ./segs folder.
@@ -165,8 +164,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			for seg_f in seg_ls:
 				data_file = str(os.path.join(self.tom_folder,file_name))
 				data_hdr = EMData(data_file, 0,True)
-				#if seg_f.startswith(base_name(data_file)) and seg_f.endswith(".hdf"):
-				if seg_f.endswith("seg.hdf") and base_name(seg_f)[:-4].split("__")[0]==base_name(data_file).split("__")[0]:
+				if seg_f.endswith(".hdf") and base_name(seg_f)[:-4]==base_name(data_file):
+					#print("Names",base_name(seg_f)[:-4],base_name(data_file))
 					i +=1
 					hdr = EMData(os.path.join(self.seg_folder,seg_f), 0,True)
 					if [hdr["nx"],hdr["ny"],hdr["nz"]]!= [data_hdr["nx"],data_hdr["ny"],data_hdr["nz"]]:
@@ -195,11 +194,15 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ny = hdr["ny"]
 		self.nz=hdr["nz"]
 		self.apix = hdr["apix_x"]
+
+
+		#error_seg_path = False
 		seg_path = None
 		if self.tomo_tree.topLevelItem(0).childCount() > 0:
+
+			#for seg_grp in self.seg_grps:
 			try:
 				seg_path = os.path.join(self.seg_folder,self.seg_grps[0].checkedButton().text())
-				#seg_path = os.path.join(self.seg_folder,seg_grp.checkedButton().text())
 				print("Seg file for current tomogram already exists at",seg_path)
 
 			except Exception as e:
@@ -215,6 +218,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			try:
 				self.tomo_tree.topLevelItem(0).addChild(seg_item)
 				seg_item.setFlags(Qt.ItemFlags(Qt.ItemIsEnabled))
+
+				#seg_item.setCheckState(0,0)
 				seg_button = QtWidgets.QRadioButton(os.path.basename(seg_path))
 				self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].addButton(seg_button,0)
 				seg_button.setChecked(True)
@@ -222,6 +227,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			except Exception as e:
 				print("EXCEPTION when add child to current tomo item", e)
 				pass
+
+		#self.seg_path = seg_path
 		self.seg_path = "temp_fs_ann.hdf"
 		self.seg_info_path = self.seg_path[0:-4]+".json"
 		self.decompress_seg_file(seg_path)
@@ -317,7 +324,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.tomo_list_panel=QtWidgets.QWidget()
 		tomo_vbl = QtWidgets.QGridLayout()
 		tomo_vbl.addWidget(QtWidgets.QLabel("Tomograms"),0,0)
+		#tomo_vbl.addWidget(self.tomogram_list,1,0)
 		tomo_vbl.addWidget(self.tomo_tree,1,0)
+		#tomo_vbl.addWidget(self.tomo_tree,4,0)
 		tomo_vbl.setRowStretch(1,2)
 		tomo_vbl.setRowStretch(2,1)
 		tomo_vbl.setRowStretch(3,1)
@@ -394,8 +403,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.ltlay.addWidget(self.points_label,0,0,2,2)
 		self.ltlay.addWidget(QtWidgets.QLabel("Line Width"),2,2,1,2)
 		self.ltlay.addWidget(self.tx_line_width,2,3,1,1)
-		#self.ltlay.addWidget(QtWidgets.QLabel("Ann Class"),3,2,1,2)
-		#self.ltlay.addWidget(self.tx_ann_class,3,3,1,1)
 		self.tx_interp=QtWidgets.QSpinBox(self)
 		self.tx_interp.setValue(20)
 		self.ltlay.addWidget(self.interp_button,0,2,1,1)
@@ -464,6 +471,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		basic_button_l.addWidget(self.basic_tab)
 		basic_vbl.addLayout(basic_button_l)
 
+		#self.basic_tab.tabBarClicked[int].connect(self.basic_tab_change)
 		self.basic_tab.currentChanged[int].connect(self.basic_tab_change)
 		self.interp_button.clicked[bool].connect(self.interp_bt_clicked)
 		self.clear_button.clicked[bool].connect(self.clear_points)
@@ -498,6 +506,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.assisted_tab.addTab(self.morp_tab,"Morphological")
 		self.assisted_tab.addTab(self.spec_tab,"Specific")
 		self.assisted_tab.addTab(self.subtom_tab,"SubTomogram")
+		#self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
 		self.assisted_tab.addTab(self.templ_tab,"Template")
 
 		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
@@ -515,7 +524,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.button_gbl.addLayout(assisted_vbl,4,0,2,1)
 
 		self.test_button = QtWidgets.QPushButton("Test Button")
-		#self.test_button.setCheckable(True)
 		self.button_gbl.addWidget(self.test_button,6,0,1,1)
 
 
@@ -525,7 +533,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		inspector_vbl.addWidget(QtWidgets.QLabel("Manual Annotate Tools"))
 		inspector_vbl.addWidget(self.img_view_inspector)
 
-		#self.gbl.addLayout(tomo_vbl,1,0,1,1)
 		self.gbl.addWidget(self.img_view,0,0,1,2)
 		self.gbl.addLayout(inspector_vbl,0,2,1,1)
 		self.centralWidget.setLayout(self.gbl)
@@ -536,7 +543,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.control_panel.show()
 
 		self.test_button.clicked[bool].connect(self.test_drawing_function)
-		#self.undo_button.clicked[bool].connect(self.reverse_to_saved_state)
 
 		#Need to fix
 		self.lb_lines=QtWidgets.QLabel("")
@@ -563,7 +569,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		E2loadappwin("e2annotate","main",self)
 		E2loadappwin("e2annotate","controlpanel",self.control_panel)
 		E2loadappwin("e2annotate","tomograms",self.tomo_list_panel)
-		#self.update_label()
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable( GL_LINE_SMOOTH );
@@ -579,6 +584,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			tmp = EMData(ori_seg_path)
 			tmp.write_image(self.seg_path)
 			del tmp
+
+			#os.system("e2proc3d.py {} {} --compressbits=-1".format(ori_seg_path,self.seg_path))
 		except Exception as e:
 			print(e)
 			return
@@ -669,6 +676,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 
 	def seg_path_change(self,seg_bt):
+		#print(grp.text()+" is selected")
+		#self.seg_path = os.path.join(self.seg_folder,seg_bt.text())
 		seg_path = os.path.join(self.seg_folder,seg_bt.text())
 		self.decompress_seg_file(seg_path)
 		self.seg_info_path = self.seg_path[0:-4]+".json"
@@ -745,6 +754,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#TODO - Fix zthick and hard code part
 
 		self.data_xy = self.thumbnail.get_xy()
+		#print("data xy", self.data_xy)
+
 		if self.get_annotation():
 			#print("Write annotation to file", self.seg_path)
 			print("Write annotation to file", self.ori_seg_path)
@@ -781,6 +792,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.set_scale=1
 		if file_out:
 			file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+			# try:
+			# 	file_out.write_image(out_name, 0, IMAGE_HDF, False, region)
+			# except Exception as e:
+			# 	print("Error writing file out due to exception", e)
+			# 	return
 		else:
 
 			return
@@ -1867,7 +1883,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		# 	seg_path = os.path.join(self.seg_folder,self.seg_grps[self.tomo_tree.indexOfTopLevelItem(self.tomo_tree.currentItem())].checkedButton().text())
 		# 	print("Seg file for current tomogram already exists at",seg_path)
 		# else:
-		seg_path = os.path.join(self.seg_folder,"{}__{}_seg.hdf".format(base_name(self.data_file),str(current_child_count+1)))
+		seg_path = os.path.join(self.seg_folder,"{}_seg_{}.hdf".format(base_name(self.data_file),str(current_child_count+1)))
 		print("Create seg_file",seg_path)
 		seg_out = EMData(self.nx,self.ny,self.nz)
 		seg_out.write_image(seg_path)
@@ -4480,9 +4496,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			#initxfs = []
 			#initxfs.append(initxf)
 			# #tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[nbest[0]["xform.align3d"],nbest[1]["xform.align3d"],nbest[2]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
-			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
-			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
-
+			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
 			# # #tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
 			# cf = subvol.calc_ccf(tempt_a)
 			# cf_score = np.max(cf.numpy())
@@ -4502,9 +4516,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 	def do_local_search_thrds(self):
 		n_peaks = int(self.tmplt_npeaks_le.text())
-		#self.find_peaks_amp(n_peaks*10)
-		self.find_peaks_amp(n_peaks*3)
-
+		self.find_peaks_amp(n_peaks*10)
 		nthrds = int(self.tmplt_nthrds_le.text())
 		tomo = self.target.get_data().copy()
 		tempt = EMData(self.tmplt_le.text())

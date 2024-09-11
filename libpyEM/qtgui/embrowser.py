@@ -61,6 +61,10 @@ def display_error(msg) :
 	sys.stdout.flush()
 	QtWidgets.QMessageBox.warning(None, "Error", msg)
 
+# This is a floating point number-finding regular expression
+# Documentation: https://regex101.com/r/68zUsE/4/
+#renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
+renumfind = re.compile(r"-?\d*\.?\d+[eE]?[+-]?\d*")
 # We need to sort ints and floats as themselves, not string, John Flanagan
 def safe_int(v) :
 	"""Performs a safe conversion from a string to an int. If a non int is presented we return the lowest possible value"""

@@ -66,10 +66,7 @@ from pathlib import Path
 
 import threading
 
-# This is a floating point number-finding regular expression
-# Documentation: https://regex101.com/r/68zUsE/4/
-#renumfind = re.compile(r"(?:^|(?<=[^\d\w:.-]))[+-]?\d+\.*\d*(?:[eE][-+]?\d+|)(?=[^\d\w:.-]|$)")
-renumfind = re.compile(r"-?\d*\.?\d+[eE]?[+-]?\d*")
+
 
 #from Sparx import *
 
@@ -115,7 +112,7 @@ T=Transform({"type":"2d","alpha":0})
 bispec_invar_parm=(32,10)
 
 # These are processors which don't support in-place operation
-outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum","morph.blackhat.binary","morph.close.binary","morph.dilate.binary","morph.erode.binary","morph.ext_grad.binary","morph.gradient.binary","morph.grow","morph.int_grad.binary","morph.majority","morph.object.density","morph.object.label","morph.open.binary","morph.prune","morph.thin","morph.tophat.binary"]
+outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum"]
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things

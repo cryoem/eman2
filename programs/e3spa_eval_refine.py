@@ -68,7 +68,7 @@ def main():
 		Computes FSC curve for the final iteration of each refine_xx folder vs a provided reference volume. 
 
 	--ptcltrace
-		Traces particle orientations between two iterations. Columns:
+		Traces particle orientations from one iteration to the next
 		0 - ptcl #
 		1 - az1
 		2 - az2
@@ -125,8 +125,8 @@ def main():
 	parser.add_argument("--resolution_vsref", type=str, default=None, help="Computes the FSC between the last iteration of each refine_xx directory and a specified reference map. Map must be aligned, but will be rescaled if necessary.")
 	parser.add_argument("--evalptclqual", default=False, action="store_true", help="Evaluates the particle-map agreement using the refine_xx folder name. This may be used to identify bad particles.",guitype='boolbox', row=8, col=1, rowspan=1, colspan=1, mode='evalptcl[True]')
 	parser.add_argument("--anisotropy", type=int, default=-1, help="Specify a class-number (more particles better). Will use that class to evaluate magnification anisotropy in the data. ")
-	parser.add_argument("--itr", type=str, default=None, help="If a r3d_XX folder is being used, this selects a particular refinement iteration. Alternatively, specify the path to the .lst file.")
-	parser.add_argument("--refitr", type=str, default=None, help="If a r3d_XX folder is being used, this selects a reference refinement iteration. Alternatively, specify the path to the .lst file.")
+	parser.add_argument("--itr", type=int, default=None, help="If a r3d_XX folder is being used, this selects a particular refinement iteration. Otherwise the last complete iteration is used.")
+	parser.add_argument("--refitr", type=int, default=None, help="If a r3d_XX folder is being used, this selects a reference refinement iteration. Otherwise itr-1 is used.")
 	parser.add_argument("--mask",type=str,help="Mask to be used to focus --evalptclqual and other options. May be useful for separating heterogeneous data.", default=None)
 	parser.add_argument("--sym",type=str,help="Symmetry to be used in searching adjacent unit cells, default from refine_xx parms", default=None)
 	parser.add_argument("--threads", default=4,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful",guitype='intbox', row=9, col=0, rowspan=1, colspan=1, mode='evalptcl[4]')
@@ -154,7 +154,7 @@ def main():
 			warning("Warning: unknown matched file: ",x)
 			return -1
 
-	if len(args)>0 and args[0][:3]=="r3d":
+	if len(args)>0 and args[0][:4]=="r3d_":
 		fls=os.listdir(args[0])
 		try:
 			itrs=sorted([extr_num(i) for i in fls if i.startswith("threed_") and len(i)<15])		# parse the iteration number from threed_xx.hdf
@@ -163,21 +163,15 @@ def main():
 
 		if options.itr==None: itr=itrs[-1]
 		else:
-			try:
-				options.itr=int(options.itr)
-				if options.itr in itrs : itr=options.itr
-				else:
-					error_exit(f"ERROR: requested iteration {options.itr} does not exist in {args[0]}")
-			except: itr=-1
+			if options.itr in itrs : itr=options.itr
+			else:
+				error_exit(f"ERROR: requested iteration {options.itr} does not exist in {args[0]}")
 
 		if options.refitr==None: refitr=itr-1
 		else:
-			try:
-				options.refitr=int(options.refitr)
-				if options.refitr in itrs: refitr=options.refitr
-				else:
-					error_exit(f"ERROR: requested iteration {options.refitr} does not exist in {args[0]}")
-			except: refitr=-1
+			if options.refitr in itrs: refitr=options.refitr
+			else:
+				error_exit(f"ERROR: requested iteration {options.refitr} does not exist in {args[0]}")
 
 
 		print("Using --itr=",itr)
@@ -188,18 +182,11 @@ def main():
 	logid=E3init(sys.argv,options.ppid)
 
 	if options.ptcltrace :
-		# we might have numerical iterations or specified filenames
-		if refitr>=0: pt0=LSXFile(f"{args[0]}/ptcls_{refitr:02d}.lst",True)
-		else:
-			try: pt0=LSXFile(f"{args[0]}/{options.refitr}",True)
-			except: pt0=LSXFile(options.refitr,True)
-		if itr>=0: pt1=LSXFile(f"{args[0]}/ptcls_{itr:02d}.lst",True)
-		else:
-			try: pt1=LSXFile(f"{args[0]}/{options.itr}",True)
-			except: pt1=LSXFile(options.itr,True)
+		pt0=LSXFile(f"{args[0]}/ptcls_{refitr:02d}.lst")
+		pt1=LSXFile(f"{args[0]}/ptcls_{itr:02d}.lst")
 
 		out=open(f"trace_{args[0]}_{refitr}_{itr}.txt","w")
-		out.write("#n; az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
+		out.write("#az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
 
 		n=len(pt0)
 		print(f"  with {n} particles")
@@ -215,13 +202,9 @@ def main():
 			tr0=xf0.get_trans_2D()
 			tr1=xf1.get_trans_2D()
 			try: sc0=dct0["score"]
-			except:
-				try: sc0=dct0["frc"]
-				except: sc0=2.0
+			except: sc0=2.0
 			try: sc1=dct1["score"]
-			except:
-				try: sc1=dct1["frc"]
-				except: sc1=2.0
+			except: sc1=2.0
 
 			out.write(f"{i}\t{em0["az"]}\t{em1["az"]}\t{em0["alt"]}\t{em1["alt"]}\t{em0["phi"]}\t{em1["phi"]}\t{tr0[0]}\t{tr1[0]}\t{tr0[1]}\t{tr1[1]}\t{dif}\t{hypot(tr0[0]-tr1[0],tr0[1]-tr1[1])}\t{sc0}\t{sc1}\n")
 

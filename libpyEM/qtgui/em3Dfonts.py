@@ -149,7 +149,7 @@ class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
 		glMaterial(GL_FRONT, GL_AMBIENT, self.colors[self.currentcolor]["ambient"])
 		glMaterial(GL_FRONT, GL_DIFFUSE, self.colors[self.currentcolor]["diffuse"])
 		glMaterial(GL_FRONT, GL_SPECULAR, self.colors[self.currentcolor]["specular"])
-#		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
+		glMaterial(GL_FRONT, GL_SHININESS, self.colors[self.currentcolor]["shininess"])
 		glColor(self.colors[self.currentcolor]["diffuse"])
 
 		glClearColor(self.bgR,self.bgG,self.bgB,self.bg_a)

@@ -726,13 +726,7 @@ of the path is stored as self.normpath"""
 				self.data=json.load(jfile,object_hook=json_to_obj)			# parse the whole JSON file, which should be a single dictionary
 			except:
 				jfile.seek(0)
-				try:
-					a=jfile.read()
-				except:
-					file_unlock(jfile)					# unlock the file
-					print("Error reading file: ",self.path)
-					traceback.print_exc()
-					raise Exception("Error reading JSON file : {}".format(self.path))
+				a=jfile.read()
 				if len(a.strip())==0 : self.data={}		# json.load doesn't like completely empty files
 				else :
 					file_unlock(jfile)					# unlock the file

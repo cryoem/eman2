@@ -947,7 +947,7 @@ class EMPDBModel(EM3DModel):
 		glMaterial(GL_FRONT,GL_DIFFUSE,color["diffuse"])
 		glMaterial(GL_FRONT,GL_SPECULAR,color["specular"])
 		glMaterial(GL_FRONT,GL_EMISSION,color["emission"])
-#		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
+		glMaterial(GL_FRONT,GL_SHININESS,color["shininess"])
 	def makeStick (self, res, index1, index2): #draws a cylinder between two atoms once the index for start and stop is given
 		n = [0,0,0]
 		p = [0,0,0]

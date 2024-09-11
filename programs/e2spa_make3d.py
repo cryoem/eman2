@@ -245,9 +245,8 @@ def initialize_data(inputfile, options):
 	tokeep=np.ones(len(data), dtype=bool)
 	print("{} particles total".format(np.sum(tokeep)))
 	
-	if "score" in data[0]:
-		scrs=np.array([d["score"] for d in data])
-	else:
+	scrs=np.array([d["score"] if "score" in d else 2e5 for d in data])
+	if np.max(scrs)>1e5:
 		scrs=np.zeros(len(data))-1
 	
 	if np.std(scrs)>0 and ("ptcl3d_id" in data[0]):
