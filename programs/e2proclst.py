@@ -84,7 +84,6 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 	parser.add_argument("--flip", action="store_true", default=False, help="flip xform.")
-	parser.add_argument("--unique", action="store_true", default=False, help="keep only unique particles.")
 	parser.add_argument("--sym", type=str, default=None, help="WARNING: operates in-place, modifying input files!  Apply symmetry to .lst files of particles with xform.projection by duplicating each particle N times.")
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
@@ -584,15 +583,6 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				l[atr]=x
 				lout.append(l)
 					
-			save_lst_params(lout, f)
-			
-	if options.unique:
-		for f in args:
-			lst=load_lst_params(f)
-			ks=["{}_{}".format(l["src"],l["idx"]) for l in lst]
-			u,i=np.unique(ks, return_index=True)
-			print(f"{len(u)} unique particles out of {len(lst)}")
-			lout=[lst[j] for j in i]					
 			save_lst_params(lout, f)
 			
 	if options.scalexf>0:
