@@ -170,14 +170,13 @@ class CZIDataLoader(QtWidgets.QWidget):
 			if self.download_tomo:
 				with open(js_fname, "w") as f:
 					json.dump(tomo.to_dict(), f)
-				#print("Downloading Tomogram",tomo.name)
+				print("Downloading Tomogram",tomo.name)
 				tomo.download_mrcfile(dest_path=self.tomo_fname)
-			# if self.download_anno_cb.isChecked():
 			if self.download_anno:
 				seg_dest = os.path.join(self.seg_fname,tomo.name)
 				os.mkdir(seg_dest)
 				try:
-					#print("Downloading Annotation(s) for tomogram",tomo.name)
+					print("Downloading Annotation(s) for tomogram",tomo.name)
 					tomo.download_all_annotations(dest_path=seg_dest,shape="SegmentationMask",format="mrc")
 				except Exception as e:
 					print("Error download annotation(s) for tomogram {} due to {}".format(tomo.name,e))
