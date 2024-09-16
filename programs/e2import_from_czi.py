@@ -54,7 +54,7 @@ def main():
 class CZIDataLoader(QtWidgets.QWidget):
 	def __init__(self,application,options):
 		super().__init__()
-		self.setWindowTitle("CZI CryoET Data Portal")
+		self.setWindowTitle("CZII CryoET Data Portal")
 		self.setMinimumSize(400, 250)
 		self.app = weakref.ref(application)
 		self.options = options
@@ -191,15 +191,18 @@ class CZIDataLoader(QtWidgets.QWidget):
 			return
 		try:
 			client = Client()
-			self.tomos = Tomogram.find(
+			tomos = Tomogram.find(
 			client,
 			[Tomogram.tomogram_voxel_spacing.run.dataset.id==self.dataset_id],
 			)
+			self.tomos = [tomo for tomo in tomos]
+			self.tomos.sort(key=lambda x:x.name)
+
 		except Exception as e:
 			print("Invalid dataset id or",e,". Abort.")
 			return
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
-		tomo_l = sorted([tomo.name for tomo in self.tomos])
+		tomo_l = [tomo.name for tomo in self.tomos]
 		self.populate_table(data_l=tomo_l)
 
 
