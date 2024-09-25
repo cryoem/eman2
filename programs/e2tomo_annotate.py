@@ -2839,11 +2839,6 @@ class UNet():
 		print('Predicting masks on test data...')
 		print('-'*30)
 		imgs_label_test = model.predict(test_data, verbose=1)
-		#print(model.evaluate(test_data,test_labels))
-		# np.save(test_label_outfile, imgs_label_test)
-		# print('-' * 30)
-		# print('Saving predicted masks to files...')
-		# print('-' * 30)
 		return imgs_label_test
 
 
@@ -4148,6 +4143,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		#self.draw_peaks_bt = QtWidgets.QPushButton("Draw Peaks")
 		self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
 		self.apply_mw.setChecked(False)
+		self.local_norm_cb = QtWidgets.QCheckBox("Local normalization")
+		self.local_norm_cb.setChecked(True)
+		#self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
 
 
 		self.tmplt_npeaks_le = QtWidgets.QLineEdit()
@@ -4177,17 +4175,13 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		templ_gbl.addWidget(self.tmplt_nshrink_le,3,1,1,1)
 		templ_gbl.addWidget(QtWidgets.QLabel("threads"),3,2,1,1)
 		templ_gbl.addWidget(self.tmplt_nthrds_le,3,3,1,1)
-
-		#templ_gbl.addWidget(self.create_template_bt,1,0,1,2)
-		#templ_gbl.addWidget(self.apply_mw,4,0,1,2)
-		#templ_gbl.addWidget(self.show_initxf_bt,4,0,1,2)
 		templ_gbl.addWidget(QtWidgets.QLabel("npeaks"),4,2,1,1)
 		templ_gbl.addWidget(self.tmplt_npeaks_le,4,3,1,1)
 		#templ_gbl.addWidget(QtWidgets.QLabel("ccc thr"),4,2,1,1)
+		templ_gbl.addWidget(self.local_norm_cb,4,0,1,1)
 		templ_gbl.addWidget(self.tmplt_cccthr_vs,5,0,1,4)
-		#templ_gbl.addWidget(QtWidgets.QLabel("dist thr"),4,2,1,1)
-		#templ_gbl.addWidget(self.tmplt_dthr_le,4,3,1,1)
-		#templ_gbl.addWidget(self.tmplt_minvol_vs,5,0,1,4)
+
+
 
 		templ_gbl.addWidget(self.calc_ccm_bt,2,4,1,1)
 		templ_gbl.addWidget(self.show_ccm_bt,3,4,1,1)
@@ -4214,12 +4208,8 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		# self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
 		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm_test)
 		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
-		#self.find_peaks_bt.clicked[bool].connect(self.find_peaks_amp)
 		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_to_show)
-		#self.draw_peaks_bt.clicked[bool].connect(self.draw_peaks_on_tomo)
-
 		self.show_peaks_bt.clicked[bool].connect(self.show_peaks)
-		#self.do_local_search_bt.clicked[bool].connect(self.do_local_search_thrds)
 		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_test)
 
 		self.test_function_bt.clicked[bool].connect(self.test_search_function)
@@ -4334,6 +4324,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.xfs = []
 
 	def compute(self,jsd,targetf,template,phi,alt,n):
+		print("test compute")
 		nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
 		clp=template["nx"]
 		trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
@@ -4345,6 +4336,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 	# standard CCF with local normalization
 	def compute_local(self,jsd,targetf,template,targetsqf,templatemask,phi,alt,n):
+		print("test compute local")
 		nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
 		clp=template["nx"]
 
@@ -4387,45 +4379,24 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		print("Running test calc_ccm")
 		try:
 			sym=parsesym(self.tmplt_sym_le.text()) #c1
-			#dt=int(self.tmplt_delta_le.text())#25-45
-			ang_step=int(self.tmplt_delta_le.text())
+			dt=int(self.tmplt_delta_le.text())#25-45
 			target = self.target.get_data().copy()
 			template = EMData(self.tmplt_le.text())
 			shrink = int(self.tmplt_nshrink_le.text())
+			nthreads=int(self.tmplt_nthrds_le.text())
+
 		except:
-			print("Specify template to calc cross correlation.")
+			print("Specify parameters to calc cross correlation.")
 			return
-		#oris=sym.gen_orientations("eman",{"delta":dt, "phitoo":dt,"inc_mirror":1}) #prefer fraction of 360
 		#minimum rotation : number of degree to rotate for 1 pixel shift at nyquist - 4.4 in this case of microtubule with boxsz=25
-
-
 		if shrink > 1:
 			target.process_inplace("math.fft.resample",{'n':shrink})
 
-		# mbin=tomo["apix_x"]/ref["apix_x"]
-		# print("Will shrink reference by {:.1f} to match apix of tomogram".format(mbin))
-		# ref.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
-		# ref.process_inplace("math.fft.resample",{'n':mbin})
-		# ref.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4})
-		# ref.process_inplace('normalize.edgemean')
-		# ref.mult(-1)
-		#boxsz=ref["nx"]//2
-
-		#self.test_do_search(tomo, tempt,tasks[0][:20])
-		nthreads=int(self.tmplt_nthrds_le.text())
-		#print("test_search_function_begin")
-
-		#target=EMData("lamella_3_1_03262024_crop__bin2.hdf",0)
-		#target = self.target.get_data()
 		target.mult(-1.0)
 		nx,ny,nz=target["nx"],target["ny"],target["nz"]
 		targetf=target.do_fft()
 		targetsq=target.process("math.squared")
 		targetsqf=targetsq.do_fft()
-
-	#	template=EMData("long_tmplt.hdf",0)
-	#	template=EMData("long_tmplt_fromtomo.hdf",0)emd_26214_actin.hdf
-		#template=EMData(self.tmplt_le.text())
 
 		templatesca=template.process("math.fft.resample",{"n":target["apix_x"]/template["apix_x"]})
 		nxt1=templatesca["nx"]
@@ -4435,14 +4406,15 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		orts=[]
 
 		jsd=queue.Queue(0)
-		# these start as arguments, but get replaced with actual threads
 		thrds=[]
 		i=0
 
-		for alt in range(0,90,ang_step):
-			for phi in range(0,360,ang_step):
-	#			thrds.append((jsd,targetf,templatesca,phi,alt,i))
-				thrds.append((jsd,targetf,templatesca,targetsqf,templatemask,phi,alt,i))
+		for alt in range(0,90,dt):
+			for phi in range(0,360,dt):
+				if self.local_norm_cb.isChecked():
+					thrds.append((jsd,targetf,templatesca,targetsqf,templatemask,phi,alt,i))
+				else:
+					thrds.append((jsd,targetf,templatesca,phi,alt,i))
 				i+=1
 
 		thrtolaunch=0
@@ -4451,7 +4423,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 				while (threading.active_count()>=nthreads) : time.sleep(0.1)
 				print("\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)), end=' ',flush=True)
 	#			thrds[thrtolaunch]=threading.Thread(target=compute,args=thrds[thrtolaunch])		# replace args
-				thrds[thrtolaunch]=threading.Thread(target=self.compute_local,args=thrds[thrtolaunch])		# replace args
+				if self.local_norm_cb.isChecked():
+					thrds[thrtolaunch]=threading.Thread(target=self.compute_local,args=thrds[thrtolaunch])		# replace args
+				else:
+					thrds[thrtolaunch]=threading.Thread(target=self.compute,args=thrds[thrtolaunch])		# replace args
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
 			else: time.sleep(0.1)
@@ -4468,8 +4443,6 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 		peaks=avg.finish()
 		#global base
-		#base="test_long_template"
-		#peaks.write_image(f"{base}.hdf:-1",0)
 		peaks.write_image(self.ccc_file,0)
 		owner.write_image(self.owner_id_file,0)
 		#owner.write_image(f"{base}_own.hdf:-1",0)
@@ -4484,6 +4457,134 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		#owner_id.write_compressed(self.owner_id_file,0,12)
 		self.pts = []
 		self.xfs = []
+
+	def find_peaks_amp_test(self,npks=200,ccc_file="",own_file="",orts_file=""):
+		n_peaks= npks
+		nbin=int(self.tmplt_nshrink_le.text())
+		ccc_hdr=EMData(ccc_file, 0,True)
+		cx,cy,cz = ccc_hdr.get_sizes()
+
+		#rx = template.get_sizes()[0]
+		#bsz = rx
+		#ccc = EMData(ccc_file).process("mask.zeroedge3d",{"x0":bsz//2,"x1":bsz//2,"y0":bsz//2,"y1":bsz//2,"z0":bsz//2,"z1":bsz//2})
+		ccc = EMData(ccc_file)
+		print("Shape",ccc.get_sizes())
+
+		#ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
+		#print("Set border of ccc matrix to zero to avoid peaks too close to the border")
+		mean=float(ccc.get_attr("mean"))
+		sig=float(ccc.get_attr("sigma"))
+		#ccc.process_inplace("threshold.belowtozero",{"minval":mean+sig})
+		ccc.process_inplace("mask.onlypeaks",{"npeaks":2}) #before threshold
+		ccc.process_inplace("threshold.belowtozero",{"minval":mean+sig})
+
+		ccc_fac = float(self.tmplt_cccthr_vs.value)
+		peaks = ccc.calc_highest_locations(mean+ccc_fac*sig)
+		peaks.sort(key=lambda peak: -peak.value)
+		pts = [(nbin*peak.x,nbin*peak.y,nbin*peak.z) for peak in peaks]
+		orts_f=open(orts_file,"r")
+		oris = []
+		for ort in orts_f.readlines():
+			angles = ort.split("\t")
+			xf = Transform({'az':0,'alt':int(angles[2]),'phi':int(angles[1]),'tx':0.00,'ty':0.00,'tz':0.00,'mirror':0,'scale':1.0000,'type':'eman'})
+			oris.append(xf)
+
+		initxf = EMData(own_file)
+		xfs = [oris[int(initxf[(peak.x,peak.y,peak.z)])] for peak in peaks]
+		if len(pts) > n_peaks:
+			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+			self.pts = pts[:n_peaks]
+			self.xfs = xfs[:n_peaks]
+		else:
+			print("Find {} peaks at {}".format(len(pts),pts))
+			self.pts = pts
+			self.xfs = xfs
+
+	#Do local search at putative locations
+	def do_search_test(self,tomo,tempt,jsd, px_l):
+		for pt_xf in px_l:
+			p = pt_xf[0]
+			initxf = pt_xf[1]
+			x,y,z= (int(i) for i in p)
+			bs = tempt["nx"]
+			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
+			#nbest = tempt.xform_align_nbest('rotate_translate_3d', subvol, {'sym':'c1'}, 2, 'ccc.tomo',{})
+			#initxfs = [n["xform.align3d"] for n in nbest[1:]]
+			# tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[nbest[0]["xform.align3d"],nbest[1]["xform.align3d"],nbest[2]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
+			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
+			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
+			cf = subvol.calc_ccf(tempt_a)
+			cf_score = np.max(cf.numpy())
+			jsd.put((p,tempt_a["xform.align3d"],cf_score))
+
+
+	def do_local_search_test(self):
+		n_peaks = int(self.tmplt_npeaks_le.text())
+		self.find_peaks_amp_test(npks=n_peaks*5,ccc_file=self.ccc_file,own_file=self.owner_id_file,orts_file=self.orts_file)
+
+		nthrds = int(self.tmplt_nthrds_le.text())
+		tomo = self.target.get_data().copy()
+		tempt = EMData(self.tmplt_le.text())
+		mbin=tomo["apix_x"]/tempt["apix_x"]
+
+		print("Will shrink reference by {:.1f} to match apix of tomogram for local search".format(mbin))
+		tempt.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
+		tempt.process_inplace("math.fft.resample",{'n':mbin})
+		#tempt.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4}) #might still be useful, not this aggressive, 1 or 2 first
+		tempt.process_inplace('normalize.edgemean')
+		tempt.mult(-1)
+		good_szs=[good_size(tempt["nx"]),good_size(tempt["ny"]),good_size(tempt["nz"])]
+		tempt.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
+
+		#boxsz=tempt["nx"]//2
+		#tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		# tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
+		tomo.process_inplace('normalize.edgemean')
+
+		pts_xfs_l = list(zip(self.pts,self.xfs))
+		start = time.time()
+		tasks=[pts_xfs_l[i::nthrds] for i in range(nthrds)]
+
+		#print(tasks)
+		jsd=queue.Queue(0)
+		thrds=[threading.Thread(target=self.do_search_test,args=(tomo, tempt, jsd, px_l)) for px_l in tasks]
+
+		thrtolaunch=0
+		tsleep=threading.active_count()
+
+		ndone=0
+		for t in thrds:
+			t.start()
+		p_xf_l = []
+		print("Start local searching at {} location".format(len(self.pts)))
+		while threading.active_count()>tsleep or not jsd.empty():
+			while not jsd.empty():
+				p,xf,cf=jsd.get()
+				p_xf_l.append((p,xf,cf))
+				ndone+=1
+				sys.stdout.write("\r{}/{} finished.".format(ndone, len(self.pts)))
+				sys.stdout.flush()
+			time.sleep(.5)
+		print("")
+		print("Finish in {}s".format(time.time()-start))
+		p_xf_l.sort(key = lambda x: -x[2])
+		try:
+			pt_cf_l = []
+			for i in range(len(p_xf_l)):
+				pt = list(p_xf_l[i][0])
+				pt.append(p_xf_l[i][2])
+				pt_cf_l.append(pt)
+			from_numpy(np.array(pt_cf_l)).write_image("tmplt_match_local_pks.hdf")
+			print("All peaks saved to tmplt_match_local_pks.hdf")
+		except Exception as e:
+			print(e)
+			pass
+		p_xf_l=p_xf_l[:n_peaks]
+		self.pts = [p_xf[0] for p_xf in p_xf_l]
+		self.xfs = [p_xf[1] for p_xf in p_xf_l]
+		cfs = [p_xf[2] for p_xf in p_xf_l]
+		self.cfs = [cf/max(cfs) for cf in cfs]
+
 
 
 	#Simulated missing wedge effect on template
@@ -4580,9 +4681,6 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 	#Find local max from CCM and initial xf associate with those peaks
 	def find_peaks_amp(self,npks=100):
 		try:
-			# if npks == -1:
-			#n_peaks = int(self.tmplt_npeaks_le.text())
-			# else:
 			n_peaks = npks
 			nbin = int(self.tmplt_nshrink_le.text())
 			#ccc_fac = float(self.tmplt_cccthr_vs.value)
@@ -4625,75 +4723,6 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			self.pts = pts
 			self.xfs = xfs
 
-	def find_peaks_amp_test(self,npks=200,ccc_file="",own_file="",orts_file=""):
-		n_peaks= npks
-		nbin=int(self.tmplt_nshrink_le.text())
-		ccc_hdr=EMData(ccc_file, 0,True)
-		cx,cy,cz = ccc_hdr.get_sizes()
-
-		#rx = template.get_sizes()[0]
-		#bsz = rx
-		#ccc = EMData(ccc_file).process("mask.zeroedge3d",{"x0":bsz//2,"x1":bsz//2,"y0":bsz//2,"y1":bsz//2,"z0":bsz//2,"z1":bsz//2})
-		ccc = EMData(ccc_file)
-		ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-		#ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
-		#print("Set border of ccc matrix to zero to avoid peaks too close to the border")
-		mean=float(ccc.get_attr("mean"))
-		sig=float(ccc.get_attr("sigma"))
-		#ccc.process_inplace("threshold.belowtozero",{"minval":mean+sig})
-		ccc.process_inplace("mask.onlypeaks",{"npeaks":2}) #before threshold
-		ccc.process_inplace("threshold.belowtozero",{"minval":mean+sig})
-
-		ccc_fac = float(self.tmplt_cccthr_vs.value)
-		#ccc_fac=1
-		peaks = ccc.calc_highest_locations(mean+ccc_fac*sig)
-		peaks.sort(key=lambda peak: -peak.value)
-		pts = [(nbin*peak.x,nbin*peak.y,nbin*peak.z) for peak in peaks]
-		orts_f=open(orts_file,"r")
-		oris = []
-		for ort in orts_f.readlines():
-			angles = ort.split("\t")
-			xf = Transform({'az':0,'alt':int(angles[2]),'phi':int(angles[1]),'tx':0.00,'ty':0.00,'tz':0.00,'mirror':0,'scale':1.0000,'type':'eman'})
-			oris.append(xf)
-
-		initxf = EMData(own_file)
-		xfs = [oris[int(initxf[(peak.x,peak.y,peak.z)])] for peak in peaks]
-		if len(pts) > n_peaks:
-			#print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
-			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
-			self.pts = pts[:n_peaks]
-			self.xfs = xfs[:n_peaks]
-
-		else:
-			print("Find {} peaks at {}".format(len(pts),pts))
-			self.pts = pts
-			self.xfs = xfs
-
-	def save_peaks(self,ccc,pts):
-		outfile = "tmplt_match_ccc_pks.hdf"
-		peak_holder_vol = ccc.copy_head()
-		#peak_holder_vol.to_zero()
-		peak_holder_vol.write_image(outfile)
-		vol = test_image_3d(4,(10,10,10))
-		for i,loc in enumerate(pts):
-			x,y,z = [int(i) for i in loc]
-			bs = 10
-			reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
-			try:
-				current_vol = self.target.get_annotation().get_clip(reg)
-				insert_vol=vol.process("math.max",{"with":current_vol})
-			except:
-				insert_vol = vol
-			try:
-				insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
-				sys.stdout.write("\r{}/{} finished.".format(i, len(pts)))
-				sys.stdout.flush()
-				#print("Insert vol at location",x,y,z,"")
-			except:
-				print("Invalid region at location",x,y,z,".Skip.")
-				continue
-
-
 	#Do local search at putative locations
 	def do_search(self,tomo,tempt,jsd, px_l):
 		for pt_xf in px_l:
@@ -4703,93 +4732,12 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			x,y,z= (int(i) for i in p)
 			bs = tempt["nx"]
 			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
-			#nbest = tempt.xform_align_nbest('rotate_translate_3d', subvol, {'sym':'c1'}, 2, 'ccc.tomo',{})
-			#initxfs = [n["xform.align3d"] for n in nbest[1:]]
-			#initxfs = []
-			#initxfs.append(initxf)
-			# #tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[nbest[0]["xform.align3d"],nbest[1]["xform.align3d"],nbest[2]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
 			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
-			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
-
-			# # #tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
-			# cf = subvol.calc_ccf(tempt_a)
-			# cf_score = np.max(cf.numpy())
-			#tempt_a = tempt.process("xform",{"transform":n["xform.align3d"]})
 			cf = subvol.calc_ccf(tempt_a)
 			cf_score = np.max(cf.numpy())
-			# for n in nbest:
-			# 	tempt_a = tempt.process("xform",{"transform":n["xform.align3d"]})
-			# 	cf = subvol.calc_ccf(tempt_a)
-			# 	cf_score = np.max(cf.numpy())
-			# 	jsd.put((p,tempt_a["xform.align3d"],cf_score))
-			#cf.process_inplace("normalize")
-			#print(p,"new xf", tempt_a["xform.align3d"])
 			jsd.put((p,tempt_a["xform.align3d"],cf_score))
 
 
-	def do_local_search_test(self):
-
-		n_peaks = int(self.tmplt_npeaks_le.text())
-		self.find_peaks_amp_test(npks=n_peaks*5,ccc_file=self.ccc_file,own_file=self.owner_id_file,orts_file=self.orts_file)
-
-		nthrds = int(self.tmplt_nthrds_le.text())
-		tomo = self.target.get_data().copy()
-		tempt = EMData(self.tmplt_le.text())
-		mbin=tomo["apix_x"]/tempt["apix_x"]
-
-		print("Will shrink reference by {:.1f} to match apix of tomogram for local search".format(mbin))
-		tempt.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
-		tempt.process_inplace("math.fft.resample",{'n':mbin})
-		#tempt.process_inplace("filter.highpass.gauss",{"cutoff_pixels":4}) #might still be useful, not this aggressive, 1 or 2 first
-		tempt.process_inplace('normalize.edgemean')
-		tempt.mult(-1)
-		good_szs=[good_size(tempt["nx"]),good_size(tempt["ny"]),good_size(tempt["nz"])]
-		tempt.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
-
-		tomo.process_inplace('normalize.edgemean')
-		pts_xfs_l = list(zip(self.pts,self.xfs))
-		start = time.time()
-		tasks=[pts_xfs_l[i::nthrds] for i in range(nthrds)]
-
-		#print(tasks)
-		jsd=queue.Queue(0)
-		thrds=[threading.Thread(target=self.do_search,args=(tomo, tempt, jsd, px_l)) for px_l in tasks]
-
-		thrtolaunch=0
-		tsleep=threading.active_count()
-
-		ndone=0
-		for t in thrds:
-			t.start()
-		p_xf_l = []
-		print("Start local searching at {} location".format(len(self.pts)))
-		while threading.active_count()>tsleep or not jsd.empty():
-			while not jsd.empty():
-				p,xf,cf=jsd.get()
-				p_xf_l.append((p,xf,cf))
-				ndone+=1
-				sys.stdout.write("\r{}/{} finished.".format(ndone, len(self.pts)))
-				sys.stdout.flush()
-			time.sleep(.5)
-		print("")
-		print("Finish in {}s".format(time.time()-start))
-		p_xf_l.sort(key = lambda x: -x[2])
-		try:
-			pt_cf_l = []
-			for i in range(len(p_xf_l)):
-				pt = list(p_xf_l[i][0])
-				pt.append(p_xf_l[i][2])
-				pt_cf_l.append(pt)
-			from_numpy(np.array(pt_cf_l)).write_image("tmplt_match_local_pks.hdf")
-			print("All peaks saved to tmplt_match_local_pks.hdf")
-		except Exception as e:
-			print(e)
-			pass
-		p_xf_l=p_xf_l[:n_peaks]
-		self.pts = [p_xf[0] for p_xf in p_xf_l]
-		self.xfs = [p_xf[1] for p_xf in p_xf_l]
-		cfs = [p_xf[2] for p_xf in p_xf_l]
-		self.cfs = [cf/max(cfs) for cf in cfs]
 
 
 	def do_local_search_thrds(self):
@@ -4810,9 +4758,6 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		good_szs=[good_size(tempt["nx"]),good_size(tempt["ny"]),good_size(tempt["nz"])]
 		tempt.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
 
-		#boxsz=tempt["nx"]//2
-		#tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
-		# tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
 		tomo.process_inplace('normalize.edgemean')
 		#tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
 
