@@ -355,7 +355,7 @@ class EMViewportDepthTools2(object):
 		# and is the default color of the frame
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-#		glMaterial(GL_FRONT,GL_SHININESS,50.0)
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
 		
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
@@ -371,7 +371,7 @@ class EMViewportDepthTools2(object):
 		# and is the default color of the frame
 		glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-#		glMaterial(GL_FRONT,GL_SHININESS,50.0)
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
 		
 		#draw the cylinders around the edges of the frame
 		glPushMatrix()
@@ -724,7 +724,7 @@ class EMViewportDepthTools(object):
 		# and is the default color of the frame
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-#		glMaterial(GL_FRONT,GL_SHININESS,50.0)
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
 		
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
@@ -740,7 +740,7 @@ class EMViewportDepthTools(object):
 		# and is the default color of the frame
 		glMaterial(GL_FRONT,GL_AMBIENT,(.2,.2,.8,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,.8,.8,1.0))
-#		glMaterial(GL_FRONT,GL_SHININESS,50.0)
+		glMaterial(GL_FRONT,GL_SHININESS,50.0)
 		
 		#draw the cylinders around the edges of the frame
 		glPushMatrix()
@@ -1757,7 +1757,7 @@ def draw_volume_bounds(width,height,depth,color=True):
 		glMaterial(GL_FRONT, GL_AMBIENT, [1, 1, 1,1.0])
 		glMaterial(GL_FRONT, GL_DIFFUSE, [1, 1, 1,1.0])
 		glMaterial(GL_FRONT, GL_SPECULAR, [0.774597, 0.774597, 0.774597,1.0])
-#		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
+		glMaterial(GL_FRONT, GL_SHININESS, 128.0)
 
 	glNormal(0,1,0)
 

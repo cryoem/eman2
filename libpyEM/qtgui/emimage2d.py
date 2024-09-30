@@ -1979,7 +1979,7 @@ class EMImage2DWidget(EMGLWidget):
 		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 1.0, 0.2,1.0))
 		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 1.0, 0.9,1.0))
 		glMaterial(GL_FRONT,GL_SPECULAR,(1.0	, 0.5, 0.2,1.0))
-#		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
 		glColor(1.0,1.0,1.0)
