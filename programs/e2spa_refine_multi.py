@@ -177,11 +177,6 @@ def main():
 		
 	E2end(logid)
 	
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
-	
-	
 def classify_list(lstname, cls, outprefix, breaksym='c1'):
 	lst=load_lst_params(lstname)
 	outnames=[]

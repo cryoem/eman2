@@ -84,6 +84,7 @@ def main():
 	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	parser.add_argument("--omit", type=float, help="Randomly omit this percentage of atoms in the output map.",default=0.0)
+	parser.add_argument("--trans", type=str, help="additional translation to coordinates.",default=None)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")
@@ -298,6 +299,12 @@ def main():
 			pa.set_from(pts.tolist()[0])
 
 		if options.center: pa.center_to_zero()
+		if options.trans!=None:
+			trans=[float(i) for i in options.trans.split(',')]
+			if len(trans)==1:
+				trans=trans*3
+			print("additonal translation ",trans)
+			pa.right_transform(Transform({"type":"eman", "tx":trans[0], "ty":trans[1], "tz":trans[2]}))
 
 		#bound = max(pa.get_bounding_box().get_size())
 		#if boxsize < bound:
