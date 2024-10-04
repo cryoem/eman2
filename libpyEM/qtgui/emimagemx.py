@@ -1286,7 +1286,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		c = [color[0],color[1],color[2],1.0]
 		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
 		glMaterial(GL_FRONT,GL_SPECULAR,c)
-#		glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		glMaterial(GL_FRONT,GL_SHININESS,100.0)
 #		if set == 0:
 #			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 #			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
@@ -2118,7 +2118,7 @@ class EMGLScrollBar(object):
 		glNormal(0,0,1) # this normal is fine for everything that is drawn here
 		# this provides some defaults for specular and shininess
 		glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
-#		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 
 		# The scroll bar - the long bar that defines the extent
 		glBegin(GL_QUADS)

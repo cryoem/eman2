@@ -975,7 +975,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, [1.0,1.0,1.0,1.0])
 		glMaterialfv(GL_FRONT, GL_SPECULAR, [1.0,1.0,1.0,1.0])
 		glLightfv(self.light, GL_POSITION, self.lightposition)
-#		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
+		glMaterialf(GL_FRONT, GL_SHININESS, 25.0)
 		quad = GLU.gluNewQuadric()
 		GLU.gluQuadricDrawStyle(quad, GLU.GLU_FILL)
 		GLU.gluQuadricNormals(quad, GLU.GLU_SMOOTH)
