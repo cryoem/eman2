@@ -62,6 +62,9 @@ from matplotlib.patches import Circle
 if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0'
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+if argv[1]=="--old" :
+	print("KERAS2 compatibility mode invoked. Please do not use this for new runs of e2gmm.py, only for accessing historical runs which can't be read otherwise.")
+	os.environ["TF_USE_LEGACY_KERAS")="1"	# This needs to be before tensorflow is imported ... I think
 
 import traceback
 import tensorflow as tf
@@ -2537,8 +2540,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		try:
 			self.decoder = tf.keras.models.load_model(f"{self.gmm}/{self.currunkey}_decoder.h5",compile=False)
 		except:
-			traceback.print_exc()
-			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
+			traceback.print_exc(limit=1)
+			print("...")
+			traceback.print_exc(limit=-1)
+			print(f"Run {self.gmm} -> {self.currunkey} error reading decoder.\n\nThis either means you haven't run the GMM yet, in which case this is normal, -OR-\nyou ran the GMM with an older version of Keras, in which case, please quit e2gmm, and rerun it with the --old option.",self)
 			self.set3dvis(1,0,0,0,0,1)
 			get_application().restoreOverrideCursor()
 			return
