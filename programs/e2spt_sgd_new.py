@@ -31,6 +31,7 @@ def main():
 	parser.add_argument("--fulldata", type=int,help="go through the entire dataset N times. Overwrite niter. By default just randomly select batches.", default=-1)
 	parser.add_argument("--breaksym", type=str,help="require --refine", default=None)
 	parser.add_argument("--skipali",action="store_true",help="require --breaksym.",default=False)
+	parser.add_argument("--avgunmask",action="store_true", default=False ,help="average unmasked region for different classes. require --mask")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higner number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int,help="ppid", default=-2)
 	parser.add_argument("--mask", type=str,help="mask. real space only", default=None)
@@ -279,8 +280,21 @@ def main():
 				avg=post_process(out, options)
 
 			thrd0s[ic]=out.copy()
-			avg.write_image(f"{path}/output_cls{ic}.hdf")
-			avg.write_compressed(fnames[ic], -1, 8, nooutliers=True)
+			if options.avgunmask==False:
+				avg.write_image(f"{path}/output_cls{ic}.hdf")
+				avg.write_compressed(fnames[ic], -1, 8, nooutliers=True)
+		
+		if options.avgunmask:
+			avgr=Averagers.get("mean")
+			for ic in range(ncls):
+				avgr.add_image(thrd0s[ic])
+			avg=avgr.finish()
+			
+			for ic in range(ncls):
+				thrd0s[ic]=thrd0s[ic]*options.mask+avg*(1-options.mask)
+				thrd0s[ic].write_image(f"{path}/output_cls{ic}.hdf")
+				thrd0s[ic].write_compressed(fnames[ic], -1, 8, nooutliers=True)
+		
 			
 	E2end(logid)
 	
@@ -345,7 +359,7 @@ def post_process(threed, options):
 	if options.shrink>1:
 		avg.process_inplace("math.fft.resample",{"n":1/options.shrink})
 	avg.process_inplace("normalize.edgemean")
-	if options.mask==None:
+	if options.mask==None or options.avgunmask:
 		avg.process_inplace("mask.soft",{"outer_radius":-10,"width":10})
 	else:
 		avg.mult(options.mask)
