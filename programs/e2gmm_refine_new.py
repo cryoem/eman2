@@ -968,7 +968,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			#da=tf.reduce_mean(abs(ang-ang00))
 			#print("Average angle difference from input model {:.1f}".format(da.numpy()))
 
-def eval_model(gen_model, options):
+def eval_model(gen_model, options, usepts=False):
 	
 	imgs=[]
 	xfs=[]
@@ -987,8 +987,13 @@ def eval_model(gen_model, options):
 	trainset=tf.data.Dataset.from_tensor_slices((xfsnp))
 	trainset=trainset.batch(8)
 	for xf in trainset:
-		conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
-		pout=gen_model(conf)
+		if usepts:
+			pout=gen_model.astype(floattype).copy()
+			pout=tf.repeat(pout, xf.shape[0], axis=0)
+		else:
+			conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
+			pout=gen_model(conf)
+
 		imgs_real, imgs_imag=pts2img(pout, xf)
 		imgs_cpx=tf.complex(imgs_real, imgs_imag)
 		imgs_out=tf.signal.irfft2d(imgs_cpx)

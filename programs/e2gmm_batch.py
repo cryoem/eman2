@@ -121,7 +121,7 @@ def main():
 
 			tmpfiles.append(tmps)
 			
-			if options.load or rawiter>0: 
+			if options.load or rawiter>0 or it>0:
 				if enc!=None:
 					cc=cc+f" --encoderin {enc}"
 				if dec!=None:

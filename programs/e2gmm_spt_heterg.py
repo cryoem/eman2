@@ -35,10 +35,16 @@ def main():
 	parser.add_argument("--niter", type=int, help="number of iteration",default=20)
 	parser.add_argument("--clip", type=int, help="clip image to size",default=-1)
 	
-	parser.add_argument("--midin", type=str,help="tranform input", default=None)
+	# parser.add_argument("--midin", type=str,help="tranform input", default=None)
 	parser.add_argument("--midout", type=str,help="tranform output", default=None)
 
-	parser.add_argument("--anchor", type=str,help="anchor points. will generate from model by default", default=None)
+	parser.add_argument("--encoderin", type=str,help="encoder input", default=None)
+	parser.add_argument("--encoderout", type=str,help="encoder output", default=None)
+	parser.add_argument("--decoderin", type=str,help="decoder input", default=None)
+	parser.add_argument("--decoderout", type=str,help="decoder output", default=None)
+
+	parser.add_argument("--anchor", type=str,help="anchor points save file. will generate from model by default", default=None)
+	parser.add_argument("--n_anchor", type=int,help="number of anchor points. default 32", default=32)
 	# parser.add_argument("--xfin_starti", type=int,help="starting index for tranform input", default=0)
 
 	parser.add_argument("--maxres", type=float, help="resolution",default=10.)
@@ -90,32 +96,49 @@ def main():
 	
 	#### anchor points
 	if options.anchor==None:
+		options.anchor=f"{path}/model_00_anchor.txt"
+
+	if os.path.isfile(options.anchor):
+		anchor=np.loadtxt(options.anchor)
+		anchor=anchor.astype(floattype).copy()
+		print(f"load {len(anchor)} anchor points from {options.anchor}")
+
+	else:
 		path=os.path.dirname(options.midout)
-		pn=16
+		pn=options.n_anchor//2
 		km=KMeans(pn,max_iter=30)
 		km.fit(pts[:,:3])
 		pc=km.cluster_centers_
+
 		pm=pts[imsk>.1]
-		pn=16
+		pn=options.n_anchor//2
 		km=KMeans(pn,max_iter=30)
 		km.fit(pm[:,:3])
 		pc2=km.cluster_centers_
 
 		pcx=np.vstack([pc, pc2])
 		pp=np.hstack([pcx, np.zeros((len(pcx),1))+np.mean(pts[:,3]), np.zeros((len(pcx),1))+np.mean(pts[:,4])])
-		np.savetxt(f"{path}/model_00_anchor.txt", pp)
-		anchor=pp[:,:3].astype(floattype).copy()
 
-	########
+		np.savetxt(options.anchor, pp)
+		anchor=pp[:,:3].astype(floattype).copy()
+		print(f"generated {len(anchor)} anchor points, saved to {options.anchor}")
+
+	######## build encoder and decoder
 	pts=tf.constant(pts[None,...])
 	print(pts.shape, anchor.shape)
-	decode_model=build_decoder_anchor(pts, anchor, ninp=4)
-	encode_model=build_encoder(nout=4, conv=False,ninp=len(pts[0]))
+	if options.decoderin==None:
+		decode_model=build_decoder_anchor(pts, anchor, ninp=4)
+	else:
+		decode_model=tf.keras.models.load_model(options.decoderin,compile=False)
+
+	if options.encoderin==None:
+		encode_model=build_encoder(nout=4, conv=False,ninp=len(pts[0]))
+	else:
+		encode_model=tf.keras.models.load_model(options.encoderin,compile=False)
 
 	batchsz=4
-	print(len(p3did))
-	print(np.array([len(i) for i in p3did]))
 
+	####### pre-compute gradients
 	allgrds=[]
 	allscr=[]
 
@@ -151,147 +174,94 @@ def main():
 	allgrds=np.concatenate(allgrds, axis=0)
 	allscr=np.concatenate(allscr, axis=0)
 	allgrds=allgrds/np.std(allgrds)
+	allgrds=allgrds.reshape((len(allgrds), -1)).astype(floattype)
 	print(allgrds.shape)
-	np.savetxt(f"{path}/allgrds_00.txt", allgrds.reshape((len(allgrds), -1)))
 
-	return
+	#### this initialize the weights in model
+	conf=encode_model(allgrds[:2], training=True)
+	pout=decode_model(conf, training=True)
 
+	###############
+	##### now train
 
-	#### refinement iterations
-	for iip, pid in enumerate(p3did):
-		ptr=tf.gather(data_cpx[0], pid)
-		ptj=tf.gather(data_cpx[1], pid)
-		ptcl_cpx=(ptr, ptj)
-		xf=xfsnp[pid]
-		
-		ang_xfv=[]
-		ang_loss=[]
-		for ia, starta in enumerate(angrng):
-			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
-			# xv=np.zeros((1,6), dtype=floattype)
-			xv=xfin[iip][None, :].copy()
-			# print(xv, xv.shape)
-			xv[0,0]+=starta
-			xfvar=tf.Variable(xv)
-			
-			for div in res_rng:
-				cost=[]
-				for it in range(options.niter):
-					with tf.GradientTape() as gt:
-						
-						p1=rotpts_mult(pts[None, :,:3], xfvar[:,None,:], [imsk])
-						p1=tf.concat((p1, pts[None,:,3:]), axis=2)
-						proj_cpx=pts2img(p1, xf)
-						
-						fval=calc_frc(proj_cpx, ptcl_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx//div)
-						loss=-tf.reduce_mean(fval)
+	pas=[1,0,0]
+	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 
-					if it>5 and loss>cost[-1]: break
-					grad=gt.gradient(loss, xfvar)
-					opt.apply_gradients([(grad, xfvar)])
-					cost.append(loss)
-					
-				sys.stdout.write(f"\r batch {len(allxfs)}/{len(p3did)}, angle {ia}/{len(angrng)}, {xv[0,0]:.3f} -> {xfvar[0,0]:.3f} loss {cost[0]:.4f} -> {loss:.4f} ")
-				sys.stdout.flush()
-			
-			ang_xfv.append(xfvar.numpy().copy())
-			ang_loss.append(loss)
-			
-		xfv=ang_xfv[np.argmin(ang_loss)]
-		allxfs.append(xfv)
+	wts=encode_model.trainable_variables + decode_model.trainable_variables[:-1]
+	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 
-	xfrot=np.vstack(allxfs).copy()
-	print(xfrot.shape)
-	xfrot=np.hstack([np.arange(len(xfrot))[:,None], xfrot])
-	np.savetxt(options.xfout, xfrot)
+	for itr in range(options.niter):
+		cost=[]
+		for pii in range(0, len(p3did), batchsz):
+			pids=p3did[pii:pii+batchsz]
+			pid=np.concatenate(pids)
+			pn=np.array([len(i) for i in pids])
 
-	xfrot2=np.zeros((len(xfsnp), 6), dtype=floattype)
-	for i,ip in enumerate(p3did):
-		xfrot2[ip]=xfrot[i,1:]
-		
-	print(np.std(xfrot2))
-	
-	
-	
-	angles=tf.data.Dataset.from_tensor_slices((xfrot2, xfsnp)).batch(128)
+			ptr=tf.gather(data_cpx[0], pid)
+			ptj=tf.gather(data_cpx[1], pid)
+			ptcl_cpx=(ptr, ptj)
 
-	#### now convert rigid body movement to orientation change
-	print("Converting back to orientation......")
-	p00=pts
-	cnt=tf.reduce_sum(p00[:,:3]*imsk[:,None], axis=0)/tf.reduce_sum(imsk)
-	xfnew_all=[]
+			xf=xfsnp[pid]
+			grd=allgrds[pii:pii+batchsz]
 
-	for ang, xf in angles:
-		azp=-ang[:,0]*np.pi
-		altp=ang[:,1]*np.pi
-		phip=-ang[:,2]*np.pi
-		trans=ang[:,3:][:,None,:]*.2
-		m=imsk[None,:,None]
+			with tf.GradientTape() as gt:
 
-		matrix=make_matrix(azp, altp, phip)
-		matrix=tf.transpose(matrix)
-		matrix=tf.reshape(matrix, shape=[-1, 3,3])
-		matrix=tf.transpose(matrix, (0,2,1))
+				conf=encode_model(grd, training=True)
 
-		cs=tf.matmul(-cnt[None,:], matrix)+cnt
-		matrix4_rot=tf.concat([matrix, tf.zeros((matrix.shape[0], 3,1))], axis=2)
-		t=tf.concat([cs+trans, tf.ones((matrix.shape[0],1,1))], axis=2)
-		matrix4_rot=tf.concat([matrix4_rot, t], axis=1)
+				cl=tf.math.sqrt(tf.nn.relu(tf.reduce_sum(conf**2, axis=1)))
+				cl=tf.reduce_mean(tf.maximum(cl-1,0))
 
-		azp=-xf[:,0]
-		altp=xf[:,1]
-		phip=-xf[:,2]
-		trans=xf[:,3:][:,None,:]*[1,-1]
+				conf=0.01*tf.random.normal(conf.shape)+conf
+				pout=decode_model(conf, training=True)
 
-		matrix=make_matrix(azp, altp, phip)
-		matrix=tf.transpose(matrix)
-		matrix=tf.reshape(matrix, shape=[-1, 3,3])
-		matrix=tf.transpose(matrix, (0,2,1))
+				pout=pout*imsk[None,:,None]
+				pout=pout*pas
+				pout+=pts
 
-		matrix4_proj=tf.concat([matrix, tf.zeros((matrix.shape[0], 3,1))], axis=2)
-		t=tf.concat([trans, tf.zeros((matrix.shape[0],1,1)), tf.ones((matrix.shape[0],1,1))], axis=2)
-		matrix4_proj=tf.concat([matrix4_proj, t], axis=1)
+				pt2=tf.repeat(pout, pn, axis=0)
 
-		matrix4_full=tf.matmul(matrix4_rot, matrix4_proj)
+				imgs_cpx=pts2img(pt2, xf)
+				fval=calc_frc(ptcl_cpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
 
-		t=tf.transpose(matrix4_full[:,:3,:3], (0,2,1))
-		cos_altp=t[:,2,2]
-		sin_altp=np.sqrt(1-cos_altp**2)
-		cos_azp=t[:,2,1]/(-sin_altp)
-		sin_azp=t[:,2,0]/sin_altp
-		cos_phip=t[:,1,2]/sin_altp
-		sin_phip=t[:,0,2]/sin_altp
+				loss=-tf.reduce_mean(fval)+cl*10
 
-		altp=tf.math.atan2(sin_altp, cos_altp)
-		azp=tf.math.atan2(sin_azp, cos_azp)
-		phip=tf.math.atan2(sin_phip, cos_phip)
+			grad=gt.gradient(loss, wts)
+			opt.apply_gradients(zip(grad, wts))
+			cost.append(loss)
+			print(itr, pii, len(p3did), float(loss), end='\r')
 
-		ts=matrix4_full[:,3]
-		xfnew=tf.stack([-azp, altp, -phip, ts[:,0], -ts[:,1]])
-		xfnew=tf.transpose(xfnew)
+		print(itr, np.mean(cost), "                       ")
 
-		xfnew_all.append(xfnew)
+	if options.niter>0:
 
+		if options.decoderout!=None:
+			if os.path.isfile(options.decoderout):
+				os.remove(options.decoderout)
+			decode_model.save(options.decoderout)
+			print("Decoder saved as ",options.decoderout)
+		if options.encoderout!=None:
+			if os.path.isfile(options.encoderout):
+				os.remove(options.encoderout)
+			encode_model.save(options.encoderout)
+			print("Encoder saved as ",options.encoderout)
 
-	xfnew_all=tf.concat(xfnew_all, axis=0)
+	###############
+	##### get latent output
+	allconf=[]
+	batchsz*=8
+	for pii in range(0, len(p3did), batchsz):
+		grd=allgrds[pii:pii+batchsz]
+		conf=encode_model(grd, training=False)
+		allconf.append(conf)
 
+	allconf=np.concatenate(allconf, axis=0)
+	allconf=np.hstack([np.arange(len(allconf))[:,None], allconf])
 
-	xnp=xfnew_all.numpy().copy()
-	xnp[:,:3]=xnp[:,:3]*180./np.pi
-	xnp[:,3:]*=options.clip
-	xfs=[Transform({"type":"eman", "az":x[0], "alt":x[1], 
-				"phi":x[2], "tx":x[3], "ty":x[4]}) for x in xnp.tolist()]
-
-	lstin=load_lst_params(options.ptclsin)
-	for i,xf in enumerate(xfs):
-		lstin[i]["xform.projection"]=xf
-
-
-	oname=options.ptclsout
-	if os.path.isfile(oname): os.remove(oname)
-	save_lst_params(lstin, oname)
+	print("conformation output", allconf.shape)
+	np.savetxt(options.midout, allconf)
 
 	E2end(logid)
+	return
 	
 	
 if __name__ == '__main__':
