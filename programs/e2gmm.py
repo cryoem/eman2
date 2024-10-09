@@ -62,9 +62,10 @@ from matplotlib.patches import Circle
 if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0'
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
-if argv[1]=="--old" :
+if len(argv)>=2 and argv[1]=="--old" :
 	print("KERAS2 compatibility mode invoked. Please do not use this for new runs of e2gmm.py, only for accessing historical runs which can't be read otherwise.")
-	os.environ["TF_USE_LEGACY_KERAS")="1"	# This needs to be before tensorflow is imported ... I think
+	os.environ["TF_USE_LEGACY_KERAS"]="1"	# This needs to be before tensorflow is imported ... I think
+	del argv[1]
 
 import traceback
 import tensorflow as tf
