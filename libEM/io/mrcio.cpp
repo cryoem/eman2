@@ -1180,8 +1180,10 @@ template<class T>
 auto MrcIO::write_compressed(float *data, size_t size, int image_index, const Region* area) {
 	void * ptr_data = data;
 
+	std::vector<T> rendered_data; // Ensure rendered_data is in scope until function exits
 	if constexpr (!std::is_same<T, float>::value) {
-		auto [rendered_data, count] = getRenderedDataAndRendertrunc<T>(data, size);
+		auto [rendered_data_local, count] = getRenderedDataAndRendertrunc<T>(data, size); // Capture vector
+		rendered_data = std::move(rendered_data_local); // Move local vector to member variable
 
 		update_stats<T>(rendered_data);
 		ptr_data = rendered_data.data();
