@@ -951,6 +951,11 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 
 	unsigned char * cdata = (unsigned char *)vdata;
 
+	// Check for valid cdata pointer
+	if (cdata == nullptr) {
+		throw std::runtime_error("Invalid data pointer (cdata is null).");
+	}
+
 	int dx0 = 0; // data x0
 	int dy0 = 0; // data y0
 	int dz0 = 0; // data z0
@@ -1179,9 +1184,32 @@ void EMUtil::process_region_io(void *vdata, FILE * file,
 				}
 			}
 			else {
-				if (fwrite(&cdata[k2 + jj * memory_row_size +
-							(size_t) mode_size_product(dx0, mode_size)],
-						   area_row_size, 1, file) != 1) {
+				// Calculate the effective pointer for fwrite
+				size_t offset = k2 + jj * memory_row_size + (size_t)mode_size_product(dx0, mode_size);
+				unsigned char *write_ptr = &cdata[offset];
+
+				// Check for valid file pointer
+				if (file == nullptr) {
+					throw std::runtime_error("File pointer is null.");
+				}
+
+				// Check for valid buffer pointer
+				if (write_ptr < cdata || write_ptr >= cdata + (nx * ny * nz * mode_size)) {
+					throw std::runtime_error("Calculated write pointer is out of bounds.");
+				}
+
+				// Check for valid area row size
+				if (area_row_size <= 0) {
+					throw std::runtime_error("Invalid area row size (must be greater than 0).");
+				}
+
+				// Check if the offset is valid for fwrite
+				if (offset + area_row_size > nx * ny * nz * mode_size) {
+					throw std::runtime_error("Attempting to write beyond allocated memory!");
+				}
+
+				// Perform the fwrite operation
+				if (fwrite(write_ptr, area_row_size, 1, file) != 1) {
 					throw ImageWriteException("", "incomplete data write");
 				}
 			}
