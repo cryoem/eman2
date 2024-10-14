@@ -349,14 +349,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistgmm = QtWidgets.QListWidget()
 		self.wlistgmm.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.update_gmms()
-		self.gblfld.addWidget(self.wlistgmm,0,0,1,2)
+		self.gblfld.addWidget(self.wlistgmm,0,0,1,3)
 
 		self.wbutnewgmm=QtWidgets.QPushButton("New GMM")
 		self.gblfld.addWidget(self.wbutnewgmm,1,0)
 
+		self.wbutnewmangmm=QtWidgets.QPushButton("Manual")
+		self.gblfld.addWidget(self.wbutnewmangmm,1,1)
+
 		self.wlpath = QtWidgets.QLabel("-")
 		self.wlpath.setToolTip("Path this GMM is based on")
-		self.gblfld.addWidget(self.wlpath,1,1)
+		self.gblfld.addWidget(self.wlpath,1,2)
 
 		#self.wbutrefine = QtWidgets.QPushButton("refine_XX")
 		#self.gblfld.addWidget(self.wbutrefine,1,1)
@@ -714,6 +717,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutvside4.clicked[bool].connect(self.view_side4)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
+		self.wbutnewmangmm.clicked[bool].connect(self.add_gmm_man)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
@@ -2636,6 +2640,62 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gmm=newgmm
 		ok=self.setgmm_refine(remove=True)
 		if ok: self.wlistgmm.addItem(newgmm)
+
+	def add_gmm_man(self,clk=False):
+		"""Creates a new numbered gmm_XX folder"""
+		try: newgmm=num_path_new("gmm")
+		except:
+			showerror(f"Cannot create {newgmm}",self)
+			return
+		self.gmm=newgmm
+		ok=self.setgmm_lst(remove=True)
+		if ok: self.wlistgmm.addItem(newgmm)
+
+	def setgmm_lst(self,clk=False,remove=False):
+		"""Allows the user to select the source data for a new gmm_XX folder.
+		if remove is set and the user hits cancel, the folder will be removed."""
+		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
+
+		# double check if the user will be destroying results
+		if "refinepath" in self.jsparm:
+			ans=QtWidgets.QMessageBox.question(self,"Are you sure?",f"{self.gmm} has already been configured to work on {self.jsparm['refinepath']}. Continuing may invalidate current results. Proceed?")
+			if ans==QtWidgets.QMessageBox.No:
+				if remove: os.unlink(self.gmm)
+				return False
+
+		# Get the name of an existing refinement
+		try:
+			lstfile=os.path.relpath(str(QtWidgets.QFileDialog.getOpenFileName(self,"Please select an existing .lst file with orientations")[0]))
+		except: return
+		self.jsparm["refinepath"]=lstfile
+		run(f"cp {lstfile} {self.gmm}/particles.lst; echo ")
+
+		try:
+			mapfile=os.path.relpath(str(QtWidgets.QFileDialog.getOpenFileName(self,"Please select the corresponding threed.hdf file")[0]))
+		except: return
+
+		self.app().setOverrideCursor(Qt.BusyCursor)
+
+		# Copy map from refine folder
+		a=EMData(mapfile)
+		a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+		self.jsparm["source_map"]=mapfile
+		self.jsparm["boxsize"]=a["nx"]
+		self.jsparm["apix"]=a["apix_x"]
+		self.jsparm["sym"]="c1"
+
+		# make projections from threed
+		run(f"e2project3d.py {self.gmm}/input_map.hdf --outfile {self.gmm}/proj_in.hdf --orientgen rand:n=500:phitoo=1 --sym c1 --parallel thread:8")
+
+		self.jsparm["mask"]=""
+
+		self.app().setOverrideCursor(Qt.ArrowCursor)
+
+		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
+		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
+
+		return True
 
 	def setgmm_refine(self,clk=False,remove=False):
 		"""Allows the user to select the source data for a new gmm_XX folder.

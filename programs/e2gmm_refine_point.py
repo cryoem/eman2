@@ -914,7 +914,7 @@ def eval_model(gen_model, options):
 	nxf=len(xfs)
 	n=7-(nxf-1)%8
 	xfs=xfs+[Transform().get_params("eman") for i in range(n)]
-	print(nxf, len(xfs))
+#	print(nxf, len(xfs))
 	
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
