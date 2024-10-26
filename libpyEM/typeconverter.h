@@ -42,7 +42,6 @@
 #include "xydata.h"
 #include "exception.h"
 #include "ctf.h"
-#include "glutil.h"
 
 #include <boost/python.hpp>
 #include <boost/python/numpy.hpp>
