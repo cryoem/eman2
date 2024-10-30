@@ -43,7 +43,7 @@ def main():
 		nbatch=nptcl//bsz+1
 		allscore=[]
 		for ib in range(nbatch):
-			last=min((ib+1)*bsz, nptcl-1)
+			last=min((ib+1)*bsz, nptcl)
 			idx=list(range(ib*bsz,last))
 			ptcls=EMData.read_images(options.setname, idx)
 			ptclimg=get_image(ptcls, len(ptcls))
@@ -53,15 +53,22 @@ def main():
 			allscore.extend(score.tolist())
 			
 		print("sorting particles...")
+		allscore=np.array(allscore)
+		np.savetxt(options.setname[:options.setname.rfind('.')]+"_score.txt", allscore)
+		
 		sortid=np.argsort(allscore).tolist()
-		sortid=sortid[int(nptcl*(1-options.keep)):]
+		sortid=np.sort(sortid[int(nptcl*(1-options.keep)):])
 		lst=load_lst_params(options.setname)
-		lstgood=[l for i,l in enumerate(lst) if i in sortid]
+		lstgood=np.array(lst)[sortid].tolist()
+		#lstgood=[l for i,l in enumerate(lst) if i in sortid]
 		oname=options.setname[:options.setname.rfind('.')]+"_good.lst"
 		save_lst_params(lstgood, oname)
 		print("output written to {}".format(oname))
 		
-		lstbad=[l for i,l in enumerate(lst) if i not in sortid]
+		sortid=np.argsort(allscore).tolist()
+		sortid=np.sort(sortid[:int(nptcl*(1-options.keep))])
+		lstbad=np.array(lst)[sortid].tolist()
+		#lstbad=[l for i,l in enumerate(lst) if i not in sortid]
 		oname=options.setname[:options.setname.rfind('.')]+"_bad.lst"
 		save_lst_params(lstbad, oname)
 		
@@ -99,7 +106,7 @@ class NNet:
 			tf.keras.layers.Dense(1, activation="sigmoid"),
 		]
 		self.model=model=tf.keras.Sequential(layers)
-		self.outsz=self.model.layers[-1].output_shape#[1]
+		#self.outsz=self.model.layers[-1].output_shape#[1]
 		
 		self.boxsize=boxsize
 		self.layers=layers
@@ -127,6 +134,7 @@ class NNet:
 			#self.model.reset_metrics()
 			cost=[]
 			for image, label in dataset:
+				a=self.model(image)
 				result = self.model.train_on_batch(image, label)
 				cost.append(result)
 			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
@@ -135,7 +143,14 @@ class NNet:
 		self.model.save("nnet_classifycnn.h5")
 		
 	def apply_network(self, imgs):
-		out=self.model.predict(imgs)
+		bsz=1000
+		allout=[]
+		for i in range(0, len(imgs), bsz):
+			out=self.model(imgs[i:i+bsz]).numpy()
+			allout.append(out)
+			
+		out=np.concatenate(allout, axis=0)
+		print(out.shape)
 		return out
 		
 def get_image(ptcl, nimgs):

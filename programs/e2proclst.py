@@ -236,7 +236,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			dic={str((l['src'], l['idx'])):i for i,l in enumerate(lstref)}
 			print(len(lsts), len(lstref))
 			for l in lsts:
-				i=dic[str((l['src'], l['idx']))]
+				k=str((l['src'], l['idx']))
+				if k not in dic:
+					print(f"cannot find {k} in reference list. skip")
+					continue
+				i=dic[k]
 				lstout[i]=l
 				#print(i,l['src'], l['idx'], len([l for l in lstout if l==None]))
 			for i,l in enumerate(lstout):

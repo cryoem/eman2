@@ -175,7 +175,7 @@ def main():
 	fali2d=options.ali2d
 	path0=os.path.dirname(fali2d)
 	p=fali2d.rfind('.')
-	itr=int(fali2d[p-2:p])
+	itr=int(fali2d[p-2:p])+1
 	fali3d=[f"{path0}/aliptcls3d_{i:02d}.lst" for i in range(itr)]
 	fali3d=[f for f in fali3d if os.path.isfile(f)]
 	fali3d=fali3d[-1]
