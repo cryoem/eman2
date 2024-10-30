@@ -34,6 +34,7 @@ def main():
 	parser.add_argument("--invert", action="store_true", default=False ,help="invert contrast")
 	parser.add_argument("--onestack", type=str, default=None ,help="save all particles in one stack")
 	parser.add_argument("--lst2star", type=str, default=None ,help="convert the xform from a lst file back to the star file in the same order. ")
+	parser.add_argument("--lst2star_subset", type=str, default=None ,help="convert only a subset to star. still need to specify the original lst output in --lst2star")
 	parser.add_argument("--make3d", action="store_true", default=False ,help="do 3d reconstruction after import")
 	parser.add_argument("--sym", type=str, default="c1" ,help="symmetry for make3d. ")
 
@@ -235,6 +236,11 @@ def main():
 	if options.lst2star:
 		lst=load_lst_params(options.lst2star)
 		print("{} particles from star, {} particles from lst".format(len(fnames), len(lst)))
+		if options.lst2star_subset:
+			lst_sub=load_lst_params(options.lst2star_subset)
+			print("selecting {} particles in subset".format(len(lst_sub)))
+			ldic={"{}_{}".format(base_name(l["src"]), l["idx"]):i for i,l in enumerate(lst_sub)}
+			
 		oname=args[0][:-5]+"_from_eman.star"
 		f=open(oname,'w')
 		for ln in alllines[:starti]:
@@ -243,18 +249,30 @@ def main():
 			i=fm[0]
 			ln=lines[i]
 			l=ln.split()
-			d=Transform(lst[i]["xform.projection"])
+			
+			ls=lst[i]
+			if options.lst2star_subset:
+				ky="{}_{}".format(base_name(ls["src"]), ls["idx"])
+				if ky in ldic:
+					k=ldic[ky]
+					ls=lst_sub[k]
+				else:
+					continue
+			
+			d=Transform(ls["xform.projection"])
 			d=d.get_params("spider")
 			
-			#print(ln)
+			
 			c=[f"{x:.6f}" for x in (d["psi"], d["theta"], d["phi"])]
 			l[rid["psi"]], l[rid["tilt"]], l[rid["rot"]]=c[0], c[1], c[2]
 			if txa:
 				c=[f"{x:.6f}" for x in (-d["tx"]*apix, -d["ty"]*apix)]
+				l[rid["txa"]],l[rid["tya"]]=c[0], c[1]
 				
 			else:
 				c=[f"{x:.6f}" for x in (-d["tx"], -d["ty"])]
-			l[rid["txa"]],l[rid["tya"]]=c[0], c[1]
+				l[rid["tx"]],l[rid["ty"]]=c[0], c[1]
+			
 			lo=' '.join(l)+'\n'
 			#print(lo)
 									
