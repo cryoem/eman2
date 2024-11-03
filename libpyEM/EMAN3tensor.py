@@ -1034,6 +1034,7 @@ def tf_ccf_2d(ima,imb):
 
 FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny,1 containing the integer Fourier radius to each point in the image
 def rad_img_int(ny):
+	global FRC_RADS
 	try: return FRC_RADS[ny]
 	except:
 		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
@@ -1044,6 +1045,7 @@ GEN_RAD2={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containi
 def rad2_img(ny):
 	"""Returns a complex tensor ny/2+2,ny containing the (real value) Fourier radius**2 (squared) in each pixel location. Tensors for a
 given size are cached for reuse. """
+	global GEN_RAD2
 	try: return GEN_RAD2[ny]
 	except:
 		rad2_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.complex64(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.complex64((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))

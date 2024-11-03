@@ -254,6 +254,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				cp.write_image(ptclfname,ptclno)
 				nbx=good_size(int(options.clip*apix/1.8))
 				shr=cp.process("math.fft.resample",{"n":options.clip/nbx})
+				sxform=Transform(xform)
 				sxform.set_trans(sxform.get_trans()*(nbx/options.clip))
 				shr.write_image(ptclfsname,ptclno)
 			else:
