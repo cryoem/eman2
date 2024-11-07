@@ -880,6 +880,7 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
 
 #		xfgauss=tf.reverse((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+	zaspect=zsize/(2.0*boxsize)
 	xfgauss=jnp.flip((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 
 	xfgaussf=jnp.floor(xfgauss)
