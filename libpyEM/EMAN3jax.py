@@ -881,11 +881,20 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 #		xfgauss=tf.reverse((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 	zaspect=zsize/(2.0*boxsize)
-	xfgauss=jnp.flip((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+	xfgauss=jnp.flip((gausary[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 
 	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=jnp.cast(xfgaussf,jnp.int32)	# integer index
+	xfgaussi=xfgaussf.astype(jnp.int32)	# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+	shift001=jnp.array((0,0,1))
+	shift010=jnp.array((0,1,0))
+	shift011=jnp.array((0,1,1))
+	shift100=jnp.array((1,0,0))
+	shift101=jnp.array((1,0,1))
+	shift110=jnp.array((1,1,0))
+	shift111=jnp.array((1,1,1))
+
 
 	# messy trilinear interpolation
 	bamp000=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
@@ -896,10 +905,10 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 	bamp101=gausary[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
 	bamp110=gausary[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
 	bamp111=gausary[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-	bampall=jnp.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
-	bposall=jnp.concat([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0).transpose()
+	bampall=jnp.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],axis=0)
+	bposall=jnp.concat([xfgaussi,xfgaussi+shift001,xfgaussi+shift010,xfgaussi+shift011,xfgaussi+shift100,xfgaussi+shift101,xfgaussi+shift110,xfgaussi+shift111],axis=0).transpose()
 
-	vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32).at[bosall[0],bposall[1],bposall[2]].add(bampall)
+	vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32).at[bposall[0],bposall[1],bposall[2]].add(bampall)
 
 	return vol
 
