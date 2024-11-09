@@ -1111,7 +1111,7 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	"""Computes the pairwise FRCs between two stacks of complex images. imb may alternatively be a single image. Returns a list of 1D FSC tensors or if avg!=0
 	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
 	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
-	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_frc requires FFTs")
+	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("jax_frc requires FFTs")
 #	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
@@ -1153,7 +1153,7 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 		# aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai[i])
 
 		if single:
-			bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+			bprd=zero.at[rad_img].add(imbr+imbi)
 #			bprd[rad_img]+=imbr+imbi
 			# bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr)
 			# bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi)
@@ -1163,8 +1163,9 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 			# bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
 			# bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
 
-		frc.append(cross/jnp.sqrt(aprd[i]*bprd[i]))
+		frc.append(cross/jnp.sqrt(aprd*bprd))
 
+	frc=jnp.stack(frc)
 	if avg>len(frc[0]): avg=-1
 	if avg>0:
 		frc=jnp.stack(frc)
@@ -1178,7 +1179,7 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	else: return frc
 
 FSC_REFS={}
-def tf_fsc(ima,imb):
+def jax_fsc(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
 

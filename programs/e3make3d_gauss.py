@@ -167,7 +167,6 @@ def main():
 		lqual=-1.0
 		rstep=1.0
 		for i in range(stage[2]):		# training epochs
-			print("step ",i)
 			if nptcl>stage[0]: idx0=sn+i
 			else: idx0=0
 			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
