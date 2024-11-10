@@ -66,8 +66,6 @@ from jax import lax
 from jax import random
 import jaxlib
 
-ArrayImpl=jaxlib.xla_extension.ArrayImpl
-
 # TODO
 class StackCache():
 	"""This object serves as a cache of EMStack objects which can be conveniently read back in. This provides
@@ -223,7 +221,7 @@ class EMStack():
 		"""Forces the current representation to EMData/NumPy"""
 		if isinstance(self._data,list): return
 		elif isinstance(self._data,np.ndarray): self._data=[from_numpy(i) for i in self._data]
-		elif isinstance(self._data,ArrayImpl): self._data=from_jax(self._data,True)
+		elif isinstance(self._data,jax.Array): self._data=from_jax(self._data,True)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 		self._npy_list=None		# not necessary if already EMData list
 
@@ -231,12 +229,12 @@ class EMStack():
 		if isinstance(self._data,np.ndarray): return
 		elif self._npy_list is not None: self._data=np.stack(self._npy_list)
 		elif isinstance(self._data,list): self._data=np.stack([i.numpy() for i in self._data])
-		elif isinstance(self._data,ArrayImpl): self._data=np.array(self._data)
+		elif isinstance(self._data,jax.Array): self._data=np.array(self._data)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 		self._npy_list=None		# not necessary if already EMData list
 
 	def coerce_jax(self):
-		if isinstance(self._data,ArrayImpl): return
+		if isinstance(self._data,jax.Array): return
 		elif isinstance(self._data,list): self._data=to_jax(self._data)
 		elif isinstance(self._data,np.ndarray): self._data=jnp.array(self._data)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
@@ -258,7 +256,7 @@ class EMStack():
 
 	def mult(self,img):
 		"""multiply each image in the stack by img"""
-		if isinstance(img,ArrayImpl):
+		if isinstance(img,jax.Array):
 			self._data=self._data*img
 		else: raise Exception("Only JAX data currently supported")
 
@@ -300,7 +298,7 @@ class EMStack3D(EMStack):
 			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
 			self._data=[imgs]
 			self._npy_list=None
-		elif isinstance(imgs,ArrayImpl) or isinstance(imgs,np.ndarray):
+		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)==3:
 				imgs=jnp.expand_dims(imgs,0)
 			elif len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
@@ -355,7 +353,7 @@ class EMStack3D(EMStack):
 
 		if isinstance(target,EMStack3D):
 			return EMStack3D(self.jax*jnp.conj(target.jax))
-		elif isinstance(target,ArrayImpl):
+		elif isinstance(target,jax.Array):
 			return EMStack3D(self.jax*jnp.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
@@ -394,7 +392,7 @@ class EMStack2D(EMStack):
 			try: self._df=np.array([imgs["ctf"].to_dict()["defocus"]])
 			except: pass
 			self._npy_list=None
-		elif isinstance(imgs,ArrayImpl) or isinstance(imgs,np.ndarray):
+		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
 			self._npy_list=None
@@ -444,7 +442,7 @@ class EMStack2D(EMStack):
 		if isinstance(self._data,list):
 			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
 			return EMStack2D(newlst)
-		elif isinstance(self._data,np.ndarray) or isinstance(self._data,ArrayImpl):
+		elif isinstance(self._data,np.ndarray) or isinstance(self._data,jax.Array):
 			newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
 			return EMStack2D(newary)
 
@@ -471,7 +469,7 @@ class EMStack2D(EMStack):
 				return EMStack2D(tf_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])))
 			elif isinstance(target,EMStack2D):
 				return EMStack2D(tf_phaseorigin2d(self.jax*jnp.conj(target.jax)))
-			elif isinstance(target,ArrayImpl) and offset==0:
+			elif isinstance(target,jax.Array) and offset==0:
 				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target)))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 		else:
@@ -479,7 +477,7 @@ class EMStack2D(EMStack):
 				return EMStack2D(self.jax[:-offset]*jnp.conj(target.jax[offset:]))
 			elif isinstance(target,EMStack2D):
 				return EMStack2D(self.jax*jnp.conj(target.jax))
-			elif isinstance(target,ArrayImpl) and offset==0:
+			elif isinstance(target,jax.Array) and offset==0:
 				return EMStack2D(self.jax*jnp.conj(target))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
@@ -488,7 +486,7 @@ class EMStack2D(EMStack):
 
 		if isinstance(target,EMStack2D):
 			return EMStack2D(self.jax*target.jax)
-		elif isinstance(target,ArrayImpl):
+		elif isinstance(target,jax.Array):
 			return EMStack2D(self.jax*target)
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
@@ -559,10 +557,10 @@ class Orientations():
 	def __len__(self): return self._data.shape[0]
 
 	def coerce_jax(self):
-		if not isinstance(self._data,ArrayImpl): self._data=jnp.array(self._data,jnp.float32)
+		if not isinstance(self._data,jax.Array): self._data=jnp.array(self._data,jnp.float32)
 
 	def coerce_numpy(self):
-		if isinstance(self._data,ArrayImpl): self._data=np.array(self._data)
+		if isinstance(self._data,jax.Array): self._data=np.array(self._data)
 
 	@property
 	def jax(self):
@@ -680,10 +678,10 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 	def __len__(self): return len(self._data)
 
 	def coerce_jax(self):
-		if not isinstance(self._data,ArrayImpl): self._data=jnp.array(self._data,jnp.float32)
+		if not isinstance(self._data,jax.Array): self._data=jnp.array(self._data,jnp.float32)
 
 	def coerce_numpy(self):
-		if isinstance(self._data,ArrayImpl): self._data=np.array(self._data)
+		if isinstance(self._data,jax.Array): self._data=np.array(self._data)
 
 	def add_array(self,array):
 		self._data+=array
@@ -707,7 +705,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		minratio - minimum peak ratio, >0
 		apix - A/pix override"""
 
-		if isinstance(vol,ArrayImpl): emd=from_jax(vol)
+		if isinstance(vol,jax.Array): emd=from_jax(vol)
 		elif isinstance(vol,np.ndarray): emd=from_numpy(vol)
 		elif isinstance(vol,EMData): emd=vol
 		else: raise Exception("init_from_map: vol must be EMData, Tensor or NumPy Array")
@@ -847,20 +845,24 @@ def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
 	shift11=jnp.array((1,1))
-
+#	print("t1")
+	jax.debug.breakpoint()
 
 	# iterate over projections
 	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 	# note that the mx dimensions have N as the 3rd not 1st component!
 	for j in range(mx.shape[2]):
+#		print("t2")
 		xfgauss=jnp.einsum("ij,kj->ki",mx[:,:,j],gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 		xfgauss+=tytx[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 		xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+		xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 
 		xfgaussf=jnp.floor(xfgauss)
 		xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 		xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
 
+#		print("t3")
 		# messy tensor math here to implement bilinear interpolation
 		bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
 		bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
@@ -869,10 +871,15 @@ def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
 		bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 		bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
-		proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32).at[bposall[0],bposall[1]].add(bampall)		# projection
+#		print("t4")
+		proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
+		proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
 		proj2.append(proj)
+#		jax.debug.breakpoint()
 		#proj2.append(tf.tensor_scatter_nd_add(proj,bposall,bampall))
 
+#	print('t5')
+	jax.debug.breakpoint()
 	return jnp.stack(proj2)
 	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
@@ -1108,7 +1115,7 @@ given size are cached for reuse. """
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
 def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
-	"""Computes the pairwise FRCs between two stacks of complex images. imb may alternatively be a single image. Returns a list of 1D FSC tensors or if avg!=0
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
 	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
 	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("jax_frc requires FFTs")
@@ -1136,33 +1143,12 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	# except:
 	# 	raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
 
-	if len(imbr.shape)==3: single=False
-	else: single=True
 	frc=[]
 	zero=jnp.zeros([nr])
 	for i in range(nimg):
-#		print(zero.shape,rad_img.shape,imabr.shape)
-		#cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr[i])	#start with zero when we add the real component
-		#cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi[i])	#add the imaginary component to the real
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
-#		cross[rad_img]+=imabr[i]+imabi[i]
-
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
-#		aprd[rad_img]+=imar[i]+imai[i]
-		# aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar[i])
-		# aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai[i])
-
-		if single:
-			bprd=zero.at[rad_img].add(imbr+imbi)
-#			bprd[rad_img]+=imbr+imbi
-			# bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr)
-			# bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi)
-		else:
-			bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-#			bprd[rad_img]+=imbr[i]+imbi[i]
-			# bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
-			# bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
-
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
 		frc.append(cross/jnp.sqrt(aprd*bprd))
 
 	frc=jnp.stack(frc)
@@ -1177,6 +1163,92 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	elif avg==-1: return frc.mean(1)
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
+
+def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
+	"""Computes the pairwise FRCs between a stack of complex images and a single image. Returns a list of 1D FSC tensors or if avg!=0
+	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
+	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
+	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("jax_frc requires FFTs")
+#	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
+
+	global FRC_RADS
+#	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	rad_img=rad_img_int(ny)
+#	try:
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+	# except:
+	# 	raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr+imbi)
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	if avg>len(frc[0]): avg=-1
+	if avg>0:
+		frc=jnp.stack(frc)
+		if weight!=1.0:
+			w=jnp.linspace(weight,2.0-weight,nr)
+			frc=frc*w
+		return frc[:,minfreq:avg].mean()
+#		return tf.math.reduce_mean(frc[:,minfreq:avg],1)
+	elif avg==-1: return frc.mean(1)
+#	elif avg==-1: return tf.math.reduce_mean(frc,1)
+	else: return frc
+
+def jax_frc_jit(ima,imb,weight=1.0,minfreq=0):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2"""
+
+	global FRC_RADS
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	rad_img=rad_img_int(ny)
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	w=jnp.linspace(weight,2.0-weight,nr)
+	frc=frc*w
+	return jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2)).mean()
+#	return frc[:,minfreq:ny//2].mean()
 
 FSC_REFS={}
 def jax_fsc(ima,imb):
