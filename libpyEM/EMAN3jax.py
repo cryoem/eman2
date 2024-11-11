@@ -842,46 +842,59 @@ def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
 	"""
 
 	proj2=[]
-	shift10=jnp.array((1,0))
-	shift01=jnp.array((0,1))
-	shift11=jnp.array((1,1))
-#	print("t1")
-	jax.debug.breakpoint()
 
 	# iterate over projections
 	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 	# note that the mx dimensions have N as the 3rd not 1st component!
+	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
+
 	for j in range(mx.shape[2]):
-#		print("t2")
-		xfgauss=jnp.einsum("ij,kj->ki",mx[:,:,j],gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-		xfgauss+=tytx[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-		xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-		xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
+		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
 
-		xfgaussf=jnp.floor(xfgauss)
-		xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
-		xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-
-#		print("t3")
-		# messy tensor math here to implement bilinear interpolation
-		bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-		bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-		bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-		bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
-		bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
-		bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
-		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
-#		print("t4")
-		proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-		proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
-		proj2.append(proj)
-#		jax.debug.breakpoint()
-		#proj2.append(tf.tensor_scatter_nd_add(proj,bposall,bampall))
-
-#	print('t5')
-	jax.debug.breakpoint()
 	return jnp.stack(proj2)
 	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+
+def gauss_project_single_fn(gausary,mx,boxsize,tytx):
+	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+	gausary - a Gaussians.jax array
+	mx - an Orientations object converted to a stack of 2d matrices
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+
+	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	used for comparisons should be resampled without any "clip" operations.
+	"""
+
+	proj2=[]
+	shift10=jnp.array((1,0))
+	shift01=jnp.array((0,1))
+	shift11=jnp.array((1,1))
+#	print("t1")
+
+	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
+
+	xfgaussf=jnp.floor(xfgauss)
+	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
+	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+		# messy tensor math here to implement bilinear interpolation
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
+	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+
+		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
+	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
+	proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
+	return proj
+
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
