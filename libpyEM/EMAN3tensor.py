@@ -772,15 +772,63 @@ stddev=0.01"""
 		return EMStack2D(tf.stack(proj2))
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-	def project_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
-		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+	def project_ctf(self,orts,ctf_stack,boxsize,dfrange,dfstep,tytx=None):
+		"""Generates a tensor containing a phase-flipped 2-D projection of the set of Gaussians for each of N orientations in orts. Phase flipping is off a single
+		defocus value.
+
 		orts-must be an Orientations object
+		ctf_stack-A stack of ctf correction images at different defocuses
 		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
 			per particle defocus in the third
 		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
 		dfrange-a tuple of (min defocus,max defocus) in the project
-		cs-The spherical abberation for the project
-		voltage-The voltage of the microscope for the project
+		dfstep-The step between two correction images in ctf_stack
+		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data is
+		used for comparisons should be resampled without any "clip" operations.
+		"""
+		self.coerce_tensor()
+
+		proj=tf.zeros((boxsize,boxsize))		# projections
+		proj2=[]
+		mx=orts.to_mx2d(swapxy=True) # 2d is fine because don't need z position when apply one ctf regardless
+
+		# iterate over projections
+		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+		for j in range(len(orts)):
+			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+			if tytx is not None:
+				#print(xfgauss.shape,tytx.shape)
+				xfgauss+=tytx[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
+
+			xfgaussf=tf.floor(xfgauss)
+			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
+			xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+			# print(xfgaussf,xfgaussi)
+			# print(xfgaussf.shape,xfgaussi.shape,self._data.shape,self._data[:,3].shape)
+			# messy tensor math here to implement bilinear interpolation
+			bamp0=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+			bamp1=self._data[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+			bamp2=self._data[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+			bamp3=self._data[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0)  # TODO: this would be ,1 with the loop subsumed
+			bposall=tf.concat([xfgaussi,xfgaussi+(1,0),xfgaussi+(1,1),xfgaussi+(0,1)],0) # TODO: this too
+			projf=tf.signal.rfft2d(tf.tensor_scatter_nd_add(proj,bposall,bampall))
+			proj2.append(tf.signal.irfft2d(ctf_stack[int(tf.round((tytx[j,2]-dfrange[0])/dfstep))]*projf))
+
+		return EMStack2D(tf.stack(proj2))
+
+
+	def project_layered_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
+		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+		orts-must be an Orientations object
+		ctf_stack-A stack of ctf correction images at different defocuses
+		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
+			per particle defocus in the third
+		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
+		dfrange-a tuple of (min defocus,max defocus) in the project
+		dfstep-The step between two correction images in ctf_stack
 
 		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 		is used for comparisons should be resampled without any "clip" operations.
@@ -874,8 +922,8 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	g2=np.pi*wl*10000.0
 	phase=np.pi/2.0-np.arcsin(ampcont/100.0)
 	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-	dflist=tf.cast(tf.range(dfrange[0],dfrange[1],dfstep),tf.complex64) # TODO: Need to fix this range to split properly, this is for single particle (0.5-2)
-	ctf_sign=EMStack2D(tf.math.sign(tf.cos(-g1*rad2*rad2+g2*rad2*dflist[:,tf.newaxis,tf.newaxis]-phase)))
+	dflist=tf.cast(tf.range(dfrange[0],dfrange[1],dfstep),tf.complex64)
+	ctf_sign=EMStack2D(tf.cos(-g1*rad2*rad2+g2*rad2*dflist[:,tf.newaxis,tf.newaxis]-phase))
 	return ctf_sign, dfstep
 
 def tf_set_device(dev=0,maxmem=4096):
