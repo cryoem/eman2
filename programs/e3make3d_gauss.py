@@ -53,7 +53,8 @@ def main():
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
-	parser.add_argument("--ctf", action="store_true",help="Includes ctf in the projections")
+#	parser.add_argument("--ctf", action="store_true",help="Includes ctf in the projections")
+	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
 	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
@@ -74,12 +75,13 @@ def main():
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
 	else: zmax=0.5
-	if options.ctf:
+	if options.ctf>0:
 		if options.tomo:
 			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
 		else:
 			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
 			ctf=js["ctf"][0].to_dict()
+			js.close()
 		cs=ctf["cs"]
 		voltage=ctf["voltage"]
 		ampcont=ctf["ampcont"]
@@ -133,7 +135,7 @@ def main():
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
-		tytx/=nxraw
+		tytx/=(nxraw,nxraw,1) # Don't divide the defocus
 		for im in stk.emdata: im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
@@ -160,7 +162,7 @@ def main():
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 
 #		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-		
+
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		lqual=-1.0
 		rstep=1.0
@@ -173,7 +175,7 @@ def main():
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
-				if True:
+				if options.ctf==0:
 					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
@@ -182,9 +184,18 @@ def main():
 						qual+=qual0
 						shift+=shift0
 						sca+=sca0
-				elif options.ctf:
+				elif options.ctf==2:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
+					step0,qual0,shift0,sca0=gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
+					if j==0:
+						step,qual,shift,sca=step0,qual0,shift0,sca0
+					else:
+						step+=step0
+						qual+=qual0
+						shift+=shift0
+						sca+=sca
+				elif options.ctf==1:
+					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -221,13 +232,42 @@ def main():
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
+			dsapix=apix*nxraw/ptclsfds.shape[1]
+			ctf_stackds=ctf_stack.downsample(ptclsfds.shape[1])
 			projs=gaus.project_simple(orts,ptclsfds.shape[1],tytx=tytx)
+			ctf_projs=gaus.project_layered_ctf(orts,ctf_stackds,ptclsfds.shape[1],dsapix,dfrange,dfstep,tytx=tytx)
+			single_ctf_projs=gaus.project_ctf(orts,ctf_stackds,ptclsfds.shape[1],dfrange,dfstep,tytx=tytx)
+			transforms=orts.transforms(tytx)
+#			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
 			for i in range(len(projs)):
-				a=ptclds.emdata[i].process("normalize")
-				b=projs.emdata[i].process("filter.matchto",{"to":a})
-				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
-				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
+				a=ptclds.emdata[i]
+				b=projs.emdata[i]
+				c=single_ctf_projs.emdata[i]
+				d=ctf_projs.emdata[i]
+				a["apix_x"]=dsapix
+				a["apix_y"]=dsapix
+				b["apix_x"]=dsapix
+				b["apix_y"]=dsapix
+				c["apix_x"]=dsapix
+				c["apix_y"]=dsapix
+				d["apix_x"]=dsapix
+				d["apix_y"]=dsapix
+				a.process_inplace("normalize")
+				b.process_inplace("filter.matchto",{"to":a})
+#				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
+#				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
+				c.process_inplace("filter.matchto",{"to":a})
+				d.process_inplace("filter.matchto",{"to":a})
+				a["xform.projection"]=transforms[i]
+				b["xform.projection"]=transforms[i]
+				c["xform.projection"]=transforms[i]
+				d["xform.projection"]=transforms[i]
+				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
+				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
+				c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
+				d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
+
 
 		# if options.savesteps:
 		# 	vol=gaus.volume(nxraw,zmax)
@@ -245,7 +285,7 @@ def main():
 		times.append(time.time())
 	
 		# do this at the end of each stage in case of early termination
-		if options.gaussout is not None:
+		if options.gaussout is not None and g2 != 0:
 			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.4f",delimiter="\t")
 			# out=open(options.gaussout,"w")
 			# for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
@@ -368,7 +408,7 @@ def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
-def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
+def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -381,8 +421,36 @@ def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,
 
 	with tf.GradientTape() as gt:
 		gt.watch(gaus.tensor)
-		projs=gaus.project_ctf(orts,ctf_stackds,ny,dsapix,dfrange,dfstep,tytx=tytx)
+		projs=gaus.project_ctf(orts,ctf_stackds,ny,dfrange,dfstep,tytx=tytx)
 		projsf=projs.do_fft()
+		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+
+	grad=gt.gradient(frcs,gaus._data)
+	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
+	shift=tf.math.reduce_std(grad[:,:3])	# translational std
+	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
+	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	#print(f"{qual}\t{shift}\t{sca}")
+
+	return (step,float(qual),float(shift),float(sca))
+
+def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
+	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+
+	with tf.GradientTape(persistent=True) as gt:
+		gt.watch(gaus.tensor)
+		projs=gaus.project_layered_ctf(orts,ctf_stackds,ny,dsapix,dfrange,dfstep,tytx=tytx)
+		projsf=projs.do_fft() # TODO: Remove and have projection return fourier transform? It is already in fourier space there...
 		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
 
 	grad=gt.gradient(frcs,gaus._data)
