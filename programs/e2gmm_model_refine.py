@@ -56,7 +56,7 @@ def calc_bond(pout, bond):
 	
 	px=tf.gather(pout, bond[:,0], axis=1)[:,:,:3]
 	py=tf.gather(pout, bond[:,1], axis=1)[:,:,:3]
-	dst=tf.math.sqrt(tf.nn.relu(tf.reduce_sum((px-py)**2, axis=2)))
+	dst=tf.math.sqrt(tf.maximum(1e-8,tf.reduce_sum((px-py)**2, axis=2)))
 	return dst
 	
 def calc_angle(pout, ang):
@@ -78,20 +78,20 @@ def calc_dihedral_tf(pt):
 	## pt.shape: (batch, bonds, 4, 3)
 	a=pt[:,:,1:]-pt[:,:,:-1]
 	v1=tf.linalg.cross(a[:,:,0], a[:,:,1])
-	n1=tf.math.sqrt(tf.reduce_sum(v1*v1, axis=2))[:,:,None]
+	n1=tf.math.sqrt(tf.maximum(1e-8,tf.reduce_sum(v1*v1, axis=2)))[:,:,None]
 	v1=tf.math.divide_no_nan(v1, n1)
 
 	v2=tf.linalg.cross(a[:,:,1], a[:,:,2])
-	n2=tf.math.sqrt(tf.reduce_sum(v2*v2, axis=2))[:,:,None]
+	n2=tf.math.sqrt(tf.maximum(1e-8,tf.reduce_sum(v2*v2, axis=2)))[:,:,None]
 	v2=tf.math.divide_no_nan(v2, n2)
 
 	sgn=tf.sign(tf.reduce_sum(v1*a[:,:,2], axis=2))
 	sgn=sgn+tf.cast(sgn==0, np.float32)
 	cs=tf.reduce_sum(v1*v2, axis=2)
-	n3=tf.math.sqrt(tf.reduce_sum(v1*v1, axis=2)*tf.reduce_sum(v2*v2, axis=2))
+	n3=tf.math.sqrt(tf.maximum(1e-8,tf.reduce_sum(v1*v1, axis=2)*tf.reduce_sum(v2*v2, axis=2)))
 	cos=tf.math.divide_no_nan(cs, n3)
 	cos=tf.minimum(tf.maximum(cos, -.99999),.99999)
-	sin=tf.sqrt(1-cos**2)*sgn
+	sin=tf.sqrt(tf.maximum(1e-8,1-cos**2))*sgn
 	deg=tf.math.atan2(sin,cos)*180/np.pi
 	return deg 
 
@@ -468,7 +468,7 @@ def compile_hydrogen(pdb):
 				try:
 					ad=[adict['N'], at0['C'], at0['O']]
 				except:
-					print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h}")
+					# print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h}")
 					continue
 			
 			else:
@@ -477,8 +477,8 @@ def compile_hydrogen(pdb):
 				except:
 					h1=[k for k in h[1:4] if k not in adict]
 					h1=[k for k in h1 if k!='OP3']
-					if len(h1)>0:
-						print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h1}")
+					# if len(h1)>0:
+					# 	print(f"Missing atoms: {r.parent.id} {r.id[1]} {res}, {h1}")
 					continue
 				
 			ad=[atom_dict[k] for k in ad]
@@ -700,14 +700,14 @@ def find_clash(atom_pos, options, relu=True):
 	
 	pc=tf.gather(atom_pos, options.clashid, axis=1)
 	pc=pc-atom_pos[:,:,None, :]
-	pc=tf.math.sqrt(tf.reduce_sum(pc*pc, axis=3))
+	pc=tf.math.sqrt(tf.maximum(1e-8,tf.reduce_sum(pc*pc, axis=3)))
 
 	clash=options.vdw_radius-pc-options.vdroverlap
-	clash=tf.maximum(0,clash)
+	clash=tf.maximum(1e-8,clash)
 
 	clash=clash-options.clash_omask
 	if relu:
-		clash=tf.maximum(0,clash)
+		clash=tf.maximum(1e-8,clash)
 	return clash
 	
 def optimize_h(atom_pos, options, npos=24):
@@ -906,7 +906,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 	
 	for itr in range(niter):
 		with tf.GradientTape() as gt:
-			conf=tf.zeros((2,options.nmid), dtype=floattype)+1
+			conf=tf.zeros((options.batchsz,options.nmid), dtype=floattype)+1
 			atom_pos=calc_atom_pos(conf, model, theta_all, options, training=training)
 			lossetc=0
 
@@ -914,7 +914,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			bond_len=calc_bond(atom_pos, options.bonds[:,:2].astype(int))
 			bond_df=(bond_len-options.bonds[:,2])/options.bonds[:,3]
 			bond_score=tf.reduce_mean(tf.exp(-5*bond_df**2))
-			bond_outlier=tf.reduce_mean(tf.maximum(0,abs(bond_df)-options.nstd_bond))*1000*20
+			bond_outlier=tf.reduce_mean(tf.maximum(1e-8,abs(bond_df)-options.nstd_bond))*1000*20
 			lossetc+=bond_score * options.weight["bond"]
 			lossetc+=bond_outlier * options.weight["bond"]
 
@@ -933,8 +933,8 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				psi=calc_dihedral_tf(pt[:,:,4:])
 				rama=eval_rama(phi, psi, options)
 				rama_score=tf.reduce_mean(rama)*.1
-				rama_outlier=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr0))*500
-				rama_outlier+=tf.reduce_mean(tf.maximum(0,rama-options.rama_thr1))*1000*1000*5
+				rama_outlier=tf.reduce_mean(tf.maximum(1e-8,rama-options.rama_thr0))*500
+				rama_outlier+=tf.reduce_mean(tf.maximum(1e-8,rama-options.rama_thr1))*1000*1000*5
 				# rama_outlier+=tf.reduce_mean(tf.sign(tf.maximum(0,rama-options.rama_thr1)))*1000
 				lossetc+=rama_score * options.weight["rama"]
 				lossetc+=rama_outlier * options.weight["rama"]
@@ -943,7 +943,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			pt=tf.gather(atom_pos, options.idx_dih_plane, axis=1)
 			rot=calc_dihedral_tf(pt)
 			rot=tf.sin(rot*np.pi/180.)
-			rot=tf.maximum(0, abs(rot)-np.sin(options.thr_plane*np.pi/180))
+			rot=tf.maximum(1e-8, abs(rot)-np.sin(options.thr_plane*np.pi/180))
 			plane_score=tf.reduce_mean(rot)*1000
 			
 			if options.has_protein:
@@ -953,13 +953,13 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				if options.nocis:
 					rot=calc_dihedral_tf(pt)
 					rot=tf.cos(rot*np.pi/180.)
-					rot=tf.maximum(0, rot-np.cos(options.thr_piptide*np.pi/180))
+					rot=tf.maximum(1e-8, rot-np.cos(options.thr_piptide*np.pi/180))
 					plane_score+=tf.reduce_mean(rot)*1000
 					
 				else:
 					rot=calc_dihedral_tf(pt)
 					rot=tf.sin(rot*np.pi/180.)
-					rot=tf.maximum(0, abs(rot)-np.sin(options.thr_piptide*np.pi/180))
+					rot=tf.maximum(1e-8, abs(rot)-np.sin(options.thr_piptide*np.pi/180))
 					plane_score+=tf.reduce_mean(rot)*1000
 			
 			lossetc+=plane_score * options.weight["plane"]
@@ -976,7 +976,7 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				rota_score=tf.reduce_mean(big-rota_out)
 
 				# r1=tf.maximum(0, rota_out-(1-options.rota_thr))
-				r1=tf.maximum(0,options.rota_thr-rota_out)
+				r1=tf.maximum(1e-8,options.rota_thr-rota_out)
 				rota_outlier=tf.reduce_mean(r1)*10000
 
 				lossetc+=rota_score * options.weight["rotamer"]
@@ -1012,21 +1012,30 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				
 				dcb=cb_loss(atom_pos, options.cb_info)
 				cb_score=tf.reduce_mean(dcb)*10
-				cb_outlier=tf.reduce_mean(tf.maximum(0,dcb-0.25))*1000*20
+				cb_outlier=tf.reduce_mean(tf.maximum(1e-8,dcb-0.25))*1000*20
 				lossetc+=cb_score
 				lossetc+=cb_outlier
 				
 			#### clash
-			atom_pos=add_h(atom_pos,options.h_info)
+			atom_pos_h=add_h(atom_pos,options.h_info)
 			tt=tf.repeat(theta_h[None,:], conf.shape[0], axis=0)
-			arot=rotate_sidechain(atom_pos, options.rot_axish, tt, options.rotmat_idxh)
+			arot=rotate_sidechain(atom_pos_h, options.rot_axish, tt, options.rotmat_idxh)
 			clash=find_clash(arot, options, relu=False)
-			clash0=tf.maximum(0,clash)
-			clash1=tf.maximum(0,clash+options.vdroverlap-0.3)*1e-5
+			clash0=tf.maximum(1e-8,clash)
+			clash1=tf.maximum(1e-8,clash+options.vdroverlap-0.3)*1e-5
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0+clash1))/conf.shape[0]/2.*5.
 			lossetc+=clash_score * options.weight["clash"]
 			
 			l=tf.math.log(lossetc)
+			if options.invert:
+				l=-(rama_score+rama_outlier+rota_score+rota_outlier+clash_score)
+				div=atom_pos-options.atom_pos_input[None,...]
+				div=tf.linalg.norm(div, axis=-1)
+				div=tf.maximum(0, div-0.3)
+				div=tf.reduce_sum(tf.sign(div)+div*10)
+				# print(div, l, '\n')
+				l=l*.01+div*2000
+				
 
 
 		assert np.isnan(l.numpy())==False
@@ -1047,6 +1056,8 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			etc+=f", RNA {rna_score:.2f}"
 		etc+=f", clash {clash_score:.2f},{nclash:d}"
 		etc+=f", plane {plane_score:.2f}"
+		if options.invert:
+			etc+=f", div {div:.0f}"
 
 
 		print("{}/{}\t{:.3f}{}".format(len(cost), niter, l, etc), end='\r')
@@ -1118,6 +1129,8 @@ def main():
 	parser.add_argument("--writeh", action="store_true", default=False ,help="write H atoms in the output file")
 	parser.add_argument("--nocis", action="store_true", default=False ,help="add extra penalty for cis peptide")
 	parser.add_argument("--cbeta", action="store_true", default=False ,help="force c-beta positions")
+	parser.add_argument("--invert", action="store_true", default=False ,help="invert loss function to get as bad a model as possible")
+	parser.add_argument("--batchsz", type=int, help="default 2",default=2)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -1132,7 +1145,6 @@ def main():
 	
 	options.maxboxsz=raw_boxsz=128
 	options.apix=apix=1
-	options.batchsz=32
 	options.nmid=4
 	niter=[int(i) for i in options.niter.split(',')]
 	w=[np.float32(i) for i in options.weight.split(',')]
@@ -1162,6 +1174,9 @@ def main():
 	p=p/options.maxboxsz/options.apix-0.5
 	p[:,1:]*=-1; pts[:,:3]=p[:,:3]
 	pts[:,3]=.5; pts[:,4]=1
+	
+	options.atom_pos_input=atom_pos.copy().astype(floattype)
+	options.pts_input=pts.copy().astype(floattype)
 	
 	gen_model_full=build_decoder(pts, options)
 	conf=tf.zeros((2,4), dtype=floattype)+1.

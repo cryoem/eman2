@@ -35,6 +35,8 @@ def main():
 	parser.add_argument("--umap", action="store_true", default=False ,help="use umap instead of pca.")
 	parser.add_argument("--fulldist", action="store_true", default=False ,help="use full distance in reduced space instead of project to one axis.")
 
+	parser.add_argument("--spt", action="store_true", default=False ,help="mode for subtomogram particles.")
+
 	parser.add_argument("--threads", default=32,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
@@ -146,18 +148,24 @@ def main():
 		
 	onames=[]
 	fname=options.ptclsin
-	lstinp=fname.endswith(".lst")
-	
 	lin=load_lst_params(fname)
 		
+	if options.spt:
+		print(len(lin), p2.shape)
+
+		pids=np.array([a["ptcl3d_id"] for a in lin])
+		uid=np.unique(pids)
+		p3did=[np.where(pids==u)[0] for u in uid]
+		print(len(uid), "3D particles")
+
 	lout=[]
 	for j in range(options.ncls):
 		
 		
 		if options.mode=="classify":
 			l=lbunq[j]
-			ii=(lbs==l)
-			print(j, np.sum(ii))
+			ii=np.where(lbs==l)[0]
+			print(j, len(ii))
 		else:
 			if len(axis)==1 and options.fulldist==False:
 				d=abs(p2[:,axis[0]]-rg[j])
@@ -167,7 +175,13 @@ def main():
 			ii=np.argsort(d)[:options.nptcl]
 			print(j, rg[j], d[ii[-1]])
 		
-		idx=pts[ii,0].astype(int)
+		if options.spt:
+			idx=[p3did[i] for i in ii]
+			idx=np.concatenate(idx)
+		else:
+			idx=pts[ii,0].astype(int)
+
+		print(len(ii), len(idx))
 		lo=[lin[i].copy() for i in idx]
 		for l in lo:
 			l["class"]=j
@@ -192,17 +206,13 @@ def main():
 		for j in range(options.ncls):
 			t="tmp_classify_{:04d}.hdf".format(np.random.randint(10000))
 			cmd="e2spa_make3d.py --input {} --output {} --pad {} --outsize {} --keep 1 --parallel thread:{} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.outsize, options.threads, options.setsf, options.sym, j)
-			launch_childprocess(cmd)
+			run(cmd)
 			e=EMData(t)
 			e.write_compressed(name3d,-1,12)
 			os.remove(t)
 			
 		print(f"Density maps saved in {name3d}")
 	E2end(logid)
-	
-def run(cmd):
-	print(cmd)
-	launch_childprocess(cmd)
 	
 	
 if __name__ == '__main__':

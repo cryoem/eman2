@@ -51,14 +51,10 @@ def main():
 		czi_loader.import_data_to_eman()
 
 
-
-
-
 class CZIDataLoader(QtWidgets.QWidget):
 	def __init__(self,application,options):
 		super().__init__()
-
-		self.setWindowTitle("CZI CryoET Data Portal")
+		self.setWindowTitle("CZII CryoET Data Portal")
 		self.setMinimumSize(400, 250)
 		self.app = weakref.ref(application)
 		self.options = options
@@ -67,7 +63,6 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.download_tomo = self.options.tomogram
 		self.download_anno = self.options.annotation
 		self.imod = self.options.imod
-
 		if not self.options.no_gui:
 			self.init_gui()
 			return
@@ -164,6 +159,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 		self.imod=int
 
 	def download_dataset(self):
+		#self.inquire_dataset()
 		if not self.create_data_folder(self.get_dataset_id()):
 			print("Data already downloaded. Please continue with the pipeline.")
 			return
@@ -195,15 +191,18 @@ class CZIDataLoader(QtWidgets.QWidget):
 			return
 		try:
 			client = Client()
-			self.tomos = Tomogram.find(
+			tomos = Tomogram.find(
 			client,
 			[Tomogram.tomogram_voxel_spacing.run.dataset.id==self.dataset_id],
 			)
+			self.tomos = [tomo for tomo in tomos]
+			self.tomos.sort(key=lambda x:x.name)
+
 		except Exception as e:
 			print("Invalid dataset id or",e,". Abort.")
 			return
 		print("Dataset ID {} includes {} tomograms".format(str(self.dataset_id),str(len(self.tomos))))
-		tomo_l = sorted([tomo.name for tomo in self.tomos])
+		tomo_l = [tomo.name for tomo in self.tomos]
 		self.populate_table(data_l=tomo_l)
 
 
@@ -273,9 +272,11 @@ class CZIDataLoader(QtWidgets.QWidget):
 									if (self.binary_label_checkbox.isChecked()):
 										sname  = "_".join(base_name(seg_f).split("_")[:-1])
 										print("Importing segmentations",sname,"for",tomo_f[0:-4],"as a binary mask")
-										eman2_seg_f = os.path.join("./segs/","{}_{}__czi_seg.hdf".format(base_name(eman2_f),sname))
+										eman2_seg_f = os.path.join("./segs/","{}_{}_czi__seg.hdf".format(base_name(eman2_f),sname))
 										json_file = eman2_seg_f[0:-4]+".json"
 										os.system("e2proc3d.py {} {} --compressbits=8".format(ori_seg_f,eman2_seg_f))
+										#os.system("e2proc3d.py {} {}".format(ori_seg_f,eman2_seg_f))
+
 										ser_text =  json.dumps(["1",sname,"-1"], default=lambda a: "[%s,%s]" % (str(type(a)), a.pk))
 										json_str = {ser_text:None}
 										js=js_open_dict(json_file)
@@ -283,7 +284,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 									if (self.multiclass_label_checkbox.isChecked()):
 										annf_l.append(ori_seg_f)
 							if len(annf_l) > 0:
-								eman2_seg_f = os.path.join("./segs/","{}_{}__czi_seg.hdf".format(base_name(eman2_f),"000-multi"))
+								eman2_seg_f = os.path.join("./segs/","{}_{}_from_czi__seg.hdf".format(base_name(eman2_f),"000-multi"))
 								print("Generating the multicolor annotation")
 								ann_out, json_str = self.write_multiclass_annotate(annf_l)
 								ann_out.write_compressed(eman2_seg_f,0,8)

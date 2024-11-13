@@ -1611,7 +1611,7 @@ class EMIsosurface(EMItem3D):
 			glMaterial(GL_FRONT, GL_AMBIENT, self.ambient) #self.colors[self.isocolor]["ambient"])
 			glMaterial(GL_FRONT, GL_DIFFUSE, self.diffuse) #self.colors[self.isocolor]["diffuse"])
 			glMaterial(GL_FRONT, GL_SPECULAR, self.specular) #self.colors[self.isocolor]["specular"])
-			glMaterial(GL_FRONT, GL_SHININESS, self.shininess) #self.colors[self.isocolor]["shininess"])
+			glMaterial(GL_FRONT, GL_SHININESS, float(self.shininess)) #self.colors[self.isocolor]["shininess"])
 			glMaterial(GL_FRONT, GL_EMISSION, self.colors[self.isocolor]["emission"])
 			glColor(self.colors[self.isocolor]["ambient"])
 			glPushMatrix()
@@ -1648,7 +1648,7 @@ class EMIsosurface(EMItem3D):
 		# This is needed for the inspector to work John Flanagan
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, self.diffuse)
 		glMaterialfv(GL_FRONT, GL_SPECULAR, self.specular)
-		glMaterialf(GL_FRONT, GL_SHININESS, self.shininess)
+		glMaterialf(GL_FRONT, GL_SHININESS, float(self.shininess))
 		glMaterialfv(GL_FRONT, GL_AMBIENT, self.ambient)
 		glColor(self.ambient)
 

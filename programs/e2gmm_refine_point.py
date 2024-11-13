@@ -14,6 +14,7 @@ floattype=np.float32
 #### here we import tensorflow at the global scale so @tf.function works
 ##   although how much performance gain we get from @tf.function is questionable...
 ##   so here we need to make a fake tf module for --help so the CI works properly.
+os.environ["TF_USE_LEGACY_KERAS"]="1"	# This needs to be before tensorflow is imported ... I think
 if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true' 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2' #### reduce log output
@@ -353,10 +354,16 @@ def main():
 		else:
 			encode_model=build_encoder(len(pts[0]),options.nmid,grps)
 
+		print("ENCODER: ",encode_model.summary())
+
+
 		if options.decoderin:
 			decode_model=tf.keras.models.load_model(f"{options.decoderin}",compile=False)
 		else:
 			decode_model=build_decoder(options.nmid, len(pts[0]))
+
+		print("DECODER: ",decode_model.summary())
+
 
 		print(allgrds[:bsz].shape)
 		mid=encode_model(allgrds[:bsz])
@@ -757,8 +764,9 @@ def build_encoder(ninp,nmid,grps=None):
 		tf.keras.layers.Dense(max(ninp//4,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 #		tf.keras.layers.Dropout(.2),
 		tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
-#		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dropout(.2),
 		tf.keras.layers.Dense(max(ninp//16,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+		tf.keras.layers.Dropout(.2),
 		tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 		]
@@ -774,14 +782,15 @@ def build_encoder(ninp,nmid,grps=None):
 		in2s=[]
 		t=0
 		for i in ngrp:
-			in2s.append(tf.keras.layers.Dense(max(i//2,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit)(in1[:,t:t+i]))
+			in2s.append(tf.keras.layers.Dense(i, activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit)(in1[:,t:t+i]))
 			t+=i
 		# Add Dropout here?
-		drop=[tf.keras.layers.Dropout(0.3)(in2s[i]) for i in range(len(ngrp))]
-		mid=[tf.keras.layers.Dense(max(ngrp[i]//4,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
-		mid2=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
-		mid3=[tf.keras.layers.Dense(max(ngrp[i]//16,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
-		mid4=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid3[i]) for i in range(len(ngrp))]
+#		drop=[tf.keras.layers.Dropout(0.3)(in2s[i]) for i in range(len(ngrp))]
+		mid=[tf.keras.layers.Dense(max(ngrp[i]//2,latpergrp*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(in2s[i]) for i in range(len(ngrp))]
+#		drop=[tf.keras.layers.Dropout(0.25)(mid[i]) for i in range(len(ngrp))]
+		mid2=[tf.keras.layers.Dense(max(ngrp[i]//4,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
+		mid3=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
+		mid4=[tf.keras.layers.Dense(max(ngrp[i]//16,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid3[i]) for i in range(len(ngrp))]
 		outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid4[i]) for i in range(len(ngrp))]
 		out=tf.keras.layers.Concatenate()(outs)
 		encode_model=tf.keras.Model(inputs=in1,outputs=out)
@@ -815,7 +824,7 @@ def build_decoder(nmid, pt ):
 #	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=kinit, activation="sigmoid",use_bias=True,kernel_constraint=Localize4())
 	layer_output=tf.keras.layers.Dense(nout*4, kernel_initializer=binit, activation="sigmoid",use_bias=True)
 
-	print(f"Decoder {max(nout//32,nmid)} {max(nout//8,nmid)} {max(nout//2,nmid)}")
+#	print(f"Decoder {max(nout//32,nmid)} {max(nout//8,nmid)} {max(nout//2,nmid)}")
 	layers=[
 		#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
 		#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
@@ -826,9 +835,9 @@ def build_decoder(nmid, pt ):
 #		tf.keras.layers.Dropout(.6),
 		tf.keras.layers.Dense(min(nmid*16,nout//8),activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.Dropout(.6),
-		tf.keras.layers.Dense(min(nmid*32,nout//4),activation="relu",kernel_initializer=kinit,use_bias=True),
-#		tf.keras.layers.Dropout(.6),
-		tf.keras.layers.Dense(min(nmid*64,nout),activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dense(nout//4,activation="relu",kernel_initializer=kinit,use_bias=True),
+		tf.keras.layers.Dropout(.25),
+		tf.keras.layers.Dense(nout//2,activation="relu",kernel_initializer=kinit,use_bias=True),
 #		tf.keras.layers.BatchNormalization(),
 		layer_output,
 		tf.keras.layers.Reshape((nout,4))
@@ -914,7 +923,7 @@ def eval_model(gen_model, options):
 	nxf=len(xfs)
 	n=7-(nxf-1)%8
 	xfs=xfs+[Transform().get_params("eman") for i in range(n)]
-	print(nxf, len(xfs))
+#	print(nxf, len(xfs))
 	
 	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs], dtype=floattype)
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.

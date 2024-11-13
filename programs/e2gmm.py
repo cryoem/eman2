@@ -62,6 +62,7 @@ from matplotlib.patches import Circle
 if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0'
 os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+os.environ["TF_USE_LEGACY_KERAS"]="1"	# This needs to be before tensorflow is imported ... I think
 
 import traceback
 import tensorflow as tf
@@ -348,14 +349,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wlistgmm = QtWidgets.QListWidget()
 		self.wlistgmm.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.update_gmms()
-		self.gblfld.addWidget(self.wlistgmm,0,0,1,2)
+		self.gblfld.addWidget(self.wlistgmm,0,0,1,3)
 
 		self.wbutnewgmm=QtWidgets.QPushButton("New GMM")
 		self.gblfld.addWidget(self.wbutnewgmm,1,0)
 
+		self.wbutnewmangmm=QtWidgets.QPushButton("Manual")
+		self.gblfld.addWidget(self.wbutnewmangmm,1,1)
+
 		self.wlpath = QtWidgets.QLabel("-")
 		self.wlpath.setToolTip("Path this GMM is based on")
-		self.gblfld.addWidget(self.wlpath,1,1)
+		self.gblfld.addWidget(self.wlpath,1,2)
 
 		#self.wbutrefine = QtWidgets.QPushButton("refine_XX")
 		#self.gblfld.addWidget(self.wbutrefine,1,1)
@@ -713,6 +717,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutvside4.clicked[bool].connect(self.view_side4)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
 		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
+		self.wbutnewmangmm.clicked[bool].connect(self.add_gmm_man)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
 		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
 		self.wbutnewrun.clicked[bool].connect(self.new_run)
@@ -2300,6 +2305,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			if m[0]!="" : masks=[EMData(f) for f in m]
 			else: return
 		except:
+			traceback.print_exc()
 			showerror("Invalid mask. Comma separated list of filenames or blank!")
 			return
 
@@ -2421,7 +2427,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
 		#self.gmm=str(self.wlistgmm.currentItem().text())
-		self.gmms=[i for i in sorted(os.listdir(".")) if i[:4]=="gmm_" and os.path.isdir(i)]
+		self.gmms=[i for i in sorted(os.listdir(".")) if i[:4]=="gmmk3_" and os.path.isdir(i)]
 		self.wlistgmm.clear()
 		for i in self.gmms:
 			self.wlistgmm.addItem(i)
@@ -2537,8 +2543,10 @@ class EMGMM(QtWidgets.QMainWindow):
 		try:
 			self.decoder = tf.keras.models.load_model(f"{self.gmm}/{self.currunkey}_decoder.h5",compile=False)
 		except:
-			traceback.print_exc()
-			print(f"Run {self.gmm} -> {self.currunkey} results incomplete. No stored decoder found.",self)
+			traceback.print_exc(limit=1)
+			print("...")
+			traceback.print_exc(limit=-1)
+			print(f"Run {self.gmm} -> {self.currunkey} error reading decoder.\n\nThis normally means you haven't run the GMM yet, in which case this is normal.",self)
 			self.set3dvis(1,0,0,0,0,1)
 			get_application().restoreOverrideCursor()
 			return
@@ -2633,6 +2641,62 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gmm=newgmm
 		ok=self.setgmm_refine(remove=True)
 		if ok: self.wlistgmm.addItem(newgmm)
+
+	def add_gmm_man(self,clk=False):
+		"""Creates a new numbered gmm_XX folder"""
+		try: newgmm=num_path_new("gmm")
+		except:
+			showerror(f"Cannot create {newgmm}",self)
+			return
+		self.gmm=newgmm
+		ok=self.setgmm_lst(remove=True)
+		if ok: self.wlistgmm.addItem(newgmm)
+
+	def setgmm_lst(self,clk=False,remove=False):
+		"""Allows the user to select the source data for a new gmm_XX folder.
+		if remove is set and the user hits cancel, the folder will be removed."""
+		self.jsparm=js_open_dict(f"{self.gmm}/0_gmm_parms.json")
+
+		# double check if the user will be destroying results
+		if "refinepath" in self.jsparm:
+			ans=QtWidgets.QMessageBox.question(self,"Are you sure?",f"{self.gmm} has already been configured to work on {self.jsparm['refinepath']}. Continuing may invalidate current results. Proceed?")
+			if ans==QtWidgets.QMessageBox.No:
+				if remove: os.unlink(self.gmm)
+				return False
+
+		# Get the name of an existing refinement
+		try:
+			lstfile=os.path.relpath(str(QtWidgets.QFileDialog.getOpenFileName(self,"Please select an existing .lst file with orientations")[0]))
+		except: return
+		self.jsparm["refinepath"]=lstfile
+		run(f"cp {lstfile} {self.gmm}/particles.lst; echo ")
+
+		try:
+			mapfile=os.path.relpath(str(QtWidgets.QFileDialog.getOpenFileName(self,"Please select the corresponding threed.hdf file")[0]))
+		except: return
+
+		self.app().setOverrideCursor(Qt.BusyCursor)
+
+		# Copy map from refine folder
+		a=EMData(mapfile)
+		a.write_compressed(f"{self.gmm}/input_map.hdf",0,12)
+		self.jsparm["source_map"]=mapfile
+		self.jsparm["boxsize"]=a["nx"]
+		self.jsparm["apix"]=a["apix_x"]
+		self.jsparm["sym"]="c1"
+
+		# make projections from threed
+		run(f"e2project3d.py {self.gmm}/input_map.hdf --outfile {self.gmm}/proj_in.hdf --orientgen rand:n=500:phitoo=1 --sym c1 --parallel thread:8")
+
+		self.jsparm["mask"]=""
+
+		self.app().setOverrideCursor(Qt.ArrowCursor)
+
+		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
+		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
+		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
+
+		return True
 
 	def setgmm_refine(self,clk=False,remove=False):
 		"""Allows the user to select the source data for a new gmm_XX folder.

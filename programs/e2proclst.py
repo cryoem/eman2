@@ -79,11 +79,14 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
+	parser.add_argument("--keeptilt", type=int, default=-1, help="Keep X subtilt close to the center tilt. Require ptcl3d_id and tilt_id.")
+
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
 	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 	parser.add_argument("--flip", action="store_true", default=False, help="flip xform.")
+	parser.add_argument("--unique", action="store_true", default=False, help="keep only unique particles.")
 	parser.add_argument("--sym", type=str, default=None, help="WARNING: operates in-place, modifying input files!  Apply symmetry to .lst files of particles with xform.projection by duplicating each particle N times.")
 	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
 	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
@@ -233,7 +236,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			dic={str((l['src'], l['idx'])):i for i,l in enumerate(lstref)}
 			print(len(lsts), len(lstref))
 			for l in lsts:
-				i=dic[str((l['src'], l['idx']))]
+				k=str((l['src'], l['idx']))
+				if k not in dic:
+					print(f"cannot find {k} in reference list. skip")
+					continue
+				i=dic[k]
 				lstout[i]=l
 				#print(i,l['src'], l['idx'], len([l for l in lstout if l==None]))
 			for i,l in enumerate(lstout):
@@ -306,6 +313,27 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					l["xform.align3d"]=x
 					
 			save_lst_params(lsts, options.create)	
+
+		elif options.keeptilt>0:
+			lsts=[load_lst_params(a) for a in args]
+			lsts=sum(lsts, [])
+
+			p3d=np.array([a["ptcl3d_id"] for a in lsts])
+
+			uid=np.unique(p3d)
+			lout=[]
+			nkeep=options.keeptilt
+			for u in uid:
+				ii=np.where(p3d==u)[0]
+				ll=[lsts[i] for i in ii]
+				tid=np.array([a["tilt_id"] for a in ll])
+				d=abs(tid-np.mean(tid))
+				di=np.sort(np.argsort(d)[:nkeep])
+				lo=[ll[i] for i in di]
+				lout.extend(lo)
+
+			save_lst_params(lout, options.create)
+			print(f"keep {len(lout)} out of {len(lsts)} tilt images")
 			
 		else:
 			for f in args:
@@ -583,6 +611,15 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				l[atr]=x
 				lout.append(l)
 					
+			save_lst_params(lout, f)
+			
+	if options.unique:
+		for f in args:
+			lst=load_lst_params(f)
+			ks=["{}_{}".format(l["src"],l["idx"]) for l in lst]
+			u,i=np.unique(ks, return_index=True)
+			print(f"{len(u)} unique particles out of {len(lst)}")
+			lout=[lst[j] for j in i]					
 			save_lst_params(lout, f)
 			
 	if options.scalexf>0:

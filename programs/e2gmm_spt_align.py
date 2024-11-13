@@ -7,7 +7,7 @@ from EMAN2 import *
 
 if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	# so we can decide which gpu to use with environmental variable
-	os.environ["CUDA_VISIBLE_DEVICES"]='1' 
+	os.environ["CUDA_VISIBLE_DEVICES"]='0' 
 	
 #### do not occupy the entire GPU memory at once
 ##   seems necessary to avoid some errors...
@@ -52,6 +52,8 @@ def main():
 	parser.add_argument("--ptclsin", type=str,help="2d particle input ", default=None)
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default=None)
 	parser.add_argument("--model", type=str,help="model file as reference", default=None)
+	parser.add_argument("--mask", type=str,help="mask model before alignment", default=None)
+	parser.add_argument("--masklevel", type=float,help="mask level", default=0.2)
 	parser.add_argument("--maxres", type=float,help="max resolution", default=None)
 	parser.add_argument("--minres", type=float,help="min resolution", default=100)
 	parser.add_argument("--clip", type=int,help="size of 3d particle", default=None)
@@ -64,7 +66,27 @@ def main():
 	
 	pts=np.loadtxt(options.model).astype(floattype)
 	print("Gaussian model shape: ", pts.shape)
+	
+	if options.mask:
+		msk=EMData(options.mask)
+		m=msk.numpy().copy()
+		m=(m*(1.-options.masklevel))+options.masklevel
+		p=pts[:,:3].copy()
+		p=p[:,::-1]
+		p[:,:2]*=-1
+		p=(p+.5)*msk["nx"]
 
+		o=np.round(p).astype(int)
+		o=np.clip(o, 0, len(m)-1)
+		v=m[o[:,0], o[:,1], o[:,2]]
+		
+		imsk=v.astype(floattype).copy()
+		iz=imsk==0
+		imsk[iz]=1
+		imsk=1./imsk
+		imsk[iz]=0
+		pts[:,4]=pts[:,4]*imsk
+		
 	##   turn model to tensorflow format
 	pts=tf.constant(pts)
 
@@ -100,7 +122,7 @@ def main():
 	options.minpx=max(1, options.minpx)
 	options.maxpx=options.maxboxsz//2
 	data_cpx, xfsnp=load_particles(options)
-	print(f"particle size {raw_boxsz}, clip to {options.maxboxsz}, shrink to {options.maxboxsz}")
+	print(f"particle size {raw_boxsz}, clip to {options.clip}, shrink to {options.maxboxsz}")
 	print(f"compare {options.minpx} to {options.maxpx} Fourier pixels")
 
 	clipid=set_indices_boxsz(data_cpx[0].shape[1], options.apix, True)

@@ -42,7 +42,7 @@ import sys
 from math import *
 from sys import exit
 import os
-os.environ["TF_USE_LEGACY_KERAS"]="1"	# TensorFlow 2.16 switched to Keras 3.0, which isn't backwards compatible, until we fix all programs this is the default
+# os.environ["TF_USE_LEGACY_KERAS"]="1"	# TensorFlow 2.16 switched to Keras 3.0, which isn't backwards compatible, until we fix all programs this is the default
 
 import time
 import shelve
@@ -115,7 +115,7 @@ T=Transform({"type":"2d","alpha":0})
 bispec_invar_parm=(32,10)
 
 # These are processors which don't support in-place operation
-outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum"]
+outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum","morph.blackhat.binary","morph.close.binary","morph.dilate.binary","morph.erode.binary","morph.ext_grad.binary","morph.gradient.binary","morph.grow","morph.int_grad.binary","morph.majority","morph.object.density","morph.object.label","morph.open.binary","morph.prune","morph.thin","morph.tophat.binary"]
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things

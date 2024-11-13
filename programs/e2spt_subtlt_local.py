@@ -152,25 +152,14 @@ class SptAlignTask(JSTask):
 			alipm=load_lst_params(options.aliptcls3d)
 			for i,a in zip(info3d, alipm):
 				i["xform.align3d"]=a["xform.align3d"]
-				i["score"]=a["score"]
+				if "score" in a:
+					i["score"]=a["score"]
 				if "orig_idx" in a:
 					i["orig_idx"]=a["orig_idx"]
 				if "class" in a:
 					i["orig_class"]=a["class"]
 		
 		frompast=(options.aliptcls2d!="")
-		#if options.aliptcls2d!="":
-			#if options.debug:
-				#print("loading past alignment from {}...".format(options.aliptcls2d))
-				
-			#alipm=load_lst_params(options.aliptcls2d)
-			#for i,a in zip(info2d, alipm):
-				#i["pastxf"]=a["xform.projection"]
-				#i["score"]=a["score"]
-			#alipm=None
-			#frompast=True
-		#else:
-			#frompast=False
 		
 		### load references
 		if options.goldcontinue:

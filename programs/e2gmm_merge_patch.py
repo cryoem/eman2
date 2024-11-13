@@ -15,11 +15,15 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--base", type=str, help="path of the global refinement. required for merging multiple folders",default=None)
 	parser.add_argument("--sym", type=str, help="",default="c1")
+	parser.add_argument("--masks", type=str, help="replace masks in info files",default=None)
 	parser.add_argument("--skippp", action="store_true", default=False ,help="skip post process")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
+	if options.masks:
+		options.masks=options.masks.split(',')
+		print(options.masks)
 	
 	if len(args)==1 and options.base==None:
 		## read from gmm_refine_patch in a single folder
@@ -76,10 +80,21 @@ def main():
 			
 			m0=EMData(f"{options.base}/mask.hdf")
 			m0.to_one()
-			for pt in args:
+			
+			for ip, pt in enumerate(args):
 				if pt==options.base: continue
-				js=js_open_dict(f"{pt}/0_gmm_params.json")
-				mfile=js["mask"]
+				if options.masks==None:
+					if pt.startswith("gmm"):
+						js=js_open_dict(f"{pt}/0_gmm_params.json")
+					elif pt.startswith("spt"):
+						js=js_open_dict(f"{pt}/0_spt_params.json")
+					else:
+						print("Unrecognized folder")
+						exit()
+					mfile=js["mask"]
+				else:
+					mfile=options.masks[ip]
+					
 				m=EMData(mfile)
 				print(f"Reading from {pt} {eo}, using mask file {mfile}")
 				m.process_inplace("threshold.binary",{"value":.5})

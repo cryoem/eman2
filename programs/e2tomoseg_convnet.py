@@ -337,7 +337,7 @@ class StackedConvNet_tf(object):
 				
 		self.model=tf.keras.Sequential(layers)
 		self.imgsz=imgsz
-		self.outsz=self.model.get_layer(index=-1).output_shape[1]
+		self.outsz=self.model.get_layer(index=-1).output.shape[1]
 		self.batchsize=batchsz
 		self.kernels=kernels
 		self.meanout=meanout

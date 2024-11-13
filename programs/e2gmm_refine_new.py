@@ -174,13 +174,19 @@ def pts2img_one_sig(args):
 	cpxang_x=tf.vectorized_map(mult_gauss_coords, (bposft[:,0], idxft[0,[0],:]))
 	cpxang_y=tf.vectorized_map(mult_gauss_coords, (bposft[:,1], idxft[1,:,[0]]))
 
+	## This should be mathematically correct version. But then replacing it now would break anything trained previously....
+	# sig_x = tf.exp(-rrft[0][None, :]*bsigma[:,None]*bsigma[:,None])*bsigma[:,None]
+	# sig_y = tf.exp(-rrft[1][None, :]*bsigma[:,None]*bsigma[:,None])*bsigma[:,None]
+	## Anyway, it is just a scaling difference... Right now it is actually
+	# y=np.exp(-((x**2)/(s*v[1])))*(a*a*v[0]/s)
+	## where v=[0.111, 1e-4]
 	sig_x = tf.exp(-rrft[0][None, :]*bsigma[:,None])
 	sig_y = tf.exp(-rrft[1][None, :]*bsigma[:,None])
     
 	pgauss_x = tf.exp(-1j*tf.cast(cpxang_x, tf.complex64))*bamp*sig_x
 	pgauss_y = tf.exp(-1j*tf.cast(cpxang_y, tf.complex64))*bamp*sig_y
 
-    
+
 	pgauss = tf.matmul(tf.transpose(pgauss_x), pgauss_y)
 	pgauss = tf.transpose(pgauss)#*tf.cast(amp, tf.complex64)
 	return pgauss*tf.cast(xfo, tf.complex64)
@@ -962,7 +968,7 @@ def train_decoder(gen_model, trainset, params, options, pts=None):
 			#da=tf.reduce_mean(abs(ang-ang00))
 			#print("Average angle difference from input model {:.1f}".format(da.numpy()))
 
-def eval_model(gen_model, options):
+def eval_model(gen_model, options, usepts=False):
 	
 	imgs=[]
 	xfs=[]
@@ -981,8 +987,13 @@ def eval_model(gen_model, options):
 	trainset=tf.data.Dataset.from_tensor_slices((xfsnp))
 	trainset=trainset.batch(8)
 	for xf in trainset:
-		conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
-		pout=gen_model(conf)
+		if usepts:
+			pout=gen_model.astype(floattype).copy()
+			pout=tf.repeat(pout, xf.shape[0], axis=0)
+		else:
+			conf=tf.zeros((xf.shape[0],options.nmid), dtype=floattype)
+			pout=gen_model(conf)
+
 		imgs_real, imgs_imag=pts2img(pout, xf)
 		imgs_cpx=tf.complex(imgs_real, imgs_imag)
 		imgs_out=tf.signal.irfft2d(imgs_cpx)
@@ -1896,7 +1907,6 @@ def main():
 		print('selecting {:.0f} out of {} points'.format(np.sum(imsk), npt))
 		
 	#### Align particles using GMM
-	##   have not upgraded this part yet. probably still bugs left
 	if options.align:
 		pts=tf.constant(pts)
 			

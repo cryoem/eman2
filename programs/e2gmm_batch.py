@@ -18,7 +18,10 @@ def main():
 	
 	
 	logid=E2init(sys.argv)
+	curid="{:06d}".format(np.random.randint(1000000-1))
+	print(f"current session id {curid}")
 	
+	rawcmd=args[0]
 	cmd=args[0].split()
 	pname=find_option(cmd, "--ptclsin")
 	oname=find_option(cmd, "--ptclsout")
@@ -32,12 +35,16 @@ def main():
 	xf_file=find_option(cmd, "--xf_file")
 	path=pname[:pname.rfind('/')+1]
 	batch=options.batch
+	
+	if midout!=None: get_latent=True
+	else: get_latent=False
+	if "e2gmm_spt_rigidbody" in rawcmd and midout==None:
+		midout=find_option(cmd, "--xfout")
 	print("Writing tmp files in ",path)
 	# print(int(diter))
 	
-	rawcmd=args[0]
 	for rawiter in range(options.niter+1):
-		if midout and rawiter==options.niter:
+		if get_latent and rawiter==options.niter:
 			rawcmd=rawcmd.replace(f"--niter {citer}", "--niter 0")
 			rawcmd=rawcmd.replace(f"--learnrate {learnrate}", "--learnrate 0")
 			if diter!=None and int(diter)>0:
@@ -96,9 +103,9 @@ def main():
 				ll=lst[it*batch:(it+1)*batch]				
 				
 			print(f"{it+1}/{nbatch} batches, {len(ll)} particles")
-			tmplst=path+f'tmp_input_{it:03d}.lst'
-			tmpout=path+f'tmp_output_{it:03d}.lst'
-			tmpmid=path+f'tmp_mid_{it:03d}.txt'
+			tmplst=path+f'tmp_{curid}_input__{it:03d}.lst'
+			tmpout=path+f'tmp_{curid}_output_{it:03d}.lst'
+			tmpmid=path+f'tmp_{curid}_mid_{it:03d}.txt'
 			save_lst_params(ll, tmplst)
 			tmps=[tmplst,tmpout, tmpmid]
 			cc=rawcmd.replace(pname, tmplst)
@@ -106,7 +113,7 @@ def main():
 			if midout: cc=cc.replace(midout, tmpmid)
 			
 			if midin!=None:
-				tmpmidin=path+f'tmp_midin_{it:03d}.txt'
+				tmpmidin=path+f'tmp_{curid}_midin_{it:03d}.txt'
 				mm=mid[it*batch:(it+1)*batch,:]
 				np.savetxt(tmpmidin, mm)
 				tmps.append(tmpmidin)
@@ -114,7 +121,7 @@ def main():
 
 			tmpfiles.append(tmps)
 			
-			if options.load or rawiter>0: 
+			if options.load or rawiter>0 or it>0:
 				if enc!=None:
 					cc=cc+f" --encoderin {enc}"
 				if dec!=None:
@@ -122,6 +129,8 @@ def main():
 			
 			if "e2gmm_rigidbody.py" in rawcmd and xf_file!=None:
 				cc+=f" --xf_starti {it*batch}"
+			if "e2gmm_spt_rigidbody.py" in rawcmd:
+				cc+=f" --xfin_starti {it*batch}"
 			run(cc)
 			
 		if midout:
@@ -138,13 +147,13 @@ def main():
 			if "e2gmm_rigidbody.py" in rawcmd:
 				#### the output lst will be broken into multiple patches
 				for ip in range(100):
-					om=f'{path}/tmp_output_p{ip:02d}_000.lst'
+					om=f'{path}/tmp_{curid}_output_p{ip:02d}_000.lst'
 					if not os.path.isfile(om): break
 				npatch=ip
 				
 				for ip in range(npatch):
 					ptclsall=[]
-					tmps=[f'{path}/tmp_output_p{ip:02d}_{it:03d}.lst' for it in range(nbatch)]
+					tmps=[f'{path}/tmp_{curid}_output_p{ip:02d}_{it:03d}.lst' for it in range(nbatch)]
 					for tmp in tmps:
 						ptclsall.extend(load_lst_params(tmp))
 						os.remove(tmp)
