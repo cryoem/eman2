@@ -907,6 +907,40 @@ stddev=0.01"""
 		return EMStack3D(vol)
 		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
+	def volume_tiled(self,xsize,ysize,boxz,xtiles,ytiles,zaspect=0.5):
+		self.coerce_numpy()
+
+		zsize=good_size(boxz*zaspect*2.0)
+#		vol=np.zeros((zsize,ysize,xsize), dtype=np.float16)		# output, need to chunk in Z because can't fit eg a 4096x4096x1024 in memory (most i could do with 4kx4k was ~100)
+		vol=np.zeros((zsize,ysize,xsize))
+
+		xfgauss=np.flip((self._data[:,:3]+(0.25*xtiles,0.25*ytiles,zaspect))*(xsize/xtiles*2,ysize/ytiles*2,zsize),[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+
+		xfgaussf=np.floor(xfgauss)
+		xfgaussi=np.ndarray.astype(xfgaussf,np.int32)	# integer index
+		xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+		# messy trilinear interpolation
+		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bampall=np.concatenate([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
+		bposall=np.concatenate([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+		mask = np.logical_and(np.logical_and(np.logical_and(bposall[:,0]>=0, bposall[:,0]<zsize), np.logical_and(bposall[:,1]>=0, bposall[:,1]<ysize)),np.logical_and(bposall[:,2]>=0, bposall[:,2]<xsize))
+		bampall=bampall[mask]
+		bposall=bposall[mask]
+		vol[bposall[:,0], bposall[:,1],bposall[:,2]]+=bampall
+		# tf.tensor_scatter_nd_add(vol,bposall,bampall)
+
+#		emvol = EMData()
+#		emvol._data = from_numpy(vol)
+		return from_numpy(vol)
+		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
 def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	"""Initializes the global CTF_SIGN variable with the required correction images
