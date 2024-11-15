@@ -30,7 +30,7 @@
 #
 
 from EMAN3 import *
-from EMAN3tensor import *
+from EMAN3jax import *
 import numpy as np
 import sys
 import time
@@ -62,7 +62,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
 	(options, args) = parser.parse_args()
-	tf_set_device(dev=0,maxmem=options.gpuram)
+	jax_set_device(dev=0,maxmem=options.gpuram)
 
 	llo=E3init(sys.argv)
 
@@ -111,13 +111,13 @@ def main():
 		]
 	else:
 		stages=[
-			[500,   16,16,1.8,-3  ,1,.01, 2.0],
-			[500,   16,16,1.8, 0  ,3,.01, 1.0],
-			[1000,  32,16,1.5, 0  ,2,.005,1.5],
-			[1000,  32,16,1.5,-1  ,3,.007,1.0],
-			[2500,  64,24,1.2,-1.5,2,.005,1.0],
-			[10000,256,24,1.0,-2  ,2,.002,1.0],
-			[25000,512,12,0.8,-2  ,1,.001,0.75]
+			[512,   16,16,1.8,-3  ,1,.03, 2.0],
+			[512,   16,16,1.8, 0  ,4,.03, 1.0],
+			[1024,  32,16,1.5, 0  ,4,.02,1.5],
+			[1024,  32,16,1.5,-1  ,3,.02,1.0],
+			[4096,  64,24,1.2,-1.5,3,.01,1.0],
+			[8192, 256,24,1.0,-2  ,3,.005,1.0],
+			[32768,512,12,0.8,-2  ,1,.002,0.75]
 		]
 
 	times=[time.time()]
@@ -149,7 +149,9 @@ def main():
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
-	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
+	rng = np.random.default_rng()
+	rnd=rng.uniform(0.0,1.0,(options.initgauss,4))		# start with completely random Gaussian parameters
+#	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
 	rnd+=(-.5,-.5,-.5,2.0)
 	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
@@ -169,8 +171,8 @@ def main():
 			else: idx0=0
 			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
 			imshift=0.0
-			for j in range(0,len(nliststg),500):	# compute the gradient step piecewise due to memory limitations, 500 particles at a time
-				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+500])
+			for j in range(0,len(nliststg),512):	# compute the gradient step piecewise due to memory limitations, 512 particles at a time
+				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+512])
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
 				if True:
@@ -197,22 +199,22 @@ def main():
 					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 					if j==0:
 						step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
-						caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+						caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
 					else:
 						step+=step0
-						caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+						caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
 						qual+=qual0
 						shift+=shift0
 						sca+=sca0
 						imshift+=imshift0
-			norm=len(nliststg)//500+1
+			norm=len(nliststg)//512+1
 			qual/=norm
 			if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
 			step*=rstep/norm
 			shift/=norm
 			sca/=norm
 			imshift/=norm
-			gaus.add_tensor(step)
+			gaus.add_array(step)
 			lqual=qual
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
@@ -286,24 +288,35 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx2d(swapxy=True)
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
+#	print("mx ",mx.shape)
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfn(gausary,mx,tytx,ptcls,weight)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 #	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
 	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (step,float(qual),float(shift),float(sca))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+
+def prj_frc(gausary,mx2d,tytx,ptcls,weight):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+	#prj=pfn(gausary,mx2d,ny,tytx)
+	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2)
+
+gradvalfn=jax.value_and_grad(prj_frc)
 
 def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,

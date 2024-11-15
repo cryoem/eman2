@@ -1,7 +1,8 @@
+
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 05/19/2023 (sludtke@bcm.edu)
-# Copyright (c) 2000-2023 Baylor College of Medicine
+# Author: Steven Ludtke, 09/10/2024 (sludtke@bcm.edu)
+# Copyright (c) 2000-2024 Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GPL license. You may use the
 # source code in this file under either license. However, note that the
@@ -30,9 +31,9 @@
 #
 
 """
-This module contains EMAN3-specific operations. We don't generate EMAN-like aliases for monolithic tensorflow operations.
+This module is exclusive with EMAN3tensor. Do not try and import both in a single program.
 
-ONLY import this file if you will be working with tensorflow in your program, otherwise the tensorflow initialization may add unreasonable startup delays
+ONLY import this file if you will be working with JAX in your program, otherwise the JAX initialization may add unreasonable startup delays
 
 There are several key classes for data representation in this module:
 EMStack3D, 2D, 1D - A set of 3 classes to represent stacks of images of different dimensionality with seamless interconversion among EMData, NumPy and Tensorflow.
@@ -57,9 +58,15 @@ np.fromfunction(lambda x,y: np.hypot(x,y),(nx,ny)) - for example
 """
 
 from EMAN3 import *
-import tensorflow as tf
 import numpy as np
+import jax
+import jax.numpy as jnp
+from jax import grad, jit
+from jax import lax
+from jax import random
+import jaxlib
 
+# TODO
 class StackCache():
 	"""This object serves as a cache of EMStack objects which can be conveniently read back in. This provides
 	methods for easy/efficient sampling of subsets of data sets which may be too large for RAM. Caches are not persistent across sessions
@@ -88,7 +95,7 @@ class StackCache():
 		"""writes stack of images starting at n0 to cache"""
 		while self.locked: time.sleep(0.1)
 		self.locked=True
-		stack.coerce_tensor()
+		stack.coerce_numpy()
 		if ortss is not None:
 			try: self.orts[n0:n0+len(stack)]=ortss
 			except: self.orts[n0:n0+len(stack)]=ortss.numpy()
@@ -101,7 +108,8 @@ class StackCache():
 		for i in range(len(stack)):
 			im=stack[i]
 			self.locs[n0+i]=self.cloc
-			self.fp.write(tf.io.serialize_tensor(im).numpy())
+			np.save(self.fp,im)
+			# self.fp.write(tf.io.serialize_tensor(im).numpy())	#TODO
 			self.cloc=self.fp.tell()
 			self.locs[n0+i+1]=self.cloc
 
@@ -126,14 +134,15 @@ class StackCache():
 		for i in nlist:
 			try:
 				self.fp.seek(self.locs[i])
-				stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))
+				stack.append(np.load(self.fp))
+#				stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))  # TODO
 			except:
 				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]}")
 
 		self.locked=False
-		ret=EMStack2D(tf.stack(stack))
+		ret=EMStack2D(jnp.stack(stack))
 		orts=Orientations(self.orts[nlist])
-		tytx=tf.constant(self.tytx[nlist])
+		tytx=np.array(self.tytx[nlist])
 		return ret,orts,tytx
 
 class EMStack():
@@ -176,12 +185,12 @@ class EMStack():
 		raise Exception("Cannot set individual elements")
 
 	@property
-	def tensor(self):
-		self.coerce_tensor()
+	def jax(self):
+		self.coerce_jax()
 		return self._data
 
-	@tensor.setter
-	def tensor(self,value):
+	@jax.setter
+	def jax(self,value):
 		self.set_data(value)
 
 	@property
@@ -212,7 +221,7 @@ class EMStack():
 		"""Forces the current representation to EMData/NumPy"""
 		if isinstance(self._data,list): return
 		elif isinstance(self._data,np.ndarray): self._data=[from_numpy(i) for i in self._data]
-		elif isinstance(self._data,tf.Tensor): self._data=from_tf(self._data,True)
+		elif isinstance(self._data,jax.Array): self._data=from_jax(self._data,True)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 		self._npy_list=None		# not necessary if already EMData list
 
@@ -220,14 +229,14 @@ class EMStack():
 		if isinstance(self._data,np.ndarray): return
 		elif self._npy_list is not None: self._data=np.stack(self._npy_list)
 		elif isinstance(self._data,list): self._data=np.stack([i.numpy() for i in self._data])
-		elif isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		elif isinstance(self._data,jax.Array): self._data=np.array(self._data)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 		self._npy_list=None		# not necessary if already EMData list
 
-	def coerce_tensor(self):
-		if isinstance(self._data,tf.Tensor): return
-		elif isinstance(self._data,list): self._data=to_tf(self._data)
-		elif isinstance(self._data,np.ndarray): self._data=tf.constant(self._data)
+	def coerce_jax(self):
+		if isinstance(self._data,jax.Array): return
+		elif isinstance(self._data,list): self._data=to_jax(self._data)
+		elif isinstance(self._data,np.ndarray): self._data=jnp.array(self._data)
 		else: raise Exception(f"Invalid data in EMStack3D: {type(self._data)}")
 
 	def center_clip(self,size):
@@ -243,13 +252,13 @@ class EMStack():
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size"""
 
 		if isinstance(target,EMStack3D):
-			return self.tensor*tf.math.conj(target)
+			return self.jax*jnp.conj(target)
 
 	def mult(self,img):
 		"""multiply each image in the stack by img"""
-		if isinstance(img,tf.Tensor):
-			self._data=self.tensor*imgs
-		else: raise Exception("Only tensor data currently supported")
+		if isinstance(img,jax.Array):
+			self._data=self._data*img
+		else: raise Exception("Only JAX data currently supported")
 
 	def align_translate(ref,maxshift=-1):
 		"""compute translational alignment of a stack of images to a same sized stack or single reference image.
@@ -289,9 +298,9 @@ class EMStack3D(EMStack):
 			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
 			self._data=[imgs]
 			self._npy_list=None
-		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
+		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)==3:
-				imgs=tf.expand_dims(imgs,0)
+				imgs=jnp.expand_dims(imgs,0)
 			elif len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
 			self._npy_list=None
@@ -328,24 +337,24 @@ class EMStack3D(EMStack):
 	def do_fft(self,keep_type=False):
 		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
-		self.coerce_tensor()
+		self.coerce_jax()
 
-		return tf_fft3d(self._data)
+		return jax_fft3d(self._data)
 
 	def do_ift(self,keep_type=False):
 		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
 		if keep_type: raise Exception("do_ift: keep_type not functional yet")
-		self.coerce_tensor()
+		self.coerce_jax()
 
-		return tf_ift3d(self._data)
+		return jax_ift3d(self._data)
 
 	def calc_ccf(self,target):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size"""
 
 		if isinstance(target,EMStack3D):
-			return EMStack3D(self.tensor*tf.math.conj(target.tensor))
-		elif isinstance(target,tf.Tensor):
-			return EMStack3D(self.tensor*tf.math.conj(target))
+			return EMStack3D(self.jax*jnp.conj(target.jax))
+		elif isinstance(target,jax.Array):
+			return EMStack3D(self.jax*jnp.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 	def downsample(self,newsize):
@@ -354,7 +363,7 @@ class EMStack3D(EMStack):
 		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
 		not be used on rectangular images/volumes."""
 
-		return EMStack3D(tf_downsample_3d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+		return EMStack3D(jax_downsample_3d(self.jax,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
 
 class EMStack2D(EMStack):
@@ -380,10 +389,10 @@ class EMStack2D(EMStack):
 			self._data=[imgs]
 			try: self._xforms=[imgs["xform.projection"]]
 			except: pass
-			try: self._df=[imgs["ctf"].to_dict()["defocus"]]
+			try: self._df=np.array([imgs["ctf"].to_dict()["defocus"]])
 			except: pass
 			self._npy_list=None
-		elif isinstance(imgs,tf.Tensor) or isinstance(imgs,np.ndarray):
+		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
 			self._npy_list=None
@@ -391,11 +400,11 @@ class EMStack2D(EMStack):
 			self._data=EMData.read_images(imgs)
 			try: self._xforms=[im["xform.projection"] for im in self._data]
 			except: pass
-			try: self._df=[im["ctf"].to_dict()["defocus"] for im in self._data]
+			try: self._df=np.array([im["ctf"].to_dict()["defocus"] for im in self._data])
 			except: pass
 			if self._data[0].get_ndim()!=2:
 				if len(self._data)!=1 : raise Exception(f"EMStack2D only supports stacks of 2-D data or a single volume. {imgs} is a stack of {self._data[0].get_ndim()}-D")
-				self._data=to_tf(self._data[0])
+				self._data=to_jax(self._data[0])
 			self._npy_list=None
 		else:
 			try:
@@ -403,7 +412,7 @@ class EMStack2D(EMStack):
 				self._data=list(imgs)		# copy the list, not the elements of the list
 				try: self._xforms=[im["xform.projection"] for im in self._data]
 				except: pass
-				try: self._df=[im["ctf"].to_dict()["defocus"] for im in self._data]
+				try: self._df=np.array([im["ctf"].to_dict()["defocus"] for im in self._data])
 				except: pass
 				self._npy_list=None
 			except: raise Exception("EMStack2D may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Y,X}")
@@ -422,7 +431,7 @@ class EMStack2D(EMStack):
 		if self._xforms is None: return None,None
 		orts=Orientations()
 		tytx=orts.init_from_transforms(self._xforms)
-		if self._df is not None: tytx=tf.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
+		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
 		return orts,tytx
 
 	def center_clip(self,size):
@@ -433,23 +442,23 @@ class EMStack2D(EMStack):
 		if isinstance(self._data,list):
 			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
 			return EMStack2D(newlst)
-		elif isinstance(self._data,np.ndarray) or isinstance(self._data,tf.Tensor):
+		elif isinstance(self._data,np.ndarray) or isinstance(self._data,jax.Array):
 			newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
 			return EMStack2D(newary)
 
 	def do_fft(self,keep_type=False):
 		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
-		self.coerce_tensor()
+		self.coerce_jax()
 
-		return EMStack2D(tf_fft2d(self._data))
+		return EMStack2D(jax_fft2d(self._data))
 
 	def do_ift(self,keep_type=False):
 		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
 		if keep_type: raise Exception("do_ift: keep_type not functional yet")
-		self.coerce_tensor()
+		self.coerce_jax()
 
-		return EMStack2D(tf_ift2d(self._data))
+		return EMStack2D(jax_ift2d(self._data))
 
 	def calc_ccf(self,target,center=True,offset=0):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size.
@@ -457,28 +466,28 @@ class EMStack2D(EMStack):
 
 		if center:
 			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(tf_phaseorigin2d(self.tensor[:-offset]*tf.math.conj(target.tensor[offset:])))
+				return EMStack2D(tf_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])))
 			elif isinstance(target,EMStack2D):
-				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target.tensor)))
-			elif isinstance(target,tf.Tensor) and offset==0:
-				return EMStack2D(tf_phaseorigin2d(self.tensor*tf.math.conj(target)))
+				return EMStack2D(tf_phaseorigin2d(self.jax*jnp.conj(target.jax)))
+			elif isinstance(target,jax.Array) and offset==0:
+				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target)))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 		else:
 			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(self.tensor[:-offset]*tf.math.conj(target.tensor[offset:]))
+				return EMStack2D(self.jax[:-offset]*jnp.conj(target.jax[offset:]))
 			elif isinstance(target,EMStack2D):
-				return EMStack2D(self.tensor*tf.math.conj(target.tensor))
-			elif isinstance(target,tf.Tensor) and offset==0:
-				return EMStack2D(self.tensor*tf.math.conj(target))
+				return EMStack2D(self.jax*jnp.conj(target.jax))
+			elif isinstance(target,jax.Array) and offset==0:
+				return EMStack2D(self.jax*jnp.conj(target))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 	def convolve(self,target):
 		"""Compute the convolution between each image in the stack and target, which may be a single image or another EMStack of the same size"""
 
 		if isinstance(target,EMStack2D):
-			return EMStack2D(self.tensor*target.tensor)
-		elif isinstance(target,tf.Tensor):
-			return EMStack2D(self.tensor*target)
+			return EMStack2D(self.jax*target.jax)
+		elif isinstance(target,jax.Array):
+			return EMStack2D(self.jax*target)
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 	def downsample(self,newsize):
@@ -487,8 +496,8 @@ class EMStack2D(EMStack):
 		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
 		not be used on rectangular images/volumes."""
 
-		if newsize==self.shape[1]: return EMStack2D(self.tensor) # this won't copy, but since the tensor is constant should be ok?
-		return EMStack2D(tf_downsample_2d(self.tensor,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+		if newsize==self.shape[1]: return EMStack2D(self.jax) # this won't copy, but since the tensor is constant should be ok?
+		return EMStack2D(jax_downsample_2d(self.jax,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
 	def align_translate(self,ref,maxshift=-1):
 		"""compute translational alignment of a stack of images to a same sized stack (or single) of reference images.
@@ -496,7 +505,7 @@ class EMStack2D(EMStack):
 		on each axis. If maxshift is unspecified -> box size //4"""
 
 		ny,nx=self.shape[1:]
-		if self.tensor.dtype==tf.complex64 :
+		if self.jax.dtype==tf.complex64 :
 			nx=(nx-1)*2
 			data=self
 		else:
@@ -510,12 +519,12 @@ class EMStack2D(EMStack):
 		ccfsrc=ccfsr[:,ny//2-maxshift:ny//2+maxshift,nx//2-maxshift:nx//2+maxshift]		# only search a region around the center defined by maxshift
 
 		# reshaped CCF so we can use reduce_max on it
-		ccfsrs=tf.reshape(ccfsrc,(ccfsrc.shape[0],maxshift*2*maxshift*2))
+		ccfsrs=jnp.reshape(ccfsrc,(ccfsrc.shape[0],maxshift*2*maxshift*2))
 
 		# The y,x coordinates of the peak location
-		peaks=maxshift-tf.unravel_index(tf.argmax(ccfsrs,1),(maxshift*2,maxshift*2))
+		peaks=maxshift-jnp.unravel_index(jnp.argmax(ccfsrs,1),(maxshift*2,maxshift*2))
 
-		return tf.transpose(peaks)
+		return jnp.transpose(peaks)
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
@@ -528,9 +537,9 @@ class Orientations():
 		"""Initialize with either the number of orientations or a N x 3 matrix"""
 		if isinstance(xyzs,int):
 			if xyzs<=0: self._data=None
-			else: self._data=np.zeros((xyzs,3))
+			else: self._data=np.zeros((xyzs,3),np.float32)
 		else:
-			try: self._data=np.array(xyzs)
+			try: self._data=np.array(xyzs,np.float32)
 			except: raise Exception("Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array")
 
 
@@ -547,15 +556,15 @@ class Orientations():
 
 	def __len__(self): return self._data.shape[0]
 
-	def coerce_tensor(self):
-		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
+	def coerce_jax(self):
+		if not isinstance(self._data,jax.Array): self._data=jnp.array(self._data,jnp.float32)
 
 	def coerce_numpy(self):
-		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		if isinstance(self._data,jax.Array): self._data=np.array(self._data)
 
 	@property
-	def tensor(self):
-		self.coerce_tensor()
+	def jax(self):
+		self.coerce_jax()
 		return self._data
 
 	@property
@@ -564,7 +573,7 @@ class Orientations():
 		return self._data
 
 	def init_from_transforms(self,xformlist):
-		"""Replaces current contents of Orientations object with a list of Transform objects,
+		"""Replaces current contents of Orientations object with orientations from a list of Transform objects,
 		returns tytx array with any translations (not stored within Orientations)"""
 		self._data=np.zeros((len(xformlist),3))
 		tytx=[]
@@ -573,7 +582,7 @@ class Orientations():
 			self._data[i]=(r["v1"],r["v2"],r["v3"])
 			tytx.append((x.get_trans_2d()[1],x.get_trans_2d()[0]))
 
-		return(tf.constant(tytx))
+		return(np.array(tytx))
 
 	def transforms(self,tytx=None):
 		"""converts the current orientations to a list of Transform objects"""
@@ -599,23 +608,23 @@ class Orientations():
 		but images are YX.
 		"""
 
-		self.coerce_tensor()
+		self.coerce_jax()
 
 		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
 		# it is much slower, and the tiny pertutbation should not significantly impact the math.
-		l=tf.norm(self._data,axis=1)+1.0e-37
+		l=jnp.linalg.norm(self._data,axis=1)+1.0e-37
 
-		w=tf.cos(pi*l)  # cos "real" component of quaternion
-		s=tf.sin(-pi*l)/l
-		q=tf.transpose(self._data)*s		# transpose makes the vectorized math below work properly
+		w=jnp.cos(pi*l)  # cos "real" component of quaternion
+		s=jnp.sin(-pi*l)/l
+		q=jnp.transpose(self._data)*s		# transpose makes the vectorized math below work properly
 
 		if swapxy :
-			mx=tf.stack(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
+			mx=np.stack(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
 			(1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w)))
 		else:
-			mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+			mx=np.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
 			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
-		return mx
+		return jnp.array(mx)
 
 	def to_mx3d(self):
 		"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
@@ -629,20 +638,20 @@ class Orientations():
 		or
 		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)"""
 
-		self.coerce_tensor()
+		self.coerce_jax()
 
 		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
 		# it is much slower, and the tiny pertutbation should not significantly impact the math.
-		l=tf.norm(self._data,axis=1)+1.0e-37
+		l=jnp.linalg.norm(self._data,axis=1)+1.0e-37
 
-		w=tf.cos(pi*l)  # cos "real" component of quaternion
-		s=tf.sin(-pi*l)/l
-		q=tf.transpose(self._data)*s		# transpose makes the vectorized math below work properly
+		w=jnp.cos(pi*l)  # cos "real" component of quaternion
+		s=jnp.sin(-pi*l)/l
+		q=jnp.transpose(self._data)*s		# transpose makes the vectorized math below work properly
 
-		mx=tf.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+		mx=np.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
 		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
 		(2*q[0]*q[2]-2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
-		return mx
+		return jnp.array(mx)
 
 
 class Gaussians():
@@ -652,9 +661,9 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 	def __init__(self,gaus=0):
 		if isinstance(gaus,int):
 			if gaus<=0: self._data=None
-			else: self._data=np.zeros((gaus,4))
+			else: self._data=np.zeros((gaus,4),np.float32)
 		else:
-			try: self._data=np.array(gaus)
+			try: self._data=np.array(gaus,np.float32)
 			except: raise Exception("Gaussians must be initialized with an integer (number of Gaussians) or N x 4 matrix")
 
 	def __getitem__(self,key):
@@ -668,18 +677,18 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 
 	def __len__(self): return len(self._data)
 
-	def coerce_tensor(self):
-		if not isinstance(self._data,tf.Tensor): self._data=tf.constant(self._data,tf.float32)
+	def coerce_jax(self):
+		if not isinstance(self._data,jax.Array): self._data=jnp.array(self._data,jnp.float32)
 
 	def coerce_numpy(self):
-		if isinstance(self._data,tf.Tensor): self._data=self._data.numpy()
+		if isinstance(self._data,jax.Array): self._data=np.array(self._data)
 
-	def add_tensor(self,tensor):
-		self._data+=tensor
+	def add_array(self,array):
+		self._data+=array
 
 	@property
-	def tensor(self):
-		self.coerce_tensor()
+	def jax(self):
+		self.coerce_jax()
 		return self._data
 
 	@property
@@ -696,7 +705,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		minratio - minimum peak ratio, >0
 		apix - A/pix override"""
 
-		if isinstance(vol,tf.Tensor): emd=from_tf(vol)
+		if isinstance(vol,jax.Array): emd=from_jax(vol)
 		elif isinstance(vol,np.ndarray): emd=from_numpy(vol)
 		elif isinstance(vol,EMData): emd=vol
 		else: raise Exception("init_from_map: vol must be EMData, Tensor or NumPy Array")
@@ -717,19 +726,20 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
 stddev=0.01"""
 		if n<=1 : return
-		self.coerce_tensor()
-		dups=[self._data+tf.random.normal(self._data.shape,stddev=dev) for i in range(n)]
-		self._data=tf.concat(dups,0)
+		rng=np.random.default_rng()
+		self.coerce_jax()
+		dups=[self._data+rng.normal(0,dev,self._data.shape) for i in range(n)]
+		self._data=jnp.concat(dups,axis=0)
 
 	def norm_filter(self,sig=0.5,rad_downweight=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
-		self.coerce_tensor()
-		self._data=self._data*(1.0,1.0,1.0,1.0/tf.reduce_max(self._data[:,3]))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		self.coerce_jax()
+		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(self._data[:,3])))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
 		if rad_downweight>0:
-			famp=self._data[:,3]*(1.0-tf.nn.relu(tf.math.reduce_euclidean_norm(self._data[:,:3],1)-rad_downweight))
+			famp=self._data[:,3]*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
 		else: famp=self._data[:,3]
-		thr=tf.math.reduce_mean(famp)+sig*tf.math.reduce_std(famp)
-		self._data=tf.boolean_mask(self._data,famp>thr)					# remove any gaussians with amplitude below threshold
+		thr=jnp.mean(famp)+sig*jnp.std(famp)
+		self._data=self._data[famp>thr]			# remove any gaussians with amplitude below threshold
 
 	def project_simple(self,orts,boxsize,tytx=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
@@ -740,40 +750,16 @@ stddev=0.01"""
 		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 		used for comparisons should be resampled without any "clip" operations.
 		"""
-		self.coerce_tensor()
+		self.coerce_jax()
+
 
 #		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
-		proj=tf.zeros((boxsize,boxsize))		# projections
 		proj2=[]
 		mx=orts.to_mx2d(swapxy=True)
+		if tytx is None: tytx=jnp.zeros
+		return EMStack2D(gauss_project_simple_fn(self._data,mx,boxsize,tytx))
 
-		# iterate over projections
-		# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-		for j in range(len(orts)):
-			xfgauss=tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-			if tytx is not None:
-				#print(xfgauss.shape,tytx.shape)
-				xfgauss+=tytx[j,:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-			xfgauss=(xfgauss+0.5)*boxsize		# shift and scale both x and y the same
-
-			xfgaussf=tf.floor(xfgauss)
-			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
-			xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-
-			# print(xfgaussf,xfgaussi)
-			# print(xfgaussf.shape,xfgaussi.shape,self._data.shape,self._data[:,3].shape)
-			# messy tensor math here to implement bilinear interpolation
-			bamp0=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-			bamp1=self._data[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-			bamp2=self._data[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-			bamp3=self._data[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
-			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0)  # TODO: this would be ,1 with the loop subsumed
-			bposall=tf.concat([xfgaussi,xfgaussi+(1,0),xfgaussi+(1,1),xfgaussi+(0,1)],0) # TODO: this too
-			proj2.append(tf.tensor_scatter_nd_add(proj,bposall,bampall))
-
-		return EMStack2D(tf.stack(proj2))
-		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
-
+	#TODO this hasn't been updated
 	def project_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
 		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
 		orts-must be an Orientations object
@@ -834,34 +820,119 @@ stddev=0.01"""
 
 
 	def volume(self,boxsize,zaspect=0.5):
-		self.coerce_tensor()
+		self.coerce_jax()
 
 		zsize=good_size(boxsize*zaspect*2.0)
-		vol=tf.zeros((zsize,boxsize,boxsize))		# output
 
-		xfgauss=tf.reverse((self._data[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+		return EMStack3D(gauss_volume_fn(self._data,boxsize,zsize))
 
-		xfgaussf=tf.floor(xfgauss)
-		xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
-		xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+		vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32)		# output
 
-		# messy trilinear interpolation
-		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-		bampall=tf.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
-		bposall=tf.concat([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
-		vol=tf.tensor_scatter_nd_add(vol,bposall,bampall)
+def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
+	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
-		return EMStack3D(vol)
-		#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+	gausary - a Gaussians.jax array
+	mx - an Orientations object converted to a stack of 2d matrices
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+
+	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	used for comparisons should be resampled without any "clip" operations.
+	"""
+
+	proj2=[]
+
+	# iterate over projections
+	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+	# note that the mx dimensions have N as the 3rd not 1st component!
+	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
+
+	for j in range(mx.shape[2]):
+		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
+
+	return jnp.stack(proj2)
+	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
+
+def gauss_project_single_fn(gausary,mx,boxsize,tytx):
+	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+	gausary - a Gaussians.jax array
+	mx - an Orientations object converted to a stack of 2d matrices
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+
+	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	used for comparisons should be resampled without any "clip" operations.
+	"""
+
+	proj2=[]
+	shift10=jnp.array((1,0))
+	shift01=jnp.array((0,1))
+	shift11=jnp.array((1,1))
+#	print("t1")
+
+	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
+
+	xfgaussf=jnp.floor(xfgauss)
+	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
+	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+		# messy tensor math here to implement bilinear interpolation
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
+	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+
+		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
+	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
+	proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
+	return proj
 
 
+def gauss_volume_fn(gausary,boxsize,zsize):
+	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
+
+#		xfgauss=tf.reverse((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+	zaspect=zsize/(2.0*boxsize)
+	xfgauss=jnp.flip((gausary[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+
+	xfgaussf=jnp.floor(xfgauss)
+	xfgaussi=xfgaussf.astype(jnp.int32)	# integer index
+	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+	shift001=jnp.array((0,0,1))
+	shift010=jnp.array((0,1,0))
+	shift011=jnp.array((0,1,1))
+	shift100=jnp.array((1,0,0))
+	shift101=jnp.array((1,0,1))
+	shift110=jnp.array((1,1,0))
+	shift111=jnp.array((1,1,1))
+
+
+	# messy trilinear interpolation
+	bamp000=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp001=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp010=gausary[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp011=gausary[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp100=gausary[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp101=gausary[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp110=gausary[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp111=gausary[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+	bampall=jnp.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],axis=0)
+	bposall=jnp.concat([xfgaussi,xfgaussi+shift001,xfgaussi+shift010,xfgaussi+shift011,xfgaussi+shift100,xfgaussi+shift101,xfgaussi+shift110,xfgaussi+shift111],axis=0).transpose()
+
+	vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32).at[bposall[0],bposall[1],bposall[2]].add(bampall)
+
+	return vol
+
+#TODO this hasn't been updated
 def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	"""Initializes the global CTF_SIGN variable with the required correction images
 	dfrange-a tuple of min defocus, max defocus in the project
@@ -880,7 +951,8 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	ctf_sign=EMStack2D(tf.math.sign(tf.cos(-g1*rad2*rad2+g2*rad2*dflist[:,tf.newaxis,tf.newaxis]-phase)))
 	return ctf_sign, dfstep
 
-def tf_set_device(dev=0,maxmem=4096):
+JAXDEV=jax.devices()[0]
+def jax_set_device(dev=0,maxmem=4096):
 	"""Sets maximum memory for a specific Tensorflow device and returns a device to use with "with:"
 	dev - GPU number or -1 for CPU (CPU doesn't actually permit memory size allocation)
 	maxmem - maximum memory to allocate in megabytes
@@ -889,102 +961,96 @@ def tf_set_device(dev=0,maxmem=4096):
 	with dev:
 		# tensorflow operations, "with" block optional
 	"""
+	global JAXDEV
 	if dev<0 :
-		pdevice=tf.config.list_physical_devices('CPU')[0]
-		tf.config.set_logical_device_configuration(pdevice,[tf.config.LogicalDeviceConfiguration()])
-		return tf.device('/CPU:0')
+		raise Exception("CPU not currently supported on this JAX installation")
+		# pdevice=tf.config.list_physical_devices('CPU')[0]
+		# tf.config.set_logical_device_configuration(pdevice,[tf.config.LogicalDeviceConfiguration()])
+		# return tf.device('/CPU:0')
 	else:
-		pdevice=tf.config.list_physical_devices('GPU')[dev]
-		tf.config.set_logical_device_configuration(pdevice,[tf.config.LogicalDeviceConfiguration(memory_limit=maxmem)])
-		return tf.device(f'/GPU:{dev}')
+		JAXDEV=jax.devices()[dev]
+		# pdevice=tf.config.list_physical_devices('GPU')[dev]
+		# tf.config.set_logical_device_configuration(pdevice,[tf.config.LogicalDeviceConfiguration(memory_limit=maxmem)])
+		# return tf.device(f'/GPU:{dev}')
 
-def from_tf(tftensor,stack=False):
+def from_jax(jaxtensor,stack=False):
 	"""Convert a specified tensor to an EMData object
 	If stack is set, then the first axis of the tensor will be unpacked to form a list. ie a 3D tensor would become a list of 2D EMData objects"""
 
 	if stack:
-		return [EMNumPy.numpy2em(tftensor[i].numpy()) for i in range(tftensor.shape[0])]
-	return EMNumPy.numpy2em(tftensor.numpy())
+		return [EMNumPy.numpy2em(np.array(jaxtensor[i])) for i in range(jaxtensor.shape[0])]
+	return EMNumPy.numpy2em(np.array(jaxtensor))
 
-def to_tfvar(emdata):
-	"""Convert a specified EMData object or list of EMData objects into a TensorFlow Variable. WARNING many tensorflow operations are very inefficient with Variable tensors!"""
+def to_jax(emdata):
+	"""Convert a specified EMData object or list of EMData objects into a JAX tensor. The tensor is immutable."""
+
 	if isinstance(emdata,EMData):
-		return tf.Variable(EMNumPy.em2numpy(emdata))
+		return jnp.array(EMNumPy.em2numpy(emdata))
 
 	if isinstance(emdata,list) or isinstance(emdata,tuple):
 		npstack=np.stack([to_numpy(im) for im in emdata],axis=0)
-		return tf.Variable(npstack)
+		return jnp.array(npstack)
 
-def to_tf(emdata):
-	"""Convert a specified EMData object or list of EMData objects into a Tensorflow constant tensor. The tensor is immutable, but will have much better performance for most operations."""
+def jax_fft2d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 
-	if isinstance(emdata,EMData):
-		return tf.constant(EMNumPy.em2numpy(emdata))
+	if imgs.dtype==jnp.complex64: raise Exception("Data type must be real")
 
-	if isinstance(emdata,list) or isinstance(emdata,tuple):
-		npstack=np.stack([to_numpy(im) for im in emdata],axis=0)
-		return tf.constant(npstack)
+	return jnp.fft.rfft2(imgs)
 
-def tf_fft2d(imgs):
-	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+def jax_fft3d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 
-	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
+	if imgs.dtype==jnp.complex64: raise Exception("Data type must be real")
 
-	return tf.signal.rfft2d(imgs)
+	return jnp.fft.rfftn(imgs,axes=(-3,-2,-1))
 
-def tf_fft3d(imgs):
-	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+def jax_ift2d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 
-	if imgs.dtype==tf.complex64: raise Exception("Data type must be real")
+	if imgs.dtype!=jnp.complex64: raise Exception("Data type must be complex")
 
-	return tf.signal.rfft3d(imgs)
+	return jnp.fft.irfft2(imgs)
 
-def tf_ift2d(imgs):
-	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+def jax_ift3d(imgs):
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 
-	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
+	if imgs.dtype!=jnp.complex64: raise Exception("Data type must be complex")
 
-	return tf.signal.irfft2d(imgs)
-
-def tf_ift3d(imgs):
-	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
-
-	if imgs.dtype!=tf.complex64: raise Exception("Data type must be complex")
-
-	return tf.signal.irfft3d(imgs)
+	return jnp.irfft3d(imgs)
 
 POF2D=None
-def tf_phaseorigin2d(imgs):
+def jax_phaseorigin2d(imgs):
 	global POF2D
 	if len(imgs.shape)==3: shp=imgs.shape[1:]
 	else: shp=imgs.shape
 
 	if POF2D is None or shp!=POF2D.shape:
-		POF2D=tf.constant(np.fromfunction(lambda y,x: ((x+y)%2)*-2+1,shp),dtype=tf.complex64)
+		POF2D=jnp.fromfunction(lambda y,x: ((x+y)%2)*-2+1,shp,dtype=tf.complex64)
 
 	return imgs*POF2D
 
 POF3D=None
-def tf_phaseorigin3d(imgs):
+def jax_phaseorigin3d(imgs):
 	global POF3D
 	if len(imgs.shape)==3: shp=imgs.shape[1:]
 	else: shp=imgs.shape
 
 	if POF3D is None or shp!=POF3D.shape:
-		POF3D=tf.constant(np.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp),dtype=tf.complex64)
+		POF3D=jnp.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp,dtype=tf.complex64)
 
 	return imgs*POF3D
 
-def tf_gaussfilt_2d(boxsize,halfwidth):
+def jax_gaussfilt_2d(boxsize,halfwidth):
 	"""create a (multiplicative) Gaussian lowpass filter for boxsize with halfwidth (0.5=Nyquist)"""
 	coef=-1.0/(halfwidth*boxsize)**2
 	r2img=rad2_img(boxsize)
-	filt=tf.math.exp(r2img*coef)
+	filt=jnp.exp(r2img*coef)
 
 	return filt
 
 
-def tf_downsample_2d(imgs,newx,stack=False):
+def jax_downsample_2d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 2D image or stack of 2D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -995,16 +1061,18 @@ def tf_downsample_2d(imgs,newx,stack=False):
 
 	if newx%2!=0 : raise Exception("newx must be an even number")
 
-	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 
-	if imgs.dtype!=tf.complex64: imgs=tf.signal.rfft2d(imgs)
+	if imgs.dtype!=jnp.complex64: imgs=jnp.fft.rfft2(imgs)
 
-	if imgs.ndim==2: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
+	if imgs.ndim==2: imgs=jnp.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropy=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
-	return cropy[:,:,:newx//2+1]
+	# Note: tried replacing the 2-step process with a single 2-D mask, but that led to a flattened intermediate,
+	# which led to reshaping, so wound up back here for transparency, and (maybe) speed
+	imgs=jnp.concatenate((imgs[:,:newx//2,:],imgs[:,imgs.shape[1]-newx//2:,:]),axis=1)
+	return imgs[:,:,:newx//2+1]
 
-def tf_downsample_3d(imgs,newx,stack=False):
+def jax_downsample_3d(imgs,newx,stack=False):
 	"""Fourier downsamples a tensorflow 3D image or stack of 3D images (similar to math.fft.resample processor conceptually)
 	return will always be a stack (3d tensor) even if the first dimension is 1
 	passed image/stack may be real or complex (FFT), return is always complex!
@@ -1015,29 +1083,32 @@ def tf_downsample_3d(imgs,newx,stack=False):
 
 	if newx%2!=0 : raise Exception("newx must be an even number")
 
-	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_tf(imgs)
+	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 
-	if imgs.dtype!=tf.complex64: imgs=tf.signal.rfft3d(imgs)
+	if imgs.dtype!=jnp.complex64: imgs=jnp.fft.rfftn(imgs,axes=(-3,-2,-1))
 
-	if imgs.ndim==3: imgs=tf.expand_dims(imgs,0)	# we need a 3 rank tensor
+	if imgs.ndim==3: imgs=jnp.expand_dims(imgs,0)	# we need a 3 rank tensor
 
-	cropz=tf.gather(imgs,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
-	cropy=tf.gather(cropz,np.concatenate((np.arange(newx//2),np.arange(imgs.shape[2]-newx//2,imgs.shape[1]))),axis=2)
-	return cropy[:,:,:,:newx//2+1]
+	imgs=jnp.concatenate((imgs[:,:newx//2,:,:],imgs[:,imgs.shape[1]-newx//2:,:,:]),axis=1)		#Z
+	imgs=jnp.concatenate((imgs[:,:,:newx//2,:],imgs[:,:,imgs.shape[1]-newx//2:,:]),axis=2)		#Y
+	return imgs[:,:,:,:newx//2+1]		# X
 
-def tf_ccf_2d(ima,imb):
-	"""Compute the cross correlation between a stack of 2-D images (ima) and either a single 2-D image or a 1-1 stack of 2-D images (imb)"""
+	# cropz=lax.gather(imgs,jnp.concatenate((jnp.arange(newx//2),jnp.arange(imgs.shape[1]-newx//2,imgs.shape[1]))),axis=1)
+	# cropy=lax.gather(cropz,jnp.concatenate((jnp.arange(newx//2),jnp.arange(imgs.shape[2]-newx//2,imgs.shape[1]))),axis=2)
+	# return cropy[:,:,:,:newx//2+1]
 
-	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_frc requires FFTs")
+# def tf_ccf_2d(ima,imb):
+# 	"""Compute the cross correlation between a stack of 2-D images (ima) and either a single 2-D image or a 1-1 stack of 2-D images (imb)"""
+#
+# 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_frc requires FFTs")
 
-
-
-FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny,1 containing the integer Fourier radius to each point in the image
+FRC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the integer Fourier radius to each point in the image
 def rad_img_int(ny):
 	global FRC_RADS
 	try: return FRC_RADS[ny]
 	except:
-		rad_img=tf.expand_dims(tf.constant(np.vstack((np.fromfunction(lambda y,x: np.int32(np.hypot(x,y)),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.int32(np.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
+		rad_img=jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: jnp.int32(jnp.hypot(x,y)),(ny//2,ny//2+1)),jnp.fromfunction(lambda y,x: jnp.int32(jnp.hypot(x,ny//2-y)),(ny//2,ny//2+1)))))
+#		rad_img=jnp.expand_dims(jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: jnp.int32(jnp.hypot(x,y)),(ny//2,ny//2+1)),jnp.fromfunction(lambda y,x: jnp.int32(jnp.hypot(x,ny//2-y)),(ny//2,ny//2+1))))),2)
 		FRC_RADS[ny]=rad_img
 		return rad_img
 
@@ -1048,7 +1119,7 @@ given size are cached for reuse. """
 	global GEN_RAD2
 	try: return GEN_RAD2[ny]
 	except:
-		rad2_img=tf.constant(np.vstack((np.fromfunction(lambda y,x: np.complex64(x**2+y**2),(ny//2,ny//2+1)),np.fromfunction(lambda y,x: np.complex64((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))
+		rad2_img=jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: jnp.complex64(x**2+y**2),(ny//2,ny//2+1)),jnp.fromfunction(lambda y,x: jnp.complex64((x**2+(ny//2-y)**2)),(ny//2,ny//2+1)))))
 		GEN_RAD2[ny]=rad2_img
 		return rad2_img
 
@@ -1056,11 +1127,11 @@ given size are cached for reuse. """
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
-def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
-	"""Computes the pairwise FRCs between two stacks of complex images. imb may alternatively be a single image. Returns a list of 1D FSC tensors or if avg!=0
+def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
+	"""Computes the pairwise FRCs between two stacks of complex images. Returns a list of 1D FSC tensors or if avg!=0
 	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
 	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
-	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_frc requires FFTs")
+	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("jax_frc requires FFTs")
 #	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
@@ -1069,174 +1140,131 @@ def tf_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 	nimg=ima.shape[0]
 	nr=int(ny*0.70711)+1	# max radius we consider
 	rad_img=rad_img_int(ny)
-	try:
-		imar=tf.math.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
-		imai=tf.math.imag(ima)
-		imbr=tf.math.real(imb)
-		imbi=tf.math.imag(imb)
+#	try:
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
 
-		imabr=imar*imbr		# compute these before squaring for normalization
-		imabi=imai*imbi
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
 
-		imar=imar*imar		# just need the squared versions, not the originals now
-		imai=imai*imai
-		imbr=imbr*imbr
-		imbi=imbi*imbi
-	except:
-		raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+	# except:
+	# 	raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
 
-	if len(imbr.shape)==3: single=False
-	else: single=True
 	frc=[]
+	zero=jnp.zeros([nr])
 	for i in range(nimg):
-		zero=tf.zeros([nr])
-#		print(zero.shape,rad_img.shape,imabr.shape)
-		cross=tf.tensor_scatter_nd_add(zero,rad_img,imabr[i])	#start with zero when we add the real component
-		cross=tf.tensor_scatter_nd_add(cross,rad_img,imabi[i])	#add the imaginary component to the real
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
 
-		aprd=tf.tensor_scatter_nd_add(zero,rad_img,imar[i])
-		aprd=tf.tensor_scatter_nd_add(aprd,rad_img,imai[i])
-
-		if single:
-			bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr)
-			bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi)
-		else:
-			bprd=tf.tensor_scatter_nd_add(zero,rad_img,imbr[i])
-			bprd=tf.tensor_scatter_nd_add(bprd,rad_img,imbi[i])
-
-		frc.append(cross/tf.sqrt(aprd*bprd))
-
+	frc=jnp.stack(frc)
 	if avg>len(frc[0]): avg=-1
 	if avg>0:
-		frc=tf.stack(frc)
+		frc=jnp.stack(frc)
 		if weight!=1.0:
-			w=np.linspace(weight,2.0-weight,nr)
+			w=jnp.linspace(weight,2.0-weight,nr)
 			frc=frc*w
-		return tf.math.reduce_mean(frc[:,minfreq:avg],1)
-	elif avg==-1: return tf.math.reduce_mean(frc,1)
+		return frc[:,minfreq:avg].mean()
+#		return tf.math.reduce_mean(frc[:,minfreq:avg],1)
+	elif avg==-1: return frc.mean(1)
+#	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
+def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
+	"""Computes the pairwise FRCs between a stack of complex images and a single image. Returns a list of 1D FSC tensors or if avg!=0
+	then the average of the first 'avg' values. If -1, averages through Nyquist. Weight permits a frequency based weight
+	(only for avg>0): 1-2 will upweight low frequencies, 0-1 will upweight high frequencies"""
+	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("jax_frc requires FFTs")
+#	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
+
+	global FRC_RADS
+#	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	rad_img=rad_img_int(ny)
+#	try:
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+	# except:
+	# 	raise Exception(f"failed in FRC with sizes {ima.shape} {imb.shape} {imar.shape} {imbr.shape}")
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr+imbi)
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	if avg>len(frc[0]): avg=-1
+	if avg>0:
+		frc=jnp.stack(frc)
+		if weight!=1.0:
+			w=jnp.linspace(weight,2.0-weight,nr)
+			frc=frc*w
+		return frc[:,minfreq:avg].mean()
+#		return tf.math.reduce_mean(frc[:,minfreq:avg],1)
+	elif avg==-1: return frc.mean(1)
+#	elif avg==-1: return tf.math.reduce_mean(frc,1)
+	else: return frc
+
+def jax_frc_jit(ima,imb,weight=1.0,minfreq=0):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2"""
+
+	global FRC_RADS
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	rad_img=rad_img_int(ny)
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	w=jnp.linspace(weight,2.0-weight,nr)
+	frc=frc*w
+	return jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2)).mean()
+#	return frc[:,minfreq:ny//2].mean()
+
 FSC_REFS={}
-def tf_fsc(ima,imb):
+def jax_fsc(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
-	if ima.dtype!=tf.complex64 or imb.dtype!=tf.complex64 : raise Exception("tf_fsc requires FFTs")
+	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
 
-
-#### Project 3d Gaussian coordinates based on transforms to make projection
-##   input:  pts - ( batch size, number of Gaussian, 3 (x,y,z) )
-##                 ( number of Gaussian, 3) should also work
-##           ang - ( batch size, 5 (az, alt, phi, tx, ty) )
-#@tf.function
-def xf2pts(pts, ang):
-
-	#### input EMAN style euler angle (az, alt, phi) and make projection matrix
-	##   note we need to be able to deal with a batch of particles at once
-	##   so everything is in matrix form
-	azp=-ang[:,0]
-	altp=ang[:,1]
-	phip=-ang[:,2]
-
-	matrix=tf.stack([(tf.cos(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.sin(phip)),
-	(tf.cos(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.sin(phip)),
-	(tf.sin(altp)*tf.sin(phip)),
-
-	(-tf.sin(phip)*tf.cos(azp) - tf.cos(altp)*tf.sin(azp)*tf.cos(phip)),
-	(-tf.sin(phip)*tf.sin(azp) + tf.cos(altp)*tf.cos(azp)*tf.cos(phip)),
-	(tf.sin(altp)*tf.cos(phip)),
-
-	(tf.sin(altp)*tf.sin(azp)),
-	(-tf.sin(altp)*tf.cos(azp)),
-	tf.cos(altp)], 0)
-
-	matrix=tf.transpose(matrix)
-	matrix=tf.reshape(matrix, shape=[-1, 3,3]) #### Here we get a batch_size x 3 x 3 matrix
-
-	#### rotate Gaussian positions
-	##   here we try to make it also work when pts contains only the neutral model
-	if len(pts.shape)>2:
-		pts_rot=tf.tensordot(pts, matrix, [[2],[2]])
-		pts_rot=tf.transpose(pts_rot, (0,2,1,3))
-
-		#### the eye matrix here is mathematically unnecessary
-		##   but somehow tensorflow 2.0 does not track gradient properly without it...
-		##   shouldn't do much damage on the performance anyway
-		e=tf.eye(pts.shape[0], dtype=bool)#.flatten()
-		pts_rot=pts_rot[e]
-
-	else:
-		pts_rot=tf.tensordot(pts, matrix, [[1],[2]])
-		pts_rot=tf.transpose(pts_rot, [1,0,2])
-
-	#### finally do the translation
-	tx=ang[:,3][:,None]
-	ty=ang[:,4][:,None]
-#	pts_rot_trans=tf.stack([(pts_rot[:,:,0]+tx), (-pts_rot[:,:,1])+ty], 2)
-	pts_rot_trans=tf.stack([(-pts_rot[:,:,1])+ty,(pts_rot[:,:,0]+tx)], 2)
-
-	#pts_rot_trans=pts_rot_trans*sz+sz/2
-	return pts_rot_trans
-
-
-#### make 2D projections from Gaussian coordinates in Fourier space
-##   input:  pts - ( batch size, number of Gaussian, 5 (x,y,z,amp,sigma) )
-##                 ( number of Gaussian, 3) should also work
-##           ang - ( batch size, 5 (az, alt, phi, tx, ty) )
-##        params - a dictionary of some Fourier indices for slicing
-##                 sz - Fourier box size
-##                 idxft - Fourier indices
-##                 rrft - radial Fourier indices
-##            lp - lowpass filter applied to the images
-##                 this should not be necessary since we use FRC for loss
-##                 but the dynamic range of values in Fourier space can sometimes be too high...
-##           sym - symmetry string
-#@tf.function
-def pts2img(pts, ang, params, lp=.1, sym="c1"):
-	bsz=ang.shape[0]
-	sz, idxft, rrft=params["sz"], params["idxft"], params["rrft"]
-	xfo=params["xforigin"]
-
-	### initialize output and parse input
-	imgs=tf.zeros((bsz, sz,sz), dtype=floattype)
-	if len(pts.shape)>2 and pts.shape[0]>1:
-		ni=pts.shape[1]
-		pts=tf.reshape(pts, (-1, pts.shape[-1]))
-		bamp=tf.reshape(pts[:, 3], (bsz,-1))
-		multmodel=True
-
-	else:
-		bamp=pts[:, 3][None, :]
-		multmodel=False
-
-	### when a non c1 symmetry is provided, this will return a list of points
-	##  one for each asymmetrical unit so we loop thro`ugh them and sum the images
-	p0=get_sym_pts(sym, pts)
-	for p in p0:
-		p=tf.transpose(p)
-		if multmodel:
-			p=tf.reshape(p, (bsz, ni, -1))
-
-		## need to change from (-0.5, 0.5) to actual image coordinates
-		bpos=xf2pts(p,ang)
-		bpos=bpos*sz+sz/2
-
-		bposf=tf.floor(bpos)
-		bposi=tf.cast(bposf,tf.int32)	# integer index
-		bposf=bpos-bposf				# remainder used for bilinear interpolation
-
-		# messy tensor math here to implement bilinear interpolation
-		bamp0=bamp*(1.0-bposf[:,:,0])*(1.0-bposf[:,:,1])	#0,0
-		bamp1=bamp*(bposf[:,:,0])*(1.0-bposf[:,:,1])	#1,0
-		bamp2=bamp*(bposf[:,:,0])*(bposf[:,:,1])		#1,1
-		bamp3=bamp*(1.0-bposf[:,:,0])*(bposf[:,:,1])	#0,1
-		bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],1)
-		bposall=tf.concat([bposi,bposi+(1,0),bposi+(1,1),bposi+(0,1)],1)
-		imgs=tf.stack([tf.tensor_scatter_nd_add(imgs[i],bposall[i],bampall[i]) for i in range(imgs.shape[0])])
-
-		#try: imgs=tf.tensor_scatter_nd_add(imgs,bposi,bamp)
-		#except:
-			#print(imgs.shape,bposi.shape,bamp.shape)
-			#raise Exception
-
-	fimgs=tf.signal.rfft2d(imgs)
-
-	return (tf.math.real(fimgs)*xfo,tf.math.imag(fimgs)*xfo)
