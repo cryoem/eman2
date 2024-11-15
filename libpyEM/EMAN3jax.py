@@ -759,65 +759,42 @@ stddev=0.01"""
 		if tytx is None: tytx=jnp.zeros
 		return EMStack2D(gauss_project_simple_fn(self._data,mx,boxsize,tytx))
 
-	#TODO this hasn't been updated
-	def project_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
-		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+	def project_ctf(self,orts,ctf_stack,boxsize,dfrange,dfstep,tytx=None):
+		"""Generates a tensor containing a phase-flipped 2-D projection of the set of Gaussians for each of N orientations in orts. Phase flipping is off a single
+		defocus value.
+
 		orts-must be an Orientations object
+		ctf_stack-A stack of ctf correction images at different defocuses
 		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
 			per particle defocus in the third
 		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
 		dfrange-a tuple of (min defocus,max defocus) in the project
-		cs-The spherical abberation for the project
-		voltage-The voltage of the microscope for the project
+		dfstep-The step between two correction images in ctf_stack
+		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data is
+		used for comparisons should be resampled without any "clip" operations.
+		"""
+		self.coerce_jax()
+		mx=orts.to_mx2d(swapxy=True) # 2d is fine becasue don't need z position when we apply one ctf regardless
+		if tytx is None: tytx=jnp.zeros(3)
+		return EMStack2D(gauss_project_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
+
+	def project_layered_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
+		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+		orts-must be an Orientations object
+		ctf_stack-A stack of ctf correction images at different defocuses
+		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
+			per particle defocus in the third
+		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
+		dfrange-a tuple of (min defocus,max defocus) in the project
+		dfstep-The step between two correction images in ctf_stack
 
 		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 		is used for comparisons should be resampled without any "clip" operations.
 		"""
-		global CTF_SIGN
-		self.coerce_tensor()
-
-		boxstep=dfstep*10000.0/apix
-		offset=ceil((boxsize*sqrt(3)-boxstep)/(2*boxstep))
-		proj=tf.zeros((2*offset+1,boxsize,boxsize))
-		proj2=[]
+		self.coerce_jax()
 		mx=orts.to_mx3d()
-
-		# iterate over projections
-		# TODO - Same as project_simple--at some point should be converted to a tensor axis for better performance
-		for j in range(len(orts)):
-			xfgauss=tf.reverse(tf.einsum("ij,kj->ki",mx[:,:,j],self._data[:,:3]),axis=[-1]) # xfgauss is z,y,x
-			if tytx is not None:
-				xfgauss=tf.concat([xfgauss[:,0,tf.newaxis],xfgauss[:,1:]+tytx[j,:2]],-1) # Translation, ignoring any other variables
-			xfgauss=(xfgauss+(0,0.5,0.5))*boxsize
-			# now xfgauss is z,y,x with z (-boxsize/2, boxsize/2) and x/y are (0, boxsize)
-
-			xfgaussf=tf.floor(xfgauss)
-			xfgaussi=tf.cast(xfgaussf,tf.int32)	# integer index
-			xfgaussf=xfgauss-xfgaussf 		# remainder used for bilinear interpolation
-			xfgaussi=tf.concat([tf.cast(tf.round(xfgauss[:,0]/boxstep),tf.int32)[:,tf.newaxis],xfgaussi[:,1:]], axis=-1)
-			# Now xfgaussi has z-layer, y, x
-
-			# messy tensor math here to implement bilinear interpolation
-			bamp0=self._data[:,3]*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])		# 0,0 corner
-			bamp1=self._data[:,3]*(xfgaussf[:,1])*(1.0-xfgaussf[:,2])		# 1,0 corner
-			bamp2=self._data[:,3]*(xfgaussf[:,1])*(xfgaussf[:,2])			# 1,1 corner
-			bamp3=self._data[:,3]*(1.0-xfgaussf[:,1])*(xfgaussf[:,2])		# 0,1 corner
-			bampall=tf.concat([bamp0,bamp1,bamp2,bamp3],0) # TODO: This would be ,1 with loop subsumed
-			bposall=tf.concat([xfgaussi+(offset,0,0),xfgaussi+(offset,1,0),xfgaussi+(offset,1,1),xfgaussi+(offset,0,1)],0) # TODO: This too
-#			tf.print(bposall,summarize=-1)
-#			tf.print(bampall,summarize=-1)
-			projf=tf.signal.rfft2d(tf.tensor_scatter_nd_add(proj,bposall,bampall))
-#			tf.print(tf.tensor_scatter_nd_add(proj,bposall,bampall), summarize=-1)
-#			print("projf shape:",projf.shape)
-#			print("z-layer:", tf.unique(xfgaussi[:,0])[0])
-#			print("offset:", offset)
-#			print("ctf shape:", ctf_stack[int(tf.round((tytx[j,2]-dfrange[0])/dfstep))-offset:int(tf.round((tytx[j,2]-dfrange[0])/dfstep))+offset+1].shape)
-#			print("center defocus:", tytx[j,2])
-			projf=projf*ctf_stack[int(tf.round((tytx[j,2]-dfrange[0])/dfstep))-offset:int(tf.round((tytx[j,2]-dfrange[0])/dfstep))+offset+1]
-			proj2.append(tf.reduce_sum(tf.signal.irfft2d(projf), axis=0))
-		return EMStack2D(tf.stack(proj2))
-
-
+		if tytx is None: tytx=jnp.zeros(3)
+		return EMStack2D(gauss_project_layered_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
 
 	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_jax()
@@ -895,6 +872,124 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
 	return proj
 
+def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
+	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+	gausary - a Gaussians.jax array
+	mx - an Orientations object converted to a stack of 2d matrices
+	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
+	dfmin - the min defocus value used in ctfary
+	dfmax - the max defocus value used in ctfary
+	dfstep - the defocus step between images in ctfary
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+
+	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	used for comparisons should be resampled without any "clip" operations.
+	"""
+	proj2=[]
+
+	# iterate over projections
+	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+	# note that the mx dimensions have N as the 3rd not 1st component!
+	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
+	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
+
+	for j in range(mx.shape[2]):
+		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
+
+	return jnp.stack(proj2)
+
+def gaus_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
+	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+	gausary - a Gaussians.jax array
+	mx - an Orientations object converted to a stack of 2d matrices
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+
+	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	used for comparisons should be resampled without any "clip" operations.
+	"""
+	proj2=[]
+	shift10=jnp.array((1,0))
+	shift01=jnp.array((0,1))
+	shift11=jnp.array((1,1))
+
+	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
+
+	xfgaussf=jnp.floor(xfgauss)
+	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
+	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+	# messy tensor math here to implement bilinear interpolation
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
+	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+
+	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
+	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
+	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall))		# projection
+	return jnp.fft.ifft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
+
+def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
+	proj2=[]
+
+	# iterate over projections
+	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+	# note that the mx dimensions have N as the 3rd not 1st component! 
+	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
+
+	for j in range(mx.shape[2]):
+		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,boxsize,tytx[j]))
+
+	return jnp.stack(proj2)
+
+def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
+	proj2=[]
+	shift10=jnp.array((1,0))
+	shift01=jnp.array((0,1))
+	shift11=jnp.array((1,1))
+
+	boxstep=dfstep*10000.0/apix
+	offset=ceil((boxsize*jnp.sqrt(3)-boxstep)/(2*boxstep))
+
+	#TODO: make sure einsum is doing what I want given ordering changes from 2d -> 3d mx. In tf I specified axes=[-1]
+	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgaussz = xfgauss[:,0]
+	xfgauss = xfgauss[:,1:]+tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
+	xfgaussz *= boxsize
+	xfgaussz = jnp.round(xfgaussz/boxstep).astype(jnp.int32)
+	# TODO: Figure out if I need to clip z
+
+	xfgaussf=jnp.floor(xfgauss)
+	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
+	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+
+	# messy tensor math here to implement bilinear interpolation
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
+	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+
+	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
+	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
+	proj=jnp.fft.rfft2(proj.at[xfgaussz,bposall[0],bposall[1]].add(bampall))		# projection
+	proj=proj*ctfary[jnp.round((tytx[2]-dfmin)/dfstep)).astype(jnp.int32)-offset:jnp.round(tytx[2]-dfmin/dfstep).astype(jnp.int)+offset+1]
+	return jnp.fft.ifft2(jnp.sum(proj, axis=0))
+
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
@@ -932,7 +1027,6 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 	return vol
 
-#TODO this hasn't been updated
 def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	"""Initializes the global CTF_SIGN variable with the required correction images
 	dfrange-a tuple of min defocus, max defocus in the project
@@ -941,14 +1035,14 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	ampcont-The amplitude contrast 10% should be 10
 	ny-The boxsize to make the correction images, should be the largest boxsize that could be used.
 	apix-The apix of the original image"""
-	dfstep=apix*apix/100
-	wl=12.2639/sqrt(voltage*1000.0+0.97845*voltage*voltage)
-	g1=(np.pi/2.0)*cs*1.0e7*pow(wl,3)
-	g2=np.pi*wl*10000.0
-	phase=np.pi/2.0-np.arcsin(ampcont/100.0)
+	wl=12.2639/jnp.sqrt(voltage*1000.0+0.97845*voltage*voltage)
+	g1=(jnp.pi/2.0)*cs*1.0e7*pow(wl,3)
+	g2=jnp.pi*wl*10000.0
+	phase=jnp.pi/2.0-jnp.arcsin(ampcont/100.0)
 	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-	dflist=tf.cast(tf.range(dfrange[0],dfrange[1],dfstep),tf.complex64) # TODO: Need to fix this range to split properly, this is for single particle (0.5-2)
-	ctf_sign=EMStack2D(tf.math.sign(tf.cos(-g1*rad2*rad2+g2*rad2*dflist[:,tf.newaxis,tf.newaxis]-phase)))
+	dfstep=2*apix*apix/(wl*10000)
+	dflist=jnp.arange(dfrange[0],dfrange[1],dfstep,jnp.complex64)
+	ctf_sign = EMStack2D(jnp.cos(-g1*rad2*rad2+g2*rad2*dflist[:,jnp.newaxis, jnp.newaxis]-phase))
 	return ctf_sign, dfstep
 
 JAXDEV=jax.devices()[0]
