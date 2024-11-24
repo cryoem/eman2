@@ -38,7 +38,7 @@ def main():
 
 	usage="""e3movie.py <movie stack> ...
 
-At the moment this program provides only an option for estimating the gain image from a large set of counting-mode images. Eventually this will include movie alignment.
+This will estimate gain for counting mode cameras, and has a "first draft" of frame alignment.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
@@ -49,7 +49,7 @@ At the moment this program provides only an option for estimating the gain image
 	parser.add_argument("--frames",type=str,default=None,help="<first>,<last+1> movie frames to use, first frame is 0, '0,3' will use frames 0,1,2")
 	parser.add_argument("--acftest",action="store_true",default=False,help="compute ACF images for input stack")
 	parser.add_argument("--ccftest",action="store_true",default=False,help="compute CCF between each image and the middle image in the movie")
-	parser.add_argument("--ccfdtest",action="store_true",default=False,help="compute the CCT between each image and the next image in the movie, length n-1")
+	parser.add_argument("--ccfdtest",action="store_true",default=False,help="compute the CCF between each image and the next image in the movie, length n-1")
 	parser.add_argument("--ccftiletest",action="store_true",default=False,help="test on tiled average of CCF")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 

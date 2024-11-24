@@ -2086,6 +2086,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# write the new seg model to disk for use in subsequent runs
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
+#		print("WRITE TO ",modelseg)
 
 		if self.cengroups is None:
 			with open(modelseg,"w") as out:
@@ -2427,7 +2428,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
 		#self.gmm=str(self.wlistgmm.currentItem().text())
-		self.gmms=[i for i in sorted(os.listdir(".")) if i[:4]=="gmmk3_" and os.path.isdir(i)]
+		self.gmms=[i for i in sorted(os.listdir(".")) if (i[:4]=="gmm_" or i[:6]=="gmmk3_") and os.path.isdir(i)]
 		self.wlistgmm.clear()
 		for i in self.gmms:
 			self.wlistgmm.addItem(i)

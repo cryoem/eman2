@@ -1227,10 +1227,10 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
-def jax_frc_jit(ima,imb,weight=1.0,minfreq=0):
+# Note that this isn't JIT compiled, because we had segfaults when done at this level
+def jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2"""
 
-	global FRC_RADS
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
 	nr=int(ny*0.70711)+1	# max radius we consider
@@ -1259,9 +1259,11 @@ def jax_frc_jit(ima,imb,weight=1.0,minfreq=0):
 
 	frc=jnp.stack(frc)
 	w=jnp.linspace(weight,2.0-weight,nr)
-	frc=frc*w
-	return jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2)).mean()
-#	return frc[:,minfreq:ny//2].mean()
+#	frc=frc*w
+	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2)).mean(axis=1) # average over frequencies
+	return jnp.clip(ret,ret.mean()-ret.std()*frc_Z,1.0).mean()
+#	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
+#	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
 
 FSC_REFS={}
 def jax_fsc(ima,imb):

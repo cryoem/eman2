@@ -354,7 +354,7 @@ def main():
 		else:
 			encode_model=build_encoder(len(pts[0]),options.nmid,grps)
 
-		print("ENCODER: ",encode_model.summary())
+#		print("ENCODER: ",encode_model.summary())
 
 
 		if options.decoderin:
@@ -362,7 +362,7 @@ def main():
 		else:
 			decode_model=build_decoder(options.nmid, len(pts[0]))
 
-		print("DECODER: ",decode_model.summary())
+#		print("DECODER: ",decode_model.summary())
 
 
 		print(allgrds[:bsz].shape)
@@ -762,11 +762,11 @@ def build_encoder(ninp,nmid,grps=None):
 		tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
 #		tf.keras.layers.Dropout(.2),
 		tf.keras.layers.Dense(max(ninp//4,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
-#		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dropout(.4),
 		tf.keras.layers.Dense(max(ninp//8,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
-		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dropout(.4),
 		tf.keras.layers.Dense(max(ninp//16,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
-		tf.keras.layers.Dropout(.2),
+		tf.keras.layers.Dropout(.4),
 		tf.keras.layers.Dense(max(ninp//32,nmid*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 		tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 		]
@@ -832,9 +832,9 @@ def build_decoder(nmid, pt ):
 		tf.keras.layers.Dense(min(nmid*2,nout//16),activation="relu",kernel_initializer=kinit,use_bias=True,bias_initializer=binit),
 		tf.keras.layers.Dense(min(nmid*4,nout//16),activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dense(min(nmid*8,nout//16),activation="relu",kernel_initializer=kinit,use_bias=True),
-#		tf.keras.layers.Dropout(.6),
+		tf.keras.layers.Dropout(.4),
 		tf.keras.layers.Dense(min(nmid*16,nout//8),activation="relu",kernel_initializer=kinit,use_bias=True),
-#		tf.keras.layers.Dropout(.6),
+		tf.keras.layers.Dropout(.4),
 		tf.keras.layers.Dense(nout//4,activation="relu",kernel_initializer=kinit,use_bias=True),
 		tf.keras.layers.Dropout(.25),
 		tf.keras.layers.Dense(nout//2,activation="relu",kernel_initializer=kinit,use_bias=True),
@@ -1173,7 +1173,7 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options,grps
 	## initialize optimizer
 #	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate)
 #	opt=tf.keras.optimizers.experimental.AdamW(learning_rate=options.learnrate)
-	opt=tf.keras.optimizers.Adamax(learning_rate=0.005)
+	opt=tf.keras.optimizers.Adamax(learning_rate=0.02)
 #	opt=tf.keras.optimizers.Adadelta(learning_rate=0.1)
 #	opt=tf.keras.optimizers.Lion()
 	wts=encode_model.trainable_variables + decode_model.trainable_variables

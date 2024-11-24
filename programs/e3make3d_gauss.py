@@ -47,18 +47,21 @@ def main():
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
+	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
+	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--ctf", action="store_true",help="Includes ctf in the projections")
 	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
 	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
+#	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
 	(options, args) = parser.parse_args()
@@ -70,6 +73,7 @@ def main():
 	nxraw=EMData(args[0],0,True)["nx"]
 	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
+	frc_Z=options.frc_z
 	if options.apix>0: apix=options.apix
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
@@ -108,6 +112,17 @@ def main():
 			[256,256, 32,1.2, -2,1,.01,3],
 			[256,512, 48,1.2, -2,1,.01,3],
 			[256,1024,48,1.2, -3,1,.004,5]
+		]
+	elif options.spt:
+		stages=[
+			[2**10,32,  32,1.8, -1,1,.05, 3.0],
+			[2**10,32,  32,1.8, -1,2,.05, 1.0],
+			[2**12,64,  48,1.5, -2,1,.04,1.0],
+			[2**12,64,  48,1.5, -2,2,.02,0.5],
+			[2**14,128, 32,1.2, -3,4,.01,2],
+			[2**16,256, 16,1.2, -2,1,.01,3],
+			[2**17,512, 8,1.2, -2,1,.01,3]
+#			[2**20,1024,48,1.2, -3,1,.004,5]
 		]
 	else:
 		stages=[
@@ -166,7 +181,10 @@ def main():
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		lqual=-1.0
 		rstep=1.0
+		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
+		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
 		for i in range(stage[2]):		# training epochs
+			if rstep<.01: break		# don't continue if we've optimized well at this level
 			if nptcl>stage[0]: idx0=sn+i
 			else: idx0=0
 			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
@@ -176,7 +194,7 @@ def main():
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
 				if True:
-					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -184,6 +202,11 @@ def main():
 						qual+=qual0
 						shift+=shift0
 						sca+=sca0
+					# if i==stage[2]-1:
+					# 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
+					# 	out=open(f"fscs_{sn}.txt","a" if j>0 else "w")
+					# 	for ii,fsc in enumerate(np.array(fscs0)): out.write(f"{nliststg[j+ii]:d}\t{fsc:0.5f}\n")
+					# 	out.close()
 				elif options.ctf:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
@@ -209,8 +232,17 @@ def main():
 						imshift+=imshift0
 			norm=len(nliststg)//512+1
 			qual/=norm
-			if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
+			# if the quality got worse, we take smaller steps, starting by stepping back almost to the last good step
+			if qual<lqual:
+				rstep/=2.0			# if we start falling or oscillating we reduce the step within the epoch
+				step=-lstep*.95		# new gradient doesn't matter, first we want to mostly undo the previous step
+				lstep*=.05
+				gaus.add_array(step)
+				if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
+				print(f"{i}: {qual:1.5f}\t     \t\t     \t     \t{rstep:1.5f} reverse")
+				continue
 			step*=rstep/norm
+			lstep=step
 			shift/=norm
 			sca/=norm
 			imshift/=norm
@@ -278,7 +310,7 @@ def main():
 	E3end(llo)
 
 #@tf.function
-def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
+def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -293,9 +325,10 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	ptcls=ptclsfds.jax
 #	print("mx ",mx.shape)
 
-	frcs,grad=gradvalfn(gausary,mx,tytx,ptcls,weight)
+	frcs,grad=gradvalfn(gausary,mx,tytx,ptcls,weight,frc_Z)
 
-	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
+#	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
+	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
 	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
@@ -306,7 +339,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	return (step,float(qual),float(shift),float(sca))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
-def prj_frc(gausary,mx2d,tytx,ptcls,weight):
+def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
@@ -314,7 +347,7 @@ def prj_frc(gausary,mx2d,tytx,ptcls,weight):
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2)
+	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn=jax.value_and_grad(prj_frc)
 
