@@ -195,6 +195,7 @@ def main():
 #				if not options.tomo or sn<2:
 				if True:
 					step0,qual0,shift0,sca0=gradient_step(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -210,6 +211,7 @@ def main():
 				elif options.ctf:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
+					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -220,6 +222,7 @@ def main():
 				# optimize gaussians and image shifts
 				else:
 					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
 						caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
