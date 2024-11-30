@@ -459,7 +459,9 @@ class StackedConvNet_tf(object):
 			s=e["w_shape"]
 			b=e.numpy().copy()
 			k+=1
-			wts[1].assign(b, read_value=False)
+			# wts[1].assign(b, read_value=False)
+			wts[1].assign(b) #read_value not used in Keras 3+
+
 			ks=wts[0].shape[1]
 			allw=np.zeros((s[0]*s[1], ks, ks))
 			for wi in range(s[0]*s[1]):
@@ -470,7 +472,8 @@ class StackedConvNet_tf(object):
 				w=e.numpy().copy()
 				allw[wi]=w
 			allw=allw.reshape([s[0], s[1], ks, ks]).transpose(3,2,1,0)
-			wts[0].assign(allw, read_value=False)
+			# wts[0].assign(allw, read_value=False)
+			wts[0].assign(allw) #read_value not used in Keras 3+
 			
 		return nnet	
 		
