@@ -87,7 +87,7 @@ def main():
 		ampcont=ctf["ampcont"]
 		dfrange=(options.dfmin,options.dfmax)
 		# Create the ctf stack
-		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix)
+		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix) #TODO: This line relies on unchanged code
 
 	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit {zmax}. {nptcl} input images")
 
@@ -188,7 +188,7 @@ def main():
 						sca+=sca0
 				elif options.ctf==2:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
+					step0,qual0,shift0,sca0=gradient_step_layered_ctf(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -197,7 +197,7 @@ def main():
 						shift+=shift0
 						sca+=sca
 				elif options.ctf==1:
-					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7])
+					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -235,18 +235,22 @@ def main():
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
 			dsapix=apix*nxraw/ptclsfds.shape[1]
-			ctf_stackds=ctf_stack.downsample(ptclsfds.shape[1])
-			projs=gaus.project_simple(orts,ptclsfds.shape[1],tytx=tytx)
-			ctf_projs=gaus.project_layered_ctf(orts,ctf_stackds,ptclsfds.shape[1],dsapix,dfrange,dfstep,tytx=tytx)
-			single_ctf_projs=gaus.project_ctf(orts,ctf_stackds,ptclsfds.shape[1],dfrange,dfstep,tytx=tytx)
+			mx2d=orts.to_mx2d(swapxy=True)
+			mx3d=orts.to_mx3d()
+			gausary=gaus.jax
+			ny=ptclsfds.shape[1]
+			projs=EMStack2d(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+			ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
+			ctf_projs=EMStack2d(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
+			layered_ctf_projs=EMStack2d(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
 			transforms=orts.transforms(tytx)
 #			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
 			for i in range(len(projs)):
 				a=ptclds.emdata[i]
 				b=projs.emdata[i]
-				c=single_ctf_projs.emdata[i]
-				d=ctf_projs.emdata[i]
+				c=ctf_projs.emdata[i]
+				d=layered_ctf_projs.emdata[i]
 				a["apix_x"]=dsapix
 				a["apix_y"]=dsapix
 				b["apix_x"]=dsapix
@@ -358,6 +362,7 @@ def prj_frc(gausary,mx2d,tytx,ptcls,weight):
 
 gradvalfn=jax.value_and_grad(prj_frc)
 
+# TODO: This function is not updated to jax
 def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
@@ -388,7 +393,7 @@ def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 
 	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
 
-
+# TODO: This function is not updated to jax
 def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
@@ -421,7 +426,7 @@ def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
-def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0):
+def gradient_step_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -431,25 +436,36 @@ def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx2d(swapxy=True)
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
+#	print("mx ",mx.shape)
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_ctf(orts,ctf_stackds,ny,dfrange,dfstep,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfn_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 #	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
 	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (step,float(qual),float(shift),float(sca))
 
-def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
+def prj_frc_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+	#prj=pfn(gausary,mx2d,ny,tytx)
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2)
+
+gradvalfn_ctf=jax.value_and_grad(prj_frc_ctf)
+
+def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -459,23 +475,34 @@ def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx3d()
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
+#	print("mx ",mx.shape)
 
-	with tf.GradientTape(persistent=True) as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_layered_ctf(orts,ctf_stackds,ny,dsapix,dfrange,dfstep,tytx=tytx)
-		projsf=projs.do_fft() # TODO: Remove and have projection return fourier transform? It is already in fourier space there...
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfn_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
+	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 #	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
 	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (step,float(qual),float(shift),float(sca))
+
+def prj_frc_layered_ctf(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+	#prj=pfn(gausary,mx2d,ny,tytx)
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2)
+
+gradvalfn_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf)
 
 
 

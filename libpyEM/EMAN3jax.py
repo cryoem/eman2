@@ -940,7 +940,7 @@ def gaus_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall))		# projection
 	return jnp.fft.ifft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
 
-def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
+def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
 	proj2=[]
 
 	# iterate over projections
@@ -949,11 +949,11 @@ def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,ty
 	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
 
 	for j in range(mx.shape[2]):
-		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,boxsize,tytx[j]))
+		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
 
 	return jnp.stack(proj2)
 
-def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
+def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx):
 	proj2=[]
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
