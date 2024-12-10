@@ -100,8 +100,10 @@ class StackCache():
 			try: self.orts[n0:n0+len(stack)]=ortss
 			except: self.orts[n0:n0+len(stack)]=ortss.numpy()
 		if tytxs is not None:
-			try: self.tytx[n0:n0+len(stack)]=tytxs
-			except: self.tytx[n0:n0+len(stack)]=tytxs.numpy()
+			try: self.tytx[n0:n0+len(stack),:2]=tytxs
+			except:
+#				print(tytxs,tytxs.shape)
+				self.tytx[n0:n0+len(stack)]=tytxs.numpy()
 
 		# we go through the images one at a time, serialze, and write to a file with a directory
 		self.fp.seek(self.cloc)
@@ -381,6 +383,7 @@ class EMStack2D(EMStack):
 	def set_data(self,imgs):
 		""" """
 		self._xforms=None
+		self._df=None
 		if imgs is None:
 			self._data=None
 			self._npy_list=None
