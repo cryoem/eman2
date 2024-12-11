@@ -126,13 +126,13 @@ def main():
 		]
 	else:
 		stages=[
-			[512,   16,16,1.8,-3  ,1,.03, 2.0],
-			[512,   16,16,1.8, 0  ,4,.03, 1.0],
-			[1024,  32,16,1.5, 0  ,4,.02,1.5],
-			[1024,  32,16,1.5,-1  ,3,.02,1.0],
+			[512,   16,32,1.8,-3  ,1,.03, 2.0],
+			[512,   16,32,1.8, 0  ,4,.03, 1.0],
+			[1024,  32,32,1.5, 0  ,4,.02,1.5],
+			[1024,  32,24,1.5,-1  ,3,.02,1.0],
 			[4096,  64,24,1.2,-1.5,3,.01,1.0],
-			[8192, 256,24,1.0,-2  ,3,.005,1.0],
-			[32768,512,12,0.8,-2  ,1,.002,0.75]
+			[8192, 256,16,1.0,-2  ,3,.005,1.0],
+			[32768,512,16,0.8,-2  ,1,.002,0.75]
 		]
 
 	times=[time.time()]
@@ -334,9 +334,9 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
+	xyzs=relstep/(shift*100)   	# xyz scale factor, 1000 heuristic, TODO: may change
 #	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
+	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*100)))	# amplitude scale, 500 heuristic, TODO: may change
 	#print(f"{qual}\t{shift}\t{sca}")
 
 	return (step,float(qual),float(shift),float(sca))
