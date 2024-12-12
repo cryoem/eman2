@@ -901,7 +901,7 @@ def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
 
 	return jnp.stack(proj2)
 
-def gaus_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
+def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
@@ -938,7 +938,7 @@ def gaus_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
 	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall))		# projection
-	return jnp.fft.ifft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
+	return jnp.fft.irfft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
 
 def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
 	proj2=[]
@@ -947,6 +947,8 @@ def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,ap
 	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 	# note that the mx dimensions have N as the 3rd not 1st component! 
 	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
+
+	print(f"boxsize {boxsize} type {type(boxsize)}\n apix {apix} type {type(apix)}\n dfstep {dfstep} type {type(dfstep)}")
 
 	for j in range(mx.shape[2]):
 		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
@@ -987,8 +989,8 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
 	proj=jnp.fft.rfft2(proj.at[xfgaussz,bposall[0],bposall[1]].add(bampall))		# projection
-	proj=proj*ctfary[jnp.round((tytx[2]-dfmin)/dfstep)).astype(jnp.int32)-offset:jnp.round(tytx[2]-dfmin/dfstep).astype(jnp.int)+offset+1]
-	return jnp.fft.ifft2(jnp.sum(proj, axis=0))
+	proj=proj*ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)-offset:jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)+offset+1]
+	return jnp.fft.irfft2(jnp.sum(proj, axis=0))
 
 
 def gauss_volume_fn(gausary,boxsize,zsize):
@@ -1043,7 +1045,7 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	dfstep=2*apix*apix/(wl*10000)
 	dflist=jnp.arange(dfrange[0],dfrange[1],dfstep,jnp.complex64)
 	ctf_sign = EMStack2D(jnp.cos(-g1*rad2*rad2+g2*rad2*dflist[:,jnp.newaxis, jnp.newaxis]-phase))
-	return ctf_sign, dfstep
+	return ctf_sign, float(dfstep)
 
 JAXDEV=jax.devices()[0]
 def jax_set_device(dev=0,maxmem=4096):

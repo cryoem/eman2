@@ -135,7 +135,7 @@ def main():
 		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
-		tytx/=(nxraw,nxraw,1) # Don't divide the defocus
+		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
 		for im in stk.emdata: im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
@@ -188,7 +188,7 @@ def main():
 						sca+=sca0
 				elif options.ctf==2:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
+					step0,qual0,shift0,sca0=gradient_step_layered_ctf(gaus,ptclsfds,orts,jnp.fft.ifft2(jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1])),tytx,dfrange,dfstep,dsapix,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -197,7 +197,7 @@ def main():
 						shift+=shift0
 						sca+=sca
 				elif options.ctf==1:
-					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7])
+					step0,qual0,shift0,sca0=gradient_step_ctf(gaus,ptclsfds,orts,jnp.fft.ifft2(jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1])),tytx,dfrange,dfstep,stage[3],stage[7])
 					if j==0:
 						step,qual,shift,sca=step0,qual0,shift0,sca0
 					else:
@@ -236,43 +236,46 @@ def main():
 		if options.verbose>3:
 			dsapix=apix*nxraw/ptclsfds.shape[1]
 			mx2d=orts.to_mx2d(swapxy=True)
-			mx3d=orts.to_mx3d()
 			gausary=gaus.jax
 			ny=ptclsfds.shape[1]
 			projs=EMStack2d(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
-			ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
-			ctf_projs=EMStack2d(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
-			layered_ctf_projs=EMStack2d(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+			if options.ctf>0:
+				mx3d=orts.to_mx3d()
+				ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
+				ctf_projs=EMStack2d(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
+				layered_ctf_projs=EMStack2d(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
 			transforms=orts.transforms(tytx)
 #			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
 			for i in range(len(projs)):
 				a=ptclds.emdata[i]
 				b=projs.emdata[i]
-				c=ctf_projs.emdata[i]
-				d=layered_ctf_projs.emdata[i]
 				a["apix_x"]=dsapix
 				a["apix_y"]=dsapix
 				b["apix_x"]=dsapix
 				b["apix_y"]=dsapix
-				c["apix_x"]=dsapix
-				c["apix_y"]=dsapix
-				d["apix_x"]=dsapix
-				d["apix_y"]=dsapix
-				a.process_inplace("normalize")
-				b.process_inplace("filter.matchto",{"to":a})
-#				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
-#				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
-				c.process_inplace("filter.matchto",{"to":a})
-				d.process_inplace("filter.matchto",{"to":a})
 				a["xform.projection"]=transforms[i]
 				b["xform.projection"]=transforms[i]
-				c["xform.projection"]=transforms[i]
-				d["xform.projection"]=transforms[i]
-				a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
-				b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
-				c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
-				d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
+				a.process_inplace("normalize")
+				b.process_inplace("filter.matchto",{"to":a})
+				if options.ctf>0:
+					c=ctf_projs.emdata[i]
+					d=layered_ctf_projs.emdata[i]
+					c["apix_x"]=dsapix
+					c["apix_y"]=dsapix
+					d["apix_x"]=dsapix
+					d["apix_y"]=dsapix
+					c.process_inplace("filter.matchto",{"to":a})
+					d.process_inplace("filter.matchto",{"to":a})
+					c["xform.projection"]=transforms[i]
+					d["xform.projection"]=transforms[i]
+					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
+					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
+					c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
+					d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
+				else:
+					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
+					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
 
 
 		# if options.savesteps:
@@ -461,6 +464,7 @@ def prj_frc_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight):
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	jax.debug.print("{j}",j=jnp.imag(prj))
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2)
 
 gradvalfn_ctf=jax.value_and_grad(prj_frc_ctf)
