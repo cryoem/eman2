@@ -323,7 +323,7 @@ class EMStack3D(EMStack):
 	def shape(self):
 		# note that the returned shape is N,Z,Y,X regardless of representation
 		if isinstance(self._data,list): return(np.array((len(self._data),self._data[0]["nz"],self._data[0]["ny"],self._data[0]["nx"])))
-		return(self._data.shape)
+		return(np.array(self._data.shape))
 
 	def center_clip(self,size):
 		size=int(size)
@@ -331,10 +331,10 @@ class EMStack3D(EMStack):
 		shp=(self.shape-size)//2
 		if isinstance(self._data,list):
 			newlst=[im.get_clip(Region(int(shp[1]),int(shp[2]),int(shp[2]),size,size,size)) for im in self._data]
-			return EMStack2D(newlst)
-		elif isinstance(self._data,np.ndarray) or isinstance(self._data,tf.Tensor):
+			return EMStack3D(newlst)
+		elif isinstance(self._data,np.ndarray) or isinstance(self._data,jax.Array):
 			newary=self._data[:,shp[1]:shp[1]+size,shp[2]:shp[2]+size,shp[3]:shp[3]+size]
-			return EMStack2D(newary)
+			return EMStack3D(newary)
 
 	def do_fft(self,keep_type=False):
 		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
@@ -426,7 +426,7 @@ class EMStack2D(EMStack):
 	def shape(self):
 		# note that the returned shape is N,Y,X regardless of representation
 		if isinstance(self._data,list): return(np.array((len(self._data),self._data[0]["ny"],self._data[0]["nx"])))
-		return(self._data.shape)
+		return(np.array(self._data.shape))
 
 	@property
 	def orientations(self):
