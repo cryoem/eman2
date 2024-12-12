@@ -29,7 +29,7 @@ def main():
 	#parser.add_argument("--ctfweight", action="store_true", default=False ,help="weight by ctf. not used yet...")
 	#parser.add_argument("--slow", action="store_true", default=False ,help="slow but finer search")
 	parser.add_argument("--maxres", type=float,default=-1, help="max resolution for cmp")
-	parser.add_argument("--minrespx", type=int,default=4, help="skip the first x pixel in fourier space")
+	parser.add_argument("--minrespx", type=int,default=3, help="skip the first x pixel in fourier space")
 	parser.add_argument("--sym", type=str,help="symmetry. ", default="c1")
 	parser.add_argument("--breaksym", type=str,help="breaking symmetry. only works for --localrefine or --skipali", default="c1")
 
@@ -91,14 +91,24 @@ def main():
 		time.sleep(5)
 	
 	output=[None]*nptcl
+	output_tmp=[None]*nptcl
 	for i in tids:
 		ret=etc.get_results(i)[1]
 		for r in ret:
 			output[r[0]]=r[1]
+			output_tmp[r[0]]=r[2]
 	
 	del etc
 	
 	fm=options.ptclout
+	
+	output_tmp=np.array(output_tmp)
+	print(output_tmp)
+	print(output_tmp.shape)
+	for i,o in enumerate(output_tmp):
+		a=from_numpy(o).copy()
+		a.write_image(fm[:-4]+"_tmp.hdf", i)
+	
 	save_lst_params(output, fm)
 	
 	E2end(logid)
@@ -367,9 +377,9 @@ class SpaAlignTask(JSTask):
 					
 				if options.verbose>1:
 					print("size: {}, xfs: {}".format(ss, len(newxfs)))
-					for x in newxfs:
+					for i,x in enumerate(newxfs):
 						xf=x.get_params("xyz")
-						print("\t{:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(xf["xtilt"], xf["ytilt"], xf["ztilt"], xf['tx'], xf['ty']))
+						print("\t{:.2f} - {:.1f} {:.1f} {:.1f} {:.1f} {:.1f}".format(newscore[i], xf["xtilt"], xf["ytilt"], xf["ztilt"], xf['tx'], xf['ty']))
 				
 				npos=max(1, npos//2)
 				lastastep=astep
@@ -379,10 +389,21 @@ class SpaAlignTask(JSTask):
 			r={	"src":info["src"], "idx":info["idx"], 
 				"xform.projection":newxfs[0], "score":newscore[0],"class":clsid}
 			callback(100*float(infoi/len(self.data["info"])))
-			rets.append((ii, r))
+			
+			#######
+			tmp=[]
+			for i,x in enumerate(newxfs):
+				xf=x.get_params("eman")
+				tmp.append([newscore[i], xf["alt"], xf["az"], xf["phi"], xf["tx"], xf["ty"]])
+				
+			tmp=np.array(tmp)
+			###########
+			rets.append((ii, r, tmp))
+			
 			if options.debug:
 				print('time',time.time()-time0)
 				print(newxfs[0])
+				print(tmp)
 				return
 			
 		return rets

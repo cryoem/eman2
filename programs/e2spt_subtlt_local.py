@@ -226,7 +226,12 @@ class SptAlignTask(JSTask):
 			d2d=[] ## all 2d particles from the selected tilt of that tomogram
 			d3d=[] ## same as d3d0, but excluding the particles that are missing on the selected tilt
 			for d3 in d3d0:
-				d2=[readi(i) for i in d3["idx2d"]]
+				try:
+					d2=[readi(i) for i in d3["idx2d"]]
+					
+				except:
+					print("!!!!!!!!!",d3)
+					continue
 				#d2=[info2d[d] for d in d3["idx2d"]]
 				d2=[d for d in d2 if d["tilt_id"]==tid]
 				if len(d2)==0:

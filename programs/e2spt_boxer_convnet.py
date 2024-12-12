@@ -103,7 +103,7 @@ class NNet:
 			tf.keras.layers.Conv2D(1, 9, padding=pad, activation="relu", kernel_initializer=ki),
 		]
 		self.model=model=tf.keras.Sequential(layers)
-		self.outsz=self.model.layers[-1].output_shape[1]
+		self.outsz=boxsize//4
 		
 		self.thick=thick
 		self.boxsize=boxsize
@@ -172,8 +172,8 @@ class NNet:
 		
 		ly=tf.keras.layers.Conv2D(48, 9, activation="relu", input_shape=[bigbox,bigbox,self.thick//3])
 		modelbig=tf.keras.Sequential([ly]+self.layers[1:])
-		ly.weights[0].assign(self.layers[0].weights[0], read_value=False)
-		ly.weights[1].assign(self.layers[0].weights[1], read_value=False)
+		ly.weights[0].assign(self.layers[0].weights[0])
+		ly.weights[1].assign(self.layers[0].weights[1])
 		bsz=int(2e7/(img.shape[1]*img.shape[2]))
 		bsz=min(bsz,64)
 		nb=len(img)//bsz+1
@@ -183,7 +183,7 @@ class NNet:
 			m=img[i*bsz:(i+1)*bsz]
 			if m.shape[0]==0: continue
 			#print(m.shape)
-			o=modelbig.predict(m)
+			o=modelbig(m)
 			out.append(o)
 			
 		out=np.concatenate(out,axis=0)
@@ -252,7 +252,7 @@ class NNet:
 			s=e["w_shape"]
 			b=e.numpy().copy()
 			k+=1
-			wts[1].assign(b, read_value=False)
+			wts[1].assign(b)
 			ks=wts[0].shape[1]
 			allw=np.zeros((s[0]*s[1], ks, ks))
 			for wi in range(s[0]*s[1]):
@@ -263,7 +263,7 @@ class NNet:
 				w=e.numpy().copy()
 				allw[wi]=w
 			allw=allw.reshape([s[0], s[1], ks, ks]).transpose(3,2,1,0)
-			wts[0].assign(allw, read_value=False)
+			wts[0].assign(allw)
 			
 		return nnet	
 
@@ -314,7 +314,7 @@ def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1):
 	
 		m=np.array(ms)/3.
 		m=m.transpose((2,1,0))
-		#print(np.max(m), np.min(m), np.std(m))
+		print(np.max(m), np.min(m), np.std(m))
 		m=np.clip(m, -4,4)
 		imgs.append(m)
 		
@@ -630,6 +630,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 		print("Reading {}...".format(datafile))
 		self.datafile=datafile
 		self.data=EMData(datafile)
+		self.data.process_inplace("filter.highpass.gauss",{"cutoff_pixels":8})
+		self.data.process_inplace("normalize")
 		self.data.mult(self.options.mult)
 		self.imgview.setWindowTitle(base_name(datafile))
 		self.imgview.list_idx=self.data["nz"]//2

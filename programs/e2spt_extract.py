@@ -70,7 +70,7 @@ def main():
 	parser.add_argument("--wiener", action="store_true", default=False ,help="wiener filter the particles using ctf information. Not very useful...")
 	parser.add_argument("--nomasksubtlt", action="store_true", default=False ,help="extracted subtilts should be unmasked")
 	parser.add_argument("--alltomograms", action="store_true", default=False ,help="use all tomograms.", guitype='boolbox',row=1, col=1, rowspan=1, colspan=1, mode="extract")
-	parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
+	#parser.add_argument("--dotest", action="store_true", default=False ,help="only make 1 batch of subtomograms for testing")
 
 	parser.add_argument("--shrink", type=float, help="Shrinking factor for output particles. 1.5 or integers allowed. Default is 1 (no shrink).",default=1, guitype='floatbox',row=8, col=0, rowspan=1, colspan=1, mode="extract")
 	parser.add_argument("--tltkeep", type=float,help="keep a fraction of tilt images with good score determined from tomogram reconstruction", default=1.0, guitype='floatbox',row=8, col=1, rowspan=1, colspan=1, mode="extract")
