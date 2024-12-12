@@ -130,12 +130,12 @@ def main():
 	else:
 		stages=[
 			[512,   16,32,1.8,-3  ,1,.03, 2.0],
-			[512,   16,64,1.8, 0  ,4,.03, 1.0],
+			[512,   16,48,1.8, 0  ,4,.03, 1.0],
 			[1024,  32,32,1.5, 0  ,4,.02,1.5],
 			[1024,  32,32,1.5,-1  ,3,.02,1.0],
-			[4096,  64,24,1.2,-1.5,3,.01,1.0],
-			[8192, 256,24,1.0,-2  ,3,.005,1.0],
-			[32768,512,24,0.8,-2  ,1,.002,0.75]
+			[4096,  64,32,1.2,-1.5,3,.01,1.0],
+			[8192, 256,32,1.0,-2  ,3,.005,1.0],
+			[32768,512,32,0.8,-2  ,1,.002,0.75]
 		]
 
 	times=[time.time()]
@@ -186,7 +186,7 @@ def main():
 		rstep=1.0
 		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
 		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
-		optim = optax.adam(.005)	# parm is learning rate
+		optim = optax.adam(.005)		# parm is learning rate
 		optim_state=optim.init(gaus._data)		# initialize with data
 		for i in range(stage[2]):		# training epochs
 			if rstep<.01: break		# don't continue if we've optimized well at this level
@@ -205,7 +205,7 @@ def main():
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
 					else:
 						step+=step0
-						qual+=qual0
+						qual-=qual0
 						shift+=shift0
 						sca+=sca0
 					# if i==stage[2]-1:
