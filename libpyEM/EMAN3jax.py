@@ -100,7 +100,7 @@ class StackCache():
 			try: self.orts[n0:n0+len(stack)]=ortss
 			except: self.orts[n0:n0+len(stack)]=ortss.numpy()
 		if tytxs is not None:
-			try: self.tytx[n0:n0+len(stack),:2]=tytxs
+			try: self.tytx[n0:n0+len(stack)]=tytxs
 			except:
 #				print(tytxs,tytxs.shape)
 				self.tytx[n0:n0+len(stack)]=tytxs.numpy()
@@ -435,6 +435,7 @@ class EMStack2D(EMStack):
 		orts=Orientations()
 		tytx=orts.init_from_transforms(self._xforms)
 		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
+		else: tytx = jnp.stack([tytx[:,0],tytx[:,1], jnp.zeros(tytx.shape[0])], axis=-1)
 		return orts,tytx
 
 	def center_clip(self,size):
@@ -589,9 +590,8 @@ class Orientations():
 
 	def transforms(self,tytx=None):
 		"""converts the current orientations to a list of Transform objects"""
-
 		if tytx is not None:
-			return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2],"tx":tytx[i][1],"ty":tytx[i][0]}) for i in range(len(self._data))]
+			return [Transform({"type":"spinvec","v1":float(self._data[i][0]),"v2":float(self._data[i][1]),"v3":float(self._data[i][2]),"tx":float(tytx[i][1]),"ty":float(tytx[i][0])}) for i in range(len(self._data))]
 
 		return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2]}) for i in range(len(self._data))]
 
