@@ -951,8 +951,6 @@ def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,ap
 	# note that the mx dimensions have N as the 3rd not 1st component! 
 	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
 
-	print(f"boxsize {boxsize} type {type(boxsize)}\n apix {apix} type {type(apix)}\n dfstep {dfstep} type {type(dfstep)}")
-
 	for j in range(mx.shape[2]):
 		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
 
@@ -965,7 +963,8 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 	shift11=jnp.array((1,1))
 
 	boxstep=dfstep*10000.0/apix
-	offset=ceil((boxsize*jnp.sqrt(3)-boxstep)/(2*boxstep))
+#	offset=ceil((boxsize*jnp.sqrt(3)-boxstep)/(2*boxstep))
+	offset = ceil((boxsize*1.733-boxstep)/(2*boxstep))
 
 	#TODO: make sure einsum is doing what I want given ordering changes from 2d -> 3d mx. In tf I specified axes=[-1]
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
@@ -991,8 +990,8 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
-	proj=jnp.fft.rfft2(proj.at[xfgaussz,bposall[0],bposall[1]].add(bampall))		# projection
-	proj=proj*ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)-offset:jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)+offset+1]
+	proj=jnp.fft.rfft2(proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall))		# projection
+	proj=proj*lax.dynamic_slice_in_dim(ctfary, jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)-offset, proj.shape[0], axis=0)
 	return jnp.fft.irfft2(jnp.sum(proj, axis=0))
 
 
@@ -1040,7 +1039,7 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	ampcont-The amplitude contrast 10% should be 10
 	ny-The boxsize to make the correction images, should be the largest boxsize that could be used.
 	apix-The apix of the original image"""
-	wl=12.2639/jnp.sqrt(voltage*1000.0+0.97845*voltage*voltage)
+	wl=12.2639/np.sqrt(voltage*1000.0+0.97845*voltage*voltage)
 	g1=(jnp.pi/2.0)*cs*1.0e7*pow(wl,3)
 	g2=jnp.pi*wl*10000.0
 	phase=jnp.pi/2.0-jnp.arcsin(ampcont/100.0)
@@ -1048,7 +1047,7 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	dfstep=2*apix*apix/(wl*10000)
 	dflist=jnp.arange(dfrange[0],dfrange[1],dfstep,jnp.complex64)
 	ctf_sign = EMStack2D(jnp.cos(-g1*rad2*rad2+g2*rad2*dflist[:,jnp.newaxis, jnp.newaxis]-phase))
-	return ctf_sign, float(dfstep)
+	return ctf_sign, dfstep
 
 JAXDEV=jax.devices()[0]
 def jax_set_device(dev=0,maxmem=4096):
