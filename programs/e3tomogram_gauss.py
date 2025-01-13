@@ -30,7 +30,9 @@
 #
 
 from EMAN3 import *
-from EMAN3tensor import *
+from EMAN3jax import *
+import jax
+import optax
 import numpy as np
 import sys
 import time
@@ -47,6 +49,7 @@ def main():
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
+	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--tilesize",type=int,help="Controls how large the tiles are, default=1024", default=1024)
@@ -62,19 +65,29 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
 	(options, args) = parser.parse_args()
-	tf_set_device(dev=0,maxmem=options.gpuram)
+	jax_set_device(dev=0,maxmem=options.gpuram)
 
 	llo=E3init(sys.argv)
 
-	# Things to fix:
+	# Old things to fix:
 		# Figure out why the FRC was going negative for some tile--mostly at first few iterations so may be fine
 		# FRC not currently remaining high for each tile--convergence issue and need more iterations or something else?
 		# Edit number of Gaussians to be more reasonable: Upper limit: 1M Gaussians for 1kx1kx1k at 40A resolution (which is the default filtering)
 
+	# January things to do:
+		# Fix/add volume_tiled to EMAN3jax
+		# Move loading the imgs into tiles into a separate function
+		# Adjust reading in file so can handle continuous tilt which you can't read in all at once
+			# Read img -1 and then use source_n
+			# I'm thinking go in steps of 50 frames at a time
+		# Convert to jax so it runs
+		# Once it runs, aggragate the last ~10 steps or so (after it should have converged) to get more Gaussians
+		# What to use as a good test for convergence? tiling a volume I can reconstruct on its own to see if I get similar results?
 
 	# Getting tiles and saving to temp files
 	ntilts = EMUtil.get_image_count(args[0])
 	nxraw, nyraw = EMData(args[0],0,True)["nx"], EMData(args[0],0,True)["ny"]
+	frc_Z = options.frc_z
 	if options.preclip>0: nxraw=nyraw=options.preclip
 	if options.apix>0: apix=options.apix
 	else: apix=EMData(args[0],0,True)["apix_x"]
@@ -225,12 +238,14 @@ def main():
 		dfstep = apix*apix/100
 		boxlen = apix*options.tilesize*sqrt(3)
 		df_buffer = (boxlen/2)/(dfstep*10000) + dfstep
-		ctf_stack,dfstep=create_ctf_stack((mindf-df_buffer,maxdf+df_buffer),volt,cs,ampcont,options.tilesize,apix)
+		dfrange = (mindf-df_buffer, maxdf+df_buffer)
+		ctf_stack,dfstep=create_ctf_stack(dfrange,volt,cs,ampcont,options.tilesize,apix)
 
 	if options.verbose>1: print("")
 
 	# Initializing Gaussians to random values with amplitudes over a narrow range
-	rnd = tf.random.uniform((options.initgauss*xtiles*ytiles, 4)) # all between 0-1
+	rng = np.random.default_rng()
+	rnd = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles,4))
 	rnd+= (-0.5, -0.5, -0.5, 2.0) # Coord between -.5 and .5, amp between 2 and 3
 	rnd *= (xtiles//2, ytiles//2, 1., 1.) # Each tile has -.5 to .5 (with some offset n*0.5)
 	rnd/= (0.9,0.9,1.0/zmax, 3.0) # Spread out points
@@ -238,8 +253,10 @@ def main():
 	all_gaus._data = rnd
 	cur_gaus= Gaussians()
 	times.append(time.time())
+
 	for sn,stage in enumerate(stages):
 		all_gaus.coerce_numpy()
+		imshift=0.0
 		for tnx in range(xtiles):
 			xrange = (-0.5*(xtiles//2-tnx)-1, -0.5*(xtiles//2-tnx)+1)
 			for tny in range(ytiles):
@@ -247,54 +264,64 @@ def main():
 				if options.verbose: print(f"Stage {sn}, Tile {tnx*ytiles+tny} - {local_datetime()}:")
 				if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n        FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 				cur_gaus._data = select_tile_gauss(all_gaus, xrange, yrange)
-				cur_gaus.coerce_tensor()
+				cur_gaus.coerce_jax()
 				print(f"split types: {cur_gaus._data.dtype}, {all_gaus._data.dtype}")
 				print(f"{len(cur_gaus)} Gaussians in tile {tnx*ytiles+tny}")
 				print(f"{len(all_gaus)} Gaussians total")
-				nliststg=range((tnx*ytiles+tny)*ntilts, (tnx*ytiles+tny)*ntilts+ntilts)
-				imshift=0.0
-				lqual=-1.0
-				rstep=1.0
+				if ntilts>stage[0]:
+					idx0=sn+i
+				else:
+					idx0=0
+				nliststg=range((tnx*ytiles+tny)*ntilts+idx0, (tnx*ytiles+tny)*ntilts+ntilts,max(1,ntilts//stage[0]))
+#				imshift=0.0
+#				lqual=-1.0
+#				rstep=1.0
+				optim = optax.adam(.005)
+				optim_state = optim.init(cur_gaus._data)
 				for i in range(stage[2]):
-					for j in range(0, len(nliststg), 500):
-						ptclsfds, orts, tytx = caches[stage[1]].read(nliststg[j:j+500])
+					for j in range(0, len(nliststg), 512):
+						ptclsfds, orts, tytx = caches[stage[1]].read(nliststg[j:j+512])
 						if options.ctf==0:
-							step0,qual0,shift0,sca0=gradient_step(cur_gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+							step0,qual0,shift0,sca0=gradient_step_optax(cur_gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+							step0=jnp.nan_to_num(step0)
 							if j==0:
-								step,qual,shift,sca=step0,qual0,shift0,sca0
+								step,qual,shift,sca=step0,-qual0,shift0,sca0
 							else:
 								step+=step0
-								qual+=qual0
+								qual-=qual0
 								shift+=shift0
 								sca+=sca0
 						elif options.ctf==2:
 							dsapix=apix*nxraw/ptclsfds.shape[1]
-							step0,qual0,shift0,sca0=gradient_step_layered_ctf(cur_gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,(mindf-df_buffer,maxdf+df_buffer),dfstep,dsapix,stage[3],stage[7])
+							step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(cur_gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7],frc_Z)
+							step0=jnp.nan_to_num(step0)
 							if j==0:
-								step,qual,shift,sca=step0,qual0,shift0,sca0
+								step,qual,shift,sca=step0,-qual0,shift0,sca0
 							else:
 								step+=step0
-								qual+=qual0
+								qual-=qual0
 								shift+=shift0
 								sca+=sca
 						elif options.ctf==1:
-							step0,qual0,shift0,sca0=gradient_step_ctf(cur_gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,(mindf-df_buffer,maxdf+df_buffer),dfstep,stage[3],stage[7])
+							step0,qual0,shift0,sca0=gradient_step_ctf_optax(cur_gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7],frc_Z)
+							step0=jnp.nan_to_num(step0)
 							if j==0:
-								step,qual,shift,sca=step0,qual0,shift0,sca0
+								step,qual,shift,sca=step0,-qual0,shift0,sca0
 							else:
 								step+=step0
-								qual+=qual0
+								qual-=qual0
 								shift+=shift0
 								sca+=sca
 						# optimize gaussians and image shifts
 						else:
 							step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(cur_gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+							step0=jnp.nan_to_num(step0)
 							if j==0:
 								step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
-								caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+								caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)  # we can immediately add the current 500>
 							else:
 								step+=step0
-								caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+								caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)  # we can immediately add the current 500>
 								qual+=qual0
 								shift+=shift0
 								sca+=sca0
@@ -302,16 +329,19 @@ def main():
 					# End of looping over j for memory
 					norm=len(nliststg)//500+1
 					qual/=norm
-					if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
-					step*=rstep/norm
+#					if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
+#					step*=rstep/norm
+#					lqual=qual
 					shift/=norm
 					sca/=norm
 					imshift/=norm
-					cur_gaus.add_tensor(step)
-					lqual=qual
+
+					update, optim_state = optim.update(step, optim_state)
+					cur_gaus._data = optax.apply_updates(cur_gaus._data, update)
+
 					if options.savesteps: from_numpy(cur_gaus.numpy).write_image("steps.hdf",-1)
-					# Add debug_images to check geometry
-					print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}\t{rstep:1.5f}")
+					# TODO:  Add debug_images to check geometry
+					print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
 					if qual>0.99: break
 				# End of looping over epochs
 				all_gaus._data = update_tomogram_gauss(cur_gaus, all_gaus, xrange, yrange)
@@ -352,7 +382,7 @@ def main():
 		vol["apix_x"] = vol["apix_x"]*options.bin
 		vol["apix_y"] = vol["apix_y"]*options.bin
 		vol["apix_z"] = vol["apix_z"]*options.bin
-	# Right now the unfilt will be at full resolution, maybe that's good maybe it should be downsampled too
+	# Right now the unfilt will be at full resolution, which is what we want
 	times.append(time.time())
 	vol.write_image(options.volout,0)
 
@@ -385,21 +415,6 @@ def select_tile_gauss(all_gaus, xrange, yrange):
 	in_tile_gaus = all_gaus._data[(all_gaus._data[:,0] > xrange[0]) & (all_gaus._data[:,0] <= xrange[1]) & (all_gaus._data[:,1] > yrange[0]) & (all_gaus._data[:,1] <= yrange[1])]
 	in_tile_gaus -= ((xrange[0]+xrange[1])/2, (yrange[0]+yrange[1])/2, 0., 0.)
 	return in_tile_gaus
-	# Overall tiltseries may not be square, don't put the calculation of where the tile is in this function give it a range (min,max) and 
-	# Calculate that range in main code.
-#	col=tn//tiles_per_side
-#	row=tn-tiles_per_side*col
-#	all_gaus.coerce_numpy()
-#	in_tile = np.logical_and(np.logical_and(all_gaus._data[:,0]> -0.5*(tiles_per_side//2-col)-1, all_gaus._data[:,0] <= -0.5*(tiles_per_side//2-col)+1),
-#				np.logical_and(all_gaus._data[:,1]> -0.5*(tiles_per_side//2-row)-1, all_gaus._data[:,1] <= -0.5*(tiles_per_side//2-row)+1))
-#	gaus_in_tile = all_gaus[in_tile]
-	# Just use 'and' not np.logical_and
-#	Boolean index method using tensorflow
-#	in_tile = tf.logical_and(tf.logical_and(all_gaus._data[:,0]> -0.5*(tiles_per_side//2-col)-1, all_gaus._data[:,0] <= -0.5*(tiles_per_side//2-col)+1),
-#				tf.logical_and(all_gaus._data[:,1]> -0.5*(tiles_per_side//2-row)-1, all_gaus._data[:,1] <= -0.5*(tiles_per_side//2-row)+1))
-#	gaus_in_tile += (0.5*(tiles_per_side//2-col),0.5*(tiles_per_side//2-row),0.,0.)
-#	gaus_out_tile = all_gaus[np.logical_not(in_tile)]
-#	return gaus_in_tile, gaus_out_tile
 
 def update_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
 	""" Updates all_tile_gaus with the Gaussians from in_tile_gaus post-refinement. Only the Gaussians within the tile should be updated, not the ones outside as a buffer for the tilt
@@ -416,15 +431,8 @@ def update_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
 	add_to = all_gaus._data[(all_gaus._data[:,0] <= xrange[0]+0.5) | (all_gaus._data[:,0] > xrange[1]-0.5) | (all_gaus._data[:,1] <= yrange[0]+0.5) | (all_gaus._data[:,1] > yrange[1]-0.5)]
 	print(add_back.shape, add_to.shape)
 	return np.concatenate((add_to,add_back))
-#	col = tn//tiles_per_side
-#	row = tn-tiles_per_side*col
-#	in_tile_gaus._data -= (0.5*(tiles_per_side//2-col), 0.5*(tiles_per_side//2-row), 0., 0.)
-#	in_tile_gaus.coerce_numpy()
-#	return np.concatenate((in_tile_gaus._data, out_tile_gaus._data))
 
-
-#@tf.function
-def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
+def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -434,93 +442,31 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
-#	dist_tuning=ny
-	batch_size=16
+	mx=orts.to_mx2d(swapxy=True)
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-#		dists=gaus.calc_distance(dist_tuning, batch_size)
+	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
 
-#	grad=gt.gradient([frcs,dists],gaus._data)
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
+	qual=frcs		       # functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()	       # translational std
+	sca=grad[:,3].std()	       # amplitude std
 
-	return (step,float(qual),float(shift),float(sca))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+	return (grad,float(qual),float(shift),float(sca))
 
-def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
+def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	ny=ptcls.shape[1]
+	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+	#prj=pfn(gausary,mx2d,ny,tytx)
+	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
+gradvalfnl=jax.value_and_grad(prj_frc_loss)
 
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
-
-
-def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		gt.watch(tytx)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
-
-def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0):
+def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -530,25 +476,30 @@ def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx2d(swapxy=True)
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_ctf(orts,ctf_stackds,ny,dfrange,dfstep,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight,frc_Z)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
+	qual=frcs				       # functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()	                       # translational std
+	sca=grad[:,3].std()		               # amplitude std
+	xyzs=relstep/(shift*500)	               # xyz scale factor, 1000 heuristic, TODO: may change
 
-	return (step,float(qual),float(shift),float(sca))
+	return (grad,float(qual),float(shift),float(sca))
 
-def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
+def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+
+gradvalfnl_ctf=jax.value_and_grad(prj_frc_loss_ctf)
+
+def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -558,24 +509,28 @@ def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx3d()
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
 
-	with tf.GradientTape(persistent=True) as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_layered_ctf(orts,ctf_stackds,ny,dsapix,dfrange,dfstep,tytx=tytx)
-		projsf=projs.do_fft() # TODO: Remove and have projection return fourier transform? It is already in fourier space there...
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
+	qual=frcs				       # functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()	                       # translational std
+	sca=grad[:,3].std()		               # amplitude std
+	xyzs=relstep/(shift*500)	               # xyz scale factor, 1000 heuristic, TODO: may change
 
-	return (step,float(qual),float(shift),float(sca))
+	return (grad,float(qual),float(shift),float(sca))
 
+def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+
+gradvalfnl_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf_loss)
 
 
 if __name__ == '__main__':

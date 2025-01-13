@@ -808,6 +808,39 @@ stddev=0.01"""
 
 		vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32)		# output
 
+	def volume_tiled(self,xsize,ysize,boxz,xtiles,ytiles,zaspect=0.5):
+		"""A numpy version of creating a volume because the GPU can't allocate the full tomogram volume in memory. Returns an EMData object not a EMStack3D object."""
+		self.coerce_numpy()
+
+		zsize=good_size(boxz*zaspect*2.0)
+		vol=np.zeros((zsize,ysize,xsize)) # TODO: Add a try/except state that if this fails to allocate it makes the binned tomogram? That way the refinement isn't wasted. Or add check beforehand
+
+		xfgauss=np.flip((self._data[:,:3]+(0.25*xtiles,0.25*ytiles,zaspect))*(xsize/xtiles*2,ysize/ytiles*2,zsize),[-1])	# shift and scale both x and y the same, flip handles the XYZ -> ZYX EMData->Jax/Numpy issue
+
+		xfgaussf=np.floor(xfgauss)
+		xfgaussi=np.ndarray.astype(xfgaussf,np.int32)   # integer index
+		xfgaussf=xfgauss-xfgaussf			       # remainder used for bilinear interpolation
+
+		# messy trilinear interpolation
+		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bampall=np.concatenate([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
+		bposall=np.concatenate([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+
+		# Jax doesn't give OOB errors it just puts them at the closest available index, but numpy will so need an extra check
+		mask = np.logical_and(np.logical_and(np.logical_and(bposall[:,0]>=0, bposall[:,0]<zsize), np.logical_and(bposall[:,1]>=0, bposall[:,1]<ysize)),np.logical_and(bposall[:,2]>=0, bposall[:,2]<xsize))
+		bampall=bampall[mask]
+		bposall=bposall[mask]
+		vol[bposall[:,0], bposall[:,1],bposall[:,2]]+=bampall
+
+		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
+
 def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
