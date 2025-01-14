@@ -287,7 +287,7 @@ def main():
 				mx3d=orts.to_mx3d()
 				ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
 				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
-#				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
 			transforms=orts.transforms(tytx)
 #			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
@@ -304,19 +304,19 @@ def main():
 				b.process_inplace("filter.matchto",{"to":a})
 				if options.ctf>0:
 					c=ctf_projs.emdata[i]
-#					d=layered_ctf_projs.emdata[i]
+					d=layered_ctf_projs.emdata[i]
 					c["apix_x"]=dsapix
 					c["apix_y"]=dsapix
-#					d["apix_x"]=dsapix
-#					d["apix_y"]=dsapix
+					d["apix_x"]=dsapix
+					d["apix_y"]=dsapix
 					c.process_inplace("filter.matchto",{"to":a})
-#					d.process_inplace("filter.matchto",{"to":a})
+					d.process_inplace("filter.matchto",{"to":a})
 					c["xform.projection"]=transforms[i]
-#					d["xform.projection"]=transforms[i]
+					d["xform.projection"]=transforms[i]
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
 					c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
-#					d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
+					d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
 				else:
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
