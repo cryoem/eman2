@@ -257,9 +257,9 @@ class EMStack():
 		on each axis"""
 		pass
 
-	def write_images(self,fsp=None,bits=12):
+	def write_images(self,fsp=None,bits=12,n_start=0):
 		self.coerce_emdata()
-		im_write_compressed(self._data,fsp,0,bits)
+		im_write_compressed(self._data,fsp,n_start,bits)
 
 	def downsample(self,newsize):
 		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling

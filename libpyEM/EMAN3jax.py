@@ -98,12 +98,12 @@ class StackCache():
 		stack.coerce_numpy()
 		if ortss is not None:
 			try: self.orts[n0:n0+len(stack)]=ortss
-			except: self.orts[n0:n0+len(stack)]=ortss.numpy()
+			except: self.orts[n0:n0+len(stack)]=np.array(ortss)
 		if tytxs is not None:
 			try: self.tytx[n0:n0+len(stack)]=tytxs
 			except:
 #				print(tytxs,tytxs.shape)
-				self.tytx[n0:n0+len(stack)]=tytxs.numpy()
+				self.tytx[n0:n0+len(stack)]=np.array(tytxs)
 
 		# we go through the images one at a time, serialze, and write to a file with a directory
 		self.fp.seek(self.cloc)

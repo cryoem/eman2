@@ -45,7 +45,7 @@ def main():
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--volout", type=str,help="Volume output file", default="threed.hdf")
+	parser.add_argument("--volout", type=str,help="Volume output file. Note that volumes will be appended to an existing file", default="threed.hdf")
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
@@ -53,11 +53,13 @@ def main():
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
+	parser.add_argument("--postclip",type=int,help="Trim the output volumes to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
+	parser.add_argument("--ptcl3d_id", type=int, help="only use 2-D particles with matching ptcl3d_id parameter",default=-1)
 	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
 	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
@@ -69,10 +71,14 @@ def main():
 
 	(options, args) = parser.parse_args()
 	jax_set_device(dev=0,maxmem=options.gpuram)
-
 	llo=E3init(sys.argv)
 
 	nptcl=EMUtil.get_image_count(args[0])
+	if options.ptcl3d_id>=0:
+		if args[0][-4:]!=".lst" : error_exit("--ptcl3d_id only works with .lst input files")
+		lsx=LSXFile(args[0])
+		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"]==options.ptcl3d_id]
+		nptcl=len(selimg)
 	nxraw=EMData(args[0],0,True)["nx"]
 	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
@@ -130,14 +136,16 @@ def main():
 		]
 	else:
 		stages=[
-			[512,   16,32,1.8,-3  ,1,.03, 2.0],
-			[512,   16,48,1.8, 0  ,4,.03, 1.0],
-			[1024,  32,32,1.5, 0  ,4,.02,1.5],
-			[1024,  32,32,1.5,-1  ,3,.02,1.0],
-			[4096,  64,32,1.2,-1.5,3,.01,1.0],
-			[8192, 256,32,1.0,-2  ,3,.005,1.0],
-			[32768,512,32,0.8,-2  ,1,.002,0.75]
+			[512,   16,32,1.8,-3  ,1,.01, 2.0],
+			[512,   16,32,1.8, 0  ,4,.01, 1.0],
+			[1024,  32,32,1.5, 0  ,4,.005,1.5],
+			[1024,  32,32,1.5,-1  ,3,.005,1.0],
+			[4096,  64,32,1.2,-1.5,3,.003,1.0],
+			[8192, 256,32,1.0,-2  ,3,.003,1.0],
+			[32768,512,32,0.8,-2  ,1,.001,0.75]
 		]
+
+	batchsize=256
 
 	times=[time.time()]
 
@@ -145,11 +153,10 @@ def main():
 	if options.verbose: print("Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	for i in range(0,nptcl,1000):
+	if options.ptcl3d_id>=0 :
 		if options.verbose>1:
-			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
-			sys.stdout.flush()
-		stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
+			print(f" Caching {nptcl}")
+		stk=EMStack2D(EMData.read_images(args[0],selimg))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
@@ -157,7 +164,21 @@ def main():
 		stkf=stk.do_fft()
 		for down in downs:
 			stkfds=stkf.downsample(min(down,nxrawm2))
-			caches[down].write(stkfds,i,orts,tytx)
+			caches[down].write(stkfds,0,orts,tytx)
+	else:
+		for i in range(0,nptcl,1000):
+			if options.verbose>1:
+				print(f" Caching {i}/{nptcl}",end="\r",flush=True)
+				sys.stdout.flush()
+			stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
+			if options.preclip>0 : stk=stk.center_clip(options.preclip)
+			orts,tytx=stk.orientations
+			tytx/=nxraw
+			for im in stk.emdata: im.process_inplace("normalize.edgemean")
+			stkf=stk.do_fft()
+			for down in downs:
+				stkfds=stkf.downsample(min(down,nxrawm2))
+				caches[down].write(stkfds,i,orts,tytx)
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
@@ -188,6 +209,9 @@ def main():
 		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
 		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
 		optim = optax.adam(.005)		# parm is learning rate
+#		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
+#		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
+#		optim = optax.fromage(.01)		# tried, not as good
 		optim_state=optim.init(gaus._data)		# initialize with data
 		for i in range(stage[2]):		# training epochs
 			if rstep<.01: break		# don't continue if we've optimized well at this level
@@ -195,8 +219,8 @@ def main():
 			else: idx0=0
 			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
 			imshift=0.0
-			for j in range(0,len(nliststg),512):	# compute the gradient step piecewise due to memory limitations, 512 particles at a time
-				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+512])
+			for j in range(0,len(nliststg),batchsize):	# compute the gradient step piecewise due to memory limitations, 512 particles at a time
+				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+batchsize])
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
 				if options.ctf==0:
@@ -241,15 +265,15 @@ def main():
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
-						caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+						caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
 					else:
 						step+=step0
-						caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+						caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
 						qual+=qual0
 						shift+=shift0
 						sca+=sca0
 						imshift+=imshift0
-			norm=len(nliststg)//512+1
+			norm=len(nliststg)//batchsize+1
 			qual/=norm
 			# # if the quality got worse, we take smaller steps, starting by stepping back almost to the last good step
 			# if qual<lqual:
@@ -268,7 +292,7 @@ def main():
 			sca/=norm
 			imshift/=norm
 
-			update, optim_state = optim.update(step, optim_state)
+			update, optim_state = optim.update(step, optim_state, gaus._data)
 			gaus._data = optax.apply_updates(gaus._data, update)
 
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
@@ -349,7 +373,8 @@ def main():
 
 	outsz=min(1024,nxraw)
 	times.append(time.time())
-	vol=gaus.volume(outsz,zmax).center_clip(outsz)
+	if options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
+	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
@@ -359,7 +384,7 @@ def main():
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
 	times.append(time.time())
-	vol.write_image(options.volout,0)
+	vol.write_image(options.volout,-1)
 
 	# this is just to save some extra processing steps
 	if options.fscdebug is not None: 

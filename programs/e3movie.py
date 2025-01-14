@@ -49,11 +49,14 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 	parser.add_argument("--frames",type=str,default=None,help="<first>,<last+1> movie frames to use, first frame is 0, '0,3' will use frames 0,1,2")
 	parser.add_argument("--acftest",action="store_true",default=False,help="compute ACF images for input stack")
 	parser.add_argument("--ccftest",action="store_true",default=False,help="compute CCF between each image and the middle image in the movie")
-	parser.add_argument("--ccfdtest",action="store_true",default=False,help="compute the CCF between each image and the next image in the movie, length n-1")
+	parser.add_argument("--ccfdtest",type=str,default=None,help="compute the CCF between each image and the next image in the movie, length n-1, provide the filename of the gain correction image")
 	parser.add_argument("--ccftiletest",action="store_true",default=False,help="test on tiled average of CCF")
+	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
+	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
+	tf_set_device(dev=0,maxmem=options.gpuram)
 
 	pid=E3init(argv)
 	nmov=len(args)
@@ -70,7 +73,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			if (i%10==0): E3progress(pid,i/nmov)
 			nimg=EMUtil.get_image_count(args[i])
 			print(f"{args[i]}: {nimg}")
-			if (nimg>500) : raise Exception("Can't deal with movies with >500 frames at present")
+			#if (nimg>500) : raise Exception("Can't deal with movies with >500 frames at present")
 			for j in range(0,nimg,50):
 				imgs=EMData.read_images(f"{args[i]}:{j}:{j+50}")
 				for img in imgs: avgr.add_image(img)
@@ -288,22 +291,39 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		for im in cens.emdata: im.process_inplace("normalize.edgemean")
 		cens.write_images("ccfs.hdf")
 
-	if options.ccfdtest:
-		avg=EMData("average.hdf",0)
+	if options.ccfdtest is not None:
+		try: os.unlink("ccfs.hdf")
+		except: pass
+		try: os.unlink("ccfs1k.hdf")
+		except: pass
+		avg=EMData(options.ccfdtest,0)
 		avg.div(avg["mean"])
 		#avg.add(-avg["mean"])
-		nimg=EMUtil.get_image_count(args[0])
-		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
-		for im in imgs:
-			im.div(avg)
-		ffts=imgs.do_fft()
-		ccfs=ffts.calc_ccf(ffts,offset=1)
-		ccfsr=ccfs.do_ift()
-		_,nx,ny=ccfsr.shape
+		nimg=file_image_count(args[0])
+		for i in range(1,nimg,25):
+			print(f"{i-1}:{min(i+25,nimg)}")
+			imgs=EMStack2D(EMData.read_images(f"{args[0]}:{i-1}:{min(i+25,nimg)}"))
+			for im in imgs:
+				im.process_inplace("math.fixgain.counting",{"gain":avg,"gainmin":3,"gainmax":3})
+			imgs.coerce_tensor()
+#		imgs=imgs.downsample(4096)
+			ffts=imgs.do_fft()
+			ccfs=ffts.calc_ccf(ffts,offset=1)
+			ccfsr=ccfs.do_ift()
+			_,nx,ny=ccfsr.shape
+			cens=ccfsr.center_clip(64)
+			#cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+			for im in cens.emdata: im.process_inplace("normalize.edgemean")
+			cens.write_images("ccfs.hdf",bits=0,n_start=i-1)
 
-		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
-		for im in cens.emdata: im.process_inplace("normalize.edgemean")
-		cens.write_images("ccfs.hdf")
+			imgs=imgs.center_clip(1024)
+			ffts=imgs.do_fft()
+			ccfs=ffts.calc_ccf(ffts,offset=1)
+			ccfsr=ccfs.do_ift()
+			_,nx,ny=ccfsr.shape
+			cens=ccfsr.center_clip(64)
+			for im in cens.emdata: im.process_inplace("normalize.edgemean")
+			cens.write_images("ccfs1k.hdf",bits=0,n_start=i-1)
 
 	if options.ccftiletest:
 		avg=EMData("average.hdf",0)

@@ -613,7 +613,7 @@ def compress_hdf(fsp,bits,nooutliers=False,level=1):
 	if fsp[-4:].lower()!=".hdf" : return
 	nm=get_temp_name()
 	os.rename(fsp,nm)
-	n=EMUtil.get_image_count(nm)
+	n=file_image_count(nm)
 	for i in range(n): EMData(nm,i).write_compressed(fsp,i,bits,nooutliers=nooutliers,level=level)
 	os.unlink(nm)
 
@@ -1097,7 +1097,7 @@ def parse_infile_arg(arg):
 	slices_inc = parse_string_to_slices(seq_inc)
 	slices_exc = parse_string_to_slices(seq_exc) if seq_exc else []
 
-	nimg = EMUtil.get_image_count(fname)
+	nimg = file_image_count(fname)
 	if ":" not in arg: return arg,range(nimg)		#quick stopgap for performance problem
 
 	idxs = OrderedDict()
@@ -1840,7 +1840,7 @@ def is_2d_image_mx(filename):
 	a.read_image(filename,0,True)
 	if a.get_ndim() != 2:
 		return False, "Image is not 2D :", filename
-	elif EMUtil.get_image_count(filename) < 1:
+	elif file_image_count(filename) < 1:
 		return False, "Image has not particles in it :", filename
 	else:
 		return True, "Image is a 2D stack"
@@ -1854,7 +1854,7 @@ def check_files_are_2d_images(filenames):
 		return fine, message
 	else:
 		for name in filenames:
-			if EMUtil.get_image_count(name) > 1:
+			if file_image_count(name) > 1:
 				return False, "Image contains more than one image :", name
 
 			else:
@@ -1954,7 +1954,7 @@ def file_exists( file_name ):
 			return True
 	else:
 		try:
-			if db_check_dict(file_name) and EMUtil.get_image_count(file_name) != 0: # a database can exist but have no images in it, in which case we consider it to not exist
+			if db_check_dict(file_name) and file_image_count(file_name) != 0: # a database can exist but have no images in it, in which case we consider it to not exist
 				return True
 			else: return False
 		except: return False
@@ -2830,7 +2830,7 @@ corresponding to each 1/2 of the data."""
 		oute=None
 		outo=None
 	else :								# This means we have a regular image file as an input
-		n=EMUtil.get_image_count(filename)
+		n=file_image_count(filename)
 		eset=filename.rsplit(".",1)[0]+"_even.lst"
 		oset=filename.rsplit(".",1)[0]+"_odd.lst"
 
@@ -3061,12 +3061,20 @@ EMData.write_image = db_write_image
 
 def db_write_images(fsp,
                     imgs,
-                    idxs=0,
+                    idx0=0,
                     imgtype=IMAGE_UNKNOWN,
                     header_only=False,
-                    reqion=None,
+                    region=None,
                     filestoragetype=EM_FLOAT,
                     use_host_endian=True):
+	"""fsp - output filename, accepts ":" syntax for compression
+imgs - list of EMData objects
+idx0 - index in the file of the first image, eg - 5 would write imgs[0] to position 5 in the file and imgs[1] to position 6
+imgtype - use IMAGE_UNKNOWN for extension-based type
+header_only - if set, only updates header and does not write image data
+region - write only a portion of the image data to disk
+filestorage - data type for writing. In most cases using ":" notation with filename is preferred
+use_host_endian - rarely should be altered"""
 
 	if fsp[:4].lower() == "bdb:":
 		print("ERROR: BDB is not supported in this version of EMAN2. You must use EMAN2.91 or earlier to access legacy data.")
@@ -3145,11 +3153,11 @@ def db_write_images(fsp,
 
 			#print(f"PY {im['render_min']} - {im['render_max']} {im['minimum']} - {im['maximum']}   {im['render_bits']}")
 		if bits < 0:
-			EMData.write_images_c(fsp, imgs, idxs)	# bits<0 implies no compression
+			EMData.write_images_c(fsp, imgs, idx0)	# bits<0 implies no compression
 		else:
-			EMData.write_images_c(fsp, imgs, idxs, EMUtil.ImageType.IMAGE_UNKNOWN, 0, None, EMUtil.EMDataType.EM_COMPRESSED)
+			EMData.write_images_c(fsp, imgs, idx0, EMUtil.ImageType.IMAGE_UNKNOWN, 0, None, EMUtil.EMDataType.EM_COMPRESSED)
 	else:
-		EMData.write_images_c(fsp, imgs, idxs, imgtype, header_only, reqion, filestoragetype, use_host_endian)
+		EMData.write_images_c(fsp, imgs, idx0, imgtype, header_only, region, filestoragetype, use_host_endian)
 
 EMData.write_images_c = staticmethod(EMData.write_images)
 EMData.write_images = staticmethod(db_write_images)
@@ -3211,7 +3219,7 @@ and the file size will increase.
 		except: pass
 	
 	if n==-1: 
-		try: n=EMUtil.get_image_count(fsp)
+		try: n=file_image_count(fsp)
 		except: n=0
 	
 	for i,im in enumerate(self):
@@ -3278,7 +3286,8 @@ and the file size will increase.
 EMData.write_compressed=im_write_compressed
 
 
-def db_get_image_count(fsp):
+# This way "file_image_count(fsp)" is available as a shortcut
+def file_image_count(fsp):
 	if ":" in fsp:
 		fsp, idxs = parse_infile_arg(fsp)
 		return len(idxs)
@@ -3286,7 +3295,7 @@ def db_get_image_count(fsp):
 		return EMUtil.get_image_count_c(fsp)
 
 EMUtil.get_image_count_c = staticmethod(EMUtil.get_image_count)
-EMUtil.get_image_count = db_get_image_count
+EMUtil.get_image_count = file_image_count
 
 
 __doc__ = \
