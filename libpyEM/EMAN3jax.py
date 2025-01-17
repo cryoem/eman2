@@ -1000,7 +1000,7 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 	offset = ceil((boxsize*1.733-boxstep)/(2*boxstep))
 
 	#TODO: make sure einsum is doing what I want given ordering changes from 2d -> 3d mx. In tf I specified axes=[-1]
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgauss=jnp.fliplr(jnp.einsum("ij,kj->ki",mx,gausary[:,:3]))	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgaussz = xfgauss[:,0]
 	xfgauss = xfgauss[:,1:]+tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same

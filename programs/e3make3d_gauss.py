@@ -38,6 +38,8 @@ import sys
 import time
 import os
 
+jax.config.update("jax_default_matmul_precision", "float32")
+
 def main():
 
 	usage="""e3make3d_gauss.py <projections>
