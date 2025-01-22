@@ -294,12 +294,36 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 	if options.ccfdtest is not None:
 		try: os.unlink("ccfs.hdf")
 		except: pass
+		try: os.unlink("ccfs2k.hdf")
+		except: pass
 		try: os.unlink("ccfs1k.hdf")
 		except: pass
+		try: os.unlink("ccfeo5.hdf")
+		except: pass
+		try: os.unlink("ccfeo5_imgs.hdf")
+		except: pass
+
 		avg=EMData(options.ccfdtest,0)
 		avg.div(avg["mean"])
 		#avg.add(-avg["mean"])
 		nimg=file_image_count(args[0])
+
+		print(f"0:{min(50,nimg)}")
+		aimgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
+		for im in aimgs:
+			im.process_inplace("math.fixgain.counting",{"gain":avg,"gainmin":3,"gainmax":3})
+		imgs=EMStack2D(np.stack([sum(aimgs.numpy[i:i+10:2]) for i in range(40)]))
+		imgs.coerce_tensor()
+		print(imgs.shape)
+		ffts=imgs.do_fft()
+		ccfs=ffts.calc_ccf(ffts,offset=1)
+		ccfsr=ccfs.do_ift()
+		_,nx,ny=ccfsr.shape
+		cens=ccfsr.center_clip(64)
+		for im in cens.emdata: im.process_inplace("normalize.edgemean")
+		cens.write_images("ccfeo5.hdf",bits=0)
+		imgs.write_images("ccfeo5_imgs.hdf",bits=5)
+
 		for i in range(1,nimg,25):
 			print(f"{i-1}:{min(i+25,nimg)}")
 			imgs=EMStack2D(EMData.read_images(f"{args[0]}:{i-1}:{min(i+25,nimg)}"))
@@ -316,6 +340,15 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			for im in cens.emdata: im.process_inplace("normalize.edgemean")
 			cens.write_images("ccfs.hdf",bits=0,n_start=i-1)
 
+			imgs=imgs.center_clip(2048)
+			ffts=imgs.do_fft()
+			ccfs=ffts.calc_ccf(ffts,offset=1)
+			ccfsr=ccfs.do_ift()
+			_,nx,ny=ccfsr.shape
+			cens=ccfsr.center_clip(64)
+			for im in cens.emdata: im.process_inplace("normalize.edgemean")
+			cens.write_images("ccfs2k.hdf",bits=0,n_start=i-1)
+
 			imgs=imgs.center_clip(1024)
 			ffts=imgs.do_fft()
 			ccfs=ffts.calc_ccf(ffts,offset=1)
@@ -324,6 +357,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			cens=ccfsr.center_clip(64)
 			for im in cens.emdata: im.process_inplace("normalize.edgemean")
 			cens.write_images("ccfs1k.hdf",bits=0,n_start=i-1)
+
 
 	if options.ccftiletest:
 		avg=EMData("average.hdf",0)
