@@ -1151,6 +1151,8 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 template<class T>
 void MrcIO::update_stats(const vector<T> &data)
 {
+	int original_nz = mrch.nz; // Backup original nz
+
 	const auto [min, max] = std::minmax_element(std::begin(data), std::end(data));
 	mrch.amin  = *min;
 	mrch.amax  = *max;
@@ -1166,6 +1168,9 @@ void MrcIO::update_stats(const vector<T> &data)
 	});
 
 	mrch.rms = (float) (size > 1 ? std::sqrt(square_sum / (double) (size-1)) : 0.0);
+
+	// Restore nz after stats are updated
+	mrch.nz = original_nz;
 
 	portable_fseek(file, 0, SEEK_SET);
 
@@ -1224,9 +1229,22 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 		nz = (int)(area->get_depth());
 	}
 
-	if (is_stack  &&  ! (nz > 1)) {
-		nz = 1;
-		mrch.nz = 1;
+	if (is_stack) {
+	    if (image_index == -1) {
+	        image_index = stack_size - 1; // Append to the stack
+	    }
+
+	    if (nz > 1) {
+	        stack_size = nz;
+	    } else if (is_new_file) {
+	        stack_size = 1;
+	    } else if (image_index >= stack_size) {
+	        stack_size = image_index + 1;
+	    }
+
+	    mrch.nz = stack_size; // Update nz to reflect total images in the stack
+	} else {
+	    mrch.nz = nz; // Non-stack format
 	}
 
 	size_t size = (size_t)nx * ny * nz;
