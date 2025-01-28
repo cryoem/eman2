@@ -514,7 +514,7 @@ class EMStack2D(EMStack):
 		if region_size<=32 : region_size=self.shape[1]//2
 		region_size=good_size(region_size)
 
-		cens=self.center_clip().do_fft()
+		cens=self.center_clip(region_size).do_fft()
 		nc=cens.shape[0]//2
 		atop0=EMStack2D(cens.jax[nc:-1])
 		atop1=EMStack2D(cens.jax[nc+1:])
