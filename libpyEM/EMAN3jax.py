@@ -121,7 +121,9 @@ class StackCache():
 		"""adds dorts and dtytxs to existing arrays at locations described by nlist, used to take a gradient step
 		on a subset of the data."""
 		if dorts is not None: self.orts[nlist]+=dorts
-		if dtytxs is not None: self.tytx[nlist]+=dtytxs
+		if dtytxs is not None:
+			try: self.tytx[nlist]+=dtytxs
+			except: self.tytx[nlist,:2]+=dtytxs
 
 	def set_frcs(self,nlist,frcs):
 		self.frcs[nlist]=frcs
@@ -470,9 +472,9 @@ class EMStack2D(EMStack):
 
 		if center:
 			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(tf_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])))
+				return EMStack2D(jax_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])))
 			elif isinstance(target,EMStack2D):
-				return EMStack2D(tf_phaseorigin2d(self.jax*jnp.conj(target.jax)))
+				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target.jax)))
 			elif isinstance(target,jax.Array) and offset==0:
 				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target)))
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
@@ -503,13 +505,48 @@ class EMStack2D(EMStack):
 		if newsize==self.shape[1]: return EMStack2D(self.jax) # this won't copy, but since the tensor is constant should be ok?
 		return EMStack2D(jax_downsample_2d(self.jax,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
+	def center_align_seq(self,region_size=-1):
+		"""Aligns a stack of (real space) images using the middle 1/2 (in x/y) of each image, and the middle image as a starting point.
+		designed to do a rough alignment of tilt series. region_size is the size in pixels of the region around the center of each
+		image to use for alignment. Default is ~1/2 the box size. All sizes adjusted to a good size"""
+		
+		#TODO - While functional, this whole method seems inefficient, particularly in terms of JAX
+		if region_size<=32 : region_size=self.shape[1]//2
+		region_size=good_size(region_size)
+
+		cens=self.center_clip().do_fft()
+		nc=cens.shape[0]//2
+		atop0=EMStack2D(cens.jax[nc:-1])
+		atop1=EMStack2D(cens.jax[nc+1:])
+		alitop=atop0.align_translate(atop1)
+
+		abot0=EMStack2D(cens.jax[jnp.arange(nc,0,-1)])
+		abot1=EMStack2D(cens.jax[jnp.arange(nc-1,-1,-1)])
+		alibot=abot0.align_translate(abot1)
+
+#		print(alibot,alitop)
+
+		self.coerce_emdata()
+		dx,dy=0,0
+		for i,sh in enumerate(alibot):
+			dx+=sh[1]
+			dy+=sh[0]
+			self.emdata[nc-i-1].translate(-int(dx),-int(dy),0)
+
+		dx,dy=0,0
+		for i,sh in enumerate(alitop):
+			dx+=sh[1]
+			dy+=sh[0]
+			self.emdata[nc+i+1].translate(-int(dx),-int(dy),0)
+		
+
 	def align_translate(self,ref,maxshift=-1):
 		"""compute translational alignment of a stack of images to a same sized stack (or single) of reference images.
 		returns array of (dy,dx) the same size as the input stack required to bring each "this" image into alignment with "ref". maxshift limits the maximum search area to +-maxshift
 		on each axis. If maxshift is unspecified -> box size //4"""
 
 		ny,nx=self.shape[1:]
-		if self.jax.dtype==tf.complex64 :
+		if self.jax.dtype==jnp.complex64 :
 			nx=(nx-1)*2
 			data=self
 		else:
@@ -1125,7 +1162,8 @@ def jax_phaseorigin2d(imgs):
 	else: shp=imgs.shape
 
 	if POF2D is None or shp!=POF2D.shape:
-		POF2D=jnp.fromfunction(lambda y,x: ((x+y)%2)*-2+1,shp,dtype=tf.complex64)
+#		POF2D=jnp.fromfunction(lambda y,x: ((x+y)%2)*-2+1,shp,dtype=jnp.complex64)
+		POF2D=jnp.fromfunction(lambda y,x: ((x+y)%2)*-2+1,shp,dtype=jnp.int32)
 
 	return imgs*POF2D
 
@@ -1136,7 +1174,7 @@ def jax_phaseorigin3d(imgs):
 	else: shp=imgs.shape
 
 	if POF3D is None or shp!=POF3D.shape:
-		POF3D=jnp.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp,dtype=tf.complex64)
+		POF3D=jnp.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp,dtype=jnp.complex64)
 
 	return imgs*POF3D
 

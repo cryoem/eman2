@@ -57,6 +57,7 @@ def main():
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
+	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--ptcl3d_id", type=int, help="only use 2-D particles with matching ptcl3d_id parameter",default=-1)
@@ -115,13 +116,13 @@ def main():
 	if options.tomo:
 		stages=[
 			[256,32,  32,1.8, -1,1,.05, 3.0],
-			[256,32,  32,1.8, -1,2,.05, 1.0],
+			[256,32,  32,1.8, -1,4,.05, 1.0],
 			[256,64,  48,1.5, -2,1,.04,1.0],
-			[256,64,  48,1.5, -2,2,.02,0.5],
-			[256,128, 32,1.2, -3,4,.01,2],
-			[256,256, 32,1.2, -2,1,.01,3],
-			[256,512, 48,1.2, -2,1,.01,3],
-			[256,1024,48,1.2, -3,1,.004,5]
+			[256,64,  48,1.5, -2,3,.02,0.5],
+			[256,128, 32,1.2, -3,3,.01,2.0],
+			[256,256, 32,1.2, -2,3,.01,3.0],
+			[256,512, 48,1.2, -2,3,.01,3.0],
+			[256,1024,48,1.2, -3,1,.004,5.0]
 		]
 	elif options.spt:
 		stages=[
@@ -160,7 +161,8 @@ def main():
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
-		for im in stk.emdata: im.process_inplace("normalize.edgemean")
+		for im in stk.emdata: im-=im["mean"]
+			#im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
 			stkfds=stkf.downsample(min(down,nxrawm2))
@@ -172,6 +174,8 @@ def main():
 				sys.stdout.flush()
 			stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
 			if options.preclip>0 : stk=stk.center_clip(options.preclip)
+			if options.tomo and options.tomo_seqali!=0 :
+				stk.center_align_seq(options.tomo_seqali)
 			orts,tytx=stk.orientations
 			tytx/=nxraw
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
@@ -233,6 +237,12 @@ def main():
 						qual-=qual0
 						shift+=shift0
 						sca+=sca0
+
+					# update alignments of data to gaussian projections
+					# if i>3:
+					# 	dtytx=align_2d(gaus,orts,tytx,ptclsfds)
+					# 	caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,-dtytx)
+
 					# if i==stage[2]-1:
 					# 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
 					# 	out=open(f"fscs_{sn}.txt","a" if j>0 else "w")
@@ -444,8 +454,8 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0
 	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational std
-	sca=grad[:,3].std()		# amplitude std
+	shift=grad[:,:3].std()		# translational (gauss) std
+	sca=grad[:,3].std()			# amplitude std
 
 	return (grad,float(qual),float(shift),float(sca))
 
@@ -472,6 +482,14 @@ def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn=jax.value_and_grad(prj_frc)
+
+def align_2d(gaus,orts,tytx,ptclsfds):
+	ny=ptclsfds.shape[1]
+	#ptcls=ptclsfds.jax
+	mx=orts.to_mx2d(swapxy=True)
+	prj=jax_fft2d(gauss_project_simple_fn(gaus.jax,mx,ny,tytx))	# FFT of gaussian projection for each particle
+	return ptclsfds.align_translate(prj)/ny			# ccf between each particle and its projection
+
 
 # TODO: This function is not updated to jax
 def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
