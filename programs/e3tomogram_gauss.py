@@ -38,6 +38,8 @@ import sys
 import time
 import os
 
+jax.config.update("jax_default_matmul_precision", "float32")
+
 def main():
 
 	usage="""e3tomogram_gauss.py <tiltseries>
@@ -54,7 +56,7 @@ def main():
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--tilesize",type=int,help="Controls how large the tiles are, default=1024", default=1024)
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
-	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1) 
+	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass for each tile, scaled with stage, default=1000", default=1000)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--savetiles", action="store_true",help="Save the tiles as an hdf file outside of tmp. Currently only used for debugging but possibly could be used when multiple runs with same tiles")
@@ -123,6 +125,11 @@ def main():
 	if options.savesteps:
 		try: os.unlink("steps.hdf")
 		except: pass
+		try: os.unlink("all_tile_steps.hdf")
+		except: pass
+		for i in range(xtiles*ytiles):
+			try: os.unlink("tile_{i}_steps.hdf")
+			except: pass
 
 	# Get information from info file
 	js=js_open_dict(info_name(args[0]))
@@ -247,7 +254,7 @@ def main():
 	rng = np.random.default_rng()
 	rnd = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles,4))
 	rnd+= (-0.5, -0.5, -0.5, 2.0) # Coord between -.5 and .5, amp between 2 and 3
-	rnd *= (xtiles//2, ytiles//2, 1., 1.) # Each tile has -.5 to .5 (with some offset n*0.5)
+	rnd *= (np.ceil(xtiles/2), np.ceil(ytiles/2), 1., 1.) # Each tile has -.5 to .5 (with some offset n*0.5)
 	rnd/= (0.9,0.9,1.0/zmax, 3.0) # Spread out points
 	all_gaus = Gaussians()
 	all_gaus._data = rnd
@@ -339,12 +346,47 @@ def main():
 					update, optim_state = optim.update(step, optim_state)
 					cur_gaus._data = optax.apply_updates(cur_gaus._data, update)
 
-					if options.savesteps: from_numpy(cur_gaus.numpy).write_image("steps.hdf",-1)
-					# TODO:  Add debug_images to check geometry
+					if options.savesteps:
+						from_numpy(cur_gaus.numpy).write_image("all_tile_steps.hdf",-1)
+						from_numpy(cur_gaus.numpy).write_image(f"tile_{tnx*ytiles+tny}_steps.hdf", -1)
+					if options.verbose>3:
+						dsapix=apix*nxraw/ptclsfds.shape[1]
+						mx2d=orts.to_mx2d(swapxy=True)
+						gausary=cur_gaus.jax
+						ny=ptclsfds.shape[1]
+						if options.ctf == 0:
+							projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+						elif options.ctf == 1:
+							ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
+							projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
+						elif options.ctf == 2:
+							ctfaryds= jax_downsample_2d(ctf_stack.jax,ny)
+							mx3d=orts.to_mx3d()
+							projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+						transforms=orts.transforms(tytx)
+#						# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
+						ptclds=ptclsfds.do_ift()
+						for k in range(len(projs)):
+							a=ptclds.emdata[k]
+							b=projs.emdata[k]
+							a["apix_x"]=dsapix
+							a["apix_y"]=dsapix
+							b["apix_x"]=dsapix
+							b["apix_y"]=dsapix
+							a["xform.projection"]=transforms[k]
+							b["xform.projection"]=transforms[k]
+							a.process_inplace("normalize")
+							b.process_inplace("filter.matchto",{"to":a})
+							a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",((tnx*ytiles+tny)*len(projs)+k)*2)
+							b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",((tnx*ytiles+tny)*len(projs)+k)*2+1)
+
 					print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
 					if qual>0.99: break
+
+
 				# End of looping over epochs
 				all_gaus._data = update_tomogram_gauss(cur_gaus, all_gaus, xrange, yrange)
+				if options.savesteps: from_numpy(all_gaus.numpy).write_image("steps.hdf", -1)
 		# End of looping over tiles
 		# filter results and prepare for stage 2
 		g0=len(all_gaus)
@@ -377,7 +419,7 @@ def main():
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),0)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
-	if options.bin>0: 
+	if options.bin>0:
 		vol.process_inplace("math.meanshrink", {"n":options.bin}) # TODO: Ask if maybe this processing should go before the filters
 		vol["apix_x"] = vol["apix_x"]*options.bin
 		vol["apix_y"] = vol["apix_y"]*options.bin
