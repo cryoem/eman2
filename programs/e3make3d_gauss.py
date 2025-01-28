@@ -38,6 +38,8 @@ import sys
 import time
 import os
 
+jax.config.update("jax_default_matmul_precision", "float32")
+
 def main():
 
 	usage="""e3make3d_gauss.py <projections>
@@ -250,13 +252,13 @@ def main():
 					# 	out.close()
 				elif options.ctf==2:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7],frc_Z)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
-						step,qual,shift,sca=step0,qual0,shift0,sca0
+						step,qual,shift,sca=step0,-qual0,shift0,sca0
 					else:
 						step+=step0
-						qual+=qual0
+						qual-=qual0
 						shift+=shift0
 						sca+=sca
 				elif options.ctf==1:
@@ -321,7 +323,7 @@ def main():
 				mx3d=orts.to_mx3d()
 				ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
 				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
-#				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
 			transforms=orts.transforms(tytx)
 #			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
@@ -338,19 +340,19 @@ def main():
 				b.process_inplace("filter.matchto",{"to":a})
 				if options.ctf>0:
 					c=ctf_projs.emdata[i]
-#					d=layered_ctf_projs.emdata[i]
+					d=layered_ctf_projs.emdata[i]
 					c["apix_x"]=dsapix
 					c["apix_y"]=dsapix
-#					d["apix_x"]=dsapix
-#					d["apix_y"]=dsapix
+					d["apix_x"]=dsapix
+					d["apix_y"]=dsapix
 					c.process_inplace("filter.matchto",{"to":a})
-#					d.process_inplace("filter.matchto",{"to":a})
+					d.process_inplace("filter.matchto",{"to":a})
 					c["xform.projection"]=transforms[i]
-#					d["xform.projection"]=transforms[i]
+					d["xform.projection"]=transforms[i]
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
 					c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
-#					d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
+					d.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+3)
 				else:
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
@@ -643,7 +645,6 @@ def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,ds
 	mx=orts.to_mx3d()
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
-#	print("mx ",mx.shape)
 
 	frcs,grad=gradvalfn_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
 
@@ -669,6 +670,39 @@ def prj_frc_layered_ctf(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,w
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf)
+
+def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
+	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	mx=orts.to_mx3d()
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
+
+	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
+
+	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
+
+	return (grad,float(qual),float(shift),float(sca))
+
+def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+
+gradvalfnl_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf_loss)
 
 
 

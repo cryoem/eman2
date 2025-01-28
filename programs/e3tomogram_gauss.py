@@ -30,11 +30,15 @@
 #
 
 from EMAN3 import *
-from EMAN3tensor import *
+from EMAN3jax import *
+import jax
+import optax
 import numpy as np
 import sys
 import time
 import os
+
+jax.config.update("jax_default_matmul_precision", "float32")
 
 def main():
 
@@ -47,12 +51,14 @@ def main():
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
+	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--tilesize",type=int,help="Controls how large the tiles are, default=1024", default=1024)
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
-	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1) 
+	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass for each tile, scaled with stage, default=1000", default=1000)
+	parser.add_argument("--combineiters",type="store_true", help="Use the Gaussian coordinates from the last ~10 iterations for the final volume. Increases the number of Gaussians without as much memory increase")
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--savetiles", action="store_true",help="Save the tiles as an hdf file outside of tmp. Currently only used for debugging but possibly could be used when multiple runs with same tiles")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
@@ -62,19 +68,30 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
 	(options, args) = parser.parse_args()
-	tf_set_device(dev=0,maxmem=options.gpuram)
+	jax_set_device(dev=0,maxmem=options.gpuram)
 
 	llo=E3init(sys.argv)
 
-	# Things to fix:
+	# Old things to fix:
 		# Figure out why the FRC was going negative for some tile--mostly at first few iterations so may be fine
 		# FRC not currently remaining high for each tile--convergence issue and need more iterations or something else?
 		# Edit number of Gaussians to be more reasonable: Upper limit: 1M Gaussians for 1kx1kx1k at 40A resolution (which is the default filtering)
 
+	# January things to do:
+		# Fix/add volume_tiled to EMAN3jax
+		# Move loading the imgs into tiles into a separate function
+		# Adjust reading in file so can handle continuous tilt which you can't read in all at once
+			# Read img -1 and then use source_n
+			# I'm thinking go in steps of 50 frames at a time
+			# Need to change the indexing for pulling the right tile out. Right now its going up in columns over image left to right one tilt at a time (xtiles*ytiles total)
+		# Convert to jax so it runs
+		# Once it runs, aggragate the last ~10 steps or so (after it should have converged) to get more Gaussians
+		# What to use as a good test for convergence? tiling a volume I can reconstruct on its own to see if I get similar results?
 
 	# Getting tiles and saving to temp files
 	ntilts = EMUtil.get_image_count(args[0])
 	nxraw, nyraw = EMData(args[0],0,True)["nx"], EMData(args[0],0,True)["ny"]
+	frc_Z = options.frc_z
 	if options.preclip>0: nxraw=nyraw=options.preclip
 	if options.apix>0: apix=options.apix
 	else: apix=EMData(args[0],0,True)["apix_x"]
@@ -110,6 +127,11 @@ def main():
 	if options.savesteps:
 		try: os.unlink("steps.hdf")
 		except: pass
+		try: os.unlink("all_tile_steps.hdf")
+		except: pass
+		for i in range(xtiles*ytiles):
+			try: os.unlink("tile_{i}_steps.hdf")
+			except: pass
 
 	# Get information from info file
 	js=js_open_dict(info_name(args[0]))
@@ -117,101 +139,31 @@ def main():
 		ttparams = np.array(js["tlt_params"])
 	except:
 		traceback.print_exc()
-		print(f"""\nERROR: tlt_params missing in {info_name(args[0])}. This will happen if a tomogram has not yet been constructed in EMAN. Support for this
+		print(f"""\nERROR: tlt_params missing in {info_name(filename)}. This will happen if a tomogram has not yet been constructed in EMAN. Support for this
 			program being the first volume constructed should come later. For now reconstruct a tomogram (large bin should be fine) and then try again.""")
 		sys.exit(1)
 	try:
 		cs=float(js["cs"])
 	except:
-		print(f"""\nWarning: Could not get Cs from {info_name(args[0])}""") #TODO: Change warning, give option to overwrite or something
+		print(f"""\nWarning: Could not get Cs from {info_name(filename)}""") #TODO: Change warning, give option to overwrite or something
 	try:
 		volt = float(js["voltage"])
 	except:
-		print(f"""\nWarning: Could not get Voltage from {info_name(args[0])}""") #TODO: Change warning, give option to overwrite or something
+		print(f"""\nWarning: Could not get Voltage from {info_name(filename)}""") #TODO: Change warning, give option to overwrite or something
 	try:
 		defocus = np.array(js["defocus"])
 	except:
-		print(f"""\nWarning: Could not get defocus values from {info_name(args[0])}. Have you done CTF correction?""") # TODO: Change warning?
+		print(f"""\nWarning: Could not get defocus values from {info_name(filename)}. Have you done CTF correction?""") # TODO: Change warning?
 	try:
 		phase = np.array(js["phase"])
 		if min(phase)==max(phase): phase = [phase[0]]
 	except:
-		print(f"""\nWarning: Could not get phases from {info_name(args[0])}.""") #TODO: Change warning?
+		print(f"""\nWarning: Could not get phases from {info_name(filename)}.""") #TODO: Change warning?
 	js.close()
 
-	# Loading tilts
-	tilt_img = EMData(args[0], 0)
-	if tilt_img["nz"]>1:
-		tilt_imgs = [tilt_img.get_clip(Region(0,0,i, tilt_img["nx"], tilt_img["ny"],1)).copy() for i in range(img["nz"])]
-	else:
-		tilt_imgs = EMData.read_images(args[0])
-	tilt_img=None
-
-	for tilt in tilt_imgs:
-		if options.preclip > 0: tilt = tilt.get_clip(Region(tilt["nx"]//2-nxraw//2, tilt["ny"]//2-nxraw//2, nxraw, nxraw), fill=0)
-		tilt.process_inplace("threshold.clampminmax.nsigma",{"nsigma":10}) # removing x-ray pixels
-		tilt.process_inplace("normalize.edgemean") # Normalizing
-	ctf=EMAN2Ctf() # TODO: I checked and this works with import EMAN3 but will it eventually update to EMAN3Ctf or are we moving away from ctf object?
-	ctf.from_dict({"defocus":1.0, "voltage":volt, "bfactor":0., "cs":cs, "ampcont":0, "apix":apix})
-	ctf.set_phase(phase[0]*np.pi/180.)
-
-	# Creating and caching tiles
-	#TODO: Provide option to use saved tiling file from --savetiles so don't have to spend the time to extract them all?
 	times= [time.time()]
-	if options.verbose: print("Tiling and caching tilt series")
-	downs=sorted(set([s[1] for s in stages]))
-	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcls) for down in downs}
-	mindf=float('inf')
-	maxdf=0
-	for stepx in range(nxstep, -nxstep-1,-1):
-		for stepy in range(nystep, -nystep-1,-1):
-			full_tiles = []
-			for i in range(ntilts):
-				pos = [stepx*step, stepy*step, 0]
-				pxf = get_xf_pos(ttparams[i],pos)
-				tx = tilt_imgs[i]["nx"]//2 + pxf[0]
-				ty = tilt_imgs[i]["ny"]//2 + pxf[1]
-				m=tilt_imgs[i].get_clip(Region(int(tx) - step, int(ty) - step, options.tilesize, options.tilesize), fill=0) # Step used instead of recalculating tilesize//2
-				m.mult(-1) # Make sure to invert contrast
-				xform = Transform({"type":"xyz","ytilt":ttparams[i][3],"xtilt":ttparams[i][4],"ztilt":ttparams[i][2], "tx":tx-int(tx), "ty":ty-int(ty)}) # I skipped the dxfs part from e2spt_extract for now...was that important?
-				m["xform.projection"]=xform
-				rot=Transform({"type":"xyz","xtilt":float(ttparams[i][4]), "ytilt":float(ttparams[i][3])}) #TODO: Figure out why made separate transform instead of reusing xform
-				p1=rot.transform(pos)
-				pz=p1[2]*apix/10000. # Convert distance from center into defocus change due to tilt
-				tilted_defocus = defocus[i]-pz
-				ctf.defocus=tilted_defocus
-				if len(phase) > 1:
-					ctf.set_phase(phase[i]*np.pi/180.) # Avoid resetting phase if they are all the same
-				m["ctf"]=ctf
-				if tilted_defocus < mindf: mindf=tilted_defocus
-				if tilted_defocus > maxdf: maxdf=tilted_defocus
-				if options.ctf==0:
-					fft1=m.do_fft()
-					flipim=fft1.copy()
-					ctf.compute_2d_complex(flipim, Ctf.CtfType.CTF_SIGN) 
-					# TODO: See if this should be CTF_SIGN or if I should be doing full ctf correction here too instead of just phase flipping
-					fft1.mult(flipim)
-					m=fft1.do_ift()
-				full_tiles.append(m)
-			if options.savetiles:
-				EMData.write_images("debug_tiling.hdf", full_tiles, ntilts*(-stepx+nxstep)*(ytiles)+ntilts*(-stepy+nystep))
-				#Appears to tile correctly--starts in bottom left and goes up in columns moving right ^^^^ ->
-			if options.verbose>1:
-				print(f" Caching {ntilts*(-stepx+nxstep)*(ytiles)+ntilts*(-stepy+nystep)}/{nptcls}",end="\r",flush=True)
-				sys.stdout.flush()
-			stk=EMStack2D(full_tiles)
-#			if options.preclip>0 : stk=stk.center_clip(options.preclip)
-			#TODO: Should there be an option to clip here too that isn't tilesize?
-			orts,tytx=stk.orientations
-			try: tytx/= (nxraw, nyraw, 1) # TODO: Did I break this this by accepting non-square tiltseries?
-						# I think probably not but maybe with tiling I did
-			except: pass    # The try/except can probably be removed now--is just from when xform.projections was not set
-			for im in stk.emdata: im.process_inplace("normalize.edgemean")
-			stkf=stk.do_fft()
-			for down in downs:
-				stkfds=stkf.downsample(min(down,options.tilesize))
-				caches[down].write(stkfds,ntilts*(-stepx+nxstep)*(ytiles)+ntilts*(-stepy+nystep),orts,tytx)
-	tilt_imgs=None
+	#TODO: Provide option to use saved tiling file from --savetiles so don't have to spend the time to extract them all?
+	caches, downs, mindf, maxdf = cache_tiles(args[0], options, stages, apix, ttparams, cs, volt, defocus, phase, nxraw, nyraw, xtiles, ytiles, nxstep, nystep, step, ntilts, nptcls)
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
@@ -225,21 +177,28 @@ def main():
 		dfstep = apix*apix/100
 		boxlen = apix*options.tilesize*sqrt(3)
 		df_buffer = (boxlen/2)/(dfstep*10000) + dfstep
-		ctf_stack,dfstep=create_ctf_stack((mindf-df_buffer,maxdf+df_buffer),volt,cs,ampcont,options.tilesize,apix)
+		dfrange = (mindf-df_buffer, maxdf+df_buffer)
+		ctf_stack,dfstep=create_ctf_stack(dfrange,volt,cs,ampcont,options.tilesize,apix)
 
 	if options.verbose>1: print("")
 
 	# Initializing Gaussians to random values with amplitudes over a narrow range
-	rnd = tf.random.uniform((options.initgauss*xtiles*ytiles, 4)) # all between 0-1
+	rng = np.random.default_rng()
+	rnd = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles,4))
 	rnd+= (-0.5, -0.5, -0.5, 2.0) # Coord between -.5 and .5, amp between 2 and 3
-	rnd *= (xtiles//2, ytiles//2, 1., 1.) # Each tile has -.5 to .5 (with some offset n*0.5)
+	rnd *= (np.ceil(xtiles/2), np.ceil(ytiles/2), 1., 1.) # Each tile has -.5 to .5 (with some offset n*0.5)
 	rnd/= (0.9,0.9,1.0/zmax, 3.0) # Spread out points
 	all_gaus = Gaussians()
 	all_gaus._data = rnd
 	cur_gaus= Gaussians()
 	times.append(time.time())
+	if options.combineiters:
+		final_gaus = Gaussians()
+		final_gaus._data = []
+
 	for sn,stage in enumerate(stages):
 		all_gaus.coerce_numpy()
+		imshift=0.0
 		for tnx in range(xtiles):
 			xrange = (-0.5*(xtiles//2-tnx)-1, -0.5*(xtiles//2-tnx)+1)
 			for tny in range(ytiles):
@@ -247,54 +206,62 @@ def main():
 				if options.verbose: print(f"Stage {sn}, Tile {tnx*ytiles+tny} - {local_datetime()}:")
 				if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n        FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 				cur_gaus._data = select_tile_gauss(all_gaus, xrange, yrange)
-				cur_gaus.coerce_tensor()
-				print(f"split types: {cur_gaus._data.dtype}, {all_gaus._data.dtype}")
-				print(f"{len(cur_gaus)} Gaussians in tile {tnx*ytiles+tny}")
-				print(f"{len(all_gaus)} Gaussians total")
-				nliststg=range((tnx*ytiles+tny)*ntilts, (tnx*ytiles+tny)*ntilts+ntilts)
-				imshift=0.0
-				lqual=-1.0
-				rstep=1.0
+				cur_gaus.coerce_jax()
+				if ntilts>stage[0]:
+					idx0=sn+i
+				else:
+					idx0=0
+				nliststg=range(tnx*ytiles+tny+idx0*xtiles*ytiles, nptcls, xtiles*ytiles*max(1,ntilts//stage[0]))
+
+#				imshift=0.0
+#				lqual=-1.0
+#				rstep=1.0
+				optim = optax.adam(.005)
+				optim_state = optim.init(cur_gaus._data)
 				for i in range(stage[2]):
-					for j in range(0, len(nliststg), 500):
-						ptclsfds, orts, tytx = caches[stage[1]].read(nliststg[j:j+500])
+					for j in range(0, len(nliststg), 512):
+						ptclsfds, orts, tytx = caches[stage[1]].read(nliststg[j:j+512])
 						if options.ctf==0:
-							step0,qual0,shift0,sca0=gradient_step(cur_gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+							step0,qual0,shift0,sca0=gradient_step_optax(cur_gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+							step0=jnp.nan_to_num(step0)
 							if j==0:
-								step,qual,shift,sca=step0,qual0,shift0,sca0
+								step,qual,shift,sca=step0,-qual0,shift0,sca0
 							else:
 								step+=step0
-								qual+=qual0
+								qual-=qual0
 								shift+=shift0
 								sca+=sca0
 						elif options.ctf==2:
 							dsapix=apix*nxraw/ptclsfds.shape[1]
-							step0,qual0,shift0,sca0=gradient_step_layered_ctf(cur_gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,(mindf-df_buffer,maxdf+df_buffer),dfstep,dsapix,stage[3],stage[7])
+							step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(cur_gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7],frc_Z)
+							step0=jnp.nan_to_num(step0)
 							if j==0:
-								step,qual,shift,sca=step0,qual0,shift0,sca0
+								step,qual,shift,sca=step0,-qual0,shift0,sca0
 							else:
 								step+=step0
-								qual+=qual0
+								qual-=qual0
 								shift+=shift0
 								sca+=sca
 						elif options.ctf==1:
-							step0,qual0,shift0,sca0=gradient_step_ctf(cur_gaus,ptclsfds,orts,ctf_stack.downsample(ptclsfds.shape[1]),tytx,(mindf-df_buffer,maxdf+df_buffer),dfstep,stage[3],stage[7])
+							step0,qual0,shift0,sca0=gradient_step_ctf_optax(cur_gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7],frc_Z)
+							step0=jnp.nan_to_num(step0)
 							if j==0:
-								step,qual,shift,sca=step0,qual0,shift0,sca0
+								step,qual,shift,sca=step0,-qual0,shift0,sca0
 							else:
 								step+=step0
-								qual+=qual0
+								qual-=qual0
 								shift+=shift0
 								sca+=sca
 						# optimize gaussians and image shifts
 						else:
 							step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(cur_gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+							step0=jnp.nan_to_num(step0)
 							if j==0:
 								step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
-								caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+								caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)  # we can immediately add the current 500>
 							else:
 								step+=step0
-								caches[stage[1]].add_orts(nliststg[j:j+500],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+								caches[stage[1]].add_orts(nliststg[j:j+512],None,stept0*rstep)  # we can immediately add the current 500>
 								qual+=qual0
 								shift+=shift0
 								sca+=sca0
@@ -302,19 +269,61 @@ def main():
 					# End of looping over j for memory
 					norm=len(nliststg)//500+1
 					qual/=norm
-					if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
-					step*=rstep/norm
+#					if qual<lqual: rstep/=2.0	# if we start falling or oscillating we reduce the step within the epoch
+#					step*=rstep/norm
+#					lqual=qual
 					shift/=norm
 					sca/=norm
 					imshift/=norm
-					cur_gaus.add_tensor(step)
-					lqual=qual
-					if options.savesteps: from_numpy(cur_gaus.numpy).write_image("steps.hdf",-1)
-					# Add debug_images to check geometry
-					print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}\t{rstep:1.5f}")
+
+					update, optim_state = optim.update(step, optim_state)
+					cur_gaus._data = optax.apply_updates(cur_gaus._data, update)
+
+					if options.savesteps:
+						from_numpy(cur_gaus.numpy).write_image("all_tile_steps.hdf",-1)
+						from_numpy(cur_gaus.numpy).write_image(f"tile_{tnx*ytiles+tny}_steps.hdf", -1)
+					if options.verbose>3:
+						dsapix=apix*nxraw/ptclsfds.shape[1]
+						mx2d=orts.to_mx2d(swapxy=True)
+						gausary=cur_gaus.jax
+						ny=ptclsfds.shape[1]
+						if options.ctf == 0:
+							projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+						elif options.ctf == 1:
+							ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
+							projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
+						elif options.ctf == 2:
+							ctfaryds= jax_downsample_2d(ctf_stack.jax,ny)
+							mx3d=orts.to_mx3d()
+							projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+						transforms=orts.transforms(tytx)
+#						# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
+						ptclds=ptclsfds.do_ift()
+						for k in range(len(projs)):
+							a=ptclds.emdata[k]
+							b=projs.emdata[k]
+							a["apix_x"]=dsapix
+							a["apix_y"]=dsapix
+							b["apix_x"]=dsapix
+							b["apix_y"]=dsapix
+							a["xform.projection"]=transforms[k]
+							b["xform.projection"]=transforms[k]
+							a.process_inplace("normalize")
+							b.process_inplace("filter.matchto",{"to":a})
+							a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",((tnx*ytiles+tny)*len(projs)+k)*2)
+							b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",((tnx*ytiles+tny)*len(projs)+k)*2+1)
+
+					print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
 					if qual>0.99: break
+
+					# Combine final few iterations to give the final volume
+					if options.combineiters and sn == len(stages)-1 and stages[sn][2] - i < 10:
+						# TODO: Replace "last ten epochs of final iteration" with a better measure of convergence ie diff in qual?
+						final_gaus._data = accumulate_tomogram_gauss(cur_gaus, final_gaus, xrange, yrange)
+
 				# End of looping over epochs
 				all_gaus._data = update_tomogram_gauss(cur_gaus, all_gaus, xrange, yrange)
+				if options.savesteps: from_numpy(all_gaus.numpy).write_image("steps.hdf", -1)
 		# End of looping over tiles
 		# filter results and prepare for stage 2
 		g0=len(all_gaus)
@@ -336,10 +345,16 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
+
 	# End of looping over stages
-	all_gaus._data=select_tile_gauss(all_gaus, (-1*(xtiles//2/2),xtiles//2/2), (-1*(ytiles//2/2), ytiles//2/2)) # Select only Gaussians in box for final volume (this was implicit with tensorflow not error at out of bounds index)
+#	all_gaus._data=select_tile_gauss(all_gaus, (-1*(xtiles//2/2),xtiles//2/2), (-1*(ytiles//2/2), ytiles//2/2)) # Select only Gaussians in box for final volume (this was implicit with jax not error at out of bounds index)
+	# I think I can remove this because there is a mask to only include those in the box in the volume_tiled function
+	print(f"{len(all_gaus)} Gaussians in all_gaus but using {len(final_gaus)} Gaussians for final volume")
 	times.append(time.time())
-	vol=all_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)
+	if options.combineiters:
+		vol = final_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)
+	else:
+		vol=all_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outx
 	vol["apix_y"]=apix*nyraw/outy
@@ -347,12 +362,12 @@ def main():
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),0)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
-	if options.bin>0: 
+	if options.bin>0:
 		vol.process_inplace("math.meanshrink", {"n":options.bin}) # TODO: Ask if maybe this processing should go before the filters
 		vol["apix_x"] = vol["apix_x"]*options.bin
 		vol["apix_y"] = vol["apix_y"]*options.bin
 		vol["apix_z"] = vol["apix_z"]*options.bin
-	# Right now the unfilt will be at full resolution, maybe that's good maybe it should be downsampled too
+	# Right now the unfilt will be at full resolution, which is what we want
 	times.append(time.time())
 	vol.write_image(options.volout,0)
 
@@ -371,6 +386,84 @@ def get_xf_pos(tpm, pk):
 	p1 = xf0.transform([pk[0], pk[1], pk[2]]) # why doesn't it just say xf0.transform(pk)?
 	return [p1[0], p1[1]] # Same question, why not return p1? is it an indexable class thats not a list?
 
+def cache_tiles(filename, options, stages, apix, ttparams, cs, volt, defocus, phase, nxraw, nyraw, xtiles, ytiles, nxstep, nystep, step, ntilts, nptcls):
+	# Loading tilts
+	tilt_img = EMData(filename, 0,True)
+	if tilt_img["nz"]>1:
+		print("You have given a 3D volume file not an image stack file. If it should be an image stack try using the --threed2twod option in e2proc2d.py to get a stack then try again")
+		sys.exit(1)
+#		tilt_imgs = [tilt_img.get_clip(Region(0,0,i, tilt_img["nx"], tilt_img["ny"],1)).copy() for i in range(tilt_img["nz"])]
+	tilt_img=None
+
+	if options.verbose: print("Tiling and caching tilt series")
+	ctf=EMAN2Ctf() # TODO: I checked and this works with import EMAN3 but will it eventually update to EMAN3Ctf or are we moving away from ctf object?
+	ctf.from_dict({"defocus":1.0, "voltage":volt, "bfactor":0., "cs":cs, "ampcont":0, "apix":apix})
+	ctf.set_phase(phase[0]*np.pi/180.)
+	downs=sorted(set([s[1] for s in stages]))
+	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcls) for down in downs}
+	mindf=float('inf')
+	maxdf=0
+	nt = 64 # Number of tiles to process at once
+	for i in range(0, ntilts, nt):
+		# Load subset of images
+		tilt_imgs = EMData.read_images(filename, range(i, min(i+nt, ntilts)))
+
+		full_tiles=[]
+		# Creating and caching tiles
+		for tiltn in range(len(tilt_imgs)):
+			full_tiles=[]
+			# Pre-process each image for tiling
+			if options.preclip > 0: tilt_imgs[tiltn] = tilt_imgs[tiltn].get_clip(Region(tilt_imgs[tiltn]["nx"]//2-nxraw//2, tilt_imgs[tiltn]["ny"]//2-nxraw//2, nxraw, nxraw), fill=0)
+			tilt_imgs[tiltn].process_inplace("threshold.clampminmax.nsigma",{"nsigma":10}) # removing x-ray pixels
+			tilt_imgs[tiltn].process_inplace("normalize.edgemean") # Normalizing
+			for stepx in range(nxstep, -nxstep-1,-1):
+				for stepy in range(nystep, -nystep-1,-1):
+#					full_tiles = []
+#					for i in range(ntilts):
+	#				for i in range(nt):
+					pos = [stepx*step, stepy*step, 0]
+					pxf = get_xf_pos(ttparams[tiltn],pos)
+					tx = tilt_imgs[tiltn]["nx"]//2 + pxf[0]
+					ty = tilt_imgs[tiltn]["ny"]//2 + pxf[1]
+					m=tilt_imgs[tiltn].get_clip(Region(int(tx) - step, int(ty) - step, options.tilesize, options.tilesize), fill=0) # Step used instead of recalculating tilesize//2
+					m.mult(-1) # Make sure to invert contrast
+					xform = Transform({"type":"xyz","ytilt":ttparams[tiltn][3],"xtilt":ttparams[tiltn][4],"ztilt":ttparams[tiltn][2], "tx":tx-int(tx), "ty":ty-int(ty)}) # I skipped the dxfs part from e2spt_extract for now...was that important?
+					m["xform.projection"]=xform
+					rot=Transform({"type":"xyz","xtilt":float(ttparams[tiltn][4]), "ytilt":float(ttparams[tiltn][3])}) #TODO: Figure out why made separate transform instead of reusing xform
+					p1=rot.transform(pos)
+					pz=p1[2]*apix/10000. # Convert distance from center into defocus change due to tilt
+					tilted_defocus = defocus[tiltn]-pz
+					ctf.defocus=tilted_defocus
+					if len(phase) > 1:
+						ctf.set_phase(phase[tiltn]*np.pi/180.) # Avoid resetting phase if they are all the same
+					m["ctf"]=ctf
+					if tilted_defocus < mindf: mindf=tilted_defocus
+					if tilted_defocus > maxdf: maxdf=tilted_defocus
+					if options.ctf==0:
+						fft1=m.do_fft()
+						flipim=fft1.copy()
+						ctf.compute_2d_complex(flipim, Ctf.CtfType.CTF_SIGN)
+						fft1.mult(flipim)
+						m=fft1.do_ift()
+					full_tiles.append(m)
+			if options.savetiles:
+				EMData.write_images("debug_tiling.hdf", full_tiles, (i+tiltn)*(xtiles*ytiles))
+				#Appears to tile correctly--starts in bottom left and goes up in columns moving right ^^^^ ->
+			if options.verbose>1:
+				print(f" Caching {(i+tiltn)*(xtiles*ytiles)}/{nptcls}",end="\r",flush=True)
+				sys.stdout.flush()
+			stk=EMStack2D(full_tiles)
+			orts,tytx=stk.orientations
+			tytx/= jnp.array((nxraw, nyraw, 1)) # TODO: Did I break this in tiling/accepting non-square imgs?
+			for im in stk.emdata: im.process_inplace("normalize.edgemean")
+			stkf=stk.do_fft()
+			for down in downs:
+				stkfds=stkf.downsample(min(down,options.tilesize))
+				caches[down].write(stkfds,(i+tiltn)*(xtiles*ytiles),orts,tytx)
+	tilt_imgs=None
+	return caches, downs, mindf, maxdf
+
+
 def select_tile_gauss(all_gaus, xrange, yrange):
 	"""Finds the subset of the Gaussians in all_gauss within xrange and yrange. 
 	Returns a numpy array which are the Gaussians within xrange and yrange, translated to be centered around (0,0).
@@ -385,21 +478,6 @@ def select_tile_gauss(all_gaus, xrange, yrange):
 	in_tile_gaus = all_gaus._data[(all_gaus._data[:,0] > xrange[0]) & (all_gaus._data[:,0] <= xrange[1]) & (all_gaus._data[:,1] > yrange[0]) & (all_gaus._data[:,1] <= yrange[1])]
 	in_tile_gaus -= ((xrange[0]+xrange[1])/2, (yrange[0]+yrange[1])/2, 0., 0.)
 	return in_tile_gaus
-	# Overall tiltseries may not be square, don't put the calculation of where the tile is in this function give it a range (min,max) and 
-	# Calculate that range in main code.
-#	col=tn//tiles_per_side
-#	row=tn-tiles_per_side*col
-#	all_gaus.coerce_numpy()
-#	in_tile = np.logical_and(np.logical_and(all_gaus._data[:,0]> -0.5*(tiles_per_side//2-col)-1, all_gaus._data[:,0] <= -0.5*(tiles_per_side//2-col)+1),
-#				np.logical_and(all_gaus._data[:,1]> -0.5*(tiles_per_side//2-row)-1, all_gaus._data[:,1] <= -0.5*(tiles_per_side//2-row)+1))
-#	gaus_in_tile = all_gaus[in_tile]
-	# Just use 'and' not np.logical_and
-#	Boolean index method using tensorflow
-#	in_tile = tf.logical_and(tf.logical_and(all_gaus._data[:,0]> -0.5*(tiles_per_side//2-col)-1, all_gaus._data[:,0] <= -0.5*(tiles_per_side//2-col)+1),
-#				tf.logical_and(all_gaus._data[:,1]> -0.5*(tiles_per_side//2-row)-1, all_gaus._data[:,1] <= -0.5*(tiles_per_side//2-row)+1))
-#	gaus_in_tile += (0.5*(tiles_per_side//2-col),0.5*(tiles_per_side//2-row),0.,0.)
-#	gaus_out_tile = all_gaus[np.logical_not(in_tile)]
-#	return gaus_in_tile, gaus_out_tile
 
 def update_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
 	""" Updates all_tile_gaus with the Gaussians from in_tile_gaus post-refinement. Only the Gaussians within the tile should be updated, not the ones outside as a buffer for the tilt
@@ -414,17 +492,24 @@ def update_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
 	add_back = in_tile_gaus._data[(in_tile_gaus._data[:,0] > -0.5) & (in_tile_gaus._data[:,0] <= 0.5) & (in_tile_gaus._data[:,1] > -0.5) & (in_tile_gaus._data[:,1] <= 0.5)]
 	add_back += ((xrange[0]+xrange[1])/2, (yrange[0]+yrange[1])/2, 0.,0.)
 	add_to = all_gaus._data[(all_gaus._data[:,0] <= xrange[0]+0.5) | (all_gaus._data[:,0] > xrange[1]-0.5) | (all_gaus._data[:,1] <= yrange[0]+0.5) | (all_gaus._data[:,1] > yrange[1]-0.5)]
-	print(add_back.shape, add_to.shape)
 	return np.concatenate((add_to,add_back))
-#	col = tn//tiles_per_side
-#	row = tn-tiles_per_side*col
-#	in_tile_gaus._data -= (0.5*(tiles_per_side//2-col), 0.5*(tiles_per_side//2-row), 0., 0.)
-#	in_tile_gaus.coerce_numpy()
-#	return np.concatenate((in_tile_gaus._data, out_tile_gaus._data))
 
+def accumulate_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
+	""" Updates all_tile_gaus with the Gaussians from in_tile_gaus post-refinement. Only the Gaussians within the tile should be updated, not the ones outside as a buffer for the tilt
+	Input:
+		in_tile_gaus: A Gaussian object with the refined Gaussians from the tile specified by xrange and yrange
+		all_gaus: A Gaussian object with the all Gaussians in the tiltseries
+		xrange: A (min, max) tuple of the x values we want to select
+		yrange: A (min, max) tuple of the y values we want to select
+	Output:
+		Returns: The new ._data for all_gaus"""
+	in_tile_gaus.coerce_numpy()
+	add_back = in_tile_gaus._data[(in_tile_gaus._data[:,0] > -0.5) & (in_tile_gaus._data[:,0] <= 0.5) & (in_tile_gaus._data[:,1] > -0.5) & (in_tile_gaus._data[:,1] <= 0.5)]
+	add_back += ((xrange[0]+xrange[1])/2, (yrange[0]+yrange[1])/2, 0.,0.)
+	if len(all_gaus) == 0: return add_back
+	else: return np.concatenate((all_gaus._data,add_back))
 
-#@tf.function
-def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
+def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -434,93 +519,31 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
-#	dist_tuning=ny
-	batch_size=16
+	mx=orts.to_mx2d(swapxy=True)
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-#		dists=gaus.calc_distance(dist_tuning, batch_size)
+	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
 
-#	grad=gt.gradient([frcs,dists],gaus._data)
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
+	qual=frcs		       # functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()	       # translational std
+	sca=grad[:,3].std()	       # amplitude std
 
-	return (step,float(qual),float(shift),float(sca))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
+	return (grad,float(qual),float(shift),float(sca))
 
-def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
+def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	ny=ptcls.shape[1]
+	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+	#prj=pfn(gausary,mx2d,ny,tytx)
+	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
+gradvalfnl=jax.value_and_grad(prj_frc_loss)
 
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
-
-
-def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		gt.watch(tytx)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
-
-def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0):
+def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -530,25 +553,30 @@ def gradient_step_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,weight=
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx2d(swapxy=True)
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
 
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_ctf(orts,ctf_stackds,ny,dfrange,dfstep,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight,frc_Z)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
+	qual=frcs				       # functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()	                       # translational std
+	sca=grad[:,3].std()		               # amplitude std
+	xyzs=relstep/(shift*500)	               # xyz scale factor, 1000 heuristic, TODO: may change
 
-	return (step,float(qual),float(shift),float(sca))
+	return (grad,float(qual),float(shift),float(sca))
 
-def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0):
+def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+
+gradvalfnl_ctf=jax.value_and_grad(prj_frc_loss_ctf)
+
+def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -558,24 +586,28 @@ def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctf_stackds,tytx,dfrange,dfstep
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
+	mx=orts.to_mx3d()
+	gausary=gaus.jax
+	ptcls=ptclsfds.jax
 
-	with tf.GradientTape(persistent=True) as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_layered_ctf(orts,ctf_stackds,ny,dsapix,dfrange,dfstep,tytx=tytx)
-		projsf=projs.do_fft() # TODO: Remove and have projection return fourier transform? It is already in fourier space there...
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
+	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
 
-	grad=gt.gradient(frcs,gaus._data)
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
+	qual=frcs				       # functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()	                       # translational std
+	sca=grad[:,3].std()		               # amplitude std
+	xyzs=relstep/(shift*500)	               # xyz scale factor, 1000 heuristic, TODO: may change
 
-	return (step,float(qual),float(shift),float(sca))
+	return (grad,float(qual),float(shift),float(sca))
 
+def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations."""
+
+	ny=ptcls.shape[1]
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+
+gradvalfnl_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf_loss)
 
 
 if __name__ == '__main__':
