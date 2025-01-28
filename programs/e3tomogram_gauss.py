@@ -82,6 +82,7 @@ def main():
 		# Adjust reading in file so can handle continuous tilt which you can't read in all at once
 			# Read img -1 and then use source_n
 			# I'm thinking go in steps of 50 frames at a time
+			# Need to change the indexing for pulling the right tile out. Right now its going up in columns over image left to right one tilt at a time (xtiles*ytiles total)
 		# Convert to jax so it runs
 		# Once it runs, aggragate the last ~10 steps or so (after it should have converged) to get more Gaussians
 		# What to use as a good test for convergence? tiling a volume I can reconstruct on its own to see if I get similar results?
@@ -137,101 +138,31 @@ def main():
 		ttparams = np.array(js["tlt_params"])
 	except:
 		traceback.print_exc()
-		print(f"""\nERROR: tlt_params missing in {info_name(args[0])}. This will happen if a tomogram has not yet been constructed in EMAN. Support for this
+		print(f"""\nERROR: tlt_params missing in {info_name(filename)}. This will happen if a tomogram has not yet been constructed in EMAN. Support for this
 			program being the first volume constructed should come later. For now reconstruct a tomogram (large bin should be fine) and then try again.""")
 		sys.exit(1)
 	try:
 		cs=float(js["cs"])
 	except:
-		print(f"""\nWarning: Could not get Cs from {info_name(args[0])}""") #TODO: Change warning, give option to overwrite or something
+		print(f"""\nWarning: Could not get Cs from {info_name(filename)}""") #TODO: Change warning, give option to overwrite or something
 	try:
 		volt = float(js["voltage"])
 	except:
-		print(f"""\nWarning: Could not get Voltage from {info_name(args[0])}""") #TODO: Change warning, give option to overwrite or something
+		print(f"""\nWarning: Could not get Voltage from {info_name(filename)}""") #TODO: Change warning, give option to overwrite or something
 	try:
 		defocus = np.array(js["defocus"])
 	except:
-		print(f"""\nWarning: Could not get defocus values from {info_name(args[0])}. Have you done CTF correction?""") # TODO: Change warning?
+		print(f"""\nWarning: Could not get defocus values from {info_name(filename)}. Have you done CTF correction?""") # TODO: Change warning?
 	try:
 		phase = np.array(js["phase"])
 		if min(phase)==max(phase): phase = [phase[0]]
 	except:
-		print(f"""\nWarning: Could not get phases from {info_name(args[0])}.""") #TODO: Change warning?
+		print(f"""\nWarning: Could not get phases from {info_name(filename)}.""") #TODO: Change warning?
 	js.close()
 
-	# Loading tilts
-	tilt_img = EMData(args[0], 0)
-	if tilt_img["nz"]>1:
-		tilt_imgs = [tilt_img.get_clip(Region(0,0,i, tilt_img["nx"], tilt_img["ny"],1)).copy() for i in range(img["nz"])]
-	else:
-		tilt_imgs = EMData.read_images(args[0])
-	tilt_img=None
-
-	for tilt in tilt_imgs:
-		if options.preclip > 0: tilt = tilt.get_clip(Region(tilt["nx"]//2-nxraw//2, tilt["ny"]//2-nxraw//2, nxraw, nxraw), fill=0)
-		tilt.process_inplace("threshold.clampminmax.nsigma",{"nsigma":10}) # removing x-ray pixels
-		tilt.process_inplace("normalize.edgemean") # Normalizing
-	ctf=EMAN2Ctf() # TODO: I checked and this works with import EMAN3 but will it eventually update to EMAN3Ctf or are we moving away from ctf object?
-	ctf.from_dict({"defocus":1.0, "voltage":volt, "bfactor":0., "cs":cs, "ampcont":0, "apix":apix})
-	ctf.set_phase(phase[0]*np.pi/180.)
-
-	# Creating and caching tiles
-	#TODO: Provide option to use saved tiling file from --savetiles so don't have to spend the time to extract them all?
 	times= [time.time()]
-	if options.verbose: print("Tiling and caching tilt series")
-	downs=sorted(set([s[1] for s in stages]))
-	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcls) for down in downs}
-	mindf=float('inf')
-	maxdf=0
-	for stepx in range(nxstep, -nxstep-1,-1):
-		for stepy in range(nystep, -nystep-1,-1):
-			full_tiles = []
-			for i in range(ntilts):
-				pos = [stepx*step, stepy*step, 0]
-				pxf = get_xf_pos(ttparams[i],pos)
-				tx = tilt_imgs[i]["nx"]//2 + pxf[0]
-				ty = tilt_imgs[i]["ny"]//2 + pxf[1]
-				m=tilt_imgs[i].get_clip(Region(int(tx) - step, int(ty) - step, options.tilesize, options.tilesize), fill=0) # Step used instead of recalculating tilesize//2
-				m.mult(-1) # Make sure to invert contrast
-				xform = Transform({"type":"xyz","ytilt":ttparams[i][3],"xtilt":ttparams[i][4],"ztilt":ttparams[i][2], "tx":tx-int(tx), "ty":ty-int(ty)}) # I skipped the dxfs part from e2spt_extract for now...was that important?
-				m["xform.projection"]=xform
-				rot=Transform({"type":"xyz","xtilt":float(ttparams[i][4]), "ytilt":float(ttparams[i][3])}) #TODO: Figure out why made separate transform instead of reusing xform
-				p1=rot.transform(pos)
-				pz=p1[2]*apix/10000. # Convert distance from center into defocus change due to tilt
-				tilted_defocus = defocus[i]-pz
-				ctf.defocus=tilted_defocus
-				if len(phase) > 1:
-					ctf.set_phase(phase[i]*np.pi/180.) # Avoid resetting phase if they are all the same
-				m["ctf"]=ctf
-				if tilted_defocus < mindf: mindf=tilted_defocus
-				if tilted_defocus > maxdf: maxdf=tilted_defocus
-				if options.ctf==0:
-					fft1=m.do_fft()
-					flipim=fft1.copy()
-					ctf.compute_2d_complex(flipim, Ctf.CtfType.CTF_SIGN) 
-					# TODO: See if this should be CTF_SIGN or if I should be doing full ctf correction here too instead of just phase flipping
-					fft1.mult(flipim)
-					m=fft1.do_ift()
-				full_tiles.append(m)
-			if options.savetiles:
-				EMData.write_images("debug_tiling.hdf", full_tiles, ntilts*(-stepx+nxstep)*(ytiles)+ntilts*(-stepy+nystep))
-				#Appears to tile correctly--starts in bottom left and goes up in columns moving right ^^^^ ->
-			if options.verbose>1:
-				print(f" Caching {ntilts*(-stepx+nxstep)*(ytiles)+ntilts*(-stepy+nystep)}/{nptcls}",end="\r",flush=True)
-				sys.stdout.flush()
-			stk=EMStack2D(full_tiles)
-#			if options.preclip>0 : stk=stk.center_clip(options.preclip)
-			#TODO: Should there be an option to clip here too that isn't tilesize?
-			orts,tytx=stk.orientations
-			try: tytx/= (nxraw, nyraw, 1) # TODO: Did I break this this by accepting non-square tiltseries?
-						# I think probably not but maybe with tiling I did
-			except: pass    # The try/except can probably be removed now--is just from when xform.projections was not set
-			for im in stk.emdata: im.process_inplace("normalize.edgemean")
-			stkf=stk.do_fft()
-			for down in downs:
-				stkfds=stkf.downsample(min(down,options.tilesize))
-				caches[down].write(stkfds,ntilts*(-stepx+nxstep)*(ytiles)+ntilts*(-stepy+nystep),orts,tytx)
-	tilt_imgs=None
+	#TODO: Provide option to use saved tiling file from --savetiles so don't have to spend the time to extract them all?
+	caches, downs, mindf, maxdf = cache_tiles(args[0], options, stages, apix, ttparams, cs, volt, defocus, phase, nxraw, nyraw, xtiles, ytiles, nxstep, nystep, step, ntilts, nptcls)
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
@@ -272,14 +203,12 @@ def main():
 				if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n        FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 				cur_gaus._data = select_tile_gauss(all_gaus, xrange, yrange)
 				cur_gaus.coerce_jax()
-				print(f"split types: {cur_gaus._data.dtype}, {all_gaus._data.dtype}")
-				print(f"{len(cur_gaus)} Gaussians in tile {tnx*ytiles+tny}")
-				print(f"{len(all_gaus)} Gaussians total")
 				if ntilts>stage[0]:
 					idx0=sn+i
 				else:
 					idx0=0
-				nliststg=range((tnx*ytiles+tny)*ntilts+idx0, (tnx*ytiles+tny)*ntilts+ntilts,max(1,ntilts//stage[0]))
+				nliststg=range(tnx*ytiles+tny+idx0*xtiles*ytiles, nptcls, xtiles*ytiles*max(1,ntilts//stage[0]))
+
 #				imshift=0.0
 #				lqual=-1.0
 #				rstep=1.0
@@ -442,6 +371,84 @@ def get_xf_pos(tpm, pk):
 	xf0 = Transform({"type":"xyz","xtilt":tpm[4],"ytilt":tpm[3],"ztilt":tpm[2],"tx":tpm[0], "ty":tpm[1]})
 	p1 = xf0.transform([pk[0], pk[1], pk[2]]) # why doesn't it just say xf0.transform(pk)?
 	return [p1[0], p1[1]] # Same question, why not return p1? is it an indexable class thats not a list?
+
+def cache_tiles(filename, options, stages, apix, ttparams, cs, volt, defocus, phase, nxraw, nyraw, xtiles, ytiles, nxstep, nystep, step, ntilts, nptcls):
+	# Loading tilts
+	tilt_img = EMData(filename, 0,True)
+	if tilt_img["nz"]>1:
+		print("You have given a 3D volume file not an image stack file. If it should be an image stack try using the --threed2twod option in e2proc2d.py to get a stack then try again")
+		sys.exit(1)
+#		tilt_imgs = [tilt_img.get_clip(Region(0,0,i, tilt_img["nx"], tilt_img["ny"],1)).copy() for i in range(tilt_img["nz"])]
+	tilt_img=None
+
+	if options.verbose: print("Tiling and caching tilt series")
+	ctf=EMAN2Ctf() # TODO: I checked and this works with import EMAN3 but will it eventually update to EMAN3Ctf or are we moving away from ctf object?
+	ctf.from_dict({"defocus":1.0, "voltage":volt, "bfactor":0., "cs":cs, "ampcont":0, "apix":apix})
+	ctf.set_phase(phase[0]*np.pi/180.)
+	downs=sorted(set([s[1] for s in stages]))
+	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcls) for down in downs}
+	mindf=float('inf')
+	maxdf=0
+	nt = 64 # Number of tiles to process at once
+	for i in range(0, ntilts, nt):
+		# Load subset of images
+		tilt_imgs = EMData.read_images(filename, range(i, min(i+nt, ntilts)))
+
+		full_tiles=[]
+		# Creating and caching tiles
+		for tiltn in range(len(tilt_imgs)):
+			full_tiles=[]
+			# Pre-process each image for tiling
+			if options.preclip > 0: tilt_imgs[tiltn] = tilt_imgs[tiltn].get_clip(Region(tilt_imgs[tiltn]["nx"]//2-nxraw//2, tilt_imgs[tiltn]["ny"]//2-nxraw//2, nxraw, nxraw), fill=0)
+			tilt_imgs[tiltn].process_inplace("threshold.clampminmax.nsigma",{"nsigma":10}) # removing x-ray pixels
+			tilt_imgs[tiltn].process_inplace("normalize.edgemean") # Normalizing
+			for stepx in range(nxstep, -nxstep-1,-1):
+				for stepy in range(nystep, -nystep-1,-1):
+#					full_tiles = []
+#					for i in range(ntilts):
+	#				for i in range(nt):
+					pos = [stepx*step, stepy*step, 0]
+					pxf = get_xf_pos(ttparams[tiltn],pos)
+					tx = tilt_imgs[tiltn]["nx"]//2 + pxf[0]
+					ty = tilt_imgs[tiltn]["ny"]//2 + pxf[1]
+					m=tilt_imgs[tiltn].get_clip(Region(int(tx) - step, int(ty) - step, options.tilesize, options.tilesize), fill=0) # Step used instead of recalculating tilesize//2
+					m.mult(-1) # Make sure to invert contrast
+					xform = Transform({"type":"xyz","ytilt":ttparams[tiltn][3],"xtilt":ttparams[tiltn][4],"ztilt":ttparams[tiltn][2], "tx":tx-int(tx), "ty":ty-int(ty)}) # I skipped the dxfs part from e2spt_extract for now...was that important?
+					m["xform.projection"]=xform
+					rot=Transform({"type":"xyz","xtilt":float(ttparams[tiltn][4]), "ytilt":float(ttparams[tiltn][3])}) #TODO: Figure out why made separate transform instead of reusing xform
+					p1=rot.transform(pos)
+					pz=p1[2]*apix/10000. # Convert distance from center into defocus change due to tilt
+					tilted_defocus = defocus[tiltn]-pz
+					ctf.defocus=tilted_defocus
+					if len(phase) > 1:
+						ctf.set_phase(phase[tiltn]*np.pi/180.) # Avoid resetting phase if they are all the same
+					m["ctf"]=ctf
+					if tilted_defocus < mindf: mindf=tilted_defocus
+					if tilted_defocus > maxdf: maxdf=tilted_defocus
+					if options.ctf==0:
+						fft1=m.do_fft()
+						flipim=fft1.copy()
+						ctf.compute_2d_complex(flipim, Ctf.CtfType.CTF_SIGN)
+						fft1.mult(flipim)
+						m=fft1.do_ift()
+					full_tiles.append(m)
+			if options.savetiles:
+				EMData.write_images("debug_tiling.hdf", full_tiles, (i+tiltn)*(xtiles*ytiles))
+				#Appears to tile correctly--starts in bottom left and goes up in columns moving right ^^^^ ->
+			if options.verbose>1:
+				print(f" Caching {(i+tiltn)*(xtiles*ytiles)}/{nptcls}",end="\r",flush=True)
+				sys.stdout.flush()
+			stk=EMStack2D(full_tiles)
+			orts,tytx=stk.orientations
+			tytx/= jnp.array((nxraw, nyraw, 1)) # TODO: Did I break this in tiling/accepting non-square imgs?
+			for im in stk.emdata: im.process_inplace("normalize.edgemean")
+			stkf=stk.do_fft()
+			for down in downs:
+				stkfds=stkf.downsample(min(down,options.tilesize))
+				caches[down].write(stkfds,(i+tiltn)*(xtiles*ytiles),orts,tytx)
+	tilt_imgs=None
+	return caches, downs, mindf, maxdf
+
 
 def select_tile_gauss(all_gaus, xrange, yrange):
 	"""Finds the subset of the Gaussians in all_gauss within xrange and yrange. 
