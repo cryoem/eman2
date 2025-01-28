@@ -58,6 +58,7 @@ def main():
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass for each tile, scaled with stage, default=1000", default=1000)
+	parser.add_argument("--combineiters",type="store_true", help="Use the Gaussian coordinates from the last ~10 iterations for the final volume. Increases the number of Gaussians without as much memory increase")
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--savetiles", action="store_true",help="Save the tiles as an hdf file outside of tmp. Currently only used for debugging but possibly could be used when multiple runs with same tiles")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
@@ -191,6 +192,9 @@ def main():
 	all_gaus._data = rnd
 	cur_gaus= Gaussians()
 	times.append(time.time())
+	if options.combineiters:
+		final_gaus = Gaussians()
+		final_gaus._data = []
 
 	for sn,stage in enumerate(stages):
 		all_gaus.coerce_numpy()
@@ -312,6 +316,10 @@ def main():
 					print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
 					if qual>0.99: break
 
+					# Combine final few iterations to give the final volume
+					if options.combineiters and sn == len(stages)-1 and stages[sn][2] - i < 10:
+						# TODO: Replace "last ten epochs of final iteration" with a better measure of convergence ie diff in qual?
+						final_gaus._data = accumulate_tomogram_gauss(cur_gaus, final_gaus, xrange, yrange)
 
 				# End of looping over epochs
 				all_gaus._data = update_tomogram_gauss(cur_gaus, all_gaus, xrange, yrange)
@@ -337,10 +345,16 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
+
 	# End of looping over stages
-	all_gaus._data=select_tile_gauss(all_gaus, (-1*(xtiles//2/2),xtiles//2/2), (-1*(ytiles//2/2), ytiles//2/2)) # Select only Gaussians in box for final volume (this was implicit with tensorflow not error at out of bounds index)
+#	all_gaus._data=select_tile_gauss(all_gaus, (-1*(xtiles//2/2),xtiles//2/2), (-1*(ytiles//2/2), ytiles//2/2)) # Select only Gaussians in box for final volume (this was implicit with jax not error at out of bounds index)
+	# I think I can remove this because there is a mask to only include those in the box in the volume_tiled function
+	print(f"{len(all_gaus)} Gaussians in all_gaus but using {len(final_gaus)} Gaussians for final volume")
 	times.append(time.time())
-	vol=all_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)
+	if options.combineiters:
+		vol = final_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)
+	else:
+		vol=all_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outx
 	vol["apix_y"]=apix*nyraw/outy
@@ -478,8 +492,22 @@ def update_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
 	add_back = in_tile_gaus._data[(in_tile_gaus._data[:,0] > -0.5) & (in_tile_gaus._data[:,0] <= 0.5) & (in_tile_gaus._data[:,1] > -0.5) & (in_tile_gaus._data[:,1] <= 0.5)]
 	add_back += ((xrange[0]+xrange[1])/2, (yrange[0]+yrange[1])/2, 0.,0.)
 	add_to = all_gaus._data[(all_gaus._data[:,0] <= xrange[0]+0.5) | (all_gaus._data[:,0] > xrange[1]-0.5) | (all_gaus._data[:,1] <= yrange[0]+0.5) | (all_gaus._data[:,1] > yrange[1]-0.5)]
-	print(add_back.shape, add_to.shape)
 	return np.concatenate((add_to,add_back))
+
+def accumulate_tomogram_gauss(in_tile_gaus, all_gaus, xrange, yrange):
+	""" Updates all_tile_gaus with the Gaussians from in_tile_gaus post-refinement. Only the Gaussians within the tile should be updated, not the ones outside as a buffer for the tilt
+	Input:
+		in_tile_gaus: A Gaussian object with the refined Gaussians from the tile specified by xrange and yrange
+		all_gaus: A Gaussian object with the all Gaussians in the tiltseries
+		xrange: A (min, max) tuple of the x values we want to select
+		yrange: A (min, max) tuple of the y values we want to select
+	Output:
+		Returns: The new ._data for all_gaus"""
+	in_tile_gaus.coerce_numpy()
+	add_back = in_tile_gaus._data[(in_tile_gaus._data[:,0] > -0.5) & (in_tile_gaus._data[:,0] <= 0.5) & (in_tile_gaus._data[:,1] > -0.5) & (in_tile_gaus._data[:,1] <= 0.5)]
+	add_back += ((xrange[0]+xrange[1])/2, (yrange[0]+yrange[1])/2, 0.,0.)
+	if len(all_gaus) == 0: return add_back
+	else: return np.concatenate((all_gaus._data,add_back))
 
 def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
