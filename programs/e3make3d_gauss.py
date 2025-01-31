@@ -178,6 +178,7 @@ def main():
 			if options.preclip>0 : stk=stk.center_clip(options.preclip)
 			if options.tomo and options.tomo_seqali!=0 :
 				stk.center_align_seq(options.tomo_seqali)
+				if options.verbose>3: stk.write_images("dbg_ali.hdf")
 			orts,tytx=stk.orientations
 			tytx/=nxraw
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
@@ -383,8 +384,8 @@ def main():
 			# for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
 
 		# show individual shifts at high verbosity
-		if options.verbose>2:
-			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
+#		if options.verbose>2:
+#			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
 	outsz=min(1024,nxraw)
 	times.append(time.time())
