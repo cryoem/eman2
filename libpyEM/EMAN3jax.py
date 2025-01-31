@@ -774,10 +774,10 @@ stddev=0.01"""
 	def norm_filter(self,sig=0.5,rad_downweight=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
 		self.coerce_jax()
-		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(self._data[:,3])))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(jnp.absolute(self._data[:,3]))))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
 		if rad_downweight>0:
-			famp=self._data[:,3]*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
-		else: famp=self._data[:,3]
+			famp=jnp.absolute(self._data[:,3])*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
+		else: famp=jnp.absolute(self._data[:,3])
 		thr=jnp.mean(famp)+sig*jnp.std(famp)
 		self._data=self._data[famp>thr]			# remove any gaussians with amplitude below threshold
 
@@ -1077,10 +1077,13 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 #		xfgauss=tf.reverse((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 	zaspect=zsize/(2.0*boxsize)
 	xfgauss=jnp.flip((gausary[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
+	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)	# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+	xfamps=gausary[:,3]*pos_mask
 
 	shift001=jnp.array((0,0,1))
 	shift010=jnp.array((0,1,0))
@@ -1092,14 +1095,14 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 
 	# messy trilinear interpolation
-	bamp000=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp001=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-	bamp010=gausary[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp011=gausary[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-	bamp100=gausary[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp101=gausary[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-	bamp110=gausary[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp111=gausary[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp000=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp001=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp010=xfamps*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp011=xfamps*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp100=xfamps*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp101=xfamps*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp110=xfamps*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+	bamp111=xfamps*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
 	bampall=jnp.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],axis=0)
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift001,xfgaussi+shift010,xfgaussi+shift011,xfgaussi+shift100,xfgaussi+shift101,xfgaussi+shift110,xfgaussi+shift111],axis=0).transpose()
 

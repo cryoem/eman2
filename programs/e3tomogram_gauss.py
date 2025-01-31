@@ -58,7 +58,7 @@ def main():
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass for each tile, scaled with stage, default=1000", default=1000)
-	parser.add_argument("--combineiters",type="store_true", help="Use the Gaussian coordinates from the last ~10 iterations for the final volume. Increases the number of Gaussians without as much memory increase")
+	parser.add_argument("--combineiters",action="store_true", help="Use the Gaussian coordinates from the last ~10 iterations for the final volume. Increases the number of Gaussians without as much memory increase")
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--savetiles", action="store_true",help="Save the tiles as an hdf file outside of tmp. Currently only used for debugging but possibly could be used when multiple runs with same tiles")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
@@ -185,7 +185,10 @@ def main():
 	# Initializing Gaussians to random values with amplitudes over a narrow range
 	rng = np.random.default_rng()
 	rnd = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles,4))
+	neg = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles//10, 4))
 	rnd+= (-0.5, -0.5, -0.5, 2.0) # Coord between -.5 and .5, amp between 2 and 3
+	neg+= (-0.5, -0.5, -0.5, -3.0)
+	rnd = np.concatenate((rnd, neg))
 	rnd *= (np.ceil(xtiles/2), np.ceil(ytiles/2), 1., 1.) # Each tile has -.5 to .5 (with some offset n*0.5)
 	rnd/= (0.9,0.9,1.0/zmax, 3.0) # Spread out points
 	all_gaus = Gaussians()
@@ -349,7 +352,7 @@ def main():
 	# End of looping over stages
 #	all_gaus._data=select_tile_gauss(all_gaus, (-1*(xtiles//2/2),xtiles//2/2), (-1*(ytiles//2/2), ytiles//2/2)) # Select only Gaussians in box for final volume (this was implicit with jax not error at out of bounds index)
 	# I think I can remove this because there is a mask to only include those in the box in the volume_tiled function
-	print(f"{len(all_gaus)} Gaussians in all_gaus but using {len(final_gaus)} Gaussians for final volume")
+#	print(f"{len(all_gaus)} Gaussians in all_gaus but using {len(final_gaus)} Gaussians for final volume")
 	times.append(time.time())
 	if options.combineiters:
 		vol = final_gaus.volume_tiled(outx,outy,options.tilesize,xtiles,ytiles,zmax)

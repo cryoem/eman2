@@ -198,7 +198,10 @@ def main():
 	rng = np.random.default_rng()
 	rnd=rng.uniform(0.0,1.0,(options.initgauss,4))		# start with completely random Gaussian parameters
 #	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
+	neg = rng.uniform(0.0, 1.0, (options.initgauss//10, 4))
 	rnd+=(-.5,-.5,-.5,2.0)
+	neg+=(-.5,-.5,-.5,-3.0)
+	rnd = np.concatenate((rnd, neg))
 	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
