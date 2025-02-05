@@ -2954,13 +2954,20 @@ def compressible_formats():
 def is_file_compressible(fsp):
 	return Path(fsp).suffix.lower() in compressible_formats()
 
+# this will be used as a file cache for more efficient loading of individual images from files
+# It is a dictionary (k:file path) of lists:
+# [image dict (k: image #),cached size,access time]
+_imagecache={}
+_imagecachesize=0	# total size of image cache
+
+def db_read_cache(self,fsp,*parms,**kparms):
+	pass
 
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])
 
-	This function can be used to read a set of images from a file or bdb: database. Pass in
-	the filename, or bdb: specification, optionally a list of image numbers to read (or None),
-	and a flag indicating that only the image headers should be read in. If only the headers
+	This function can be used to read a single image from a file. Pass in
+	the filename, image #, and a flag indicating that only the image headers should be read in. If only the headers
 	are read, accesses to the image data in the resulting EMData objects will be invalid."""
 	#	print "RI ",fsp,str(parms)
 

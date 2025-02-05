@@ -42,6 +42,8 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
+	parser.add_argument("--seqavg",type=int,default=-1,help="Average N frames in sequence before alignment")
+	parser.add_argument("--shrinkout",type=float,default=-1,help="Fourier downsample the output movie stack by a factor of N (may be fractional)")
 	parser.add_argument("--alignbyccf",action="store_true",default=False,help="Performs movie alignment via sequential ccfs ")
 	parser.add_argument("--alignbyacfccf",action="store_true",default=False,help="Performs movie alignment via progressive ")
 	parser.add_argument("--align_gain",type=str,help="Gain image for correcting movie images before alignment. Applied correction is to divide by the gain image.",default=None)
@@ -93,9 +95,13 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			base=base_name(args[mi])
 			nimg=EMUtil.get_image_count(args[mi])
 			frames=(options.frames[0],min(options.frames[1],nimg))
-			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
+			if options.seqavg>1:
+				framesteps=(frames[1]-frames[0])/options.seqavg
+				imgs=EMStack2D([sum(EMData.read_images(f"{args[mi]}:{frames[0]+i*options.seqavg}:{frames[0]+(i+1)*options.seqavg}")) for i in range(framesteps)])
+			else: imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
 			if options.align_gain is not None:
 				for i in imgs.emdata: i.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
+			# normalization only for alignment
 			for i in imgs.emdata: i.process_inplace("normalize.edgemean")
 			imgs_clip=imgs.center_clip(3072)	# this should fit the dimensions of pretty much any currently used movie mode sensor, and still use enough of the image
 			ffts=imgs_clip.do_fft()
@@ -142,8 +148,9 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 
 			avgorig=Averagers.get("mean")
 			avgali=Averagers.get("mean")
-			for i in range(frames[0],frames[1]):
-				im=EMData(f"{args[mi]}",i)
+			for i in range(frames[0],frames[1],max(options.seqavg,1)):
+				if options.seqavg>1: im=sum(EMData.read_images(f"{args[mi]:i:i+options.seqavg}"))
+				else: im=EMData(f"{args[mi]}",i)
 				if options.align_gain is not None:
 					im.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
 				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
@@ -151,8 +158,13 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 				im.translate(int(seqoff[1][i-frames[0]]),int(seqoff[0][i-frames[0]]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
 				avgali.add_image(im)
 
-			avgorig.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
-			avgali.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
+			avgo=avgorig.finish()
+			avga=avgali.finish()
+			if options.shrinkout>1.0: 
+				avgo.process_inplace("math.fft.resample",{"n":options.shrinkout})
+				avga.process_inplace("math.fft.resample",{"n":options.shrinkout})
+			avgo.write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
+			avga.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
 			js=js_open_dict(info_name(args[mi]))
 			js["movie_frames"]=frames
 			js["movie_align_x"]=seqoff[1]

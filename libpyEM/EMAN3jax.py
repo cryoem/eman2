@@ -587,7 +587,7 @@ class Orientations():
 	def __len__(self): return len(self._data)
 
 	def __getitem__(self,key):
-		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 4-vector for the i'th Gaussian"""
+		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 3-vector for the i'th Orientation"""
 		return self._data[key]
 
 	def __setitem__(self,key,value):

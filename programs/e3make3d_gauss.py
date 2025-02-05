@@ -104,7 +104,7 @@ def main():
 		# Create the ctf stack
 		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix) #TODO: This line relies on unchanged code
 
-	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit {zmax}. {nptcl} input images")
+	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit +-{zmax}. {nptcl} input images")
 
 	if options.savesteps: 
 		try: os.unlink("steps.hdf")
@@ -153,7 +153,7 @@ def main():
 	times=[time.time()]
 
 	# Cache initialization
-	if options.verbose: print("Caching particle data")
+	if options.verbose: print(f"{local_datetime()}: Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	if options.ptcl3d_id>=0 :
@@ -192,7 +192,7 @@ def main():
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
 
-	if options.verbose>1: print("")
+	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
@@ -225,12 +225,15 @@ def main():
 		optim_state=optim.init(gaus._data)		# initialize with data
 		for i in range(stage[2]):		# training epochs
 			if rstep<.01: break		# don't continue if we've optimized well at this level
-			if nptcl>stage[0]: idx0=sn+i
+			if nptcl>stage[0]*2: idx0=sn+i
 			else: idx0=0
-			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
+			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
 			imshift=0.0
 			for j in range(0,len(nliststg),batchsize):	# compute the gradient step piecewise due to memory limitations, 512 particles at a time
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+batchsize])
+				if len(orts)<5 :
+					print("Abort tiny batch: ",len(nliststg),j,batchsize)
+					continue
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
 				if options.ctf==0:
@@ -250,7 +253,7 @@ def main():
 					# 	caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,-dtytx)
 
 					# if i==stage[2]-1:
-					# 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
+					# # 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
 					# 	out=open(f"fscs_{sn}.txt","a" if j>0 else "w")
 					# 	for ii,fsc in enumerate(np.array(fscs0)): out.write(f"{nliststg[j+ii]:d}\t{fsc:0.5f}\n")
 					# 	out.close()
@@ -307,6 +310,14 @@ def main():
 			shift/=norm
 			sca/=norm
 			imshift/=norm
+
+			if isnan(shift) or isnan(sca) :
+				print("ERROR: nan on gradient descent, saving crash images and exiting")
+				ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
+				out=open("crash_lastb_ortdydx.txt","w")
+				for i in range(len(orts)):
+					out.write(f"{orts[i][0]:1.6f}\t{orts[i][1]:1.6f}\t{orts[i][2]:1.6f}\t{tytx[i][0]:1.2f}\t{tytx[i][1]:1.2f}\n")
+				sys.exit(1)
 
 			update, optim_state = optim.update(step, optim_state, gaus._data)
 			gaus._data = optax.apply_updates(gaus._data, update)
@@ -374,7 +385,7 @@ def main():
 		g1=len(gaus)
 		if stage[5]>0: gaus.replicate(stage[5],stage[6])
 		g2=len(gaus)
-		print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {local_datetime()}")
+		print(f"{local_datetime()}: Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians")
 		times.append(time.time())
 	
 		# do this at the end of each stage in case of early termination
@@ -396,7 +407,8 @@ def main():
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
 	vol["apix_z"]=apix*nxraw/outsz
-	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),0)
+	if options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
+	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
 	times.append(time.time())

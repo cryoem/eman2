@@ -55,6 +55,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	parser.add_header(name="text3", help='Important instructions', title="* run e3projectmanager, and use this tool", row=2, col=0, rowspan=1, colspan=3)
 	parser.add_header(name="text4", help='Important instructions', title="* exit PM, cd eman3, run PM from new eman2 folder", row=3, col=0, rowspan=1, colspan=3)
 	parser.add_pos_argument(name="star_file",help="Select STAR file", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=False)",  row=6, col=0,rowspan=1, colspan=3)
+	parser.add_argument("--datapath", type=str, default=None, help="If the path to the image files in the STAR file is not valid from the current folder, specify the full path to where the image stacks live", guitype='strbox', row=7, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--phaseflip", action="store_true",help="If set, will also generate a set of phase-flipped particles. Phase flipped particles will not permit defocus refinement.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles, if not found in the file.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--voltage", default=0, type=float,help="Microscope voltage in kV, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
@@ -70,6 +71,10 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 
 
 	logid=E3init(sys.argv,options.ppid)
+
+	# datapath will be used from eman3/ so ../ may need to be prepended
+	if options.datapath is not None:
+		if options.datapath[0]!="/" : options.datapath="../"+options.datapath
 
 	try: os.mkdir("eman3")
 	except: pass
@@ -177,10 +182,13 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		lstft=LSXFile("sets/fromstar__ctf_flip_ds5.lst")
 	lastctf=[]
 	t0=time.time()
+	t1=t0
+	lastinimg=None
 	for i in range(nptcl):
-		if options.verbose>0 and time.time()-t0>1.0:
-			print(f"  {i+1}/{nptcl}\r",end="")
-			t0=time.time()
+		if options.verbose>0 and time.time()-t1>1.0:
+			remain=int((nptcl-i)*((time.time()-t0)/i))
+			print(f"  {i+1}/{nptcl}  ETA: {remain//60}:{remain%60:02d}    \r",end="")
+			t1=time.time()
 
 		# Convert Relion info to EMAN2 conventions
 		try:
@@ -222,7 +230,18 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		imn,imfsp=star[rkey]["rlnImageName"][i].split("@")
 		imn=int(imn)
 
-		img=EMData("../"+imfsp,imn-1)		# relion starts with #1, EMAN #0
+		if imfsp==lastinimg and imn in imgcache:
+			img=imgcache[imn]
+		else:
+			nfile=file_image_count(
+		# if datapath is specified, then look for datapath/filename
+		if options.datapath is not None: 
+			try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-1]}",imn-1)
+			except:
+				# if that fails,then try the last 2 path elements from the STAR file
+				try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}",imn-1)
+				except: error_exit(f"Cannot find image file: {options.datapath}/{imfsp.split("/")[-1]} or {options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}")
+		else: img=EMData("../"+imfsp,imn-1)		# relion starts with #1, EMAN #0
 		img["apix_x"]=apix
 		img["apix_y"]=apix
 		img["apix_z"]=apix
