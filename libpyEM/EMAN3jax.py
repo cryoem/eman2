@@ -771,6 +771,21 @@ stddev=0.01"""
 		dups=[self._data+rng.normal(0,dev,self._data.shape) for i in range(n)]
 		self._data=jnp.concat(dups,axis=0)
 
+	def replicate_abs(self,ngaus,dev=0.01):
+		"""Makes copies of the current Gaussians shifted by a small random amount to improve the level of detail without
+significantly altering the spatial distribution. ngaus specifies the total number of desired gaussians after replication. Note that amplitudes are also perturbed by the same distribution. Default stddev=0.01"""
+		if len(self)==ngaus : return
+		if len(self)>ngaus : 
+			print("Warning, replicate targeted fewer gaussians than currently exist! Unchanged")
+			return
+		rng=np.random.default_rng()
+		self.coerce_jax()
+		dups=[self._data]
+		for i in range(ngaus//len(self)-1): dups.append(self._data+rng.normal(0,dev,self._data.shape))
+		tail=ngaus%len(self)
+		if tail>0: dups.append((self._data+rng.normal(0,dev,self._data.shape))[:tail])
+		self._data=jnp.concat(dups,axis=0)
+
 	def norm_filter(self,sig=0.5,rad_downweight=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
 		self.coerce_jax()
@@ -894,7 +909,7 @@ def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
 	proj2=[]
 
 	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+	# TODO - at some point this outer loop should be converted to a tensor axis for (potentially) better performance
 	# note that the mx dimensions have N as the 3rd not 1st component!
 	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
 
@@ -1406,13 +1421,15 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 	else: return frc
 
 # Note that this isn't JIT compiled, because we had segfaults when done at this level
-def jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
-	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2"""
+def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!"""
+	global FRC_RADS
 
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
 	nr=int(ny*0.70711)+1	# max radius we consider
-	rad_img=rad_img_int(ny)
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
 
 	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
 	imai=jnp.imag(ima)
@@ -1442,6 +1459,8 @@ def jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	return jnp.clip(ret,ret.mean()-ret.std()*frc_Z,1.0).mean()
 #	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
 #	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
+
+jax_frc_jit=jax.jit(__jax_frc_jit)
 
 FSC_REFS={}
 def jax_fsc(ima,imb):

@@ -2956,12 +2956,26 @@ def is_file_compressible(fsp):
 
 # this will be used as a file cache for more efficient loading of individual images from files
 # It is a dictionary (k:file path) of lists:
-# [image dict (k: image #),cached size,access time]
+# [image dict (k: image #),# in file,1 image size (bytes),# imgs to cache on read,access time]
 _imagecache={}
 _imagecachesize=0	# total size of image cache
 
 def db_read_cache(self,fsp,*parms,**kparms):
-	pass
+	if fsp not in _imagecache or parms[0] not in _imagecache[fsp][0]:
+		if fsp not in _imagecache:
+			nimg=file_image_count(fsp)
+			im0=EMData(fsp,0)
+			if im0.get_size()*4*nimg<300000000 : nchunk=nimg	# if the file is <300M, just cache the whole thing
+			else: nchunk=max(2**26//im0.get_size(),1) 			# otherwise find a number of images ~256M (at least 1 image)
+
+			_imagecache[fsp]=[{0:im0},nimg,im[0].get_size()*4,nchunk,time.time()]
+
+	# is the image already in the cache?
+	if parms[0] not in _imagecache[fsp][0]:
+		_imagecache[fsp][3]=time.time()					# update access time
+		return _imagecache[fsp][0][parms[0]].copy()		# return cached image
+	else:
+		pass
 
 def db_read_image(self, fsp, *parms, **kparms):
 	"""read_image(filespec,image #,[header only],[region],[is_3d],[imgtype])

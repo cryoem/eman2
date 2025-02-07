@@ -38,8 +38,12 @@ import sys
 import time
 import os
 
+# used for profiling. This can be commented out as long as the @profile line is also commented out
+#from line_profiler import profile
+
 jax.config.update("jax_default_matmul_precision", "float32")
 
+# @profile
 def main():
 
 	usage="""e3make3d_gauss.py <projections>
@@ -61,6 +65,7 @@ def main():
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
 	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
+	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--ptcl3d_id", type=int, help="only use 2-D particles with matching ptcl3d_id parameter",default=-1)
 	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
@@ -69,6 +74,7 @@ def main():
 	parser.add_argument("--fscdebug", type=str,help="Compute the FSC of the final map with a reference volume for debugging",default=None)
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
+	parser.add_argument("--profile", action="store_true",help="Used for code development only, not routine use")
 #	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
@@ -77,11 +83,17 @@ def main():
 	llo=E3init(sys.argv)
 
 	nptcl=EMUtil.get_image_count(args[0])
+	if options.quick : nptcl=min(nptcl,8192+4096)
 	if options.ptcl3d_id>=0:
 		if args[0][-4:]!=".lst" : error_exit("--ptcl3d_id only works with .lst input files")
 		lsx=LSXFile(args[0])
 		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"]==options.ptcl3d_id]
 		nptcl=len(selimg)
+		lsx=None
+	if options.profile:
+		selimg=tuple(range(0,min(2050,nptcl)))
+		nptcl=len(selimg)
+		print("WARNING: profiling mode enabled. Actual gaussian map results will not be useful, used for development only!")
 	nxraw=EMData(args[0],0,True)["nx"]
 	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
@@ -119,42 +131,67 @@ def main():
 		stages=[
 			[256,32,  32,1.8, -1,1,.05, 3.0],
 			[256,32,  32,1.8, -1,4,.05, 1.0],
-			[256,64,  48,1.5, -2,1,.04,1.0],
-			[256,64,  48,1.5, -2,3,.02,0.5],
-			[256,128, 32,1.2, -3,3,.01,2.0],
-			[256,256, 32,1.2, -2,3,.01,3.0],
-			[256,512, 48,1.2, -2,3,.01,3.0],
-			[256,1024,48,1.2, -3,1,.004,5.0]
+			[256,64,  48,1.5, -2,4,.04,1.0],
+			[256,64,  48,1.5, -2,16,.02,0.5],
+			[256,128, 32,1.2, -3,16,.01,2.0],
+			[256,256, 32,1.2, -2,64,.01,3.0],
+			[256,512, 48,1.2, -2,128,.01,3.0],
+			[256,1024,48,1.2, -3,256,.004,5.0]
 		]
 	elif options.spt:
 		stages=[
 			[2**10,32,  32,1.8, -1,1,.05, 3.0],
 			[2**10,32,  32,1.8, -1,2,.05, 1.0],
-			[2**12,64,  48,1.5, -2,1,.04,1.0],
-			[2**12,64,  48,1.5, -2,2,.02,0.5],
-			[2**14,128, 32,1.2, -3,4,.01,2],
-			[2**16,256, 16,1.2, -2,1,.01,3],
-			[2**17,512, 8,1.2, -2,1,.01,3]
-#			[2**20,1024,48,1.2, -3,1,.004,5]
+			[2**12,64,  48,1.5, -2,2,.04,1.0],
+			[2**12,64,  48,1.5, -2,8,.02,0.5],
+			[2**14,128, 32,1.2, -3,16,.01,2],
+			[2**16,256, 16,1.2, -2,32,.01,3],
+			[2**17,512, 8,1.2, -2,64,.01,3]
+#			[2**20,1024,48,1.2, -3,,.004,5]
+		]
+	elif options.profile:
+		stages=[
+			[512,   16,16,1.8,-3  ,1,.01, 2.0],
+			[1024,  32,16,1.5, 0  ,4,.005,1.5],
+			[2048,  64,8 ,1.2,-1.5,12,.003,1.0]
+#			[8192, 256,32,1.0,-2  ,3,.003,1.0],
+#			[32768,512,32,0.8,-2  ,1,.001,0.75]
+		]
+	elif options.quick:
+		stages=[
+			[512,   16,24,1.8,-3  ,1,.01, 2.0],
+			[512,   16,24,1.8, 0  ,4,.01, 1.0],
+			[1024,  32,24,1.5, 0  ,8,.005,1.5],
+			[4096,  64,24,1.2,-1.5,16,.003,1.0],
+			[8192, 256,24,1.0,-2  ,32,.003,1.0],
 		]
 	else:
 		stages=[
 			[512,   16,32,1.8,-3  ,1,.01, 2.0],
 			[512,   16,32,1.8, 0  ,4,.01, 1.0],
 			[1024,  32,32,1.5, 0  ,4,.005,1.5],
-			[1024,  32,32,1.5,-1  ,3,.005,1.0],
-			[4096,  64,32,1.2,-1.5,3,.003,1.0],
-			[8192, 256,32,1.0,-2  ,3,.003,1.0],
-			[32768,512,32,0.8,-2  ,1,.001,0.75]
+			[1024,  32,32,1.5,-1  ,8,.005,1.0],
+			[4096,  64,32,1.2,-1.5,16,.003,1.0],
+			[16384, 256,32,1.0,-2 ,32,.003,1.0],
+			[65536, 512,32,0.8,-2 ,64,.001,0.75]
 		]
 
-	batchsize=256
+	# limit sampling to (at most) the box size of the raw data
+	# we do this by altering stages to help with jit compilation
+	for i in range(len(stages)):
+		stages[i][1]=min(stages[i][1],nxrawm2)
+
+	batchsize=192
 
 	times=[time.time()]
 
 	# Cache initialization
 	if options.verbose: print(f"{local_datetime()}: Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
+
+	# critical for later in the program, this initializes the radius images for all of the samplings we will use
+	for d in downs: rad_img_int(d)		
+
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	if options.ptcl3d_id>=0 :
 		if options.verbose>1:
@@ -167,7 +204,7 @@ def main():
 			#im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
-			stkfds=stkf.downsample(min(down,nxrawm2))
+			stkfds=stkf.downsample(down)
 			caches[down].write(stkfds,0,orts,tytx)
 	else:
 		for i in range(0,nptcl,1000):
@@ -184,7 +221,7 @@ def main():
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
 			stkf=stk.do_fft()
 			for down in downs:
-				stkfds=stkf.downsample(min(down,nxrawm2))
+				stkfds=stkf.downsample(down)
 				caches[down].write(stkfds,i,orts,tytx)
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
@@ -197,9 +234,9 @@ def main():
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rng = np.random.default_rng()
-	rnd=rng.uniform(0.0,1.0,(options.initgauss,4))		# start with completely random Gaussian parameters
+	rnd=rng.uniform(0.0,1.0,(options.initgauss*9//10,4))		# start with completely random Gaussian parameters
 #	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
-	neg = rng.uniform(0.0, 1.0, (options.initgauss//10, 4))
+	neg = rng.uniform(0.0, 1.0, (options.initgauss//10, 4))		# 10% of gaussians are negative WRT the background (zero)
 	rnd+=(-.5,-.5,-.5,2.0)
 	neg+=(-.5,-.5,-.5,-3.0)
 	rnd = np.concatenate((rnd, neg))
@@ -229,7 +266,7 @@ def main():
 			else: idx0=0
 			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
 			imshift=0.0
-			for j in range(0,len(nliststg),batchsize):	# compute the gradient step piecewise due to memory limitations, 512 particles at a time
+			for j in range(0,len(nliststg)-10,batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time. The "-10" prevents very small residual batches from being computed
 				ptclsfds,orts,tytx=caches[stage[1]].read(nliststg[j:j+batchsize])
 				if len(orts)<5 :
 					print("Abort tiny batch: ",len(nliststg),j,batchsize)
@@ -383,7 +420,7 @@ def main():
 		if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
 		else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
 		g1=len(gaus)
-		if stage[5]>0: gaus.replicate(stage[5],stage[6])
+		if stage[5]>0: gaus.replicate_abs(stage[5]*options.initgauss,stage[6])
 		g2=len(gaus)
 		print(f"{local_datetime()}: Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians")
 		times.append(time.time())
@@ -455,6 +492,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	return (step,float(qual),float(shift),float(sca))
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
+# @profile
 def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
@@ -477,6 +515,7 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0
 
 	return (grad,float(qual),float(shift),float(sca))
 
+# @profile
 def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
@@ -485,6 +524,7 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+#	print(prj.shape,ptcls.shape,weight,frc_Z)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfnl=jax.value_and_grad(prj_frc_loss)
