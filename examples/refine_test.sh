@@ -14,7 +14,9 @@ e2initialmodel.py --input=r2db_00/classes_sort_00.hdf --iter=12 --tries=30 --shr
 
 e2refine_easy.py --input=sets/all__ctf_flip_lp5.lst --model=initial_models/model_00_01.hdf --targetres=8.0 --speed=5 --sym=d2 --iter=4 --mass=400.0 --invar --apix=0.0 --classkeep=0.9 --m3dkeep=0.8 --parallel=thread:32 --threads=32 --automaskexpand=-1 --ampcorrect=auto
 
-e2refine_easy.py --input=sets/all__ctf_flip_fullres.lst --model=refine_00/threed_04.hdf --targetres=8.0 --speed=5 --sym=d2 --iter=4 --mass=400.0 --invar --apix=0.0 --classkeep=0.9 --m3dkeep=0.8 --parallel=thread:32 --threads=32 --automaskexpand=-1 --ampcorrect=auto
+e2spa_refine.py --ptcl sets/all__ctf_flip_fullres.lst --ref refine_00/threed_04.hdf --parallel=thread:32 --threads=32 --sym=d2 --niter 6 --gaussrecon 500 --res 15 
 
-e2refine_easy.py --input=sets/all__ctf_flip_fullres.lst --model=refine_01/threed_04.hdf --targetres=4.0 --speed=5 --sym=d2 --iter=3 --mass=400.0 --apix=0.0 --classkeep=0.9 --m3dkeep=0.8 --parallel=thread:32 --threads=32 --automaskexpand=-1 --ampcorrect=auto
+#e2refine_easy.py --input=sets/all__ctf_flip_fullres.lst --model=refine_00/threed_04.hdf --targetres=8.0 --speed=5 --sym=d2 --iter=4 --mass=400.0 --invar --apix=0.0 --classkeep=0.9 --m3dkeep=0.8 --parallel=thread:32 --threads=32 --automaskexpand=-1 --ampcorrect=auto
+
+#e2refine_easy.py --input=sets/all__ctf_flip_fullres.lst --model=refine_01/threed_04.hdf --targetres=4.0 --speed=5 --sym=d2 --iter=3 --mass=400.0 --apix=0.0 --classkeep=0.9 --m3dkeep=0.8 --parallel=thread:32 --threads=32 --automaskexpand=-1 --ampcorrect=auto
 

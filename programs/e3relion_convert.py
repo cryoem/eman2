@@ -230,17 +230,16 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		imn,imfsp=star[rkey]["rlnImageName"][i].split("@")
 		imn=int(imn)
 
-		if imfsp==lastinimg and imn in imgcache:
-			img=imgcache[imn]
-		else:
-			nfile=file_image_count(
 		# if datapath is specified, then look for datapath/filename
 		if options.datapath is not None: 
 			try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-1]}",imn-1)
 			except:
-				# if that fails,then try the last 2 path elements from the STAR file
-				try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}",imn-1)
-				except: error_exit(f"Cannot find image file: {options.datapath}/{imfsp.split("/")[-1]} or {options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}")
+				# maybe the files were converted to HDF ?
+				try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-1].replace('.mrcs','.hdf')}",imn-1)
+				except:
+					# if that fails,then try the last 2 path elements from the STAR file
+					try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}",imn-1)
+					except: error_exit(f"Cannot find image file: {options.datapath}/{imfsp.split("/")[-1]} or {options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}")
 		else: img=EMData("../"+imfsp,imn-1)		# relion starts with #1, EMAN #0
 		img["apix_x"]=apix
 		img["apix_y"]=apix
@@ -253,7 +252,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			cp=img.get_clip(Region((img["nx"]-options.clip)//2,(img["ny"]-options.clip)//2,options.clip,options.clip))
 			cp.write_image(ptclname,ptclno)
 		else: img.write_image(ptclname,ptclno)
-		lst[-1]=(ptclno,ptclname.split(":")[0],{"xform.projection":xform})
+		lst[-1]=(ptclno,ptclname.split(":")[0],{"class":i%2,"xform.projection":xform})
 
 		# write the phase flipped image/lst if requested
 		if options.phaseflip:
@@ -283,8 +282,8 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 				sxform=Transform(xform)
 				sxform.set_trans(sxform.get_trans()*(nbx/imgc["nx"]))
 				shr.write_image(ptclfsname,ptclno)
-			lstf[-1]=(ptclno,ptclfname.split(":")[0],{"xform.projection":xform})
-			lstft[-1]=(ptclno,ptclfsname.split(":")[0],{"xform.projection":sxform})
+			lstf[-1]=(ptclno,ptclfname.split(":")[0],{"class":i%2,"xform.projection":xform})
+			lstft[-1]=(ptclno,ptclfsname.split(":")[0],{"class":i%2,"xform.projection":sxform})
 
 		lastctf=ctf.to_vector()
 

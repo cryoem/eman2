@@ -76,7 +76,8 @@ def main():
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
-	parser.add_argument("--ptcl3d_id", type=int, help="only use 2-D particles with matching ptcl3d_id parameter",default=-1)
+	parser.add_argument("--ptcl3d_id", type=int, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header)",default=-1)
+	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
 	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
 	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
@@ -93,16 +94,26 @@ def main():
 
 	nptcl=EMUtil.get_image_count(args[0])
 	if options.quick : nptcl=min(nptcl,8192+4096)
+
 	if options.ptcl3d_id>=0:
 		if args[0][-4:]!=".lst" : error_exit("--ptcl3d_id only works with .lst input files")
 		lsx=LSXFile(args[0])
 		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"]==options.ptcl3d_id]
 		nptcl=len(selimg)
 		lsx=None
+
+	if options.classid>=0:
+		if args[0][-4:]!=".lst" : error_exit("--class only works with .lst input files")
+		lsx=LSXFile(args[0])
+		selimg=[i for i in range(len(lsx)) if lsx[i][2]["class"]==options.classid]
+		nptcl=len(selimg)
+		lsx=None
+
 	if options.profile:
 		selimg=tuple(range(0,min(2050,nptcl)))
 		nptcl=len(selimg)
 		print("WARNING: profiling mode enabled. Actual gaussian map results will not be useful, used for development only!")
+
 	nxraw=EMData(args[0],0,True)["nx"]
 	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
@@ -284,7 +295,10 @@ def main():
 #				if not options.tomo or sn<2:
 				if options.ctf==0:
 					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
 					step0=jnp.nan_to_num(step0)
+					shift0=jnp.nan_to_num(shift0)
+					sca0=jnp.nan_to_num(sca0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
 					else:
@@ -358,12 +372,21 @@ def main():
 			imshift/=norm
 
 			if isnan(shift) or isnan(sca) :
-				print("ERROR: nan on gradient descent, saving crash images and exiting")
-				ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
-				out=open("crash_lastb_ortdydx.txt","w")
-				for i in range(len(orts)):
-					out.write(f"{orts[i][0]:1.6f}\t{orts[i][1]:1.6f}\t{orts[i][2]:1.6f}\t{tytx[i][0]:1.2f}\t{tytx[i][1]:1.2f}\n")
-				sys.exit(1)
+				if i==0:
+					print("ERROR: nan on gradient descent, saving crash images and exiting")
+					ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
+					out=open("crash_lastb_ortdydx.txt","w")
+					for i in range(len(orts)):
+						out.write(f"{orts[i][0]:1.6f}\t{orts[i][1]:1.6f}\t{orts[i][2]:1.6f}\t{tytx[i][0]:1.2f}\t{tytx[i][1]:1.2f}\n")
+					sys.exit(1)
+				else:
+					print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
+					try: os.unlinK("crash_img.lst")
+					except: pass
+					out=LSXFile(f"crash_img_{sn}_{i}.lst")
+					for ii in nliststg: out.write(-1,ii,args[0])
+					out=None
+					continue
 
 			update, optim_state = optim.update(step, optim_state, gaus._data)
 			gaus._data = optax.apply_updates(gaus._data, update)
@@ -449,6 +472,9 @@ def main():
 	if options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
 	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
+	if options.sym not in ("c1","C1","I","i"):
+		if verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
+		vol.process_inplace("xform.applysym",{"sym":options.sym})
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
