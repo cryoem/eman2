@@ -513,7 +513,8 @@ class EMHistogramWidget(EMGLWidget):
 			ax.set_ylim(self.ylimits)
 
 			canvas.draw()
-			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
+			self.plotimg = canvas.buffer_rgba()
+#			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
 			self.plotlim=(ax.get_xlim()[0],ax.get_ylim()[0],ax.get_xlim()[1]-ax.get_xlim()[0],ax.get_ylim()[1]-ax.get_ylim()[0])
 
@@ -524,7 +525,7 @@ class EMHistogramWidget(EMGLWidget):
 				GL.glPixelZoom(1.0,-1.0)
 		#		print "paint ",self.width(),self.height(), self.width()*self.height(),len(a)
 				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
-				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGBA,GL.GL_UNSIGNED_BYTE,self.plotimg)
 		else:
 			try:
 				glCallList(self.main_display_list)
@@ -546,7 +547,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.tex_name = GL.glGenTextures(1)
 		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 		GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB,GL.GL_UNSIGNED_BYTE, image_data)
+		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGBA,GL.GL_UNSIGNED_BYTE, image_data)
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)

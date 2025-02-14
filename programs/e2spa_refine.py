@@ -21,6 +21,7 @@ def main():
 	parser.add_argument("--startiter", type=int,help="Start from a specified iteration in an existing refinement ", default=0)
 	parser.add_argument("--setsf", type=str,help="Text file containing structure factor for map sharpening. Can be produced during CTF estimation, or from an existing high resolution map.", default=None)
 	parser.add_argument("--tophat", type=str, default="global",help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=global (local is often a better choice)", guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['global']")
+	parser.add_argument("--gaussrecon",type=int,default=0,help="Use new e3make3d_gauss for 3-D reconstruction with N starting gaussians (1000 typ)")
 	parser.add_argument("--threads", type=int,help="Threads to use during postprocessing of 3d volumes", default=4, guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--mask", default=None, type=str,help="Specify a mask file for each iteration of refinement. Otherwise will generate mask automatically.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 8", default=8)
@@ -89,8 +90,11 @@ def main():
 
 		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose} --localrefine {lc} {etc} {mrp}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose, lc=options.localrefine, etc=etc,mrp=mrp))
 			
-		for eo in ["even","odd"]:
-			run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
+		for ieo,eo in enumerate(["even","odd"]):
+			if options.gaussrecon>0 :
+				run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --sym {sym} --class {ieo}")
+			else:
+				run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 			run("e2proc3d.py {pt}/threed_{i1:02d}_{eo}.hdf {pt}/threed_raw_{eo}.hdf".format(pt=options.path, i1=i+1, eo=eo))
 
 		if i==0:

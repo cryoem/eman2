@@ -2086,6 +2086,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# write the new seg model to disk for use in subsequent runs
 		modelseg=f"{self.gmm}/{self.currunkey}_model_seg.txt"
+#		print("WRITE TO ",modelseg)
 
 		if self.cengroups is None:
 			with open(modelseg,"w") as out:
@@ -2146,13 +2147,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.1 --sigmareg 1.0")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/particles_subset.lst  --npt {self.currun['ngauss']} --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 10  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.05")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0")
+		er=run(f"e2gmm_refine.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 0.1")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
@@ -2233,13 +2234,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.05  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.02  --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 40  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 0.05  --ptclsclip {self.jsparm['boxsize']}")
 		#er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf  --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
@@ -2427,7 +2428,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def update_gmms(self):
 		"""Updates the display of gmm_XX folders"""
 		#self.gmm=str(self.wlistgmm.currentItem().text())
-		self.gmms=[i for i in sorted(os.listdir(".")) if i[:4]=="gmmk3_" and os.path.isdir(i)]
+		self.gmms=[i for i in sorted(os.listdir(".")) if (i[:4]=="gmm_" or i[:6]=="gmmk3_") and os.path.isdir(i)]
 		self.wlistgmm.clear()
 		for i in self.gmms:
 			self.wlistgmm.addItem(i)

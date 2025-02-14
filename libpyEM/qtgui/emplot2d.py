@@ -669,7 +669,9 @@ class EMPlot2DWidget(EMGLWidget):
 				self.needupd=True
 				self.updateGL()
 				return
-			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
+
+			self.plotimg = canvas.buffer_rgba()
+#			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
 			# this try except block is because the developers of matplotlib have been changing their API
 			try: # this would work for matplotlib 0.98
@@ -703,7 +705,8 @@ class EMPlot2DWidget(EMGLWidget):
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
-				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+#				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGBA,GL.GL_UNSIGNED_BYTE,self.plotimg)
 
 			glEndList()
 
@@ -745,7 +748,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.tex_name = GL.glGenTextures(1)
 		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 		GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB,GL.GL_UNSIGNED_BYTE, image_data)
+		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGBA,GL.GL_UNSIGNED_BYTE, image_data)
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
@@ -1615,7 +1618,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 					ax.annotate(" "+str(self.datap[i]),(theta[i],r[i]),color=self.datalabelscolor,weight='bold',horizontalalignment='left')
 
 			canvas.draw()
-			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
+			self.plotimg = canvas.buffer_rgba()
+#			self.plotimg = canvas.tostring_rgb()  # save this and convert to bitmap as needed
 
 			# this try except block is because the developers of matplotlib have been changing their API
 			try: # this would work for matplotlib 0.98
@@ -1635,7 +1639,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 				GL.glRasterPos(0,self.height()-1)
 				GL.glPixelZoom(1.0,-1.0)
 				GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
-				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+#				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGB,GL.GL_UNSIGNED_BYTE,self.plotimg)
+				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGBA,GL.GL_UNSIGNED_BYTE,self.plotimg)
 		else:
 			try:
 				glCallList(self.main_display_list)
@@ -1657,7 +1662,8 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.tex_name = GL.glGenTextures(1)
 		GL.glPixelStorei(GL.GL_UNPACK_ALIGNMENT,1)
 		GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
-		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB,GL.GL_UNSIGNED_BYTE, image_data)
+#		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGB,GL.GL_UNSIGNED_BYTE, image_data)
+		GL.glTexImage2D(GL.GL_TEXTURE_2D,0,GL.GL_RGB,self.width(),self.height(),0,GL.GL_RGBA,GL.GL_UNSIGNED_BYTE, image_data)
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)

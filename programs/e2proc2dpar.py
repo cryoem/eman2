@@ -111,7 +111,7 @@ def main():
 	
 	jsd=queue.Queue(0)
 	# these start as arguments, but get replaced with actual threads
-	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in range(N//npt)+1]
+	thrds=[(jsd,args,options,i,i*npt,min(i*npt+npt,N)) for i in range(N//npt+1)]
 
 	#import pprint
 	#pprint.pprint(thrds)

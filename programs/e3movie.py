@@ -38,10 +38,12 @@ def main():
 
 	usage="""e3movie.py <movie stack> ...
 
-At the moment this program provides only an option for estimating the gain image from a large set of counting-mode images. Eventually this will include movie alignment.
+This will estimate gain for counting mode cameras, and has a "first draft" of frame alignment.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
+	parser.add_argument("--seqavg",type=int,default=-1,help="Average N frames in sequence before alignment")
+	parser.add_argument("--shrinkout",type=float,default=-1,help="Fourier downsample the output movie stack by a factor of N (may be fractional)")
 	parser.add_argument("--alignbyccf",action="store_true",default=False,help="Performs movie alignment via sequential ccfs ")
 	parser.add_argument("--alignbyacfccf",action="store_true",default=False,help="Performs movie alignment via progressive ")
 	parser.add_argument("--align_gain",type=str,help="Gain image for correcting movie images before alignment. Applied correction is to divide by the gain image.",default=None)
@@ -49,11 +51,14 @@ At the moment this program provides only an option for estimating the gain image
 	parser.add_argument("--frames",type=str,default=None,help="<first>,<last+1> movie frames to use, first frame is 0, '0,3' will use frames 0,1,2")
 	parser.add_argument("--acftest",action="store_true",default=False,help="compute ACF images for input stack")
 	parser.add_argument("--ccftest",action="store_true",default=False,help="compute CCF between each image and the middle image in the movie")
-	parser.add_argument("--ccfdtest",action="store_true",default=False,help="compute the CCT between each image and the next image in the movie, length n-1")
+	parser.add_argument("--ccfdtest",type=str,default=None,help="compute the CCF between each image and the next image in the movie, length n-1, provide the filename of the gain correction image")
 	parser.add_argument("--ccftiletest",action="store_true",default=False,help="test on tiled average of CCF")
+	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
+	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
+	tf_set_device(dev=0,maxmem=options.gpuram)
 
 	pid=E3init(argv)
 	nmov=len(args)
@@ -70,7 +75,7 @@ At the moment this program provides only an option for estimating the gain image
 			if (i%10==0): E3progress(pid,i/nmov)
 			nimg=EMUtil.get_image_count(args[i])
 			print(f"{args[i]}: {nimg}")
-			if (nimg>500) : raise Exception("Can't deal with movies with >500 frames at present")
+			#if (nimg>500) : raise Exception("Can't deal with movies with >500 frames at present")
 			for j in range(0,nimg,50):
 				imgs=EMData.read_images(f"{args[i]}:{j}:{j+50}")
 				for img in imgs: avgr.add_image(img)
@@ -90,9 +95,13 @@ At the moment this program provides only an option for estimating the gain image
 			base=base_name(args[mi])
 			nimg=EMUtil.get_image_count(args[mi])
 			frames=(options.frames[0],min(options.frames[1],nimg))
-			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
+			if options.seqavg>1:
+				framesteps=(frames[1]-frames[0])/options.seqavg
+				imgs=EMStack2D([sum(EMData.read_images(f"{args[mi]}:{frames[0]+i*options.seqavg}:{frames[0]+(i+1)*options.seqavg}")) for i in range(framesteps)])
+			else: imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
 			if options.align_gain is not None:
 				for i in imgs.emdata: i.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
+			# normalization only for alignment
 			for i in imgs.emdata: i.process_inplace("normalize.edgemean")
 			imgs_clip=imgs.center_clip(3072)	# this should fit the dimensions of pretty much any currently used movie mode sensor, and still use enough of the image
 			ffts=imgs_clip.do_fft()
@@ -139,8 +148,9 @@ At the moment this program provides only an option for estimating the gain image
 
 			avgorig=Averagers.get("mean")
 			avgali=Averagers.get("mean")
-			for i in range(frames[0],frames[1]):
-				im=EMData(f"{args[mi]}",i)
+			for i in range(frames[0],frames[1],max(options.seqavg,1)):
+				if options.seqavg>1: im=sum(EMData.read_images(f"{args[mi]:i:i+options.seqavg}"))
+				else: im=EMData(f"{args[mi]}",i)
 				if options.align_gain is not None:
 					im.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
 				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
@@ -148,8 +158,13 @@ At the moment this program provides only an option for estimating the gain image
 				im.translate(int(seqoff[1][i-frames[0]]),int(seqoff[0][i-frames[0]]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
 				avgali.add_image(im)
 
-			avgorig.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
-			avgali.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
+			avgo=avgorig.finish()
+			avga=avgali.finish()
+			if options.shrinkout>1.0: 
+				avgo.process_inplace("math.fft.resample",{"n":options.shrinkout})
+				avga.process_inplace("math.fft.resample",{"n":options.shrinkout})
+			avgo.write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
+			avga.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
 			js=js_open_dict(info_name(args[mi]))
 			js["movie_frames"]=frames
 			js["movie_align_x"]=seqoff[1]
@@ -288,22 +303,73 @@ At the moment this program provides only an option for estimating the gain image
 		for im in cens.emdata: im.process_inplace("normalize.edgemean")
 		cens.write_images("ccfs.hdf")
 
-	if options.ccfdtest:
-		avg=EMData("average.hdf",0)
+	if options.ccfdtest is not None:
+		try: os.unlink("ccfs.hdf")
+		except: pass
+		try: os.unlink("ccfs2k.hdf")
+		except: pass
+		try: os.unlink("ccfs1k.hdf")
+		except: pass
+		try: os.unlink("ccfeo5.hdf")
+		except: pass
+		try: os.unlink("ccfeo5_imgs.hdf")
+		except: pass
+
+		avg=EMData(options.ccfdtest,0)
 		avg.div(avg["mean"])
 		#avg.add(-avg["mean"])
-		nimg=EMUtil.get_image_count(args[0])
-		imgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
-		for im in imgs:
-			im.div(avg)
+		nimg=file_image_count(args[0])
+
+		print(f"0:{min(50,nimg)}")
+		aimgs=EMStack2D(EMData.read_images(f"{args[0]}:0:{min(50,nimg)}"))
+		for im in aimgs:
+			im.process_inplace("math.fixgain.counting",{"gain":avg,"gainmin":3,"gainmax":3})
+		imgs=EMStack2D(np.stack([sum(aimgs.numpy[i:i+10:2]) for i in range(40)]))
+		imgs.coerce_tensor()
+		print(imgs.shape)
 		ffts=imgs.do_fft()
 		ccfs=ffts.calc_ccf(ffts,offset=1)
 		ccfsr=ccfs.do_ift()
 		_,nx,ny=ccfsr.shape
-
-		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		cens=ccfsr.center_clip(64)
 		for im in cens.emdata: im.process_inplace("normalize.edgemean")
-		cens.write_images("ccfs.hdf")
+		cens.write_images("ccfeo5.hdf",bits=0)
+		imgs.write_images("ccfeo5_imgs.hdf",bits=5)
+
+		for i in range(1,nimg,25):
+			print(f"{i-1}:{min(i+25,nimg)}")
+			imgs=EMStack2D(EMData.read_images(f"{args[0]}:{i-1}:{min(i+25,nimg)}"))
+			for im in imgs:
+				im.process_inplace("math.fixgain.counting",{"gain":avg,"gainmin":3,"gainmax":3})
+			imgs.coerce_tensor()
+#		imgs=imgs.downsample(4096)
+			ffts=imgs.do_fft()
+			ccfs=ffts.calc_ccf(ffts,offset=1)
+			ccfsr=ccfs.do_ift()
+			_,nx,ny=ccfsr.shape
+			cens=ccfsr.center_clip(64)
+			#cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+			for im in cens.emdata: im.process_inplace("normalize.edgemean")
+			cens.write_images("ccfs.hdf",bits=0,n_start=i-1)
+
+			imgs=imgs.center_clip(2048)
+			ffts=imgs.do_fft()
+			ccfs=ffts.calc_ccf(ffts,offset=1)
+			ccfsr=ccfs.do_ift()
+			_,nx,ny=ccfsr.shape
+			cens=ccfsr.center_clip(64)
+			for im in cens.emdata: im.process_inplace("normalize.edgemean")
+			cens.write_images("ccfs2k.hdf",bits=0,n_start=i-1)
+
+			imgs=imgs.center_clip(1024)
+			ffts=imgs.do_fft()
+			ccfs=ffts.calc_ccf(ffts,offset=1)
+			ccfsr=ccfs.do_ift()
+			_,nx,ny=ccfsr.shape
+			cens=ccfsr.center_clip(64)
+			for im in cens.emdata: im.process_inplace("normalize.edgemean")
+			cens.write_images("ccfs1k.hdf",bits=0,n_start=i-1)
+
 
 	if options.ccftiletest:
 		avg=EMData("average.hdf",0)
