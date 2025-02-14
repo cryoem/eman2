@@ -18,6 +18,7 @@ def main():
 	parser.add_argument("--niter", type=int,help="iterations of focused alignment afterwards.", default=5)
 	parser.add_argument("--batchsz", type=int,help="batch size.", default=16)
 	parser.add_argument("--expandsym", type=str,help="symmetry. the program does not apply symmetry so always specify symmetry here and the final structure will be in c1", default=None)
+	parser.add_argument("--pas", type=str,help="allow position, amplitude and sigma or gaussian to change.", default="100")
 	parser.add_argument("--maxres", type=float,help="maximum resolution for the heterogeneity analysis. This will also be the starting resolution for the following focused alignment.", default=7)
 	parser.add_argument("--minres", type=float,help="min resolution for the heterogeneity analysis.", default=50)	
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="rigid body movement mode. still testing")
@@ -146,14 +147,14 @@ def main():
 		
 		## pretrain from lower res to ensure convergence
 		res0=max(res,7)
-		run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt {mode} --conv --midout {path}/mid_00{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas 100 {etc} --maxgradres {res}")
+		run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt {mode} --conv --midout {path}/mid_00{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas {options.pas} {etc} --maxgradres {res}")
 		# run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt --rigidbody --midout {path}/mid_00{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas 100 {etc} --maxgradres {res}")
 		
 		run(f"e2gmm_eval.py --pts {path}/mid_00{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --ptclsout {path}/ptcls{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 8000 --axis 0")
 		
 		run(f"e2proc3d.py {path}/ptcls{eo}_cls_00.hdf {path}/ptcls{eo}_cls_00.hdf --process filter.lowpass.gauss:cutoff_freq={1./res} --process normalize.edgemean")
 		
-		run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt --midout {path}/midall_00{eo}.txt {mode} --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 10 --ptclsin {path}/ptcls_{it0:02d}{eo}.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas 100 {etc}" --load --niter 1 --batch 20000')
+		run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt --midout {path}/midall_00{eo}.txt {mode} --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 10 --ptclsin {path}/ptcls_{it0:02d}{eo}.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas {options.pas} {etc}" --load --niter 1 --batch 20000')
 		
 		run(f"e2gmm_eval.py --pts {path}/midall_00{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}{eo}.lst --ptclsout {path}/ptcls{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 5000 --axis 0")
 		

@@ -11,6 +11,7 @@ def main():
 	parser.add_argument("--niter", type=int, help="number of iterations", default=2)
 	parser.add_argument("--load", action="store_true", default=False ,help="load.")
 	parser.add_argument("--ptcl3d", action="store_true", default=False ,help="separate by 3d particles. batch will correspond to 3d patricles")
+	parser.add_argument("--dryrun", action="store_true", default=False ,help="printing command without running them")
 	parser.add_argument("--subtilt", action="store_true", default=False ,help="separate particles for subtilt refinement")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
 
@@ -131,8 +132,15 @@ def main():
 				cc+=f" --xf_starti {it*batch}"
 			if "e2gmm_spt_rigidbody.py" in rawcmd:
 				cc+=f" --xfin_starti {it*batch}"
-			run(cc)
+				
+			if options.dryrun:
+				print(cc)
+			else:
+				run(cc)
 			
+		if options.dryrun:
+			return
+		
 		if midout:
 			midall=[]
 			for tmp in tmpfiles:

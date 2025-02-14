@@ -703,11 +703,11 @@ def find_clash(atom_pos, options, relu=True):
 	pc=tf.math.sqrt(tf.maximum(1e-8,tf.reduce_sum(pc*pc, axis=3)))
 
 	clash=options.vdw_radius-pc-options.vdroverlap
-	clash=tf.maximum(1e-8,clash)
+	clash=tf.maximum(0,clash)
 
 	clash=clash-options.clash_omask
 	if relu:
-		clash=tf.maximum(1e-8,clash)
+		clash=tf.maximum(0,clash)
 	return clash
 	
 def optimize_h(atom_pos, options, npos=24):
@@ -1021,8 +1021,8 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 			tt=tf.repeat(theta_h[None,:], conf.shape[0], axis=0)
 			arot=rotate_sidechain(atom_pos_h, options.rot_axish, tt, options.rotmat_idxh)
 			clash=find_clash(arot, options, relu=False)
-			clash0=tf.maximum(1e-8,clash)
-			clash1=tf.maximum(1e-8,clash+options.vdroverlap-0.3)*1e-5
+			clash0=tf.maximum(0,clash)
+			clash1=tf.maximum(0,clash+options.vdroverlap-0.3)*1e-5
 			clash_score=(tf.reduce_sum(tf.sign(clash0)*.1+clash0+clash1))/conf.shape[0]/2.*5.
 			lossetc+=clash_score * options.weight["clash"]
 			

@@ -53,6 +53,8 @@ def main():
 	parser.add_argument("--bytile", action="store_true",help="make final tomogram by tiles.. ", default=False, guitype='boolbox',row=9, col=1, rowspan=1, colspan=1,mode="easy[True]")
 	
 	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="easy")
+	
+	parser.add_argument("--loadfile", type=str, help="Load from text file", default=None)
 	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[True]", guitype="boolbox", row=10,col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=11, col=1, rowspan=1, colspan=1,mode="easy")
@@ -287,7 +289,13 @@ def main():
 				for b in boxes3d:
 					for k in range(3):
 						b[k]*=-1
-
+						
+	elif options.loadfile!=None:
+		tpm=np.loadtxt(options.loadfile)[:,1:]
+		ttparams=tpm.copy()
+		tlts=ttparams[:,3].copy()
+		loss0=abs(ttparams[:,3])*.1
+		options.zeroid=zeroid=np.argmin(abs(tlts))
 			
 	else:
 		#### determine alignment parameters from scratch
@@ -423,6 +431,18 @@ def main():
 		if options.badone:
 			loss0[badi]=np.max(loss0)+100
 	
+	if options.writetmp:
+		#### dump options to file
+		options.cmd=' '.join(sys.argv)
+		js=js_open_dict(os.path.join(path,"0_tomorecon_params.json"))
+		js.update(vars(options))
+		js.close()
+		
+		
+		tpm=ttparams.copy()
+		#tpm[:,:2]*=options.binfac
+		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
+		np.savetxt(os.path.join(path,"tltparams_init.txt"), tpm, fmt="%.3f")
 	
 	if options.patchtrack>0:
 		ttparams, loss0= do_patch_tracking(imgs_500, ttparams, options)
@@ -435,6 +455,10 @@ def main():
 			##ttparams, loss0= do_patch_tracking(imgs, ttparams, options)
 		if options.writetmp:
 			make_ali(imgs_500, ttparams, options, outname=os.path.join(options.tmppath,"ali_patchtrack.hdf"))
+		
+			tpm=ttparams.copy()
+			tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
+			np.savetxt(os.path.join(path,"tltparams_patchtrack.txt"), tpm, fmt="%.3f")
 			
 			
 	pks=np.zeros((options.npk, 3))
@@ -448,18 +472,6 @@ def main():
 			   (imgs_2k, itnum[2], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_4k, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
 	
-	if options.writetmp:
-		#### dump options to file
-		options.cmd=' '.join(sys.argv)
-		js=js_open_dict(os.path.join(path,"0_tomorecon_params.json"))
-		js.update(vars(options))
-		js.close()
-		
-		
-		tpm=ttparams.copy()
-		#tpm[:,:2]*=options.binfac
-		tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
-		np.savetxt(os.path.join(path,"tltparams_init.txt"), tpm, fmt="%.3f")
 	
 	yrot=0 #### this is to save the overall rotation of tomogram
 	rawfilterto=options.filterto
@@ -1717,6 +1729,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			#threed["pos"]=[stepx, stepy]
 			#threed.write_image("alltiles.hdf", -1)
 			threed.mult(msk)
+			threed.write_image("test.hdf",-1)
 			#### insert the cubes to corresponding tomograms
 			if options.moretile:
 				full3d.insert_scaled_sum(

@@ -31,7 +31,7 @@ def main():
 	parser.add_argument("--ptclsin", type=str,help="particles input", default=None)
 	# parser.add_argument("--ptclsout", type=str,help="particles output", default=None)
 	parser.add_argument("--model", type=str,help="model input", default=None)
-	parser.add_argument("--mask", type=str,help="masks for refinement. multiple files separated by ','", default=None)
+	parser.add_argument("--mask", type=str,help="masks for refinement.", default=None)
 	parser.add_argument("--niter", type=int, help="number of iteration",default=20)
 	parser.add_argument("--clip", type=int, help="clip image to size",default=-1)
 	
@@ -68,7 +68,8 @@ def main():
 	for i in idx:
 		idx3d.append(np.where(pids==i)[0])
 
-	print("{} 3D particles, each contain {} 2D particles".format(len(idx3d), len(idx3d[0])))
+	ln=np.mean([len(i) for i in idx3d])
+	print("{} 3D particles, each contain {:.1f} 2D particles".format(len(idx3d), ln))
 		
 	e=EMData(options.ptclsin,0, True)
 	raw_apix, raw_boxsz = e["apix_x"], e["ny"]
@@ -119,8 +120,8 @@ def main():
 		pcx=np.vstack([pc, pc2])
 		pp=np.hstack([pcx, np.zeros((len(pcx),1))+np.mean(pts[:,3]), np.zeros((len(pcx),1))+np.mean(pts[:,4])])
 
-		np.savetxt(options.anchor, pp)
 		anchor=pp[:,:3].astype(floattype).copy()
+		np.savetxt(options.anchor, anchor)
 		print(f"generated {len(anchor)} anchor points, saved to {options.anchor}")
 
 	######## build encoder and decoder
@@ -163,9 +164,11 @@ def main():
 			loss=-tf.reduce_mean(fval)
 
 		grad=tf.convert_to_tensor(gt.gradient(loss, pt))
-		scr=tf.reshape(fval, (len(pids), -1))
-
-		scr=tf.reduce_mean(scr, axis=1)
+		#print(pn, fval.shape, grad.shape)
+		#scr=tf.reshape(fval, (len(pids), -1))
+		#scr=tf.reduce_mean(scr, axis=1)
+		scr=np.array([tf.reduce_sum(fval[x1-x0:x1]) for x0,x1 in zip(pn,np.cumsum(pn))])
+		
 
 		allgrds.append(grad)
 		allscr.append(scr)

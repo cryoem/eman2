@@ -192,6 +192,9 @@ def main():
 		pks=pks[srt]
 		pks_vol = pks_vol[srt]
 		pkscore=pkscore[srt]
+		if len(pkscore)==0:
+			print("No particles found. consider lowering --vthr")
+			return
 		pkscore/=np.max(pkscore)
 		
 		

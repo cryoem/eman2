@@ -72,6 +72,15 @@ def gather_metadata(options):
 		rhdrs=[hdr2d[imgsrc][j] for j in imgidx]
 
 		idx2d=[]
+		
+		if options.keeptilt>0:
+			tids=np.array([r[1] for r in rhdrs])
+			ti=np.argsort(abs(tids-np.median(tids)))
+			ti=np.sort(ti[:options.keeptilt])
+			tids_keep=tids[ti]
+			imgidx=[imgidx[i] for i in ti]
+			#print(tids, tids_keep, ti)
+			
 		for k,i in enumerate(imgidx): 
 			e=rhdrs[k]
 			dc={"src":imgsrc,"idx":i,
@@ -154,12 +163,13 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--ptcls", type=str,help="input 3d particles from sets/", default=None)
 	parser.add_argument("--ali2d", type=str,help="existing aligned 2d particles from spt_xx, used to interpolate local subtilt translation", default=None)
-	parser.add_argument("--ali3d", action="store_true", default=False, help="use align3d from the list in place of the info from --ptcls header.")
+	#parser.add_argument("--ali3d", action="store_true", default=False, help="use align3d from the list in place of the info from --ptcls header.")
 	parser.add_argument("--exclude", type=str,help="exclude particle around a given set of existing particles", default=None)
 	parser.add_argument("--path", type=str,help="new refinement path", default=None)
 	parser.add_argument("--smooth", type=float,help="factor to smooth the movement field from the --ali2d refinement. Bigger is smoother, default is 10", default=10)
 	parser.add_argument("--userot", action="store_true", default=False, help="use rotational subtilt alignment as well. very slow and may not be as useful..")
 	parser.add_argument("--skipcheck", action="store_true", default=False, help="skip the sanity check...")
+	parser.add_argument("--keeptilt", type=int,help="keep the N center-most tilt per 3d particle", default=-1)
 
 	(options, args) = parser.parse_args()
 	
@@ -282,7 +292,9 @@ def main():
 		pos1=np.array([i["coord"] for i in i3d1])*scale
 		
 		tids=[a["tilt_id"] for a1 in i2d1 for a in a1]
-		for tid in sorted(np.unique(tids)):
+		tids_keep=np.sort(np.unique(tids))
+			
+		for tid in tids_keep:
 			ad0=[a for a2 in a2d0 for a in a2 if a["tilt_id"]==tid]
 			if1=[a for a1 in i2d1 for a in a1 if a["tilt_id"]==tid]
 			ad1=[a for a1 in a2d1 for a in a1 if a["tilt_id"]==tid]

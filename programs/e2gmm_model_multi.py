@@ -750,7 +750,8 @@ def main():
 
 	vdw_radius=tf.gather(options.vdwr_h, clashid)+options.vdwr_h[:,None]
 	atomdic={'H':0,'C':1,'N':2,'O':3,'S':4,'P':4,'M':9}
-	atype=np.array([atomdic[a.id[0]] for a in options.atoms])
+	atype=np.array([atomdic[a.id[0]] if a.id[0] in atomdic else 9 for a in options.atoms])
+	#atype=np.array([atomdic[a.id[0]] for a in options.atoms])
 	atype=np.append(atype, np.zeros(len(options.h_info[0]), dtype=int))
 
 	ah0=options.h_info[1][:,0]

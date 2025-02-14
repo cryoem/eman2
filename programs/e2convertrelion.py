@@ -101,6 +101,7 @@ def main():
 		try: os.remove(options.onestack)
 		except: pass
 					  
+	src0=""
 	for i in range(nptcl):
 		ln=lines[i]
 		if len(ln)<5: 
@@ -123,19 +124,21 @@ def main():
 			continue
 
 		if not options.skipwrite:
-			if i==0:
+			if src!=src0:
 				e=EMData(src, 0, True)
 				nx=e["nx"]
 				ny=e["ny"]
-			
-			try:	
-				if src.endswith('.mrc'):
-					e=EMData(src, 0, False, Region(0, 0, ii, nx, ny, 1))
-				else:
-					e=EMData(src, ii)
-			except:
-				print("something wrong with {} image {}".format(src, ii))
-				exit()
+				nz=e["nz"]
+				
+			src0=src
+			#try:	
+			if src.endswith('.mrc') and nz>1:
+				e=EMData(src, 0, False, Region(0, 0, ii, nx, ny, 1))
+			else:
+				e=EMData(src, ii)
+			#except:
+				#print("something wrong with {} image {}".format(src, ii))
+				#exit()
 			
 			du, dv, ang=float(l[rid["dfu"]]), float(l[rid["dfv"]]), float(l[rid["dfang"]])
 
