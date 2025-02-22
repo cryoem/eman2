@@ -486,7 +486,7 @@ def main():
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
 	vol["apix_z"]=apix*nxraw/outsz
-	if options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
+	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
