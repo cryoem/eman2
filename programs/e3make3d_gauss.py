@@ -220,7 +220,7 @@ def main():
 	for d in downs: rad_img_int(d)		
 
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	if options.ptcl3d_id>=0 :
+	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 :
 		if options.verbose>1:
 			print(f" Caching {nptcl}")
 		stk=EMStack2D(EMData.read_images(args[0],selimg))
