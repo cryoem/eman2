@@ -68,7 +68,7 @@ def main():
 
 	parser.add_argument("--correctrot", action="store_true",help="correct for global rotation and position sample flat in tomogram.", default=False,guitype='boolbox',row=12, col=0, rowspan=1, colspan=1,mode="easy")
 
-	#parser.add_argument("--normslice", action="store_true",help="normalize each 2D slice.", default=False)
+	parser.add_argument("--normslice", action="store_true",help="correct for the amplitude decay along z axis.", default=False)
 	parser.add_argument("--filterto", type=float,help="filter to abs.", default=-1)
 	parser.add_argument("--filterres", type=float,help="filter final tomogram to target resolution (in A). Default is 40", default=40,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
@@ -92,7 +92,7 @@ def main():
 	parser.add_argument("--highpass", type=int,help="initial highpass filter for alignment in pixels. default if 3", default=3)
 	parser.add_argument("--lowpass", type=float,help="initial lowpass filter for alignment in abs. default if 0.5", default=0.5)
 	parser.add_argument("--pathtracktile", type=int,help="number of tile along one axis for patch tracking. default is 5", default=5)
-	parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
+	#parser.add_argument("--badone", action="store_true",help="Remove one bad tilt during coarse alignment. seem to work better with smaller maxshift...", default=False)#, guitype='boolbox',row=9, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--flip", action="store_true",help="Flip the tomogram by rotating the tilt axis. need --load existing alignment", default=False)
 	parser.add_argument("--skipexist", action="store_true",help="Skip existing tomograms when --alltiltseries is specified.", default=False)
@@ -103,6 +103,8 @@ def main():
 
 	logid=E2init(sys.argv)
 	time0=time.time()
+	
+	options.badone=False
 	
 	#### deal with multiple inputs
 	if options.alltiltseries:
@@ -231,6 +233,7 @@ def main():
 		m["apix_x"]=m["apix_y"]=p["apix_x"]*2.
 		imgs_500.append(m)
 		
+	options.badi=[]
 	imgs_500mask=[m.process("mask.soft",{"outer_radius":-8,"width":4}) for m in imgs_500]
 
 	num=options.num=len(imgs_500)
@@ -278,7 +281,8 @@ def main():
 			loss0=np.array(js["ali_loss"])
 		except: 
 			loss0=abs(ttparams[:,3])*.1
-			
+		badi=options.badi=np.where(loss0>500)[0]
+		
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 		if options.flip:
 			print("Flipping tilt axis...")
@@ -289,12 +293,22 @@ def main():
 				for b in boxes3d:
 					for k in range(3):
 						b[k]*=-1
-						
+		
+		
 	elif options.loadfile!=None:
 		tpm=np.loadtxt(options.loadfile)[:,1:]
 		ttparams=tpm.copy()
 		tlts=ttparams[:,3].copy()
-		loss0=abs(ttparams[:,3])*.1
+		jsname=info_name(options.inputname)
+		js=dict(js_open_dict(jsname)).copy()
+		try: 
+			loss0=np.array(js["ali_loss"])
+		except: 
+			loss0=abs(ttparams[:,3])*.1
+			
+		#print(loss0)
+		badi=options.badi=np.where(loss0>500)[0]
+		#print(badi)
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 			
 	else:
@@ -406,6 +420,12 @@ def main():
 				#img_tali, pretrans, badi=ret
 			#else:
 			img_tali, pretrans=ret
+			#print(pretrans)
+			badi=options.badi=np.where(pretrans[:,0]>5000)[0]
+			print(f"removing {len(badi)} bad tilts")
+			pretrans[badi,:]=0
+			
+			
 			#### estimate initial tilt axis by common line
 			if options.tltax==None:
 				tltax=calc_tltax_rot(img_tali, options)
@@ -428,9 +448,9 @@ def main():
 		ttparams[:,3]=tlts.copy() # ytilt
 		ttparams[:,4]=0 # off axis tilt
 		loss0=abs(ttparams[:,3]) ### this is used to exclude bad tilt. in case the user ask 0 iterations..
-		if options.badone:
-			loss0[badi]=np.max(loss0)+100
-	
+		if len(badi)>0:
+			loss0[badi]=1000
+		
 	if options.writetmp:
 		#### dump options to file
 		options.cmd=' '.join(sys.argv)
@@ -445,9 +465,18 @@ def main():
 		np.savetxt(os.path.join(path,"tltparams_init.txt"), tpm, fmt="%.3f")
 	
 	if options.patchtrack>0:
-		ttparams, loss0= do_patch_tracking(imgs_500, ttparams, options)
+		ikeep=[i for i in np.arange(len(imgs_500)) if i not in options.badi]
+		imgs_pt=[imgs_500[i] for i in ikeep]
+		options.num=len(imgs_pt)
+		tpm01, l0= do_patch_tracking(imgs_pt, ttparams[ikeep], options)
+		ttparams[ikeep]=tpm01
 		for itr in range(options.patchtrack-1):
-			ttparams, loss0= do_patch_tracking_3d(imgs_500, ttparams, options)
+			tpm01, l0= do_patch_tracking_3d(imgs_pt, ttparams[ikeep], options)
+			ttparams[ikeep]=tpm01
+			
+		loss0=np.zeros(len(imgs_500))+1000
+		loss0[ikeep]=l0
+		options.num=len(imgs_500)
 		#toitr=[imgs_500, imgs_1k]
 		#toitr=toitr[:options.patchtrack]
 		#for itr,imgs in enumerate(toitr):
@@ -576,6 +605,7 @@ def main():
 			np.savetxt(os.path.join(path,"tltparams_{:02d}.txt".format(niter)), tpm, fmt="%.3f")
 			np.savetxt(os.path.join(path,"loss_{:02d}.txt".format(niter)), np.vstack([np.arange(len(loss0)), loss0]).T, fmt="%.2f")
 		
+	loss0[options.badi]=1000
 	options.loss0=loss0
 	
 	if options.posz:
@@ -1355,6 +1385,96 @@ def get_xf_pos(tpm, pk):
 #### coarse translational alignment
 def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	print("Coarse translational alignment...")
+	nimg=len(imgs)
+	sz=256
+	data=[]
+	for m in imgs:
+		s=m.process("math.meanshrink",{"n":2})
+		s.process_inplace("filter.lowpass.gauss", {"cutoff_abs":.4})
+		s.process_inplace("normalize.edgemean")
+		s.clip_inplace(Region((s["nx"]-sz)//2, (s["ny"]-sz)//2, sz,sz))
+
+		data.append(s.numpy().copy())
+		
+	data=np.array(data)
+	print(data.shape)
+	data00=data.copy()
+	keep=np.ones(nimg, dtype=bool)
+	trans=np.zeros((nimg, 2))
+	
+	for itr in range(3):
+		data_fft=np.fft.fftshift(data, axes=(1,2))
+		data_fft=np.fft.fft2(data_fft, axes=(1,2))
+		data_fft=np.fft.fftshift(data_fft, axes=(1,2))
+		data_fft_abs=abs(data_fft)
+		data_fft_abs[data_fft_abs==0]=1
+		data_fft=data_fft/data_fft_abs
+		
+		data_conj1=data_fft[:-1]*np.conj(data_fft[1:])
+		data_conj1=np.fft.ifftshift(data_conj1, axes=(1,2))
+		data_conj1=np.fft.ifft2(data_conj1, axes=(1,2)).real
+		data_conj1=np.fft.ifftshift(data_conj1, axes=(1,2))
+
+		data_conj2=data_fft[:-2]*np.conj(data_fft[2:])
+		data_conj2=np.fft.ifftshift(data_conj2, axes=(1,2))
+		data_conj2=np.fft.ifft2(data_conj2, axes=(1,2)).real
+		data_conj2=np.fft.ifftshift(data_conj2, axes=(1,2))
+		
+		scr1=np.max(data_conj1, axis=(1,2))
+		scr=(scr1[1:]+scr1[:-1])/2
+		scr2=np.max(data_conj2, axis=(1,2))
+		
+		badi=np.where(scr2>scr)[0]+1
+		kp=np.ones(len(data_fft), dtype=bool)
+		if len(badi)>0:
+			kp[badi]=False
+			print("skip jumping tilts: ", badi)
+			
+		data_conf=data_fft[kp]
+		data_conj=data_conf[:-1]*np.conj(data_conf[1:])
+		data_conj=np.fft.ifftshift(data_conj, axes=(1,2))
+		data_conj=np.fft.ifft2(data_conj, axes=(1,2)).real
+		data_conj=np.fft.ifftshift(data_conj, axes=(1,2))	
+		
+		cnt=np.argmax(data_conj.reshape(len(data_conj), -1), axis=1)
+		cnt=np.array(np.unravel_index(cnt, (sz,sz))).T-sz//2
+		cnt=np.concatenate([[[0,0]], cnt])
+		ts=-np.cumsum(cnt, axis=0)
+		
+		#mxt=np.max(abs(ts), axis=1)
+		#ts-=np.mean(ts[mxt<sz//4], axis=0).astype(int)
+		meants=np.mean(abs(ts), axis=0)
+		print(f"  iter {itr}:  tx = {meants[0]:.2f}, ty = {meants[1]:.2f}")
+		k0=np.where(keep)[0]
+		keep[k0[badi]]=False
+
+		trans[keep]+=ts
+		tx=-np.round(trans).astype(int)
+		
+		mxt=np.max(abs(tx), axis=1)
+		keep=np.logical_and(keep, mxt<sz//2)
+		data=data00.copy()
+		for i in range(nimg):
+			data[i]=sciimg.shift(data[i], tx[i])
+			
+		
+		data=data[keep]
+	
+	trans=-trans[:,[1,0]].copy()*2
+	trans=np.clip(trans, -sz*1.8, sz*1.8)
+	imgout=[]
+	for i,e in enumerate(imgs):
+		#e=m.process("mask.soft",{"outer_radius":-8,"width":8})
+		t=trans[i]
+		e.translate(t[0], t[1],0)
+		imgout.append(e)		
+		
+	trans[~keep,:]=10000
+	return [imgout, trans]	
+		
+#### coarse translational alignment
+def calc_global_trans_1(imgs, options, excludes=[], tltax=None,tlts=[]):
+	print("Coarse translational alignment...")
 	data=[]
 	nz=len(imgs)
 	sz=256
@@ -1535,7 +1655,7 @@ def calc_tltax_rot(imgs, options):
 
 #### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
 def make_tile(args):
-	jsd, imgs, tpm, sz, pad, stepx, stepy, outz,options=args
+	jsd, imgs, tpm, sz, pad, stepx, stepy, outz, options=args
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
 	recon.setup()
 
@@ -1555,6 +1675,9 @@ def make_tile(args):
 			
 		m.process_inplace("filter.ramp")
 		m.process_inplace("xform",{"alpha":-t[2]})
+		if options.addnoise:
+			m.process_inplace("math.addnoise",{"noise":100})
+			m.process_inplace("normalize")
 		xf=Transform({"type":"xyz","ytilt":t[3],"xtilt":t[4]})
 
 		dy=(pad//2)-np.cos(t[3]*np.pi/180.)*pad/2
@@ -1606,6 +1729,9 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		nrange=list(range(num))
 	else:
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
+		et=errtlt[nrange]
+		nrange=nrange[et<500]
+		#print(et)
 
 	print("Using {} out of {} tilts..".format(len(nrange), num))
 	nx, ny=imgs[0]["nx"], imgs[0]["ny"]
@@ -1702,6 +1828,22 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		print("Doing Ctf correction. Average defocus {:.2f}".format(np.mean(dfs)))
 		
 		
+	#############
+	if options.normslice:
+		options.addnoise=True
+		make_tile(jobs[len(jobs)//2])
+		stepx, stepy, threed=jsd.get()
+		
+		img0=threed.numpy().copy()
+		std0=np.std(img0,axis=(1,2)) 
+		std0[std0==0]=1
+		std0=1./std0
+		std3=np.zeros_like(img0)
+		std3+=std0[:,None,None]
+		maskz=from_numpy(std3)
+	
+	options.addnoise=False
+	
 	thrds=[threading.Thread(target=make_tile,args=([i])) for i in jobs]
 	print("now start threads...")
 	thrtolaunch=0
@@ -1727,9 +1869,9 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		if not jsd.empty():
 			stepx, stepy, threed=jsd.get()
 			#threed["pos"]=[stepx, stepy]
-			#threed.write_image("alltiles.hdf", -1)
 			threed.mult(msk)
-			threed.write_image("test.hdf",-1)
+			if options.normslice:
+				threed.mult(maskz)
 			#### insert the cubes to corresponding tomograms
 			if options.moretile:
 				full3d.insert_scaled_sum(
@@ -1746,7 +1888,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	
 	if not options.moretile:
 		full3d=full3d[0]+full3d[1]
-	full3d.process_inplace("normalize")
+	#full3d.process_inplace("normalize")
+	a=full3d.numpy()
+	std=np.std(a[[0,-1]])
+	full3d.mult(1./std)
 	
 	#### skip the tomogram positioning step because there is some contrast difference at the boundary that sometimes breaks the algorithm...
 	full3d["zshift"]=0
@@ -1777,6 +1922,8 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 			if ytlt < options.tltrange[0] or ytlt > options.tltrange[1]:
 				errtlt[nid] = np.inf # ensure this tilt is excluded if outside desired tilt range
 		nrange=np.argsort(errtlt)[:int(num*options.tltkeep)]
+		et=errtlt[nrange]
+		nrange=nrange[et<500]
 
 	nx=imgs[0]["nx"]
 	ny=imgs[0]["ny"]
@@ -1885,6 +2032,8 @@ def make_ali(imgs, tpm, options, outname=None):
 
 		pxf=get_xf_pos(ttparams[nid], [0,0,0])
 		m=im.process("normalize.edgemean")
+		if nid in options.badi:
+			m.to_zero()
 		p2=m.get_clip(Region(old_div(m["nx"],2)-old_div(pad,2),old_div(m["ny"],2)-old_div(pad,2), pad, pad), fill=0)
 		po=p2.copy()
 		po.translate(-pxf[0], -pxf[1], 0)
