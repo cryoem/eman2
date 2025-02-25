@@ -103,11 +103,11 @@ def main():
 	fm=options.ptclout
 	
 	output_tmp=np.array(output_tmp)
-	print(output_tmp)
-	print(output_tmp.shape)
-	for i,o in enumerate(output_tmp):
-		a=from_numpy(o).copy()
-		a.write_image(fm[:-4]+"_tmp.hdf", i)
+	#print(output_tmp)
+	#print(output_tmp.shape)
+	#for i,o in enumerate(output_tmp):
+		#a=from_numpy(o).copy()
+		#a.write_image(fm[:-4]+"_tmp.hdf", i)
 	
 	save_lst_params(output, fm)
 	

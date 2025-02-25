@@ -122,10 +122,15 @@ def main():
 			itr=startiter=int(options.continuefrom)
 		
 		last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
-		last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
+		for i in range(itr,0,-1):
+			last3d=f"{path}/aliptcls3d_{i:02d}.lst"
+			if os.path.isfile(last3d): 
+				break
+			
 		l=load_lst_params(last2d, [0])
-		if "dxf" not in l: last2d=None
+		if "dxf" not in l[0]: last2d=None
 		
+		print(f"last 3d alignment: {last3d}\nlast 2d alignment: {last2d}")
 		if os.path.isfile(f"{path}/0_spt_gathermeta_params.json"):
 			print("Loading from existing metadata..")
 			last2d00=f"{path}/aliptcls2d_01.lst"

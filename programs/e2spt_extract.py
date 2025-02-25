@@ -98,6 +98,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 	parser.add_argument("--skip3d", action="store_true", default=False ,help="do not make 3d particles. only generate 2d particles and 3d header. ")
 	parser.add_argument("--loadali2d", type=str,help="extract polished particles using existing subtilt alignment. Only works with --jsonali within the same refinement", default="")
+	parser.add_argument("--apixout", type=float,help="force output apix.", default=-1)
 
 	#parser.add_argument("--shrink3d", type=int, help="Only shrink 3d particles by x factor",default=-1)
 	parser.add_argument("--verbose", type=int,help="verbose", default=1)
@@ -584,6 +585,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 	p3d=pad
 	bx=boxsz*2
 	apixout=apix
+	if options.apixout>0:
+		apixout=options.apixout
 		
 	if options.verbose>0: print(f"Begin make3d bx={bx} pad={pad} ")
 	
@@ -704,7 +707,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			rot=Transform({"type":"xyz","xtilt":float(tpm[4]),"ytilt":float(tpm[3])})
 			p1=rot.transform(pos.tolist())
 			pz=p1[2]
-			dz=pz*apix/10000.
+			dz=pz*apixout/10000.
 			
 			if len(ctfinfo)>0:
 				## phase flipping
@@ -752,6 +755,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			e["tilt_id"]=nid
 			e["file_threed"]=options.output
 			e["ptcl_source_coord_3d"]=pos.tolist()
+			e["apix_x"]=e["apix_y"]=e["apix_z"]=apixout
 			#e.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.45})
 			projs.append(e)
 			

@@ -368,19 +368,29 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		###### this is the new (2018-09) metadata standard..
 		### now we use coordinates at full size from center of tomogram so it works for different binning and clipping
 		### have to make it compatible with older versions though..
+		shape=[data["nx"], data["ny"], data["nz"]]
 		if "apix_unbin" in info:
 			self.apix_unbin=info["apix_unbin"]
 			self.apix_cur=apix=data["apix_x"]
 			for b in self.boxes:
-				b[0]=b[0]/apix*self.apix_unbin+data["nx"]//2
-				b[1]=b[1]/apix*self.apix_unbin+data["ny"]//2
-				b[2]=b[2]/apix*self.apix_unbin+data["nz"]//2
+				for i in range(3):
+					b[i]=b[i]/apix*self.apix_unbin+shape[i]//2
+				#b[1]=b[1]/apix*self.apix_unbin+data["ny"]//2
+				#b[2]=b[2]/apix*self.apix_unbin+data["nz"]//2
 				
 			for k in self.boxsize.keys():
 				self.boxsize[k]=int(np.round(self.boxsize[k]*self.apix_unbin/apix))
 		else:
 			self.apix_unbin=-1
 			
+		for b in self.boxes:
+			for i in range(3):
+				#b[i]=int(np.clip(np.round(b[i]), 0, shape[i]))
+				b[i]=int(np.clip(np.round(b[i]), 1, shape[i]-1))
+				
+		#self.boxes=self.boxes[:100]
+		for b in self.boxes:print(b)
+				
 		info.close()
 		
 		E2loadappwin("e2sptboxer","main",self)

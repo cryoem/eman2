@@ -311,7 +311,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			if len(info["loss"])==0:
 				loss=-1
 			else: 
-				loss=np.round(np.mean(info["loss"]), 2)
+				l=info["loss"]
+				l=l[l<500]
+				loss=np.round(np.mean(l), 2)
 				
 			
 			it=QtWidgets.QTableWidgetItem()
