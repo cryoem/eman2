@@ -78,8 +78,8 @@ def main():
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use + for range)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
-	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
-	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
+	parser.add_argument("--dfmin", type=float, help="Minimum defocus override, for use with --ctf",default=-1)
+	parser.add_argument("--dfmax", type=float, help="Maximum defocus override, for use with --ctf",default=-1)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--fscdebug", type=str,help="Compute the FSC of the final map with a reference volume for debugging",default=None)
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
@@ -129,19 +129,6 @@ def main():
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
 	else: zmax=0.5
-	if options.ctf>0:
-		if options.tomo:
-			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
-		else:
-			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-			ctf=js["ctf"][0].to_dict()
-			js.close()
-		cs=ctf["cs"]
-		voltage=ctf["voltage"]
-		ampcont=ctf["ampcont"]
-		dfrange=(options.dfmin,options.dfmax)
-		# Create the ctf stack
-		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix) #TODO: This line relies on unchanged code
 
 	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit +-{zmax}. {nptcl} input images")
 
@@ -215,6 +202,9 @@ def main():
 	# Cache initialization
 	if options.verbose: print(f"{local_datetime()}: Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
+	if options.ctf > 0:
+		mindf = float('inf')
+		maxdf = 0
 
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
 	for d in downs: rad_img_int(d)		
@@ -244,7 +234,10 @@ def main():
 				stk.center_align_seq(options.tomo_seqali)
 				if options.verbose>3: stk.write_images("dbg_ali.hdf")
 			orts,tytx=stk.orientations
-			tytx/=nxraw
+			tytx/= jnp.array((nxraw,nxraw, 1))
+			if options.ctf>0:
+				mindf = min(mindf, float(jnp.min(tytx[:, 2])))
+				maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
 			stkf=stk.do_fft()
 			for down in downs:
@@ -255,6 +248,26 @@ def main():
 	for down in downs[1:]:
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
+
+	if options.ctf>0:
+		if options.tomo:
+			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
+		else:
+			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
+			ctf=js["ctf"][0].to_dict()
+			js.close()
+		cs=ctf["cs"]
+		voltage=ctf["voltage"]
+		ampcont=ctf["ampcont"]
+#		dfrange=(options.dfmin,options.dfmax)
+		dfstep = apix*apix/100 # Rough approximation of the correct step that doesn't involve calculating the wavelength
+		boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
+		df_buffer = (boxlen/2)/(dfstep*10000) + dfstep
+		dfrange=(mindf - df_buffer, maxdf + df_buffer)
+		if options.dfmin > 0 and options.dfmax > 0:
+			dfrange=(options.dfmin, options.dfmax)
+		# Create the ctf stack
+		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix)
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
