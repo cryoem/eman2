@@ -55,6 +55,7 @@ def main():
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
 	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
+	parser.add_argument("--gaussrecon",type=int,default=0,help="Use new e3make3d_gauss for 3-D reconstruction with N starting gaussians (1000 typ)")
 	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -321,8 +322,12 @@ def main():
 		else:
 			m3dpar=f" --parallel {options.parallel}"
 			
-		for eo in ["even", "odd"]:
-			run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
+		for ieo,eo in enumerate(["even", "odd"]):
+			if options.gaussrecon>0 :
+				run(f"e3make3d_gauss.py {path}/aliptcls2d_{itr:02d}.lst --volout {path}/threed_{itr:02d}_{eo}.hdf:12 --sym {options.sym} --volfiltlp={res*0.75:.2f} --class {ieo} --initgauss {options.gaussrecon} --postclip {boxsize} --spt")
+			else:
+				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
+
 			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf --compressbits 12")
 		
 		#### only do SSNR weighting for the last iteration to avoid potential model bias

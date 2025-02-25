@@ -90,15 +90,16 @@ def main():
 
 		run("e2spa_align.py --ptclin {pt}/ptcls_{i0:02d}.lst --ptclout {pt}/ptcls_{i1:02d}.lst --ref {pt}/threed_{i0:02d}.hdf --parallel {par} --sym {s} --maxres {rs:.2f} --goldcontinue --verbose {verbose} --localrefine {lc} {etc} {mrp}".format(pt=options.path, i0=i, i1=i+1, rs=res, s=sym, par=options.parallel, verbose=options.verbose, lc=options.localrefine, etc=etc,mrp=mrp))
 			
+		if i==0:
+			res/=1.5
+
 		for ieo,eo in enumerate(["even","odd"]):
 			if options.gaussrecon>0 :
-				run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --sym {sym} --class {ieo}")
+				run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --sym {sym} --volfiltlp={res*0.75:.2f} --class {ieo} --initgauss {options.gaussrecon}")
 			else:
 				run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 			run("e2proc3d.py {pt}/threed_{i1:02d}_{eo}.hdf {pt}/threed_raw_{eo}.hdf".format(pt=options.path, i1=i+1, eo=eo))
 
-		if i==0:
-			res/=2
 		
 		if i>0:
 			tophat="--tophat {}".format(options.tophat)	

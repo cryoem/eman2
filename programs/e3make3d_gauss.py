@@ -76,7 +76,7 @@ def main():
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
-	parser.add_argument("--ptcl3d_id", type=int, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header)",default=-1)
+	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use + for range)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
 	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
 	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
@@ -86,19 +86,26 @@ def main():
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--profile", action="store_true",help="Used for code development only, not routine use")
 #	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
 	(options, args) = parser.parse_args()
 	jax_set_device(dev=0,maxmem=options.gpuram)
-	llo=E3init(sys.argv)
+	llo=E3init(sys.argv,options.ppid)
 
 	nptcl=EMUtil.get_image_count(args[0])
 	if options.quick : nptcl=min(nptcl,8192+4096)
 
-	if options.ptcl3d_id>=0:
+	if options.ptcl3d_id is not None:
 		if args[0][-4:]!=".lst" : error_exit("--ptcl3d_id only works with .lst input files")
+		try:
+			options.ptcl3d_id=int(options.ptcl3d_id)
+			rng=1
+		except:
+			rng=int(options.ptcl3d_id.split("+")[1])
+			options.ptcl3d_id=int(options.ptcl3d_id.split("+")[0])
 		lsx=LSXFile(args[0])
-		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"]==options.ptcl3d_id]
+		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"] in range(options.ptcl3d_id,options.ptcl3d_id+rng)]
 		nptcl=len(selimg)
 		lsx=None
 
@@ -213,7 +220,7 @@ def main():
 	for d in downs: rad_img_int(d)		
 
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	if options.ptcl3d_id>=0 :
+	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 :
 		if options.verbose>1:
 			print(f" Caching {nptcl}")
 		stk=EMStack2D(EMData.read_images(args[0],selimg))
@@ -473,13 +480,13 @@ def main():
 	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
 	if options.sym not in ("c1","C1","I","i"):
-		if verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
+		if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
 		vol.process_inplace("xform.applysym",{"sym":options.sym})
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
 	vol["apix_z"]=apix*nxraw/outsz
-	if options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
+	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})

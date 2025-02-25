@@ -1234,17 +1234,22 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	        image_index = stack_size - 1; // Append to the stack
 	    }
 
-	    if (nz > 1) {
-	        stack_size = nz;
-	    } else if (is_new_file) {
+	    if (is_new_file) {
 	        stack_size = 1;
 	    } else if (image_index >= stack_size) {
 	        stack_size = image_index + 1;
 	    }
 
-	    mrch.nz = stack_size; // Update nz to reflect total images in the stack
+	    mrch.nz = stack_size; // Ensure `mrch.nz` is consistent
 	} else {
-	    mrch.nz = nz; // Non-stack format
+	    mrch.nz = 1; // Always set to 1 for non-stack format
+	}
+
+	// Ensure header is written correctly for all types
+	size_t data_size = (size_t)mrch.nx * mrch.ny * mrch.nz;
+
+	if (dt != EMUtil::EM_FLOAT) {
+	    update_stats(vector<float>(data, data + data_size));
 	}
 
 	size_t size = (size_t)nx * ny * nz;
