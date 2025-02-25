@@ -38,6 +38,15 @@ import sys
 import time
 import os
 
+try: os.mkdir(".jaxcache")
+except: pass
+
+# We cache the JIT compilation results to speed up future runs
+jax.config.update("jax_compilation_cache_dir", "./.jaxcache")
+jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
+jax.config.update("jax_persistent_cache_min_compile_time_secs", 2)
+jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
+
 jax.config.update("jax_default_matmul_precision", "float32")
 
 def main():
@@ -55,9 +64,10 @@ def main():
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--tilesize",type=int,help="Controls how large the tiles are, default=1024", default=1024)
+	parser.add_argument("--tiltaxis",type=str, help="Direction your tiltaxis is on--x or y")
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--bin", type=int, help="Binning level for output file (will still use full resolution data to reconstruct", default=-1)
-	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass for each tile, scaled with stage, default=1000", default=1000)
+	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass for entire volume, scaled with stage, default=1000", default=1000)
 	parser.add_argument("--combineiters",action="store_true", help="Use the Gaussian coordinates from the last ~10 iterations for the final volume. Increases the number of Gaussians without as much memory increase")
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--savetiles", action="store_true",help="Save the tiles as an hdf file outside of tmp. Currently only used for debugging but possibly could be used when multiple runs with same tiles")
@@ -87,6 +97,7 @@ def main():
 		# Convert to jax so it runs
 		# Once it runs, aggragate the last ~10 steps or so (after it should have converged) to get more Gaussians
 		# What to use as a good test for convergence? tiling a volume I can reconstruct on its own to see if I get similar results?
+		# Replace --tiltaxis with identifying tiltaxis from xforms??
 
 	# Getting tiles and saving to temp files
 	ntilts = EMUtil.get_image_count(args[0])
@@ -104,13 +115,13 @@ def main():
 	# Dr Ludtke's original from --tomo option of e3make3d_gauss.py
 	stages=[
 			[256,32,  32,1.8, -1,1,.05, 3.0],
-			[256,32,  32,1.8, -1,2,.05, 1.0],
-			[256,64,  48,1.5, -2,1,.04,1.0],
-			[256,64,  48,1.5, -2,2,.02,0.5],
-			[256,128, 32,1.2, -3,4,.01,2],
-			[256,256, 32,1.2, -2,1,.01,3],
-			[256,512, 48,1.2, -2,1,.01,3],
-			[256,1024,48,1.2, -3,1,.004,5]
+			[256,32,  32,1.8, -1,4,.05, 1.0],
+			[256,64,  48,1.5, -2,4,.04,1.0],
+			[256,64,  48,1.5, -2,16,.02,0.5],
+			[256,128, 32,1.2, -3,16,.01,2],
+			[256,256, 32,1.2, -2,64,.01,3],
+			[256,512, 48,1.2, -2,128,.01,3],
+			[256,1024,48,1.2, -3,256,.004,5]
 		]
 	# This treats tiles as fixed and downsamples the tiles, another thought would be to change the tiling for each stage
 
@@ -118,11 +129,23 @@ def main():
 
 	outx = (nxraw//options.tilesize)*options.tilesize
 	outy = (nyraw//options.tilesize)*options.tilesize
-	xtiles = int(outx/step) + 1
-	ytiles = int(outy/step) - 1 # Remove the tiles going off the edge along the non-tilt axis
+	if options.tiltaxis == "y":
+		xtiles = int(outx/step) + 1
+		ytiles = int(outy/step) - 1 # Remove the tiles going off the edge along the non-tilt axis
+	elif options.tiltaxis == "x":
+		xtiles = int(outx/step) - 1 # Remove the tiles going off the edge along the non-tilt axis
+		ytiles = int(outy/step) + 1
+	else:
+		xtiles = int(outx/step) + 1 # Tilt axis unknown, have tiles going off edge in all directions
+		ytiles = int(outy/step) + 1
 	nptcls=int(ntilts*xtiles*ytiles)
 	nxstep=int(outx/step/2)
 	nystep=int(outy/step/2 - 1)
+
+	# limit sampling to (at most) the box size of the raw data
+	# we do this by altering stages to help with jit compilation
+	for i in range(len(stages)):
+		stages[i][1]=min(stages[i][1],options.tilesize)
 
 	if options.savesteps:
 		try: os.unlink("steps.hdf")
@@ -165,6 +188,9 @@ def main():
 	#TODO: Provide option to use saved tiling file from --savetiles so don't have to spend the time to extract them all?
 	caches, downs, mindf, maxdf = cache_tiles(args[0], options, stages, apix, ttparams, cs, volt, defocus, phase, nxraw, nyraw, xtiles, ytiles, nxstep, nystep, step, ntilts, nptcls)
 
+	# critical for later in the program, this initializes the radius images for all of the samplings we will use
+	for d in downs: rad_img_int(d)
+
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
 		caches[down].orts=caches[downs[0]].orts
@@ -184,8 +210,8 @@ def main():
 
 	# Initializing Gaussians to random values with amplitudes over a narrow range
 	rng = np.random.default_rng()
-	rnd = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles,4))
-	neg = rng.uniform(0.0,1.0,(options.initgauss*xtiles*ytiles//10, 4))
+	rnd = rng.uniform(0.0,1.0,(options.initgauss*9//10,4))
+	neg = rng.uniform(0.0,1.0,(options.initgauss//10, 4))
 	rnd+= (-0.5, -0.5, -0.5, 2.0) # Coord between -.5 and .5, amp between 2 and 3
 	neg+= (-0.5, -0.5, -0.5, -3.0)
 	rnd = np.concatenate((rnd, neg))
@@ -207,7 +233,7 @@ def main():
 			for tny in range(ytiles):
 				yrange = (-0.5*(ytiles//2-tny)-1, -0.5*(ytiles//2-tny)+1)
 				if options.verbose: print(f"Stage {sn}, Tile {tnx*ytiles+tny} - {local_datetime()}:")
-				if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n        FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
+				if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n	FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 				cur_gaus._data = select_tile_gauss(all_gaus, xrange, yrange)
 				cur_gaus.coerce_jax()
 				if ntilts>stage[0]:
@@ -332,7 +358,7 @@ def main():
 		g0=len(all_gaus)
 		all_gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
 		g1=len(all_gaus)
-		if stage[5]>0: all_gaus.replicate(stage[5],stage[6])
+		if stage[5]>0: all_gaus.replicate_abs(stage[5]*options.initgauss,stage[6])
 		g2=len(all_gaus)
 
 		print(f"Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians  {local_datetime()}")
@@ -461,7 +487,7 @@ def cache_tiles(filename, options, stages, apix, ttparams, cs, volt, defocus, ph
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
 			stkf=stk.do_fft()
 			for down in downs:
-				stkfds=stkf.downsample(min(down,options.tilesize))
+				stkfds=stkf.downsample(down)
 				caches[down].write(stkfds,(i+tiltn)*(xtiles*ytiles),orts,tytx)
 	tilt_imgs=None
 	return caches, downs, mindf, maxdf
@@ -563,9 +589,9 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weig
 	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight,frc_Z)
 
 	qual=frcs				       # functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()	                       # translational std
-	sca=grad[:,3].std()		               # amplitude std
-	xyzs=relstep/(shift*500)	               # xyz scale factor, 1000 heuristic, TODO: may change
+	shift=grad[:,:3].std()			       # translational std
+	sca=grad[:,3].std()			       # amplitude std
+	xyzs=relstep/(shift*500)		       # xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
 
@@ -596,9 +622,9 @@ def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfs
 	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
 
 	qual=frcs				       # functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()	                       # translational std
-	sca=grad[:,3].std()		               # amplitude std
-	xyzs=relstep/(shift*500)	               # xyz scale factor, 1000 heuristic, TODO: may change
+	shift=grad[:,:3].std()			       # translational std
+	sca=grad[:,3].std()			       # amplitude std
+	xyzs=relstep/(shift*500)		       # xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
 
