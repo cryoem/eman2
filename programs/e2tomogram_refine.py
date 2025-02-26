@@ -123,7 +123,7 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	xf=allxf[:,:3]+angoffset
 	data_cpx, imgs_clip, trans_offset=get_clips(imgs, xf, xy)
 	
-	b=int(realbox*.4)
+	b=int(realbox*.25)
 	wid0=realbox//2-b//2
 	wid1=realbox//2+b//2
 	width_mask=np.zeros(realbox)
@@ -169,6 +169,11 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 			volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 			vol_nrm=get_volume(volume, weight)
 			
+			
+			e=from_numpy(np.array(vol_nrm).T.copy())
+			e.write_image(f"tmp_tomo_{j}.hdf", ii)
+
+			
 			ss=jnp.std(vol_nrm, axis=(0,1))
 			stds.append(ss)
 		
@@ -197,12 +202,11 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	
 	xf2=np.hstack([np.arange(len(xf2))[:,None], xf2])
 	
-	#rndi=np.random.randint(100000)
 	bm=base_name(fname)
 	pmname=f"tmp_tltparams_{bm}.txt"
 	np.savetxt(pmname, xf2)
 	
-	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --loadfile {pmname} --filterres {res} --notmp")
+	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --loadfile {pmname} --filterres {res} --notmp --normslice")
 	return
 
 def refine_tlt_rot(imgs, tltpms, scale):

@@ -1664,7 +1664,7 @@ def make_tile(args):
 
 	for i in range(len(imgs)):
 		t=tpm[i]
-		m=imgs[i]
+		m=imgs[i].copy()
 		if m["nx"]==1:
 			continue
 		
