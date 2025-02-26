@@ -465,14 +465,17 @@ def main():
 		np.savetxt(os.path.join(path,"tltparams_init.txt"), tpm, fmt="%.3f")
 	
 	if options.patchtrack>0:
+		print(options.badi)
 		ikeep=[i for i in np.arange(len(imgs_500)) if i not in options.badi]
 		imgs_pt=[imgs_500[i] for i in ikeep]
 		options.num=len(imgs_pt)
 		tpm01, l0= do_patch_tracking(imgs_pt, ttparams[ikeep], options)
 		ttparams[ikeep]=tpm01
+		np.savetxt(os.path.join(path,"tltparams_pt0.txt"), ttparams, fmt="%.3f")
 		for itr in range(options.patchtrack-1):
 			tpm01, l0= do_patch_tracking_3d(imgs_pt, ttparams[ikeep], options)
 			ttparams[ikeep]=tpm01
+			np.savetxt(os.path.join(path,"tltparams_pt1.txt"), ttparams, fmt="%.3f")
 			
 		loss0=np.zeros(len(imgs_500))+1000
 		loss0[ikeep]=l0
@@ -1403,7 +1406,8 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	trans=np.zeros((nimg, 2))
 	
 	for itr in range(3):
-		data_fft=np.fft.fftshift(data, axes=(1,2))
+		data_fft=data.copy()
+		data_fft=np.fft.fftshift(data_fft, axes=(1,2))
 		data_fft=np.fft.fft2(data_fft, axes=(1,2))
 		data_fft=np.fft.fftshift(data_fft, axes=(1,2))
 		data_fft_abs=abs(data_fft)
@@ -1441,6 +1445,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		cnt=np.concatenate([[[0,0]], cnt])
 		ts=-np.cumsum(cnt, axis=0)
 		
+		ts-=ts[nimg//2]
 		#mxt=np.max(abs(ts), axis=1)
 		#ts-=np.mean(ts[mxt<sz//4], axis=0).astype(int)
 		meants=np.mean(abs(ts), axis=0)
@@ -1463,8 +1468,8 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 	trans=-trans[:,[1,0]].copy()*2
 	trans=np.clip(trans, -sz*1.8, sz*1.8)
 	imgout=[]
-	for i,e in enumerate(imgs):
-		#e=m.process("mask.soft",{"outer_radius":-8,"width":8})
+	for i,m in enumerate(imgs):
+		e=m.process("mask.soft",{"outer_radius":-8,"width":8})
 		t=trans[i]
 		e.translate(t[0], t[1],0)
 		imgout.append(e)		
