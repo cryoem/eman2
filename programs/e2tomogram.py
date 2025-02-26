@@ -471,11 +471,9 @@ def main():
 		options.num=len(imgs_pt)
 		tpm01, l0= do_patch_tracking(imgs_pt, ttparams[ikeep], options)
 		ttparams[ikeep]=tpm01
-		np.savetxt(os.path.join(path,"tltparams_pt0.txt"), ttparams, fmt="%.3f")
 		for itr in range(options.patchtrack-1):
 			tpm01, l0= do_patch_tracking_3d(imgs_pt, ttparams[ikeep], options)
 			ttparams[ikeep]=tpm01
-			np.savetxt(os.path.join(path,"tltparams_pt1.txt"), ttparams, fmt="%.3f")
 			
 		loss0=np.zeros(len(imgs_500))+1000
 		loss0[ikeep]=l0
