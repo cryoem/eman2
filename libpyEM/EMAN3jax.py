@@ -361,6 +361,24 @@ class EMStack3D(EMStack):
 			return EMStack3D(self.jax*jnp.conj(target))
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
+	def calc_flcf(self,target):
+		""" Compute the fast local cross correlation between each image in the stack and a target, which may be a single image or another EMStack of the same size. Both image and target(s) need to be real, target need to have a boxsize smaller than the one of image"""
+		if isinstance(target,EMStack3D):
+			target = target.jax
+		elif isinstance(target,jax.Array):
+			pass
+		else: raise Exception("calc_flcf: target must be either EMStack3D or single Tensor")
+		tomof = jax_fft3d(self.jax)
+		r2 = (target.shape[1]/2)**2
+		cz,cy,cx = tomof.shape[1]//2, tomof.shape[2]//2, tomof.shape[3]
+		mask = jax_phaseorigin3d(jax_fft3d(jnp.fromfunction(lambda z,y,x:jnp.where(((z-cz)**2+(y-cy)**2+(x-cx)**2)>r2,0,1), (cz*2,cy*2,(cx-1)*2))))
+		norm = jax_ift3d((tomof**2)*jnp.conj(mask))
+
+		pz,py,px = cz-target.shape[1]//2,cy-target.shape[2]//2,(cx-1)-target.shape[2]//2
+		targetf = jax_fft3d(jnp.pad(target,((0,0),(pz,pz),(py,py),(px,px))))# pad to the same size with self
+		ccf = jax_ift3d(tomof*jnp.conj(targetf))
+		return EMStack3D(ccf/(norm+1e-8))
+
 	def downsample(self,newsize):
 		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
 		are "newsize" in all 2/3 dimensions. Downsampled images/volumes will be in Fourier space regardless of whether
@@ -509,7 +527,7 @@ class EMStack2D(EMStack):
 		"""Aligns a stack of (real space) images using the middle 1/2 (in x/y) of each image, and the middle image as a starting point.
 		designed to do a rough alignment of tilt series. region_size is the size in pixels of the region around the center of each
 		image to use for alignment. Default is ~1/2 the box size. All sizes adjusted to a good size"""
-		
+
 		#TODO - While functional, this whole method seems inefficient, particularly in terms of JAX
 		if region_size<=32 : region_size=self.shape[1]//2
 		region_size=good_size(region_size)
@@ -538,7 +556,7 @@ class EMStack2D(EMStack):
 			dx+=sh[1]
 			dy+=sh[0]
 			self.emdata[nc+i+1].translate(-int(dx),-int(dy),0)
-		
+
 
 	def align_translate(self,ref,maxshift=-1):
 		"""compute translational alignment of a stack of images to a same sized stack (or single) of reference images.
@@ -775,7 +793,7 @@ stddev=0.01"""
 		"""Makes copies of the current Gaussians shifted by a small random amount to improve the level of detail without
 significantly altering the spatial distribution. ngaus specifies the total number of desired gaussians after replication. Note that amplitudes are also perturbed by the same distribution. Default stddev=0.01"""
 		if len(self)==ngaus : return
-		if len(self)>ngaus : 
+		if len(self)>ngaus :
 			print("Warning, replicate targeted fewer gaussians than currently exist! Unchanged")
 			return
 		rng=np.random.default_rng()
@@ -1037,7 +1055,7 @@ def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,ap
 
 	# iterate over projections
 	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-	# note that the mx dimensions have N as the 3rd not 1st component! 
+	# note that the mx dimensions have N as the 3rd not 1st component!
 	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
 
 	for j in range(mx.shape[2]):
@@ -1209,7 +1227,7 @@ def jax_ift3d(imgs):
 
 	if imgs.dtype!=jnp.complex64: raise Exception("Data type must be complex")
 
-	return jnp.irfft3d(imgs)
+	return jnp.fft.irfftn(imgs,axes=[-3,-2,-1])
 
 POF2D=None
 def jax_phaseorigin2d(imgs):
@@ -1226,11 +1244,12 @@ def jax_phaseorigin2d(imgs):
 POF3D=None
 def jax_phaseorigin3d(imgs):
 	global POF3D
-	if len(imgs.shape)==3: shp=imgs.shape[1:]
+	if len(imgs.shape)==4: shp=imgs.shape[1:]
 	else: shp=imgs.shape
 
 	if POF3D is None or shp!=POF3D.shape:
-		POF3D=jnp.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp,dtype=jnp.complex64)
+		#POF3D=jnp.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp,dtype=jnp.complex64)
+		POF3D=jnp.fromfunction(lambda z,y,x: ((z+x+y)%2)*-2+1,shp,dtype=jnp.int32)
 
 	return imgs*POF3D
 
@@ -1466,4 +1485,3 @@ FSC_REFS={}
 def jax_fsc(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
-

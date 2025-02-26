@@ -19,7 +19,7 @@ def main():
 	parser.add_argument("--dt",type=int, help="angular step for coarse search", default=45)
 	parser.add_argument("--local_norm",action="store_true", help="Coarse search with local normalization", default=False)
 	parser.add_argument("--ccc_fac",type=int, help="threshold to filter ccc: mean+ccc_fac*std. Default = 3", default=3)
-	parser.add_argument("--npks",type=int, help="number of peaks to locally search. Default = 200", default=200)
+	parser.add_argument("--npks",type=int, help="number of peaks for local search. Default = 0", default=0)
 	parser.add_argument("--insert_mask",type=str,help="mask to insert back for annotation ",default="")
 	parser.add_argument("--insert_density",type=str,help="density to reconstitute into volume with weights",default="")
 	parser.add_argument("--insert_thresh",type=float,help="threshold to binary insert mask before annotation ",default=0.5)
@@ -39,7 +39,8 @@ def main():
 		base_out="{}_{}".format(base_name(tomo),base_name(options.template))
 		print(base_out)
 		calc_ccm(target,template,dt=options.dt,shrink=options.nbin,nthreads=options.nthreads,base_out=base_out,local_norm=options.local_norm)
-		do_local_search_test(target,template,options.npks,options.nbin,options.nthreads,options.ccc_fac,base_out)
+		if options.npks > 0:
+			do_local_search_test(target,template,options.npks,options.nbin,options.nthreads,options.ccc_fac,base_out)
 		if len(options.insert_mask) > 0:
 			try:
 				insert_im = EMData(options.insert_mask)
@@ -246,6 +247,9 @@ def do_local_search_test(tomo,tempt,n_peaks,nbin,nthrds,ccc_fac=3,base_out=""):
 	own_file =f"{base_out}_owner_id.hdf"
 	orts_file = f"{base_out}_orts.txt"
 	pts,xfs = find_peaks_amp_test(npks=n_peaks*3,nbin=nbin,ccc_file=ccc_file,own_file=own_file,orts_file=orts_file)
+	if len(pts) == 0:
+		print("Find 0 peaks at the set ccc threshold. Consider a lower ccc_fac. Return")
+		return
 	mbin=tomo["apix_x"]/tempt["apix_x"]
 	print("Will shrink reference by {:.1f} to match apix of tomogram for local search".format(mbin))
 	tempt.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4}) #do it first then math.fft.resample #get rid of lowres peak of ice gradient
