@@ -827,7 +827,8 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		elif not isinstance(mask,jax.Array) : raise Exception("invalid data type for Gaussians.mask")
 
 		coords=(self.jax+0.5)*mask.shape[1]
-
+		cmask=mask[coords[:,0],coords[:,1],coords[:,2]]
+		return Gaussians(self.jax[cmask])
 
 
 	def project_simple(self,orts,boxsize,tytx=None):
