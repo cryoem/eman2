@@ -720,6 +720,10 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		if isinstance(gaus,int):
 			if gaus<=0: self._data=None
 			else: self._data=np.zeros((gaus,4),np.float32)
+		elif isinstance(gaus,str):
+			self._data=np.loadtxt(gaus,delimiter="\t")
+			if self._data.shape()[1] != 4:
+				raise Exception(f"File {gaus} has shape {self._data.shape()}. Should be Nx4")
 		else:
 			try: self._data=np.array(gaus,np.float32)
 			except: raise Exception("Gaussians must be initialized with an integer (number of Gaussians) or N x 4 matrix")
@@ -814,6 +818,18 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		thr=jnp.mean(famp)+sig*jnp.std(famp)
 		self._data=self._data[famp>thr]			# remove any gaussians with amplitude below threshold
 
+	def mask(self,mask):
+		"""
+		"""
+		if isinstance(mask,EMStack2D) : mask=mask.jax
+		elif isinstance(mask,EMData) : mask=to_jax(mask)
+		elif isinstance(mask,np.ndarray) : mask=jnp.array(mask)
+		elif not isinstance(mask,jax.Array) : raise Exception("invalid data type for Gaussians.mask")
+
+		coords=(self.jax+0.5)*mask.shape[1]
+
+
+
 	def project_simple(self,orts,boxsize,tytx=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
 		orts - must be an Orientations object
@@ -824,7 +840,6 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		used for comparisons should be resampled without any "clip" operations.
 		"""
 		self.coerce_jax()
-
 
 #		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
 		proj2=[]
@@ -1485,3 +1500,41 @@ FSC_REFS={}
 def jax_fsc(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
+
+#TODO: consider implementing this. Issue is we need a radial filter for each image being processed, which may be expensive
+# def jax_subtract_filt(ptcl,proj,masked_proj):
+# 	"""ima and imb should both be jax arrays. Computes ptcl_n-filt(masked_proj_n) where filt() is computed from the FRC between ptcl_n and proj_n,
+# 	to "optimally" subtract. The typical usage would be for single particle analysis to subtract a masked version of a projection from a
+# 	(phase flipped) single particle image. """
+#
+# 	if ptcl.dtype!=jnp.complex64 or proj.dtype!=jnp.complex64 or masked_proj.dtype!=jnp.complex64: raise Exception("jax_subtract_filt requires FFTs")
+# #	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
+#
+# 	global FRC_RADS
+# #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
+# 	ny=ima.shape[1]
+# 	nimg=ima.shape[0]
+# 	nr=int(ny*0.70711)+1	# max radius we consider
+# 	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+# #	try:
+# 	imar=jnp.real(ptcl) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+# 	imai=jnp.imag(ptcl)
+# 	imbr=jnp.real(proj)
+# 	imbi=jnp.imag(proj)
+#
+# 	imabr=imar*imbr		# compute these before squaring for normalization
+# 	imabi=imai*imbi
+#
+# 	imar=imar*imar		# just need the squared versions, not the originals now
+# 	imai=imai*imai
+# 	#imbr=imbr*imbr		# don't want to normalize
+# 	#imbi=imbi*imbi
+#
+# 	frc=[]
+# 	zero=jnp.zeros([nr])
+# 	for i in range(nimg):
+# 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+# 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+# 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+# 		frc.append(cross/aprd)
+#
