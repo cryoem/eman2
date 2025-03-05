@@ -369,15 +369,17 @@ class EMStack3D(EMStack):
 			pass
 		else: raise Exception("calc_flcf: target must be either EMStack3D or single Tensor")
 		tomof = jax_fft3d(self.jax)
-		r2 = (target.shape[1]/2)**2
+		tomosqr_f = jax_fft3d(self.jax*self.jax)
+		r2 = (target.shape[1]//2)**2
 		cz,cy,cx = tomof.shape[1]//2, tomof.shape[2]//2, tomof.shape[3]
-		mask = jax_phaseorigin3d(jax_fft3d(jnp.fromfunction(lambda z,y,x:jnp.where(((z-cz)**2+(y-cy)**2+(x-cx)**2)>r2,0,1), (cz*2,cy*2,(cx-1)*2))))
-		norm = jax_ift3d((tomof**2)*jnp.conj(mask))
-
+		mask = jax_fft3d(jnp.fromfunction(lambda z,y,x:jnp.where(((z-cz)**2+(y-cy)**2+(x-cx)**2)>r2,0,1), (cz*2,cy*2,(cx-1)*2),dtype=jnp.int32))
+		norm = jax_ift3d(jax_phaseorigin3d((tomosqr_f)*jnp.conj(mask)))
+		norm = norm/jnp.max(norm)
 		pz,py,px = cz-target.shape[1]//2,cy-target.shape[2]//2,(cx-1)-target.shape[2]//2
 		targetf = jax_fft3d(jnp.pad(target,((0,0),(pz,pz),(py,py),(px,px))))# pad to the same size with self
-		ccf = jax_ift3d(tomof*jnp.conj(targetf))
-		return EMStack3D(ccf/(norm+1e-8))
+		ccf = jax_ift3d(jax_phaseorigin3d(tomof*jnp.conj(targetf)))
+		return EMStack3D(ccf/(norm))
+
 
 	def downsample(self,newsize):
 		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
