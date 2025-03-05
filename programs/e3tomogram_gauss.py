@@ -432,7 +432,7 @@ def cache_tiles(filename, options, stages, apix, ttparams, cs, volt, defocus, ph
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcls) for down in downs}
 	mindf=float('inf')
 	maxdf=0
-	nt = 64 # Number of tiles to process at once
+	nt = 64 # Number of tilts to process at once
 	for i in range(0, ntilts, nt):
 		# Load subset of images
 		tilt_imgs = EMData.read_images(filename, range(i, min(i+nt, ntilts)))

@@ -73,6 +73,7 @@ def main():
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
 	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")
+	parser.add_argument("--cttomo", action="store_true",help="Continous tilt tomogram mode, changes optimization steps")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
@@ -151,6 +152,17 @@ def main():
 			[256,256, 32,1.2, -2,64,.01,3.0],
 			[256,512, 48,1.2, -2,128,.01,3.0],
 			[256,1024,48,1.2, -3,0,.004,5.0]
+		]
+	elif options.cttomo:
+		stages=[
+			[4096,32,  32,1.8, -1,1,.05, 3.0],
+			[4096,32,  32,1.8, -1,4,.05, 1.0],
+			[4096,64,  48,1.5, -2,4,.04,1.0],
+			[4096,64,  48,1.5, -2,16,.02,0.5],
+			[4096,128, 32,1.2, -3,16,.01,2.0],
+			[4096,256, 32,1.2, -2,64,.01,3.0],
+			[4096,512, 48,1.2, -2,128,.01,3.0],
+			[4096,1024,48,1.2, -3,0,.004,5.0]
 		]
 	elif options.spt:
 		stages=[
