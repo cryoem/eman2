@@ -51,11 +51,11 @@ def e2InterpolateEulersEngine(SubAvgSeriesFN, FullFramesFN, AvgNumberFramesPerTi
     def MatToHeader(FullFramesFN, PositionInFileName, Matrix4by4):
         FullFramesListFN = 'sets/'+FullFramesFN[:-4]+'.lst'
         lsx=LSXFile(FullFramesListFN)
-        ProjNow =  EMData(FullFramesFN,PositionInFileName);
+        #ProjNow =  EMData(FullFramesFN,PositionInFileName);
         tr= Transform(Matrix4by4.flatten()[:12].tolist())
-        ProjNow.set_attr('xform.projection',tr)
-        PN_attr_dict= ProjNow.get_attr_dict();
-        lsx[PositionInFileName]=[PositionInFileName,FullFramesListFN,PN_attr_dict]
+        #ProjNow.set_attr('xform.projection',tr)
+        #PN_attr_dict= ProjNow.get_attr_dict();
+        lsx[PositionInFileName]=[PositionInFileName,FullFramesListFN,{'xform.projection':tr}]
         #ProjNow.write_image(FullFramesListFN,PositionInFileName)
         #EMData.write_images(FullFramesListFN,[ProjNow],idxs=PositionInFileName,header_only=True)
         #return ProjNow,tr
@@ -117,7 +117,7 @@ def e2InterpolateEulersEngine(SubAvgSeriesFN, FullFramesFN, AvgNumberFramesPerTi
     TransformList = [];
 
     for jTilt in range(NumTilts):
-        trNow=Transform()
+        trNow=Transform();#  PRB Initialize  with next 2 lines
         trNow.set_rotation({"type":"xyz","xtilt":XEulerArray[jTilt], "ytilt":YEulerArray[jTilt],"ztilt":ZEulerArray[jTilt] })
         trNow.set_trans(ShiftXArray[jTilt],ShiftYArray[jTilt],0)
         TransformList.append(trNow)
