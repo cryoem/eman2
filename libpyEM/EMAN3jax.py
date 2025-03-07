@@ -894,7 +894,7 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		elif not isinstance(mask,jax.Array) : raise Exception("invalid data type for Gaussians.mask")
 
 		coords=((self.jax+0.5)*mask.shape[1]).astype(jnp.int32)
-		cmask=(mask[coords[:,0],coords[:,1],coords[:,2]]).astype(jnp.bool_)
+		cmask=(mask[coords[:,2],coords[:,1],coords[:,0]]).astype(jnp.bool_)
 		return Gaussians(self.jax[cmask])
 
 

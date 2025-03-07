@@ -88,7 +88,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--flip", action="store_true", default=False, help="flip xform.")
 	parser.add_argument("--unique", action="store_true", default=False, help="keep only unique particles.")
 	parser.add_argument("--sym", type=str, default=None, help="WARNING: operates in-place, modifying input files!  Apply symmetry to .lst files of particles with xform.projection by duplicating each particle N times.")
-	parser.add_argument("--extractattr", type=str, default=None, help="extract an attribute from particle header as an entry in the list")
+	parser.add_argument("--extractattr", type=str, default=None, help="Extract an attribute from the particle image file and add it as an attribute in the .lst file")
 	parser.add_argument("--getclass", type=int, help="select a class when --create",default=-1)
 
 	parser.add_argument("--getptcls", action="store_true", default=False, help="Get particles from input 2D class averages and put them in a lst specified in --create")

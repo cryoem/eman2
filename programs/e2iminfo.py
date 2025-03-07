@@ -94,7 +94,10 @@ def main():
 		nf=0
 		for fsp in args:
 			out=open(f"{fsp.rsplit('.',1)[0]}_{options.extractkey}.txt","w")
-			hdrs=[h.get_attr_dict() for h in EMData.read_images(fsp,None,True)]
+			if fsp.endswith(".lst"):
+				lsx=LSXFile(fsp)
+				hdrs=[e[2] for e in lsx]
+			else: hdrs=[h.get_attr_dict() for h in EMData.read_images(fsp,None,True)]
 
 			if options.extractkey in hdrs[0].keys():
 				for i,h in enumerate(hdrs):
