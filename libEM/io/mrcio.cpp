@@ -1151,8 +1151,6 @@ int MrcIO::read_data(float *rdata, int image_index, const Region * area, bool)
 template<class T>
 void MrcIO::update_stats(const vector<T> &data)
 {
-	int original_nz = mrch.nz; // Backup original nz
-
 	const auto [min, max] = std::minmax_element(std::begin(data), std::end(data));
 	mrch.amin  = *min;
 	mrch.amax  = *max;
@@ -1168,9 +1166,6 @@ void MrcIO::update_stats(const vector<T> &data)
 	});
 
 	mrch.rms = (float) (size > 1 ? std::sqrt(square_sum / (double) (size-1)) : 0.0);
-
-	// Restore nz after stats are updated
-	mrch.nz = original_nz;
 
 	portable_fseek(file, 0, SEEK_SET);
 
@@ -1194,8 +1189,9 @@ auto MrcIO::write_compressed(float *data, size_t size, int image_index, const Re
 		ptr_data = rendered_data.data();
 	}
 
+	int nz_for_io = is_stack ? 1 : mrch.nz;  // Always write one slice at a time for stacks
 	EMUtil::process_region_io(ptr_data, file, WRITE_ONLY, image_index,
-							  mode_size, mrch.nx, mrch.ny, mrch.nz, area);
+	                          mode_size, mrch.nx, mrch.ny, nz_for_io, area);
 }
 
 int MrcIO::write_data(float *data, int image_index, const Region* area,
@@ -1230,26 +1226,9 @@ int MrcIO::write_data(float *data, int image_index, const Region* area,
 	}
 
 	if (is_stack) {
-	    if (image_index == -1) {
-	        image_index = stack_size - 1; // Append to the stack
+	    if (mrch.nz < image_index + 1) {
+	        mrch.nz = image_index + 1;  // Increase `nz` to reflect the new image
 	    }
-
-	    if (is_new_file) {
-	        stack_size = 1;
-	    } else if (image_index >= stack_size) {
-	        stack_size = image_index + 1;
-	    }
-
-	    mrch.nz = stack_size; // Ensure `mrch.nz` is consistent
-	} else {
-	    mrch.nz = 1; // Always set to 1 for non-stack format
-	}
-
-	// Ensure header is written correctly for all types
-	size_t data_size = (size_t)mrch.nx * mrch.ny * mrch.nz;
-
-	if (dt != EMUtil::EM_FLOAT) {
-	    update_stats(vector<float>(data, data + data_size));
 	}
 
 	size_t size = (size_t)nx * ny * nz;
