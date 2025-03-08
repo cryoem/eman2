@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 '''
 ====================
-Author: Jesus Galaz - whoknows-2012, Last update: 01/2023
+Author: Jesus Galaz - whoknows-2012, Last update: March/07/2025
 ====================
 
 # This software is issued under a joint BSD/GNU license. You may use the
@@ -181,14 +181,14 @@ def main():
 				if not options.onlyx and not options.onlyy and not options.onlyz:
 					subpath = newpath + '/ptcl' + str(i).zfill(len(str(n)))
 					os.system('mkdir ' + subpath)
-					submodelname = subpath + '/' + model.split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
+					submodelname = subpath + '/' + os.path.basename(model).split('.')[0] + '_ptcl' + str(i).zfill(len(str(n))) + '_prjs.hdf'
 				else:
 					if options.onlyx:
-						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Xprjs.hdf'
+						submodelname = subpath + '/' + os.path.basename(model).split('.hdf')[0] + '_Xprjs.hdf'
 					if options.onlyy:
-						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Yprjs.hdf'
+						submodelname = subpath + '/' + os.path.basename(model).split('.hdf')[0] + '_Yprjs.hdf'
 					if options.onlyz:
-						submodelname = subpath + '/' + model.split('.hdf')[0] + '_Zprjs.hdf'
+						submodelname = subpath + '/' + os.path.basename(model).split('.hdf')[0] + '_Zprjs.hdf'
 		
 			submodel = EMData(model,i)
 			if options.angles:
@@ -249,7 +249,8 @@ def main():
 					
 				kindividual+=1
 				kstack+=1
-			
+	
+	E2end(logger)		
 	elapsed = time.perf_counter() - start
 	print(str(timedelta(seconds=elapsed)))
 
