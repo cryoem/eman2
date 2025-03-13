@@ -270,9 +270,9 @@ class EMStack():
 		on each axis"""
 		pass
 
-	def write_images(self,fsp=None,bits=12):
+	def write_images(self,fsp=None,bits=12,n0=0):
 		self.coerce_emdata()
-		im_write_compressed(self._data,fsp,0,bits)
+		im_write_compressed(self._data,fsp,n0,bits)
 
 	def downsample(self,newsize):
 		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
@@ -369,15 +369,17 @@ class EMStack3D(EMStack):
 			pass
 		else: raise Exception("calc_flcf: target must be either EMStack3D or single Tensor")
 		tomof = jax_fft3d(self.jax)
-		r2 = (target.shape[1]/2)**2
+		tomosqr_f = jax_fft3d(self.jax*self.jax)
+		r2 = (target.shape[1]//2)**2
 		cz,cy,cx = tomof.shape[1]//2, tomof.shape[2]//2, tomof.shape[3]
-		mask = jax_phaseorigin3d(jax_fft3d(jnp.fromfunction(lambda z,y,x:jnp.where(((z-cz)**2+(y-cy)**2+(x-cx)**2)>r2,0,1), (cz*2,cy*2,(cx-1)*2))))
-		norm = jax_ift3d((tomof**2)*jnp.conj(mask))
-
+		mask = jax_fft3d(jnp.fromfunction(lambda z,y,x:jnp.where(((z-cz)**2+(y-cy)**2+(x-cx)**2)>r2,0,1), (cz*2,cy*2,(cx-1)*2),dtype=jnp.int32))
+		norm = jax_ift3d(jax_phaseorigin3d((tomosqr_f)*jnp.conj(mask)))
+		norm = norm/jnp.max(norm)
 		pz,py,px = cz-target.shape[1]//2,cy-target.shape[2]//2,(cx-1)-target.shape[2]//2
 		targetf = jax_fft3d(jnp.pad(target,((0,0),(pz,pz),(py,py),(px,px))))# pad to the same size with self
-		ccf = jax_ift3d(tomof*jnp.conj(targetf))
-		return EMStack3D(ccf/(norm+1e-8))
+		ccf = jax_ift3d(jax_phaseorigin3d(tomof*jnp.conj(targetf)))
+		return EMStack3D(ccf/(norm))
+
 
 	def downsample(self,newsize):
 		"""Downsamples each image/volume in Fourier space such that its real-space dimensions after downsampling
@@ -450,13 +452,29 @@ class EMStack2D(EMStack):
 
 	@property
 	def orientations(self):
-		"""returns an Orientations object and tytx array for the current images if available or None if not"""
+		"""returns an Orientations object and tytx array for the current images if available or None if not. If postxf is a Transform
+		object, it will be applied to each Transform before generating the Orientations object"""
 		if self._xforms is None: return None,None
 		orts=Orientations()
 		tytx=orts.init_from_transforms(self._xforms)
 		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
 		else: tytx = jnp.stack([tytx[:,0],tytx[:,1], jnp.zeros(tytx.shape[0])], axis=-1)
 		return orts,tytx
+
+	def orientations_withxf(self,prexf=None):
+		"""Will apply prexf rotatation to each orientation before returning. Typically used to modify orientations for
+		symmetry. eg = s=Symmetries.get("c4"), orientations_withxf(s.get_sym(1)) will return projections oriented to
+		the first (non identity) symmetric orientation"""
+		if self._xforms is None: return None,None
+		if prexf is None: return self.orientations
+
+		xfc=[xf*prexf for xf in self._xforms]
+		orts=Orientations()
+		tytx=orts.init_from_transforms(xfc)
+		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
+		else: tytx = jnp.stack([tytx[:,0],tytx[:,1], jnp.zeros(tytx.shape[0])], axis=-1)
+		return orts,tytx
+
 
 	def center_clip(self,size):
 		try: size=np.array((int(size),int(size)))
@@ -590,13 +608,15 @@ class Orientations():
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
 		which conventionally span a range of ~1.0. This form can be readily interconverted to EMAN2 Transform objects or transformation matrices
 		for use with Gaussians. Note that this object handles only orientation, not translation.
+		NOTE: unlike some other objects, the Nx3 array is XYZ order, NOT ZYX order! This matches the vector ordering of Gaussians
 	"""
 
 	def __init__(self,xyzs=None):
-		"""Initialize with either the number of orientations or a N x 3 matrix"""
+		"""Initialize with the number of orientations, a N x 3 matrix or a symmetry"""
 		if isinstance(xyzs,int):
 			if xyzs<=0: self._data=None
 			else: self._data=np.zeros((xyzs,3),np.float32)
+		elif isinstance(xyzs,str): self.init_symmetry(xyzs)
 		else:
 			try: self._data=np.array(xyzs,np.float32)
 			except: raise Exception("Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array")
@@ -643,6 +663,17 @@ class Orientations():
 
 		return(np.array(tytx))
 
+	def init_symmetry(self,sym="c1"):
+		"""Replaces current orientations with those necessary to symmetrize a volume or set of points. No translation,
+	so will not work for helical symmetries"""
+		s=Symmetries.get(sym)
+		self._data=np.zeros((s.get_nsym(),3))
+		for i in range(s.get_nsym()):
+			r=s.get_sym(i).get_rotation("spinvec")
+			self._data[i]=(r["v1"],r["v2"],r["v3"])
+
+		return
+
 	def transforms(self,tytx=None):
 		"""converts the current orientations to a list of Transform objects"""
 		if tytx is not None:
@@ -675,26 +706,25 @@ class Orientations():
 		w=jnp.cos(pi*l)  # cos "real" component of quaternion
 		s=jnp.sin(-pi*l)/l
 		q=jnp.transpose(self._data)*s		# transpose makes the vectorized math below work properly
-
 		if swapxy :
-			mx=np.stack(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
+			mx=jnp.array(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
 			(1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w)))
 		else:
-			mx=np.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+			mx=jnp.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
 			(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
 		return jnp.array(mx)
 
 	def to_mx3d(self):
 		"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
-		rotated 3-vectors. Typically used with Gaussians to generate projections.
+		rotated 3-vectors. Can be used to symmetrize a set of 3-vectors
 
 		To apply to a set of vectors:
-		mx=self.to_mx2d()
-		vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2),(1,1,0),(0,1,1)),dtype=tf.float32)
-
-		tf.transpose(tf.matmul(mx[:,:,0],tf.transpose(vecs)))
-		or
-		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)"""
+		ort=Orientations("c4")
+		mx=self.to_mx3d()
+		vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2)),dtype=tf.float32)
+		vecs_c4_0=jnp.matmul(vecs,mx[:,:,0])    # this is all vectors rotated by the first C4 transformation
+		vecs_c4_1=jnp.matmul(vecs,mx[:,:,1])	# all vectors rotated by the second C4 transformation
+		"""
 
 		self.coerce_jax()
 
@@ -706,9 +736,39 @@ class Orientations():
 		s=jnp.sin(-pi*l)/l
 		q=jnp.transpose(self._data)*s		# transpose makes the vectorized math below work properly
 
-		mx=np.stack(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+		mx=jnp.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
 		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
 		(2*q[0]*q[2]-2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
+		return jnp.array(mx)
+
+	def to_mx3da(self):
+		"""Returns the current set of orientations as a 4 x 4 x N matrix which will transform a set of 3-vectors + amplitude to a set of
+		rotated 3-vectors with unchanged amplitudes. Typically used with Gaussians to symmetrize or rotate corresponding to a volume.
+
+		To apply to a set of vectors:
+		ort=Orientations("c4")
+		mx=self.to_mx3d()
+		vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2)),dtype=tf.float32)
+		vecs_c4_0=jnp.matmul(vecs,mx[:,:,0])    # this is all vectors rotated by the first C4 transformation
+		vecs_c4_1=jnp.matmul(vecs,mx[:,:,1])	# all vectors rotated by the second C4 transformation
+		"""
+
+		self.coerce_jax()
+
+		# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
+		# it is much slower, and the tiny pertutbation should not significantly impact the math.
+		l=jnp.linalg.norm(self._data,axis=1)+1.0e-37
+
+		w=jnp.cos(pi*l)  # cos "real" component of quaternion
+		s=jnp.sin(-pi*l)/l
+		q=jnp.transpose(self._data)*s		# transpose makes the vectorized math below work properly
+		c0=jnp.zeros(w.shape)
+		c1=c0+1.0
+
+		mx=jnp.array(((1-2*(q[1]*q[1]+q[2]*q[2]), 2*q[0]*q[1]-2*q[2]*w, 2*q[0]*q[2]+2*q[1]*w, c0),
+		(2*q[0]*q[1]+2*q[2]*w, 1-(2*q[0]*q[0]+2*q[2]*q[2]), 2*q[1]*q[2]-2*q[0]*w, c0),
+		(2*q[0]*q[2]-2*q[1]*w, 2*q[1]*q[2]+2*q[0]*w, 1-(2*q[0]*q[0]+2*q[1]*q[1]), c0),
+		(c0,c0,c0,c1)))
 		return jnp.array(mx)
 
 
@@ -720,6 +780,10 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		if isinstance(gaus,int):
 			if gaus<=0: self._data=None
 			else: self._data=np.zeros((gaus,4),np.float32)
+		elif isinstance(gaus,str):
+			self._data=np.loadtxt(gaus,delimiter="\t")
+			if self._data.shape[1] != 4:
+				raise Exception(f"File {gaus} has shape {self._data.shape()}. Should be Nx4")
 		else:
 			try: self._data=np.array(gaus,np.float32)
 			except: raise Exception("Gaussians must be initialized with an integer (number of Gaussians) or N x 4 matrix")
@@ -804,6 +868,13 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		if tail>0: dups.append((self._data+rng.normal(0,dev,self._data.shape))[:tail])
 		self._data=jnp.concat(dups,axis=0)
 
+	def replicate_sym(self,sym="c1"):
+		"""Makes symmertry related copies of each Gaussian so the full Gaussians object matches the specified symmetry."""
+		symorts=Orientations(sym)
+		mx=np.moveaxis(symorts.to_mx3da(),2,0)	# gets matrix as Nsym x 4 x 4
+
+		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
+
 	def norm_filter(self,sig=0.5,rad_downweight=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
 		self.coerce_jax()
@@ -813,6 +884,19 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		else: famp=jnp.absolute(self._data[:,3])
 		thr=jnp.mean(famp)+sig*jnp.std(famp)
 		self._data=self._data[famp>thr]			# remove any gaussians with amplitude below threshold
+
+	def mask(self,mask):
+		"""
+		"""
+		if isinstance(mask,EMStack2D) : mask=mask.jax
+		elif isinstance(mask,EMData) : mask=to_jax(mask)
+		elif isinstance(mask,np.ndarray) : mask=jnp.array(mask)
+		elif not isinstance(mask,jax.Array) : raise Exception("invalid data type for Gaussians.mask")
+
+		coords=((self.jax+0.5)*mask.shape[1]).astype(jnp.int32)
+		cmask=(mask[coords[:,2],coords[:,1],coords[:,0]]).astype(jnp.bool_)
+		return Gaussians(self.jax[cmask])
+
 
 	def project_simple(self,orts,boxsize,tytx=None):
 		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
@@ -824,7 +908,6 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		used for comparisons should be resampled without any "clip" operations.
 		"""
 		self.coerce_jax()
-
 
 #		proj=tf.zeros((len(orts),boxsize,boxsize))		# projections
 		proj2=[]
@@ -1485,3 +1568,41 @@ FSC_REFS={}
 def jax_fsc(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
+
+#TODO: consider implementing this. Issue is we need a radial filter for each image being processed, which may be expensive
+# def jax_subtract_filt(ptcl,proj,masked_proj):
+# 	"""ima and imb should both be jax arrays. Computes ptcl_n-filt(masked_proj_n) where filt() is computed from the FRC between ptcl_n and proj_n,
+# 	to "optimally" subtract. The typical usage would be for single particle analysis to subtract a masked version of a projection from a
+# 	(phase flipped) single particle image. """
+#
+# 	if ptcl.dtype!=jnp.complex64 or proj.dtype!=jnp.complex64 or masked_proj.dtype!=jnp.complex64: raise Exception("jax_subtract_filt requires FFTs")
+# #	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
+#
+# 	global FRC_RADS
+# #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
+# 	ny=ima.shape[1]
+# 	nimg=ima.shape[0]
+# 	nr=int(ny*0.70711)+1	# max radius we consider
+# 	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+# #	try:
+# 	imar=jnp.real(ptcl) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+# 	imai=jnp.imag(ptcl)
+# 	imbr=jnp.real(proj)
+# 	imbi=jnp.imag(proj)
+#
+# 	imabr=imar*imbr		# compute these before squaring for normalization
+# 	imabi=imai*imbi
+#
+# 	imar=imar*imar		# just need the squared versions, not the originals now
+# 	imai=imai*imai
+# 	#imbr=imbr*imbr		# don't want to normalize
+# 	#imbi=imbi*imbi
+#
+# 	frc=[]
+# 	zero=jnp.zeros([nr])
+# 	for i in range(nimg):
+# 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+# 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+# 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+# 		frc.append(cross/aprd)
+#

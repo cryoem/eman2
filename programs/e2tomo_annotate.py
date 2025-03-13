@@ -14,9 +14,7 @@ from EMAN2_utils import interp_points, base_name
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
-#from annotate_utils import UNet
 from eman2_gui.emannotate2d import EMAnnotate2DWidget,EMSegTab
-#from emannotate2d_2 import EMAnnotate2DWidget, EMSegTab
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emshapeitem3d import EMScatterPlot3D
@@ -296,6 +294,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		#boxes for Boxer tab
 		self.boxes = []
+		self.ptcls = []
 		#2 anchor points for autodetect plane
 		self.p1p2 = []
 		self.fill_type = None
@@ -447,6 +446,9 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.random_sparse_checkbox = QtWidgets.QCheckBox("Sparse")
 		self.random_sparse_checkbox.setChecked(True)
 
+		self.box_3D_checkbox = QtWidgets.QCheckBox("3D")
+		self.box_3D_checkbox.setChecked(False)
+
 		self.clear_bx_bt = QtWidgets.QPushButton("Clear Boxes")
 		self.extract_bt = QtWidgets.QPushButton("Extract Boxes")
 		self.current_box_index_sp = QtWidgets.QSpinBox()
@@ -469,6 +471,8 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.bxlay.addWidget(self.random_bx_bt,2,0,1,1)
 		self.bxlay.addWidget(self.random_bx_sb,2,1,1,1)
 		self.bxlay.addWidget(self.random_sparse_checkbox,2,2,1,1)
+		self.bxlay.addWidget(self.box_3D_checkbox,1,2,1,1)
+
 		self.bxlay.addWidget(self.clear_bx_bt,3,0,1,1)
 		self.bxlay.addWidget(self.extract_bt,3,1,1,1)
 
@@ -1544,8 +1548,6 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def key_press(self, event):
 		if event.modifiers()&Qt.ControlModifier and event.key()==Qt.Key_Z :
-
-
 			self.reverse_to_saved_state()
 		elif event.key() == Qt.Key_Up or event.key() == Qt.Key_Down:
 			if event.key() == Qt.Key_Up:
@@ -1574,8 +1576,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def update_img_view_box(self):
 		current_z = self.get_zpos()
+		global_z = self.get_zpos() + self.nz//2
 		#print("Current z", current_z)
 		self.clear_shapes(reset_boxes_list=False)
+		#self.boxes=[box for box in self.boxes if box[3]!=0.812]
 		for box in self.boxes:
 			if box[3] != -1:
 				if box[2] == current_z:
@@ -1585,6 +1589,16 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			else:
 				continue
 		self.add_boxes(size=int(self.bsz_vs.value))
+		if len(self.ptcls) >= 0:
+			# for ptcl in self.ptcls:
+			# 	if ptcl[2] == global_z:
+			# 		ptcl[3]=1
+			# 	else:
+			# 		ptcl[3]=0
+
+			self.add_boxes(size=int(self.bsz_vs.value),mode="3D")
+
+
 
 
 	def img_view_mouse_down(self, event):
@@ -1807,6 +1821,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		print("Extract image patches of size",self.bsz_vs.value,"at positions:",self.boxes)
 		outfile = "./particles/bg_temp.hdf"
 		try:
+
 			os.remove(outfile)
 		except:
 			pass
@@ -1833,9 +1848,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		return
 
 	def clear_shapes(self,reset_boxes_list=True):
-		for i in range(len(self.boxes)):
-			#x,y = int(self.boxes[i][0]),int(self.boxes[i][1])
-			self.img_view.del_shape("box{}".format(i))
+		# for i in range(len(self.boxes)):
+		# 	#x,y = int(self.boxes[i][0]),int(self.boxes[i][1])
+		# 	self.img_view.del_shape("box{}".format(i))
+		self.img_view.del_shapes()
 		#self.img_view.updateGL()
 		if reset_boxes_list:
 			self.boxes = []
@@ -1843,40 +1859,67 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.do_update()
 		self.img_view.updateGL()
 
-	# def on_table_tom(self,row,col):
-	# 	print("Row", row, "Col", col, "Tomogram", self.table_tom.itemAt(row,col))
-	# 	print(self.table_tom.currentItem().text())
-
-	# def table_tom_cell_changed(self):
-	# 	#print("New Cell", self.table_tom.currentItem().text())
-	# 	self.img_view.set_data(EMData(self.table_tom.currentItem().text()),None)
 	def set_data(self):
 		return
 
-	# def update_sets(self):
-	# 	#Set the colors and flags of table set items
-	# 	for i in range(self.table_tom.rowCount()):
-	# 		key = int(self.table_tom.item(i,0).text())
-	# 		self.table_tom.item(i,0).setFlags(self.indexflags)
-	# 		self.table_tom.item(i,1).setFlags(self.itemflags)
-	# 		self.table_tom.item(i,0).setForeground(self.colors[key])
-	# 		self.table_tom.item(i,1).setForeground(self.colors[key])
 
+	def add_boxes(self, size = 64, mode="2D"):
+		sz=size
+		if mode=="2D":
+			self.boxes = [box for box in self.boxes if box[3] != -1]
+			for i in range(len(self.boxes)):
+				#print(self.boxes[i])
+				color=QtGui.QColor(self.setcolors[self.boxes[i][4]%len(self.setcolors)]).getRgbF()
+				x,y = int(self.boxes[i][0]),int(self.boxes[i][1])
+				if self.boxes[i][3] == 1:
+					#self.img_view.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],x-sz//2,y-sz//2,x+(sz+1)//2,y+(sz+1)//2),2))
+					self.img_view.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],x-old_div(sz,2),y-old_div(sz,2),x+old_div((sz+1),2),y+old_div((sz+1),2),2)))
+			self.img_view.updateGL()
+		else:
+			#self.img_view.shapechange=0
+			# print("Len ptcls",len(self.ptcls))
+			# #self.ptcls = [ptcl for ptcl in self.ptcls if ptcl[3] != -1]
+			# for i in range(len(self.ptcls)):
+			# 	color=QtGui.QColor('blue').getRgbF()
+			# 	#if ptcls_l[i][0] == 0:
+			# 	x,y = int(self.ptcls[i][0]),int(self.ptcls[i][1])
+			# 	#global_z = self.get_zpos() + self.nz//2
+			# 	#print("Current_z",current_z)
+			# 	if self.ptcls[i][3] == 1:
+			# 	#self.img_view.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],x-sz//2,y-sz//2,x+(sz+1)//2,y+(sz+1)//2),2))
+			# 	#self.img_view.add_shape("ptcl{}".format(i),EMShape(("circle",color[0],color[1],color[2],x-sz//2,y-sz//2,x+sz//2,y+sz//2),2))
+			# 		self.img_view.add_shape("ptcl{}".format(i),EMShape(["circle",color[0],color[1],color[2],x,y,sz//2,3]))
+			# self.img_view.updateGL()
+			zpos = self.get_zpos() + self.nz//2
+			r=sz//2
+			color=QtGui.QColor('blue').getRgbF()
+			lw=2
+			for i,c in enumerate(self.ptcls):
+				if c[4] == 0:
+					continue
+				x,y,z = c[0], c[1], c[2]
+				if abs(z-zpos) >= 0:
+					projected_r = int(r**2 - (z - zpos)**2)**0.5  # Pythagorean theorem
+					self.img_view.add_shape("ptcl{}".format(i),EMShape(["circle",color[0],color[1],color[2],x,y,projected_r,2]))
+			#self.img_view.add_shape("ptcl{}".format(index),EMShape(["circle",color[0],color[1],color[2],x,y,sz//2,3]))
+					print(self.img_view.shapes)
+			self.img_view.updateGL()
+			#self.add_particle_box(self.ptcls,sz,global_z)
+			#return
 
-
-	def add_boxes(self, size = 64):
-		self.boxes = [box for box in self.boxes if box[3] != -1]
-		sz = size
-		#color = [0.1,0.1,0.3]
-		#print("add boxes", self.boxes)
-		for i in range(len(self.boxes)):
-			#print(self.boxes[i])
-			color=QtGui.QColor(self.setcolors[self.boxes[i][4]%len(self.setcolors)]).getRgbF()
-			x,y = int(self.boxes[i][0]),int(self.boxes[i][1])
-			if self.boxes[i][3] == 1:
-				#self.img_view.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],x-sz//2,y-sz//2,x+(sz+1)//2,y+(sz+1)//2),2))
-				self.img_view.add_shape("box{}".format(i),EMShape(("rect",color[0],color[1],color[2],x-old_div(sz,2),y-old_div(sz,2),x+old_div((sz+1),2),y+old_div((sz+1),2),2)))
+	def add_particle_box(self,centers,bs,zpos):
+		r=bs//2
+		color=QtGui.QColor('blue').getRgbF()
+		lw=2
+		for i,c in enumerate(centers):
+			x,y,z = c[0], c[1], c[2]
+			if abs(z-zpos):
+				projected_r = int(r**2 - (z - zpos)**2)**0.5  # Pythagorean theorem
+				self.img_view.add_shape("ptcl{}".format(i),EMShape(["circle",color[0],color[1],color[2],x,y,projected_r,2]))
+		#self.img_view.add_shape("ptcl{}".format(index),EMShape(["circle",color[0],color[1],color[2],x,y,sz//2,3]))
 		self.img_view.updateGL()
+		return
+
 
 	def SaveJson(self):
 		info=js_open_dict("./info/annotate_project.json")
@@ -2793,14 +2836,17 @@ class UNet():
 
 			# if idx == 123:
 			# 	plt.imshow(tomo_in[idx].numpy())
-			im = img.get_clip(Region(0,0,960,960))
+			#im = img.get_clip(Region(0,0,960,960))
 			#m=img.numpy()
-			m=im.numpy()
+
+			m=im.process("normalize").numpy()
 
 
 			#m = self.normalize(m)
 
-			p=self.model.predict(m[None, :, :, None]/3.,verbose=1)
+			#p=self.model.predict(m[None, :, :, None]/3.,verbose=1)
+			p=self.model.predict(m[None, :, :, None],verbose=1)
+
 			#p[p<0]=0
 			cout=from_numpy(p[0,:,:,0])
 			cout=cout.get_clip(Region((cout["nx"]-enx)//2,(cout["ny"]-eny)//2 ,enx, eny))
@@ -3462,9 +3508,9 @@ class NNet_Tab(QtWidgets.QWidget):
 		nnet_gbl.addWidget(self.train_class_button,2,1,1,1)
 
 		nnet_gbl.addWidget(self.train_no_iters_sb,3,0,1,1)
-		nnet_gbl.addWidget(self.train_lr_sb,4,0,1,1)
-		nnet_gbl.addWidget(self.apply_button,5,0,1,1)
-		nnet_gbl.addWidget(self.apply_all_button,5,1,1,1)
+		nnet_gbl.addWidget(self.train_lr_sb,3,1,1,1)
+		nnet_gbl.addWidget(self.apply_button,4,0,1,1)
+		nnet_gbl.addWidget(self.apply_all_button,4,1,1,1)
 
 		self.bg_button.clicked[bool].connect(self.bg_bt_clicked)
 		self.ann_button.clicked[bool].connect(self.ann_bt_clicked)
@@ -4143,9 +4189,14 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		#self.draw_peaks_bt = QtWidgets.QPushButton("Draw Peaks")
 		self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
 		self.apply_mw.setChecked(False)
-		self.local_norm_cb = QtWidgets.QCheckBox("Local normalization")
+		self.local_norm_cb = QtWidgets.QCheckBox("Local norm")
 		self.local_norm_cb.setChecked(True)
 		#self.apply_mw = QtWidgets.QCheckBox("Apply MW on Tempt")
+		self.peaks_lb_vs = ValSlider(value=0.0,rng=(0.00,1.0),rounding=2,label="Lower",labelwidth=56)
+		self.peaks_ub_vs = ValSlider(value=1.0,rng=(0.00,1.0),rounding=2,label="Upper",labelwidth=56)
+		self.show_peaks_2D_bt = QtWidgets.QPushButton("Show Peaks 2D")
+
+
 
 
 		self.tmplt_npeaks_le = QtWidgets.QLineEdit()
@@ -4193,6 +4244,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		templ_gbl.addWidget(self.show_peaks_bt,5,4,1,1)
 		templ_gbl.addWidget(self.test_function_bt,9,4,1,1)
 
+		templ_gbl.addWidget(self.peaks_lb_vs,10,0,1,2)
+		templ_gbl.addWidget(self.peaks_ub_vs,10,2,1,2)
+		templ_gbl.addWidget(self.show_peaks_2D_bt,10,4,1,1)
+
 
 
 		templ_gbl.addWidget(QtWidgets.QLabel("Mask"),7,0,1,1)
@@ -4210,6 +4265,10 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
 		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_to_show)
 		self.show_peaks_bt.clicked[bool].connect(self.show_peaks)
+		self.show_peaks_2D_bt.clicked[bool].connect(self.show_peaks_2D)
+		self.peaks_lb_vs.valueChanged.connect(self.refine_ptcls)
+		self.peaks_ub_vs.valueChanged.connect(self.refine_ptcls)
+
 		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_test)
 
 		self.test_function_bt.clicked[bool].connect(self.test_search_function)
@@ -4323,16 +4382,8 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.pts = []
 		self.xfs = []
 
-	def compute(self,jsd,targetf,template,phi,alt,n):
-		print("test compute")
-		nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
-		clp=template["nx"]
-		trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
-		trot.process_inplace("xform.phaseorigin.tocorner")
-		trotf=trot.do_fft()
-		ccf=targetf.calc_ccf(trotf)
-	#	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
-		jsd.put((ccf,phi,alt,n))
+
+
 
 	# standard CCF with local normalization
 	def compute_local(self,jsd,targetf,template,targetsqf,templatemask,phi,alt,n):
@@ -4360,20 +4411,112 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 	#	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
 		jsd.put((ccf,phi,alt,n))
+	# def compute_flcf(self,jsd,targetf,template,phi,alt,n,norm_vol):
+	# 	print("calc flcf")
+	# 	nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
+	# 	clp=template["nx"]
+	# 	trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
+	# 	trot.process_inplace("xform.phaseorigin.tocorner")
+	# 	trotf=trot.do_fft()
+	# 	ccfnorm=(targetf.calc_ccf(trotf))/norm_vol
+	# 	jsd.put((ccfnorm,phi,alt,n))
 
-	# FLCF variant
-	def compute_flcf(self,jsd,target,template,phi,alt,n):
-		trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})})
-	#	trot.process_inplace("xform.phaseorigin.tocorner")
-	#	trotf=trot.do_fft()
-		ccf=target.calc_flcf(trot)
-	#	ccf.process_inplace("xform.phaseorigin.tocenter")
+	def compute(self,jsd,targetf,template,phi,alt,n,norm_vol):
+		print("test compute")
+		nx,ny,nz=targetf["nx"]-2,targetf["ny"],targetf["nz"]
+		clp=template["nx"]
+		trot=template.process("xform",{"transform":Transform({"type":"eman","phi":phi,"alt":alt})}).get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
+		trot.process_inplace("xform.phaseorigin.tocorner")
+		trotf=trot.do_fft()
+		ccf=targetf.calc_ccf(trotf)
 	#	ccf=trotf.calc_ccf(targetf,fp_flag.CIRCULANT,True)
-		jsd.put((ccf,phi,alt,n))
+		jsd.put((ccf/norm_vol,phi,alt,n))
+
+	def spherical_mask(self,shape):
+		"""
+		Creates a spherical binary mask (1 inside the sphere, 0 outside)
+		with diameter = min(shape). The sphere is centered in the middle
+		of the 3D volume.
+		"""
+		nx, ny, nz = shape
+		radius = min(nx, ny, nz) / 2.0
+		cx, cy, cz = nx / 2.0, ny / 2.0, nz / 2.0
+
+		x = np.arange(nx).reshape(-1, 1, 1)
+		y = np.arange(ny).reshape(1, -1, 1)
+		z = np.arange(nz).reshape(1, 1, -1)
+
+		dist_sq = (x - cx)**2 + (y - cy)**2 + (z - cz)**2
+		mask_array = (dist_sq <= radius**2).astype(np.float32)
+		return mask_array
+
+	def embed_in_target_size(self,small_data, target_shape):
+		"""
+		Embed a smaller 3D array 'small_data' into a zero array
+		of shape 'target_shape', centered in each dimension.
+		"""
+		big_data = np.zeros(target_shape, dtype=small_data.dtype)
+
+		nx_b, ny_b, nz_b = target_shape
+		nx_s, ny_s, nz_s = small_data.shape
+		startx = (nx_b - nx_s) // 2
+		starty = (ny_b - ny_s) // 2
+		startz = (nz_b - nz_s) // 2
+		big_data[startx:startx+nx_s, starty:starty+ny_s, startz:startz+nz_s] = small_data
+		return big_data
+	def calc_norm(self,template,tomo):
+		"""
+		Calculate the normalize matrix for local cross correlation
+		"""
+		tomof = tomo.do_fft()
+		tomosqrf = (tomo*tomo).do_fft()
+		tomox, tomoy, tomoz = tomo["nx"],tomo["ny"],tomo["nz"]
+		tempx, tempy, tempz = template["nx"],template["ny"],template["nz"]
+		mask_array = self.embed_in_target_size(self.spherical_mask((tempx, tempy, tempz)),(tomox, tomoy, tomoz))
+		print(mask_array.shape)
+		maskf = from_numpy(mask_array).process("xform.phaseorigin.tocorner").do_fft()
+		norm = tomosqrf.calc_ccf(maskf)
+		return norm
+	# FLCF variant
+
 
 	def test_search_function(self):
-		print("This is the test function")
+		print("print out norm and ccc")
+		try:
+
+			target = self.target.get_data().copy()
+			template = EMData(self.tmplt_le.text())
+
+		except:
+			print("Specify parameters to calc cross correlation.")
+			return
+		#minimum rotation : number of degree to rotate for 1 pixel shift at nyquist - 4.4 in this case of microtubule with boxsz=25
+
+			#print("Will shrink reference by {:.1f} to match apix of tomogram".format(shrink))
+
+
+		target.mult(-1.0)
+		nx,ny,nz=target["nx"],target["ny"],target["nz"]
+		targetf=target.do_fft()
+		mbin = target["apix_x"]/template["apix_x"]
+		templatesca=template.process("math.fft.resample",{"n":target["apix_x"]/template["apix_x"]})
+		print("template apix {:.2f}, tomo apix {:.2f}. Will rescale template by {:.2f} to match apix of target".format(template["apix_x"],target["apix_x"],mbin))
+		nxt1=templatesca["nx"]
+		owner=EMData(target["nx"],target["ny"],target["nz"])
+		avg=Averagers.get("minmax",{"max":True,"owner":owner})
+		orts=[]
+		norm_vol = self.calc_norm(templatesca,target)
+		print("test compute")
+		clp=templatesca["nx"]
+		trot=templatesca.get_clip(Region((clp-nx)//2,(clp-ny)//2,(clp-nz)//2,nx,ny,nz))
+		trot.process_inplace("xform.phaseorigin.tocorner")
+		trotf=trot.do_fft()
+		ccf=targetf.calc_ccf(trotf)
+		norm_vol.write_image("test_norm_matrix.hdf:6")
+		(ccf/norm_vol).write_image("test_flcf.hdf:6")
+		print("Done writing norm matrix and flcf")
 		return
+
 
 	def calc_ccm_test(self):
 		print("Running test calc_ccm")
@@ -4391,30 +4534,30 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		#minimum rotation : number of degree to rotate for 1 pixel shift at nyquist - 4.4 in this case of microtubule with boxsz=25
 		if shrink > 1:
 			target.process_inplace("math.fft.resample",{'n':shrink})
+			#print("Will shrink reference by {:.1f} to match apix of tomogram".format(shrink))
+
 
 		target.mult(-1.0)
 		nx,ny,nz=target["nx"],target["ny"],target["nz"]
 		targetf=target.do_fft()
-		targetsq=target.process("math.squared")
-		targetsqf=targetsq.do_fft()
-
+		mbin = target["apix_x"]/template["apix_x"]
 		templatesca=template.process("math.fft.resample",{"n":target["apix_x"]/template["apix_x"]})
+		print("template apix {:.2f}, tomo apix {:.2f}. Will rescale template by {:.2f} to match apix of target".format(template["apix_x"],target["apix_x"],mbin))
 		nxt1=templatesca["nx"]
-		templatemask=templatesca.process("mask.auto3d",{"nmaxseed":8,"nshells":2,"radius":nxt1//10,"return_mask":True,"sigma":1.5})
 		owner=EMData(target["nx"],target["ny"],target["nz"])
 		avg=Averagers.get("minmax",{"max":True,"owner":owner})
 		orts=[]
+		norm_vol = from_numpy(np.ones((nx,ny,nz)))
 
 		jsd=queue.Queue(0)
 		thrds=[]
 		i=0
-
+		if self.local_norm_cb.isChecked():
+			print("Calc norm matrix")
+			norm_vol = self.calc_norm(templatesca,target)
 		for alt in range(0,90,dt):
 			for phi in range(0,360,dt):
-				if self.local_norm_cb.isChecked():
-					thrds.append((jsd,targetf,templatesca,targetsqf,templatemask,phi,alt,i))
-				else:
-					thrds.append((jsd,targetf,templatesca,phi,alt,i))
+				thrds.append((jsd,targetf,templatesca,phi,alt,i,norm_vol))
 				i+=1
 
 		thrtolaunch=0
@@ -4422,15 +4565,11 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			if thrtolaunch<len(thrds):
 				while (threading.active_count()>=nthreads) : time.sleep(0.1)
 				print("\r Starting thread {}/{}      ".format(thrtolaunch,len(thrds)), end=' ',flush=True)
-	#			thrds[thrtolaunch]=threading.Thread(target=compute,args=thrds[thrtolaunch])		# replace args
-				if self.local_norm_cb.isChecked():
-					thrds[thrtolaunch]=threading.Thread(target=self.compute_local,args=thrds[thrtolaunch])		# replace args
-				else:
-					thrds[thrtolaunch]=threading.Thread(target=self.compute,args=thrds[thrtolaunch])		# replace args
+				thrds[thrtolaunch]=threading.Thread(target=self.compute,args=thrds[thrtolaunch])
+						# replace args
 				thrds[thrtolaunch].start()
 				thrtolaunch+=1
 			else: time.sleep(0.1)
-
 			# return is [N,dict] a dict of image# keyed processed images
 			while not jsd.empty():
 				ccf,phi,alt,i=jsd.get()
@@ -4445,43 +4584,42 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		#global base
 		peaks.write_image(self.ccc_file,0)
 		owner.write_image(self.owner_id_file,0)
-		#owner.write_image(f"{base}_own.hdf:-1",0)
-		#target.write_image(f"{base}_targ.hdf:12")
-		#templatesca.write_image(f"{base}_tmpl.hdf:12",0)
-		#out=open(f"{base}_orts.txt","w")
 		out=open(self.orts_file,"w")
 		for i,phialt in enumerate(orts): out.write(f"{i}\t{phialt[0]}\t{phialt[1]}\n")
-
-		#ccc.write_compressed(self.ccc_file,0,12)
-		#from_numpy(ccc_np).write_compressed(self.ccc_file,0,12)
-		#owner_id.write_compressed(self.owner_id_file,0,12)
 		self.pts = []
 		self.xfs = []
 
 	def find_peaks_amp_test(self,npks=200,ccc_file="",own_file="",orts_file=""):
 		n_peaks= npks
-		nbin=int(self.tmplt_nshrink_le.text())
-		ccc_hdr=EMData(ccc_file, 0,True)
-		cx,cy,cz = ccc_hdr.get_sizes()
+		#nbin=int(self.tmplt_nshrink_le.text())
 
+		# ccc_hdr=EMData(ccc_file, 0,True)
+		# cx,cy,cz = ccc_hdr.get_sizes()
 		#rx = template.get_sizes()[0]
 		#bsz = rx
 		#ccc = EMData(ccc_file).process("mask.zeroedge3d",{"x0":bsz//2,"x1":bsz//2,"y0":bsz//2,"y1":bsz//2,"z0":bsz//2,"z1":bsz//2})
 		ccc = EMData(ccc_file)
 		print("Shape",ccc.get_sizes())
+		cx,cy,cz = ccc.get_sizes()
+		nbin=self.target.get_data()['nx']/cx
 
 		#ccc.process_inplace("filter.lowpass.gauss",{"cutoff_abs":0.1})
 		#print("Set border of ccc matrix to zero to avoid peaks too close to the border")
 		mean=float(ccc.get_attr("mean"))
 		sig=float(ccc.get_attr("sigma"))
 		#ccc.process_inplace("threshold.belowtozero",{"minval":mean+sig})
-		ccc.process_inplace("mask.onlypeaks",{"npeaks":2}) #before threshold
-		ccc.process_inplace("threshold.belowtozero",{"minval":mean+sig})
 
 		ccc_fac = float(self.tmplt_cccthr_vs.value)
+		ccc.process_inplace("mask.onlypeaks",{"npeaks":2}) #before threshold
+		ccc.process_inplace("threshold.belowtozero",{"minval":mean+ccc_fac*sig})
+		#ccc.process_inplace("math.fft.resample",{"n":1/nbin})
+		#print("new ccc Shape",ccc.get_sizes())
+
 		peaks = ccc.calc_highest_locations(mean+ccc_fac*sig)
 		peaks.sort(key=lambda peak: -peak.value)
 		pts = [(nbin*peak.x,nbin*peak.y,nbin*peak.z) for peak in peaks]
+		#pts = [(peak.x,peak.y,peak.z) for peak in peaks]
+
 		orts_f=open(orts_file,"r")
 		oris = []
 		for ort in orts_f.readlines():
@@ -4492,14 +4630,72 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		initxf = EMData(own_file)
 		xfs = [oris[int(initxf[(peak.x,peak.y,peak.z)])] for peak in peaks]
 		if len(pts) > n_peaks:
-			print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
+			#print("Find total {} peaks. Highest score {} peaks at {}".format(len(pts),n_peaks,pts[:n_peaks]))
 			self.pts = pts[:n_peaks]
 			self.xfs = xfs[:n_peaks]
 		else:
-			print("Find {} peaks at {}".format(len(pts),pts))
+			#print("Find {} peaks at {}".format(len(pts),pts))
 			self.pts = pts
 			self.xfs = xfs
 
+	def refine_ptcls(self):
+		#self.show_peaks_2D()
+		# global_z = self.target.get_zpos() + self.target.nz//2
+		# upper = self.peaks_ub_vs.value
+		# lower = self.peaks_lb_vs.value
+		#
+		# l = []
+		# for i,pt in enumerate(self.target.ptcls):
+		# 	if pt[4] <= upper and pt[4] >= lower and pt[2] == global_z:
+		# 		l.append([pt[0],pt[1],pt[2],1,pt[4]])
+		# 	else:
+		# 		l.append([pt[0],pt[1],pt[2],0,pt[4]])
+		# print("Len l",len(l))
+		# self.target.ptcls = l
+		#self.target.add_boxes(self.target.bsz_vs.value,"3D")
+		#self.target.ptcls = []
+		self.show_peaks_2D(find_peaks=False)
+		self.target.update_img_view_box()
+
+
+		return
+
+	def show_peaks_2D(self,find_peaks=True):
+		global_z = self.target.get_zpos() + self.target.nz//2
+		self.target.basic_tab.setCurrentIndex(3)
+		tempt_hdr = EMData(self.tmplt_le.text(),0,True)
+		#Need to fix
+		mbin= self.target.get_data()["apix_x"]/tempt_hdr["apix_x"]
+		pks_sz = int((tempt_hdr["nx"]/mbin)//2)
+		self.target.bsz_vs.setValue(pks_sz)
+		n_peaks = int(self.tmplt_npeaks_le.text())
+		if find_peaks:
+			self.find_peaks_amp_test(npks=n_peaks*5,ccc_file=self.ccc_file,own_file=self.owner_id_file,orts_file=self.orts_file)
+		else:
+			pass
+
+		for i,pt in enumerate(self.pts):
+			try:
+				score=self.cfs[i]
+			except:
+				score=0.0
+			if score >= self.peaks_lb_vs.value and score <= self.peaks_ub_vs.value:
+				show = 1
+			else:
+				show = 0
+
+				#print("score",score)
+			# if pt[2] == global_z:
+			# 	self.target.ptcls.append([pt[0],pt[1],pt[2],1,score])
+			# else:
+			# 	self.target.ptcls.append([pt[0],pt[1],pt[2],0,score])
+			self.target.ptcls.append([pt[0],pt[1],pt[2],1,show])
+			# else:
+			# 	self.target.ptcls.append([pt[0],pt[1],pt[2],0,score])
+
+		self.target.add_boxes(pks_sz,"3D")
+		print("Show particle locations")
+		return
 	#Do local search at putative locations
 	def do_search_test(self,tomo,tempt,jsd, px_l):
 		for pt_xf in px_l:
@@ -4584,6 +4780,8 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		self.xfs = [p_xf[1] for p_xf in p_xf_l]
 		cfs = [p_xf[2] for p_xf in p_xf_l]
 		self.cfs = [cf/max(cfs) for cf in cfs]
+		self.show_peaks_2D(find_peaks=False)
+
 
 
 
@@ -4681,6 +4879,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 	#Find local max from CCM and initial xf associate with those peaks
 	def find_peaks_amp(self,npks=100):
 		try:
+			# if npks == -1:
+			#n_peaks = int(self.tmplt_npeaks_le.text())
+			# else:
 			n_peaks = npks
 			nbin = int(self.tmplt_nshrink_le.text())
 			#ccc_fac = float(self.tmplt_cccthr_vs.value)
@@ -4723,6 +4924,30 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			self.pts = pts
 			self.xfs = xfs
 
+
+
+	# def save_peaks(self,ccc,pts):
+	# 	outfile = "tmplt_match_ccc_pks.hdf"
+	# 	peak_holder_vol = ccc.copy_head()
+	# 	peak_holder_vol.write_image(outfile)
+	# 	vol = test_image_3d(4,(10,10,10))
+	# 	for i,loc in enumerate(pts):
+	# 		x,y,z = [int(i) for i in loc]
+	# 		bs = 10
+	# 		reg = Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs)
+	# 		try:
+	# 			current_vol = self.target.get_annotation().get_clip(reg)
+	# 			insert_vol=vol.process("math.max",{"with":current_vol})
+	# 		except:
+	# 			insert_vol = vol
+	# 		try:
+	# 			insert_vol.write_image(outfile, 0, IMAGE_HDF, False, reg)
+	# 			sys.stdout.write("\r{}/{} finished.".format(i, len(pts)))
+	# 			sys.stdout.flush()
+	# 		except:
+	# 			print("Invalid region at location",x,y,z,".Skip.")
+	# 			continue
+
 	#Do local search at putative locations
 	def do_search(self,tomo,tempt,jsd, px_l):
 		for pt_xf in px_l:
@@ -4732,9 +4957,27 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 			x,y,z= (int(i) for i in p)
 			bs = tempt["nx"]
 			subvol = tomo.get_clip(Region(x-bs//2,y-bs//2,z-bs//2,bs,bs,bs))
+			#nbest = tempt.xform_align_nbest('rotate_translate_3d', subvol, {'sym':'c1'}, 2, 'ccc.tomo',{})
+			#initxfs = [n["xform.align3d"] for n in nbest[1:]]
+			#initxfs = []
+			#initxfs.append(initxf)
+			# #tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[nbest[0]["xform.align3d"],nbest[1]["xform.align3d"],nbest[2]["xform.align3d"]],"sym":"c1"},'ccc.tomo')
 			tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"initxform":[initxf],"sym":"c1"},'ccc.tomo')
+			#tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
+
+			# # #tempt_a = tempt.align("rotate_translate_3d_tree",subvol,{"sym":"c1"},'ccc.tomo')
+			# cf = subvol.calc_ccf(tempt_a)
+			# cf_score = np.max(cf.numpy())
+			#tempt_a = tempt.process("xform",{"transform":n["xform.align3d"]})
 			cf = subvol.calc_ccf(tempt_a)
 			cf_score = np.max(cf.numpy())
+			# for n in nbest:
+			# 	tempt_a = tempt.process("xform",{"transform":n["xform.align3d"]})
+			# 	cf = subvol.calc_ccf(tempt_a)
+			# 	cf_score = np.max(cf.numpy())
+			# 	jsd.put((p,tempt_a["xform.align3d"],cf_score))
+			#cf.process_inplace("normalize")
+			#print(p,"new xf", tempt_a["xform.align3d"])
 			jsd.put((p,tempt_a["xform.align3d"],cf_score))
 
 
@@ -4758,6 +5001,9 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		good_szs=[good_size(tempt["nx"]),good_size(tempt["ny"]),good_size(tempt["nz"])]
 		tempt.clip_inplace(Region(0,0,0,good_szs[0],good_szs[1],good_szs[2]))
 
+		#boxsz=tempt["nx"]//2
+		#tomo.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.4})
+		# tomo.process_inplace("filter.highpass.gauss",{"cutoff_pixels":boxsz}) #different fixed value
 		tomo.process_inplace('normalize.edgemean')
 		#tomo.process_inplace('threshold.clampminmax.nsigma', {"nsigma":3}) #may not necessary
 
@@ -4828,6 +5074,8 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 				tempt_rot.write_compressed(outfile,-1,6)
 
 
+
+
 	#Show peaks along with annotation and tomograms
 	def show_peaks(self):
 		tomo = self.target.get_data()
@@ -4837,6 +5085,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 		pks_em = EMData("tmplt_match_local_pks.hdf")
 		ccc = EMData("tmplt_match_ccc.hdf")
 		nunbin = 1/int(self.tmplt_nshrink_le.text())
+		print("Nunbin", nunbin)
 		ccc.process_inplace("math.fft.resample",{'n':nunbin})
 		pks = pks_em.numpy().copy().transpose()
 		try:
@@ -4859,6 +5108,7 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 	def insert_coarse_masks(self):
 		return
+
 
 	#Insert masked volume into segmentation vol
 	def insert_vol(self):
@@ -5668,6 +5918,7 @@ class Specific_Tab(QtWidgets.QWidget):
 			print(a/np.pi*180)
 
 		alt = angles[1]/np.pi*180
+		#print("ALT", alt)
 		self.target.get_inspector().alts.setValue(alt)
 		self.target.get_inspector().ns.setValue(0)
 		self.target.img_view.del_shape("p1")

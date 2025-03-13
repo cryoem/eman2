@@ -163,7 +163,7 @@ def main():
 			[256,128, 32,1.2, -3,16,.01,2.0],
 			[256,256, 32,1.2, -2,64,.01,3.0],
 			[256,512, 48,1.2, -2,128,.01,3.0],
-			[256,1024,48,1.2, -3,256,.004,5.0]
+			[256,1024,48,1.2, -3,0,.004,5.0]
 		]
 	elif options.spt:
 		stages=[
@@ -173,14 +173,14 @@ def main():
 			[2**12,64,  48,1.5, -2,8,.02,0.5],
 			[2**14,128, 32,1.2, -3,16,.01,2],
 			[2**16,256, 16,1.2, -2,32,.01,3],
-			[2**17,512, 8,1.2, -2,64,.01,3]
+			[2**17,512, 8,1.2, -2,0,.01,3]
 #			[2**20,1024,48,1.2, -3,,.004,5]
 		]
 	elif options.profile:
 		stages=[
 			[512,   16,16,1.8,-3  ,1,.01, 2.0],
 			[1024,  32,16,1.5, 0  ,4,.005,1.5],
-			[2048,  64,8 ,1.2,-1.5,12,.003,1.0]
+			[2048,  64,8 ,1.2,-1.5,0,.003,1.0]
 #			[8192, 256,32,1.0,-2  ,3,.003,1.0],
 #			[32768,512,32,0.8,-2  ,1,.001,0.75]
 		]
@@ -190,7 +190,7 @@ def main():
 			[512,   16,24,1.8, 0  ,4,.01, 1.0],
 			[1024,  32,24,1.5, 0  ,8,.005,1.5],
 			[4096,  64,24,1.2,-1.5,16,.003,1.0],
-			[8192, 256,24,1.0,-2  ,32,.003,1.0],
+			[8192, 256,24,1.0,-2  ,0,.003,1.0],
 		]
 	else:
 		stages=[
@@ -200,7 +200,7 @@ def main():
 			[1024,  32,32,1.5,-1  ,8,.005,1.0],
 			[4096,  64,32,1.2,-1.5,16,.003,1.0],
 			[16384, 256,32,1.0,-2 ,32,.003,1.0],
-			[65536, 512,32,0.8,-2 ,64,.001,0.75]
+			[65536, 512,32,0.8,-2 ,0,.001,0.75]
 		]
 
 	# limit sampling to (at most) the box size of the raw data
@@ -455,12 +455,16 @@ def main():
 		# 	vol.write_images(f"A_vol_opt_{sn}.hdf")
 
 		# filter results and prepare for stage 2
-		g0=len(gaus)
-		if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
-		else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
-		g1=len(gaus)
-		if stage[5]>0: gaus.replicate_abs(stage[5]*options.initgauss,stage[6])
-		g2=len(gaus)
+		if stage[5]>0:			# no filter/replicate in the last stage
+			g0=len(gaus)
+			if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
+			else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
+			g1=len(gaus)
+			# Replicate gaussians to produce a specified total number for each stage. Critical that these numbers
+			# fall in a small set of specific N for JIT compilation
+			gaus.replicate_abs(stage[5]*options.initgauss,stage[6])
+			g2=len(gaus)
+		else: g0=g1=g2=len(gaus)
 		print(f"{local_datetime()}: Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians")
 		times.append(time.time())
 	
@@ -490,6 +494,7 @@ def main():
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
+	vol.process_inplace("normalize.edgemean")
 	times.append(time.time())
 	vol.write_image(options.volout,-1)
 

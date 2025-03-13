@@ -1060,11 +1060,37 @@ class EMPlotFileType(EMFileType) :
 	def actions(self) :
 		"""Returns a list of (name, help, callback) tuples detailing the operations the user can call on the current file.
 		callbacks will also be passed a reference to the browser object."""
-		if self.numc > 2 : return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),
+
+		if self.numc > 2 : rtr=[("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),
 			("Histogram", "Add to current histogram", self.histApp),("Histogram +", "Make new histogram", self.histNew),
 			("Plot 3D", "Add to current 3-D plot", self.plot3dApp),("Plot 3D+", "Make new 3-D plot", self.plot3dNew)]
-		
-		return [("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),("Hist 2D", "Add to current histogram", self.histApp),("Hist 2D+", "Make new histogram", self.histNew)]
+		else: rtr=[("Plot 2D", "Add to current plot", self.plot2dApp), ("Plot 2D+", "Make new plot", self.plot2dNew),("Hist 2D", "Add to current histogram", self.histApp),("Hist 2D+", "Make new histogram", self.histNew)]
+		if self.numc>=3 and self.numc<=5: rtr.append(("Spheres","Each X line is X-Y-Z[-A[-S]]. Show as spheres in 3-D",self.showSpheres))
+
+		return rtr
+
+	def showSpheres(self,brws):
+		"""New 3-D window"""
+		brws.busy()
+
+		target = emscene3d.EMScene3D()
+		brws.view3d.append(target)
+
+		data=np.loadtxt(self.path).transpose()
+		gaussplots=[emshapeitem3d.EMScatterPlot3D()]
+
+		target.insertNewNode(self.path.split("/")[-1],gaussplots[0])
+		data[:3]*=256.0
+		gaussplots[0].setData(data)
+
+		# target.initialViewportDims(data.getData().get_xsize())	# Scale viewport to object size
+		# target.setCurrentSelection(iso)				# Set isosurface to display upon inspector loading
+
+		brws.notbusy()
+		target.setWindowTitle(display_path(self.path))
+
+		target.show()
+		target.raise_()
 
 	def plot2dApp(self, brws) :
 		"""Append self to current plot"""
