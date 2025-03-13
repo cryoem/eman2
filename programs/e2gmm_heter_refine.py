@@ -73,6 +73,8 @@ def main():
 			
 			run(f"e2project3d.py {path}/threed_00{eo}.hdf --outfile {path}/projections{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
 				
+	if options.mask==None:
+		options.mask=f"{oldpath}/mask.hdf"
 	
 	options.cmd=' '.join(sys.argv)
 	fm=f"{options.path}/0_gmm_heter_params.json"

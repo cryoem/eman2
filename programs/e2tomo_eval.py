@@ -231,7 +231,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 					cls=js["class_list"]
 					for k in list(cls.keys()):
 						vname=str(cls[k]["name"])
-						n=np.sum([b[-1]==int(k) for b in boxes])
+						n=np.sum([b[5]==int(k) for b in boxes])
 						if n>0:
 							bxcls[vname]=n
 							if (info in infonames):
@@ -477,6 +477,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			psel=[p for p in self.ptclcls.keys() if self.ptclcls[p][0]]
 			if len(psel)==1:
 				cmd+=f" --label {psel[0]}"
+				
+			if modifiers == QtCore.Qt.ControlModifier:
+				cmd+=" --clean"
 			subprocess.Popen(cmd,shell=True)
 		#launch_childprocess()
 

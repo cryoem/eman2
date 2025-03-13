@@ -67,9 +67,11 @@ def main():
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--mask", type=str,help="mask", default=None)
 	parser.add_argument("--iterid", type=int, help="iteration id for midall_xx.txt",default=0)
+	parser.add_argument("--newiter", type=int, help="iteration number to write. default is iterid+1",default=-1)
 	parser.add_argument("--niter", type=int, help="number of iteration",default=30)
 	parser.add_argument("--learnrate", type=float, help="learning rate",default=1e-3)
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="for rigid body motion decoder")
+	parser.add_argument("--nogoldstandard", action="store_true", default=False ,help="merge even/odd for heterogeneity analysis")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
 	(options, args) = parser.parse_args()
@@ -77,23 +79,30 @@ def main():
 	logid=E2init(sys.argv)
 	path=options.path
 	itr=options.iterid
-	itnew=itr+1
+	if options.newiter<0:
+		itnew=itr+1
+	else:
+		itnew=options.newiter
 	
-	for eo in ["even", "odd"]:
+	if options.nogoldstandard:
+		eoiter=[""]
+	else:
+		eoiter=["_even", "_odd"]
+	for eo in eoiter:
 		print(f"Realigning {eo}...")
-		pts=np.loadtxt(f"{path}/model_{itr:02d}_{eo}.txt")
+		pts=np.loadtxt(f"{path}/model_{itr:02d}{eo}.txt")
 
 		imsk=make_mask_gmm(options.mask, pts).numpy()
 		
 		if itr==0:
-			decname=f"{path}/dec_{eo}.h5"
+			decname=f"{path}/dec{eo}.h5"
 		else:
-			decname=f"{path}/dec_{itr:02d}_{eo}.h5"
+			decname=f"{path}/dec_{itr:02d}{eo}.h5"
 			
 		decode_model=tf.keras.models.load_model(decname,compile=False,custom_objects={"ResidueConv2D":ResidueConv2D})
-		midraw=np.loadtxt(f"{path}/midall_{itr:02d}_{eo}.txt")[:,1:]
+		midraw=np.loadtxt(f"{path}/midall_{itr:02d}{eo}.txt")[:,1:]
 		
-		pfile=f"{path}/ptcls_{itr:02d}_{eo}.lst"
+		pfile=f"{path}/ptcls_{itr:02d}{eo}.lst"
 		lst=load_lst_params(pfile)
 		xfs=[p["xform.projection"].get_params("eman") for p in lst]
 		
@@ -162,9 +171,9 @@ def main():
 		xfs=[Transform({"type":"eman", "az":x[0], "alt":x[1], 
 					"phi":x[2], "tx":x[3], "ty":x[4]}) for x in xnp.tolist()]
 
-		oname=f"{path}/ptcls_{itnew:02d}_{eo}.lst"
+		oname=f"{path}/ptcls_{itnew:02d}{eo}.lst"
 		print("saving aligned particles to {}".format(oname))
-		lstin=load_lst_params(f"{path}/ptcls_{itr:02d}_{eo}.lst")
+		lstin=load_lst_params(f"{path}/ptcls_{itr:02d}{eo}.lst")
 		#frcs=[s["score"] for s in lstin]
 		for i,xf in enumerate(xfs):
 			lstin[i]["xform.projection"]=xf
@@ -173,9 +182,13 @@ def main():
 		if os.path.isfile(oname): os.remove(oname)
 		save_lst_params(lstin, oname)
 
-
-		run(f"e2spa_make3d.py --input {path}/ptcls_{itnew:02d}_{eo}.lst --output {path}/threed_{itnew:02d}_{eo}.hdf --keep .9 --parallel thread:32 --sym c1")
-		run(f"e2proc3d.py {path}/threed_{itnew:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
+		if eo=="":
+			for e in ["even", "odd"]:
+				run(f"e2spa_make3d.py --input {path}/ptcls_{itnew:02d}.lst --output {path}/threed_{itnew:02d}_{e}.hdf --clsid {e} --keep .9 --parallel thread:32 --sym c1")
+				run(f"e2proc3d.py {path}/threed_{itnew:02d}_{e}.hdf {path}/threed_raw_{e}.hdf")
+		else:
+			run(f"e2spa_make3d.py --input {path}/ptcls_{itnew:02d}{eo}.lst --output {path}/threed_{itnew:02d}{eo}.hdf --keep .9 --parallel thread:32 --sym c1")
+			run(f"e2proc3d.py {path}/threed_{itnew:02d}{eo}.hdf {path}/threed_raw{eo}.hdf")
 		
 		
 	E2end(logid)

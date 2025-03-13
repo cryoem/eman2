@@ -122,7 +122,7 @@ class NNet:
 	def do_training(self, dataset, learnrate=1e-5, niter=10, tarsz=2, usemax=False, posmult=0.5):
 		#niter=1; learnrate=0
 		#### prepare the output mask
-		print(usemax)
+		#print(usemax)
 		ksize=(1./tarsz)**2
 		sz=self.outsz
 		m=np.exp(-ksize*np.sum((np.indices((sz,sz))-(sz-1)/2.)**2, axis=0))
@@ -314,7 +314,7 @@ def get_image(img, pos=[], boxsz=-1, thick=9, ncopy=1):
 	
 		m=np.array(ms)/3.
 		m=m.transpose((2,1,0))
-		print(np.max(m), np.min(m), np.std(m))
+		#print(np.max(m), np.min(m), np.std(m))
 		m=np.clip(m, -4,4)
 		imgs.append(m)
 		

@@ -254,6 +254,7 @@ def main():
 			if options.compressbits<0: m.write_image(inppath, i)
 			else: m.write_compressed(inppath, i, options.compressbits, nooutliers=True)
 	
+	options.trans_coef=[]
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -297,6 +298,10 @@ def main():
 		
 	elif options.loadfile!=None:
 		tpm=np.loadtxt(options.loadfile)[:,1:]
+		print(tpm.shape)
+		if tpm.shape[1]>5:
+			options.trans_coef=tpm[:,5:].reshape((-1,2,2)).copy()
+			print("found local refinement parameters...")
 		ttparams=tpm.copy()
 		tlts=ttparams[:,3].copy()
 		jsname=info_name(options.inputname)
@@ -1805,11 +1810,22 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			yrange=range(-nstepy+stepx%2,nstepy+1,2)
 		for stepy in yrange:
 			tiles=[]
+			if len(options.trans_coef)>0:
+				pp=np.array([stepx, stepy])*step/imgsz
+				ppx=np.dot(pp, options.trans_coef)
+				ppx/=scale
+				#print(stepx, stepy, pp)
+			else:
+				ppx=np.zeros((num, 2))
+				
 			for i in range(num):
 				if i in nrange:
-					t=tpm[i]
+					t=tpm[i].copy()
+					#t[:2]*=0
 					pos=[stepx*step,stepy*step,0]
-					pxf=get_xf_pos(t, pos)
+					pxf0=get_xf_pos(t, pos)
+					pxf=(pxf0+ppx[i]).tolist()
+					#print('    ',i, pxf0, pxf)
 					img=imgs[i]
 					m=img.get_clip(Region(img["nx"]//2-pad//2+pxf[0],img["ny"]//2-pad//2+pxf[1], pad, pad), fill=0)
 					if options.ctf!=None:
@@ -1872,9 +1888,10 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		if not jsd.empty():
 			stepx, stepy, threed=jsd.get()
 			#threed["pos"]=[stepx, stepy]
-			threed.mult(msk)
 			if options.normslice:
 				threed.mult(maskz)
+				
+			threed.mult(msk)
 			#### insert the cubes to corresponding tomograms
 			if options.moretile:
 				full3d.insert_scaled_sum(

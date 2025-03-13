@@ -207,7 +207,7 @@ def main():
 		
 	if options.output:
 		save_lst_params(towrite, options.output)
-		
+		pout=options.output
 		if options.shrink:
 			for s in shrink:
 				ss=float(s)
@@ -220,12 +220,14 @@ def main():
 					tg="flip_bin"+s.replace('.','_')
 					run(f"e2proclst.py {options.output} --create {options.output[:-4]}_{tg}.lst")
 					run(f"e2proclst.py {options.output[:-4]}_{tg}.lst --retype {tg} --scale {1./ss}")
+					
+				pout=f"{options.output[:-4]}_{tg}.lst"
 				
 		print("aligned list written to {}".format(options.output))
 			
 		if options.make3d:
 			path=num_path_new("r3d_")
-			run(f"e2proclst.py {options.output} --create {path}/ptcls_00.lst")
+			run(f"e2proclst.py {pout} --create {path}/ptcls_00.lst")
 			for eo in ["even", "odd"]:
 				run(f"e2spa_make3d.py --input {path}/ptcls_00.lst --output {path}/threed_00_{eo}.hdf --keep 1 --parallel thread:32 --clsid {eo} --sym {options.sym}")
 				run(f"e2proc3d.py {path}/threed_00_{eo}.hdf {path}/threed_raw_{eo}.hdf")

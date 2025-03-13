@@ -76,7 +76,7 @@ def main():
 	parser.add_header(name="instruction0", help='instruction', title="### Use '~' and '1' to go through slices along Z axis. ###", row=10, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
 	parser.add_header(name="instruction1", help='instruction', title="### Hold Shift to delete particles ###", row=11, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
 	parser.add_argument("--label", type=str,help="start from viewing particles of the specified label.", default=None)
-
+	parser.add_argument("--clean",action="store_true",help="cleaning mode.",default=False)
 
 	#parser.add_argument("--mode", type=str,help="Boxing mode. choose from '2D' and '3D'. Default is '3D'", default="3D",guitype='combobox',choicelist="('2D', '3D')",row=1, col=0, rowspan=1, colspan=1,mode="boxing")
 
@@ -389,7 +389,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				b[i]=int(np.clip(np.round(b[i]), 1, shape[i]-1))
 				
 		#self.boxes=self.boxes[:100]
-		for b in self.boxes:print(b)
+		#for b in self.boxes:print(b)
 				
 		info.close()
 		
@@ -412,6 +412,11 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.sets_visible[self.currentset]=0
 		self.setspanel.update_sets()
 		self.wboxsize.setValue(self.get_boxsize())
+		
+		if options.clean:
+			self.optionviewer.erasercheckbox.setChecked(True)
+			self.wlocalbox.setChecked(False)
+			
 
 		#print(self.sets)
 		for i in range(len(self.boxes)):
@@ -1325,7 +1330,7 @@ class EMTomoBoxerOptions(QtWidgets.QWidget):
 		self.erasercheckbox=QtWidgets.QCheckBox("Eraser")
 		self.gbl.addWidget(self.erasercheckbox,0,0)
 		
-		self.eraser_radius=ValBox(label="Radius:",value=64)
+		self.eraser_radius=ValBox(label="Radius:",value=128)
 		self.gbl.addWidget(self.eraser_radius,0,1)
 
 		self.tabwidget = QtWidgets.QTabWidget()

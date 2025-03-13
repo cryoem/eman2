@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--res", type=float,help="target resolution. default is 50", default=50)
 	parser.add_argument("--niter", type=int,help="number of iteration", default=100)
 	parser.add_argument("--refinerot", action="store_true",help="refine tilt axis rotation", default=False)
+	parser.add_argument("--local_motion", type=float,help="local motion scaling muliplier", default=0.25)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -39,11 +40,14 @@ def main():
 	return 
 
 def refine_tomo_align(fname, options, maxtilt, init=False):
+	rng_key=jax.random.key(0)
+	rng_init, rng_drop = jax.random.split(key=rng_key, num=2)
+	rng_drop=jax.random.fold_in(rng_drop,0)
 	
 	info=dict(js_open_dict(info_name(fname)))
 	imgs_raw=EMData.read_images(fname)
 	loss=np.array(info["ali_loss"])
-	tltpms=np.array(info["tlt_params"])
+	tltpms=np.array(info["tlt_params"])[:,:5]
 	ikeep=np.where(loss<500)[0]
 	print(f"using {len(ikeep)} out of {len(imgs_raw)} tilts")
 	imgs_raw=[imgs_raw[i] for i in ikeep]
@@ -53,8 +57,9 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	sz=min(imgs_raw[0]["nx"],imgs_raw[0]["ny"])
 	apix=imgs_raw[0]["apix_x"]
 	res=options.res
-	xx=apix/res*sz*2
-	xx=int((xx//40+1)*40)
+	#xx=apix/res*sz*2
+	#xx=int((xx//40+1)*40)
+	xx=320
 	scale=sz/xx
 	print(f"tilt series pixel size {apix:.2f}, target resolution {res}")
 	print(f"Scale input by {scale:.2f}, image size {xx}")
@@ -63,16 +68,18 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 		m.process_inplace("math.fft.resample",{"n":scale})
 		m.process_inplace("filter.highpass.gauss", {"cutoff_pixels":4})
 		m.process_inplace("filter.lowpass.gauss", {"cutoff_freq":1./res})
-		m.process_inplace("normalize")
+		m.process_inplace("normalize.edgemean")
+		m.process_inplace("mask.decayedge2d", {"width":8})
 		m.clip_inplace(Region((m["nx"]-xx)//2, (m["ny"]-xx)//2, xx,xx))
 		
 	imgs=jnp.array([m.numpy().copy() for m in imgs_raw])
 	#print(imgs.shape)
 	nimg=len(imgs)
-	global realbox, pad, rawbox
+	global realbox, pad, rawbox, tomosize
 	realbox=128
 	pad=16
 	rawbox=realbox+pad*2
+	tomosize=imgs.shape[-1]
 
 	ntile=3
 	b=64
@@ -120,34 +127,43 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	##################
 	mask_tilt=np.zeros(maxtilt)
 	mask_tilt[:nimg]=1
-	xf=allxf[:,:3]+angoffset
-	data_cpx, imgs_clip, trans_offset=get_clips(imgs, xf, xy)
+	#xf=allxf[:,:3]+angoffset
+	xf=np.concatenate([allxf[:,:3], trans1], axis=1)
+	m0=np.pad(imgs, [[0,maxtilt-nimg],[rawbox,rawbox],[rawbox,rawbox]] )
+	print(m0.shape)
+	data_cpx, imgs_clip, trans_offset=get_clips(m0, xf, xy)
+	print(data_cpx.shape)
 	
-	b=int(realbox*.25)
+	b=int(realbox*.4)
 	wid0=realbox//2-b//2
 	wid1=realbox//2+b//2
 	width_mask=np.zeros(realbox)
 	width_mask[wid0:wid1]=1
 	
-	trans2=trans1.copy()
+	trans_coef=jnp.zeros((maxtilt, 3,2))
+	xy1=jnp.hstack([xy/tomosize, np.ones((len(xy),1))])
+	
 	global grad_fn_multi
 	if init==False:    
-		loss=calc_loss_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
-		#print(loss)
+		print("Compiling GPU functions. It will take a while...")
+		loss=calc_loss_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
 		grad_fn_multi=jax.value_and_grad(calc_loss_multi)
-		loss, grads=grad_fn_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
+		loss, grads=grad_fn_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
+		
+		#loss=calc_loss_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
+		#loss, grads=grad_fn_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
 		
 	##################
 	optimizer = optax.adam(3e-2)
-	opt_state = optimizer.init(trans2)
+	opt_state = optimizer.init(trans_coef)
 	cost=[]
-	loss=calc_loss_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
+	loss=calc_loss_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
 	print(f"initial loss: {loss:.4f}")
 	
 	for i in range(options.niter):
-		loss, grads=grad_fn_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
+		loss, grads=grad_fn_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
 		updates, opt_state = optimizer.update(grads, opt_state)
-		trans2 = optax.apply_updates(trans2, updates)
+		trans_coef = optax.apply_updates(trans_coef, updates)
 		
 		if i%5==0:print(i, loss, end='\r')
 		cost.append(loss)
@@ -157,23 +173,21 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	stds2=[]
 	for j in [0,1]:
 		stds=[]
+		tt=jnp.dot(xy1, trans_coef)
 		if j==0:
-			tt=trans1
-		else:
-			tt=trans2
+			tt*=0
+			
 		for ii,data in enumerate(data_cpx):
 			volume=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.complex64)
 			weight=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.float32)
 		
-			xf=jnp.concatenate([allxf[:,:3]+angoffset, tt+trans_offset[ii]], axis=1)
+			xf=jnp.concatenate([allxf[:,:3], tt[ii]+trans_offset[ii]], axis=1)
 			volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 			vol_nrm=get_volume(volume, weight)
 			
-			
-			e=from_numpy(np.array(vol_nrm).T.copy())
-			e.write_image(f"tmp_tomo_{j}.hdf", ii)
+			#e=from_numpy(np.array(vol_nrm).T.copy())
+			#e.write_image(f"tmp_tomo_{j}.hdf", ii)
 
-			
 			ss=jnp.std(vol_nrm, axis=(0,1))
 			stds.append(ss)
 		
@@ -192,21 +206,29 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	print(f"mean std: {s0:.3f} -> {s1:.3f}, diff {s1-s0:+.3f}")
 
 	###################
-
+	
 	xf1=tltpms.copy()
+	trans2=trans1+np.dot([0,0,1], trans_coef)
 	xf1[:,[1,0]]=trans2[:nimg]*scale
 	xf1[:,[4,3,2]]+=np.rad2deg(angoffset)
 	
-	xf2=tltpm00.copy()
-	xf2[ikeep]=xf1
+	tc=np.array(trans_coef[:nimg, :2]).copy()
+	tc=tc[:,:,[1,0]]
+	tc*=scale*options.local_motion
+	tc=tc.reshape((len(tc),-1))
 	
-	xf2=np.hstack([np.arange(len(xf2))[:,None], xf2])
+	xf2=np.zeros((len(tltpm00), 10))#tltpm00.copy()
+	xf2[:,0]=np.arange(len(xf2))
+	xf2[ikeep,1:6]=xf1
+	xf2[ikeep,6:]=tc
+	
+	#xf2=np.hstack([np.arange(len(xf2))[:,None], xf2])
 	
 	bm=base_name(fname)
 	pmname=f"tmp_tltparams_{bm}.txt"
 	np.savetxt(pmname, xf2)
 	
-	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --loadfile {pmname} --filterres {res} --notmp --normslice")
+	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --loadfile {pmname} --filterres {res} --notmp")
 	return
 
 def refine_tlt_rot(imgs, tltpms, scale):
@@ -336,13 +358,15 @@ def get_volume(volume, weight):
 	vol_nrm=jnp.fft.ifftshift(vol_nrm)
 	vol_nrm=jnp.fft.ifftshift(jnp.fft.ifftn(vol_nrm)).real
 	vol_nrm=vol_nrm[pad:-pad, pad:-pad, pad:-pad]
-	vol_nrm-=jnp.mean(vol_nrm[...,[0,-1]])
-	vol_nrm=-nn.leaky_relu(-vol_nrm, 0.5)
-	vol_nrm/=jnp.std(vol_nrm[...,[0,-1]])
+	vol_nrm-=jnp.mean(vol_nrm)
+	vol_nrm/=jnp.std(vol_nrm)
 	
-	std_noise=2-(np.arange(realbox)/(realbox-1)*2-1)**2
-	vol_nrm/=std_noise
-
+	zedge=(realbox-tomosize//4)//2
+	vol_nrm=-nn.leaky_relu(-vol_nrm, 0.5)
+	vol_nrm/=jnp.std(vol_nrm[...,[zedge,-zedge]])
+	
+	#std_noise=2-(np.arange(realbox)/(realbox-1)*2-1)**2
+	#vol_nrm/=std_noise
 	return vol_nrm
 
 def get_clips(imgs, xf, xy):
@@ -359,15 +383,24 @@ def get_clips(imgs, xf, xy):
 		pos=np.append(pp,0)
 		pos2=np.array([(make_matrix_3d(x).T)@pos for x in xf])
 		pos2=pos2[:,[1,0]]
-		pos2=pos2+imgs.shape[-1]//2
+		pos2[:,:2]+=xf[:,3:]
+        
+		pos2=pos2+tomosize//2
 		pos3=pos2[:,:2]
 		pos3=np.round(pos3).astype(int)
 		dx=pos2[:,:2]-pos3
 		trans_offset.append(dx)
-		pos3=np.clip(pos3, realbox//2, imgs.shape[-1]-realbox//2)
 		
-		m=np.array([imgs[i,p[0]-realbox//2:p[0]+realbox//2, p[1]-realbox//2:p[1]+realbox//2] for i,p in enumerate(pos3)])
-		m=np.pad(m, [[0,0],[pad,pad],[pad,pad]] )
+		pos3=np.clip(pos3, 0, tomosize)        
+		
+		pos3[:,:2]+=rawbox
+		m=[imgs[i, p[0]-rawbox//2:p[0]+rawbox//2, p[1]-rawbox//2:p[1]+rawbox//2] for i,p in enumerate(pos3)]
+		m=np.array(m)
+		
+		#pos3=np.clip(pos3, realbox//2, imgs.shape[-1]-realbox//2)		
+		#m=np.array([imgs[i,p[0]-realbox//2:p[0]+realbox//2, p[1]-realbox//2:p[1]+realbox//2] for i,p in enumerate(pos3)])
+		#m=np.pad(m, [[0,0],[pad,pad],[pad,pad]] )
+		
 		m*=mask_edge
 		imgs_clip.append(m)
 		
@@ -381,14 +414,18 @@ def get_clips(imgs, xf, xy):
 	# data_cpx=np.pad(data_cpx, [[0,0],[0,maxtilt-nimg],[0,0],[0,0]])
 	return data_cpx, imgs_clip, trans_offset
 
+    
 @jit
-def calc_loss_multi(trans, xfrot, data_all, trans_offset, mask_tilt, width):
+def calc_loss_multi(tc, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rng):
 	score=[]
+	trans=jnp.dot(xy1, tc)
+	rnd=jax.random.bernoulli(rng, .95, shape=trans.shape).astype(float)
+	trans=trans*rnd
 	for ii,data in enumerate(data_all):
 		volume=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.complex64)
 		weight=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.float32)
 	
-		xf=jnp.concatenate([xfrot, trans+trans_offset[ii]], axis=1)
+		xf=jnp.concatenate([xfrot, trans[ii]+trans_offset[ii]], axis=1)
 		volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 		vol_nrm=get_volume(volume, weight)
 		
