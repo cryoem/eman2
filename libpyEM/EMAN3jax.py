@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 #
 # Author: Steven Ludtke, 09/10/2024 (sludtke@bcm.edu)
@@ -961,6 +960,37 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32)		# output
 
+	def volume_np(self, boxsize, zaspect=0.5):
+		"""A numpy implementation of volume since the jax at method makes a copy instead of updating in place when not in jit compiled and was causing OOM errors"""
+		zsize=good_size(boxsize*zaspect*2.0)
+		vol=np.zeros((zsize,boxsize,boxsize))
+		xfgauss=np.flip((self[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+
+		xfgaussf=np.floor(xfgauss)
+		xfgaussi=np.ndarray.astype(xfgaussf,np.int32)   # integer index
+		xfgaussf=xfgauss-xfgaussf			       # remainder used for bilinear interpolation
+
+		# messy trilinear interpolation
+		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bampall=np.concatenate([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
+		bposall=np.concatenate([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+
+		# Jax doesn't give OOB errors it just puts them at the closest available index, but numpy will so need an extra check
+		mask = np.logical_and(np.logical_and(np.logical_and(bposall[:,0]>=0, bposall[:,0]<zsize), np.logical_and(bposall[:,1]>=0, bposall[:,1]<boxsize)),np.logical_and(bposall[:,2]>=0, bposall[:,2]<boxsize))
+		bampall=bampall[mask]
+		bposall=bposall[mask]
+		vol[bposall[:,0], bposall[:,1],bposall[:,2]]+=bampall
+
+		return EMStack3D(vol)
+
+
 	def volume_tiled(self,xsize,ysize,boxz,xtiles,ytiles,zaspect=0.5):
 		"""A numpy version of creating a volume because the GPU can't allocate the full tomogram volume in memory. Returns an EMData object not a EMStack3D object."""
 		self.coerce_numpy()
@@ -1042,25 +1072,22 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps = gausary[:,3]*pos_mask 			# Turn amps outside to 0 so don't overadd to edges
 
 		# messy tensor math here to implement bilinear interpolation
-	bamp0=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=xfamps*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=xfamps*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=xfamps*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])		#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-	proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
+	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")		# projection
 	return proj
 
 def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
@@ -1112,25 +1139,22 @@ def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps = gausary[:,3]*pos_mask 			# Turn amps outside to 0 so don't overadd to edges
 
 	# messy tensor math here to implement bilinear interpolation
-	bamp0=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=xfamps*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=xfamps*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=xfamps*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall))		# projection
+	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall, mode="drop"))		# projection
 	return jnp.fft.irfft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
 
 def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
@@ -1161,28 +1185,25 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 	xfgaussz = xfgauss[:,0]
 	xfgauss = xfgauss[:,1:]+tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 	xfgaussz *= boxsize
 	xfgaussz = jnp.round(xfgaussz/boxstep).astype(jnp.int32)
-	xfgaussz = jnp.clip(xfgaussz, 0, 2*offset) # Clip z such that if any Gaussians are outside the expected range but in the box they will be in the outermost sections
+#	xfgaussz = jnp.clip(xfgaussz, 0, 2*offset) # Clip z such that if any Gaussians are outside the expected range but in the box they will be in the outermost sections
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps = gausary[:,3]*pos_mask 			# Turn amps outside to 0 so don't overadd to edges
 
 	# messy tensor math here to implement bilinear interpolation
-	bamp0=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=xfamps*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=xfamps*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=xfamps*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
-	proj=jnp.fft.rfft2(proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall))		# projection
+	proj=jnp.fft.rfft2(proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall, mode="drop"))		# projection
 	proj=proj*lax.dynamic_slice_in_dim(ctfary, jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)-offset, proj.shape[0], axis=0)
 	return jnp.fft.irfft2(jnp.sum(proj, axis=0))
 

@@ -71,15 +71,17 @@ def main():
 	parser.add_argument("--postclip",type=int,help="Trim the output volumes to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
+	parser.add_argument("--combineiters", type=int, help="Specify an additional number of iterations to add to the end of refinement, volume will use all Gaussian positions during these iterations", default=-1)
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
 	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")
+	parser.add_argument("--cttomo", action="store_true",help="Continous tilt tomogram mode, changes optimization steps")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use + for range)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
-	parser.add_argument("--dfmin", type=float, help="The minimum defocus appearing in the project, for use with --ctf",default=0.5)
-	parser.add_argument("--dfmax", type=float, help="The maximum defocus appearing in the project, for use with --ctf",default=2.0)
+	parser.add_argument("--dfmin", type=float, help="Minimum defocus override, for use with --ctf",default=-1)
+	parser.add_argument("--dfmax", type=float, help="Maximum defocus override, for use with --ctf",default=-1)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
 	parser.add_argument("--fscdebug", type=str,help="Compute the FSC of the final map with a reference volume for debugging",default=None)
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
@@ -129,19 +131,6 @@ def main():
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
 	else: zmax=0.5
-	if options.ctf>0:
-		if options.tomo:
-			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
-		else:
-			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-			ctf=js["ctf"][0].to_dict()
-			js.close()
-		cs=ctf["cs"]
-		voltage=ctf["voltage"]
-		ampcont=ctf["ampcont"]
-		dfrange=(options.dfmin,options.dfmax)
-		# Create the ctf stack
-		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix) #TODO: This line relies on unchanged code
 
 	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit +-{zmax}. {nptcl} input images")
 
@@ -164,6 +153,17 @@ def main():
 			[256,256, 32,1.2, -2,64,.01,3.0],
 			[256,512, 48,1.2, -2,128,.01,3.0],
 			[256,1024,48,1.2, -3,0,.004,5.0]
+		]
+	elif options.cttomo:
+		stages=[
+			[4096,32,  32,1.8, -1,1,.05, 3.0],
+			[4096,32,  32,1.8, -1,4,.05, 1.0],
+			[4096,64,  48,1.5, -2,4,.04,1.0],
+			[4096,64,  48,1.5, -2,16,.02,0.5],
+			[4096,128, 32,1.2, -3,16,.01,2.0],
+			[4096,256, 32,1.2, -2,64,.01,3.0],
+			[4096,512, 48,1.2, -2,128,.01,3.0],
+			[4096,1024,48,1.2, -3,0,.004,5.0]
 		]
 	elif options.spt:
 		stages=[
@@ -209,15 +209,20 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 
 	batchsize=192
+	if options.combineiters>0:
+		stages[-1][2]+=options.combineiters # Increase the number of iterations so can save Gaussians
 
 	times=[time.time()]
 
 	# Cache initialization
 	if options.verbose: print(f"{local_datetime()}: Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
+	if options.ctf > 0:
+		mindf = float('inf')
+		maxdf = 0
 
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
-	for d in downs: rad_img_int(d)		
+	for d in downs: rad_img_int(d)
 
 	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 :
@@ -244,7 +249,10 @@ def main():
 				stk.center_align_seq(options.tomo_seqali)
 				if options.verbose>3: stk.write_images("dbg_ali.hdf")
 			orts,tytx=stk.orientations
-			tytx/=nxraw
+			tytx/= jnp.array((nxraw,nxraw, 1))
+			if options.ctf>0:
+				mindf = min(mindf, float(jnp.min(tytx[:, 2])))
+				maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
 			stkf=stk.do_fft()
 			for down in downs:
@@ -255,6 +263,26 @@ def main():
 	for down in downs[1:]:
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
+
+	if options.ctf>0:
+		if options.tomo:
+			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
+		else:
+			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
+			ctf=js["ctf"][0].to_dict()
+			js.close()
+		cs=ctf["cs"]
+		voltage=ctf["voltage"]
+		ampcont=ctf["ampcont"]
+#		dfrange=(options.dfmin,options.dfmax)
+		dfstep = apix*apix/100 # Rough approximation of the correct step that doesn't involve calculating the wavelength
+		boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
+		df_buffer = (boxlen/2)/(dfstep*10000) + dfstep
+		dfrange=(mindf - df_buffer, maxdf + df_buffer)
+		if options.dfmin > 0 and options.dfmax > 0:
+			dfrange=(options.dfmin, options.dfmax)
+		# Create the ctf stack
+		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix)
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
@@ -269,6 +297,10 @@ def main():
 	rnd = np.concatenate((rnd, neg))
 	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+
+	if options.combineiters>0:
+		final_gaus = Gaussians()
+		final_gaus._data = []
 
 	times.append(time.time())
 	ptcls=[]
@@ -400,6 +432,11 @@ def main():
 
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
+			# Combine final few iterations to give the final volume
+			if options.combineiters>0 and sn == len(stages)-1 and stages[sn][2] - i <= options.combineiters:
+				if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
+				else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
+
 			print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
 			if qual>0.99: break
 
@@ -467,7 +504,7 @@ def main():
 		else: g0=g1=g2=len(gaus)
 		print(f"{local_datetime()}: Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians")
 		times.append(time.time())
-	
+
 		# do this at the end of each stage in case of early termination
 		if options.gaussout is not None and g2 != 0:
 			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.4f",delimiter="\t")
@@ -478,9 +515,16 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
+		# For profiling:
+#		gaus.jax.block_until_ready()
+#		jax.profiler.stop_trace()
+
 	outsz=min(1024,nxraw)
 	times.append(time.time())
-	if options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
+#	if options.combineiters>0:np.savetxt("testing_combine_iters.hdf", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
+	if options.combineiters>0 and options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
+	elif options.combineiters>0: vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz)
+	elif options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
 	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
 	if options.sym not in ("c1","C1","I","i"):
