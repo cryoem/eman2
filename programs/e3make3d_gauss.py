@@ -515,9 +515,6 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
-		# For profiling:
-#		gaus.jax.block_until_ready()
-#		jax.profiler.stop_trace()
 
 	outsz=min(1024,nxraw)
 	times.append(time.time())
