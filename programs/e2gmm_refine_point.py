@@ -129,6 +129,7 @@ def main():
 				grps=Counter(pts[:,5])		# count elements in each group to generate correct encoder
 				if options.nmid%len(grps)!=0 and options.encoderin is None  :
 					error_exit(f"ERROR: Size of latent space {options.nmid} must be divisible by the number of groups {len(grps)}")
+				if len(grps)==1 : grps=None
 				pts=pts[:,:4]
 
 		npt=len(pts)

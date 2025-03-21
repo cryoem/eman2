@@ -1,0 +1,3 @@
+speed: 0.7021032116690462	size: 400	OS: Linux	CPU: AMD Ryzen Threadripper 2990WX 32-Core Processor
+speed: 0.630371873912643	size: 416	OS: Linux	CPU: AMD Ryzen Threadripper 2990WX 32-Core Processor
+speed: 0.6822924709899656	size: 392	OS: Linux	CPU: AMD Ryzen Threadripper 2990WX 32-Core Processor

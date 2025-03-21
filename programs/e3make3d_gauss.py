@@ -67,8 +67,9 @@ def main():
 	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
+	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
 	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
-	parser.add_argument("--postclip",type=int,help="Trim the output volumes to the specified (square) box size in pixels", default=-1)
+	parser.add_argument("--postclip",type=int,help="Trim the output volumes to the specified (square) box size in pixels (no impact on A/pix)", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--combineiters", type=int, help="Specify an additional number of iterations to add to the end of refinement, volume will use all Gaussian positions during these iterations", default=-1)
@@ -180,7 +181,7 @@ def main():
 		stages=[
 			[512,   16,16,1.8,-3  ,1,.01, 2.0],
 			[1024,  32,16,1.5, 0  ,4,.005,1.5],
-			[2048,  64,8 ,1.2,-1.5,0,.003,1.0]
+			[2048, 128,4 ,1.2,-1.5,0,.003,1.0]
 #			[8192, 256,32,1.0,-2  ,3,.003,1.0],
 #			[32768,512,32,0.8,-2  ,1,.001,0.75]
 		]
@@ -306,6 +307,7 @@ def main():
 	ptcls=[]
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
+		if options.profile and sn==2 : jax.profiler.start_trace("jax_trace")
 
 #		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 
@@ -485,7 +487,6 @@ def main():
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
 
-
 		# if options.savesteps:
 		# 	vol=gaus.volume(nxraw,zmax)
 		# 	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
@@ -515,11 +516,10 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
-		# For profiling:
-#		gaus.jax.block_until_ready()
-#		jax.profiler.stop_trace()
+	if options.profile : jax.profiler.stop_trace()
 
-	outsz=min(1024,nxraw)
+	if options.outbox>0: outsz=options.outbox
+	else: outsz=min(1024,nxraw)
 	times.append(time.time())
 #	if options.combineiters>0:np.savetxt("testing_combine_iters.hdf", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
 	if options.combineiters>0 and options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
@@ -618,7 +618,7 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
-gradvalfnl=jax.value_and_grad(prj_frc_loss)
+gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
 def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
