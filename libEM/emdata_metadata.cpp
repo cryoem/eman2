@@ -1174,6 +1174,28 @@ Dict EMData::get_attr_dict() const
 	return tmp;
 }
 
+Dict EMData::get_attr_dict_cache() const
+{
+	if(rdata) {
+		update_stat();
+	}
+
+	Dict tmp=Dict(attr_dict);
+	tmp.erase("mean");
+	tmp.erase("sigma");
+	tmp.erase("sigma_nonzero");
+	tmp.erase("square_sum");
+	tmp.erase("maximum");
+	tmp.erase("minimum");
+	tmp.erase("all_int");
+	tmp.erase("is_complex");
+	tmp.erase("is_complex_x");
+	tmp.erase("is_complex_ri");
+
+	return tmp;
+}
+
+
 void EMData::set_attr_dict(const Dict & new_dict)
 {
 	/*set nx, ny nz may resize the image*/

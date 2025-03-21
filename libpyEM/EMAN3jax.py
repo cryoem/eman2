@@ -398,7 +398,9 @@ class EMStack2D(EMStack):
 	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
 	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
 
-	Individual images in the stack may be accessed using emdata[n], tensor[n], numpy[n]
+	Note that EMData headers are lost if converted to jax or numpy!
+
+	Individual images in the stack may be accessed using emdata[n], jax[n], numpy[n]
 	"""
 
 	def set_data(self,imgs):
@@ -539,6 +541,21 @@ class EMStack2D(EMStack):
 
 		if newsize==self.shape[1]: return EMStack2D(self.jax) # this won't copy, but since the tensor is constant should be ok?
 		return EMStack2D(jax_downsample_2d(self.jax,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
+	def normalize_standard(self):
+		"""linear transform of values such that the mean of each image is 0 and the standard deviation is 1"""
+		return EMStack2D((self.jax-jnp.mean(self.jax,axis=(1,2)))[:,jnp.newaxis,jnp.newaxis]/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis])
+
+	def normalize_edgemean(self):
+		"""linear transform of values such that the mean of each image over a 3-pixel wide border around the edge
+		of each image is set to zero and the standard deviation is 1"""
+		N,ny,nx=self.shape
+		edgemean=(jnp.mean(self.jax[:,0:ny-3,0:3],axis=(1,2))+
+			jnp.mean(self.jax[:,ny-3:ny,0:nx-3],axis=(1,2))+
+			jnp.mean(self.jax[:,3:ny,nx-3:nx],axis=(1,2))+
+			jnp.mean(self.jax[:,0:3,3:nx],axis=(1,2)))/4.0
+
+		return EMStack2D((self.jax-edgemean[:,jnp.newaxis,jnp.newaxis])/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis])
 
 	def center_align_seq(self,region_size=-1):
 		"""Aligns a stack of (real space) images using the middle 1/2 (in x/y) of each image, and the middle image as a starting point.
@@ -954,7 +971,8 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_jax()
 
-		zsize=good_size(boxsize*zaspect*2.0)
+		if zaspect<=0 : zsize=boxsize
+		else: zsize=good_size(boxsize*zaspect*2.0)
 
 		return EMStack3D(gauss_volume_fn(self._data,boxsize,zsize))
 

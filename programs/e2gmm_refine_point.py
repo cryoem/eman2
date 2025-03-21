@@ -61,7 +61,7 @@ def main():
 	parser.add_argument("--ampreg", type=float,help="regularizer for  Gaussian amplitudes. Large values will encourage all Gaussians towards 1.0 or -0.2. default = 0", default=0)
 	parser.add_argument("--niter", type=int,help="number of iterations", default=32)
 	parser.add_argument("--npts", type=int,help="number of points to initialize. ", default=-1)
-	parser.add_argument("--batchsz", type=int,help="batch size", default=128)
+	parser.add_argument("--batchsz", type=int,help="batch size", default=192)
 	parser.add_argument("--minressz", type=int,help="Fourier diameter associated with minimum resolution to consider. ", default=4)
 	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
@@ -178,7 +178,7 @@ def main():
 		# The shape of the decoder is defined by the number of Gaussians (npts) and the number of latent variables (nmid)
 		if gen_model==None:
 			gen_model=build_decoder(options.nmid,options.npts)
-		print("Train model from ptcl-xfrom pairs...")
+		print("Train model from ptcl-xform pairs...")
 		e=EMData(options.projs, 0, True)
 		raw_apix, raw_boxsz = e["apix_x"], e["ny"]
 		options.raw_apix=raw_apix
@@ -1214,8 +1214,8 @@ def train_heterg(trainset, pts, encode_model, decode_model, params, options,grps
 		for i in range(2): perturbmask[i,:]=1.0
 		perturbmask=tf.constant(perturbmask, dtype=floattype)
 
-	print(trainmidmask)
-	print(perturbmask)
+	# print(trainmidmask)
+	# print(perturbmask)
 
 	print(f"Training, bringing each component in every {focusepoch} epochs.")
 
