@@ -276,7 +276,7 @@ def print_progress(tlast,prefix,cur,n):
 	if ct-tlast<2 : return tlast
 	if cur>0 : eta=int((ct-prog_t0)/(cur/n)-(ct-prog_t0))  # estimated time remaining
 	else : eta=9999*60
-	print(f"  {prefix}: {cur/n*100:3.1f}% {eta//60:02d}:{eta%60:02d}    ",end="\r")
+	print(f"  {prefix}: {cur/n*100:3.1f}% {eta//60:02d}:{eta%60:02d} ETA   ",end="\r")
 	sys.stdout.flush()
 	return ct
 

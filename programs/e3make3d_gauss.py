@@ -88,6 +88,7 @@ def main():
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--profile", action="store_true",help="Used for code development only, not routine use")
+	parser.add_argument("--cachepath",type=str,help="path for storing the cached images, ideally on a high speed drive. Default='.'",default=".")
 #	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
@@ -225,7 +226,7 @@ def main():
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
 	for d in downs: rad_img_int(d)
 
-	caches={down:StackCache(f"tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
+	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 :
 		if options.verbose>1:
 			print(f" Caching {nptcl}")
