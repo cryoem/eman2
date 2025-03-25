@@ -105,10 +105,11 @@ The program proceeds in several steps:
 	nblk=int(1.0e9/(nx*nx*4))	# target 1G of ram at a time for the particles
 
 	sym=Symmetries.get(options.sym)
+	tlast=0
 	for sn in range(sym.get_nsym()):
 		sxf=sym.get_sym(sn)
 		for i in range(0,N,nblk):
-			print(f"{i}({sn})")
+			tlast=print_progress(tlast,f"{i}({sn})",sn*N+i,sym.get_nsym()*N)
 			ptcl=EMStack2D(EMData.read_images(args[0],range(i,min(i+nblk,N))))
 			orts=ptcl.orientations_withxf(sxf)
 			ortsxf=orts[0].transforms(orts[1])

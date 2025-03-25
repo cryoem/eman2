@@ -317,7 +317,7 @@ def main():
 		rstep=1.0
 		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
 		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
-		optim = optax.adam(.005)		# parm is learning rate
+		optim = optax.adam(.003)		# parm is learning rate
 #		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
 #		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
 #		optim = optax.fromage(.01)		# tried, not as good
@@ -419,7 +419,7 @@ def main():
 					ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
 					out=open("crash_lastb_ortdydx.txt","w")
 					for i in range(len(orts)):
-						out.write(f"{orts[i][0]:1.6f}\t{orts[i][1]:1.6f}\t{orts[i][2]:1.6f}\t{tytx[i][0]:1.2f}\t{tytx[i][1]:1.2f}\n")
+						out.write(f"{orts[i][0]:1.6f}\t{orts[i][1]*1000:1.6f}\t{orts[i][2]*1000:1.6f}\t{tytx[i][0]*1000:1.2f}\t{tytx[i][1]*1000:1.2f} (/1000)\n")
 					sys.exit(1)
 				else:
 					print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
@@ -440,7 +440,7 @@ def main():
 				if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
 				else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
 
-			print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
+			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
 			if qual>0.99: break
 
 		# end of epoch, save images and projections for comparison

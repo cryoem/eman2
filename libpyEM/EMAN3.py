@@ -3128,6 +3128,13 @@ and the file size will increase.
 EMData.write_compressed=im_write_compressed
 
 
+def file_image_type(fsp):
+	fsp=fsp.split(":")[0]
+	return EMUtil.get_image_type_c(fsp)
+
+EMUtil.get_image_type_c=staticmethod(EMUtil.get_image_type)
+EMUtil.get_image_type=file_image_type
+
 # This way "file_image_count(fsp)" is available as a shortcut
 def file_image_count(fsp):
 	if ":" in fsp:
