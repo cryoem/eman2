@@ -92,11 +92,11 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		rsz=128				# 1/2 the size of the CCF regions to correlate
 		gain=EMData(options.align_gain,0)
 		for mi in range(nmov):
-			base=base_name(args[mi])
+			base=base_name(args[mi])[0]
 			nimg=EMUtil.get_image_count(args[mi])
 			frames=(options.frames[0],min(options.frames[1],nimg))
 			if options.seqavg>1:
-				framesteps=(frames[1]-frames[0])/options.seqavg
+				framesteps=(frames[1]-frames[0])//options.seqavg
 				imgs=EMStack2D([sum(EMData.read_images(f"{args[mi]}:{frames[0]+i*options.seqavg}:{frames[0]+(i+1)*options.seqavg}")) for i in range(framesteps)])
 			else: imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
 			if options.align_gain is not None:
@@ -149,7 +149,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			avgorig=Averagers.get("mean")
 			avgali=Averagers.get("mean")
 			for i in range(frames[0],frames[1],max(options.seqavg,1)):
-				if options.seqavg>1: im=sum(EMData.read_images(f"{args[mi]:i:i+options.seqavg}"))
+				if options.seqavg>1: im=sum(EMData.read_images(f"{args[mi]}:{i}:{i+options.seqavg}"))
 				else: im=EMData(f"{args[mi]}",i)
 				if options.align_gain is not None:
 					im.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
@@ -164,7 +164,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 				avgo.process_inplace("math.fft.resample",{"n":options.shrinkout})
 				avga.process_inplace("math.fft.resample",{"n":options.shrinkout})
 			avgo.write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
-			avga.finish().write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
+			avga.write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
 			js=js_open_dict(info_name(args[mi]))
 			js["movie_frames"]=frames
 			js["movie_align_x"]=seqoff[1]
@@ -178,7 +178,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		rsz=128				# 1/2 the size of the CCF regions to correlate
 		gain=EMData(options.align_gain,0)
 		for mi in range(nmov):
-			base=base_name(args[mi])
+			base=base_name(args[mi])[0]
 			nimg=EMUtil.get_image_count(args[mi])
 			frames=(options.frames[0],min(options.frames[1],nimg))
 			imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))

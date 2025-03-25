@@ -1740,9 +1740,9 @@ def base_name( file_name):
 	full=os.path.basename(str(file_name))
 	return (full.rsplit(".",1)[0].split("__")[0],full.split(":")[0].rsplit(".",1)[-1])
 
-def info_name(file_name,nodir=False):
+def info_name(file_name):
 	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.json"""
-	return "info/{}_info.json".format(base_name(file_name,nodir=nodir))
+	return "info/{}_info.json".format(base_name(file_name)[0])
 
 def file_exists( file_name ):
 	'''
