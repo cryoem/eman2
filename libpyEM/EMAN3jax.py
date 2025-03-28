@@ -874,10 +874,14 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
 
-	def norm_filter(self,sig=0.5,rad_downweight=-1):
-		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
+	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
+		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
+		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box.
+		cyl_mask, if >0 will apply a cylindrical mask along xz to account for what space in 3d the tilts cover """
 		self.coerce_jax()
 		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(jnp.absolute(self._data[:,3]))))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		if cyl_mask>0:
+			self._data = self._data[jnp.linalg.norm(self._data[:,(0,2)], axis=1)<cyl_mask]
 		if rad_downweight>0:
 			famp=jnp.absolute(self._data[:,3])*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
 		else: famp=jnp.absolute(self._data[:,3])

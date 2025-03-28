@@ -437,7 +437,7 @@ def main():
 				if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
 				else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
 
-			print(f"{i}: {qual:1.5f}\t{shift:1.5f}\t\t{sca:1.5f}\t{imshift:1.5f}")
+			print(f"{i}: {qual:1.5f}\t{shift*1000:1.5f}\t\t{sca*1000:1.5f}\t{imshift:1.5f}")
 			if qual>0.99: break
 
 		# end of epoch, save images and projections for comparison
@@ -494,7 +494,7 @@ def main():
 		# filter results and prepare for stage 2
 		if stage[5]>0:			# no filter/replicate in the last stage
 			g0=len(gaus)
-			if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
+			if options.tomo: gaus.norm_filter(sig=stage[4], cyl_mask=0.45)		# gaussians outside the box may be important!
 			else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
 			g1=len(gaus)
 			# Replicate gaussians to produce a specified total number for each stage. Critical that these numbers
