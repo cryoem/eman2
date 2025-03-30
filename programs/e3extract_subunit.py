@@ -97,6 +97,7 @@ The program proceeds in several steps:
 	lsxout=LSXFile(output.replace(".hdf",".lst"))
 	hdr=lsxin.read_image(0,True)
 	nx=hdr["nx"]
+	apix=hdr["apix_x"]
 	N=len(lsxin)
 #	N=100
 
@@ -127,6 +128,7 @@ The program proceeds in several steps:
 			for im,pr,prexcl in zip(ptcl.emdata,proj.emdata,projexcl.emdata):
 				#out.append(im)
 				out.append(im.process("math.sub.optimal",{"ref":pr,"actual":prexcl,"return_fft":0}))
+				out[-1]["apix_x"]=out[-1]["apix_y"]=out[-1]["apix_z"]=apix
 				# im.write_image("dbg_im.hdf:6",-1)
 				# pr.write_image("dbg_pr.hdf:6",-1)
 				# prm.write_image("dbg_prm.hdf:6",-1)

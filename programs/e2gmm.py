@@ -391,6 +391,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		#self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
 		#self.gblrun.addWidget(self.wbutneutral,4,0)
 
+		self.wcbnetstl=QtWidgets.QComboBox()
+		self.wcbnetstl.addItem("leaky_5")
+		self.wcbnetstl.addItem("relu_3")
+		self.wcbnetstl.addItem("linear")
+		self.gblrun.addWidget(self.wcbnetstl,4,0)
+		self.wcbnetstl.setCurrentText("relu_3")
+
 		self.wbutneutral2=QtWidgets.QPushButton("Train Neutral")
 		self.gblrun.addWidget(self.wbutneutral2,4,1)
 
@@ -503,11 +510,6 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedcnt.setToolTip("Particles per set in Line of Sets mode")
 		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
 
-		self.gblpltctl.addWidget(QtWidgets.QLabel("Ptcl:",self),4,0,Qt.AlignRight)
-		self.wedcnt=QtWidgets.QLineEdit("10000")
-		self.wedcnt.setToolTip("Particles per set in Line of Sets mode")
-		self.gblpltctl.addWidget(self.wedcnt,4,1,Qt.AlignRight)
-
 		#self.wbutdrgrp=QtWidgets.QButtonGroup()
 
 		#self.wbutdrmid=QtWidgets.QPushButton("Net Mid")
@@ -600,17 +602,21 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutmapgauss=QtWidgets.QPushButton("Gauss Map")
 		self.gblpltctl.addWidget(self.wbutmapgauss,2,6)
 
-		self.wbutsetdel=QtWidgets.QPushButton("Delete")
-		self.gblpltctl.addWidget(self.wbutsetdel,3,6)
-
-		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
-		self.gblpltctl.addWidget(self.wbutsetsave,4,6)
+		self.wbuteveryn=QtWidgets.QPushButton("Every N")
+		self.gblpltctl.addWidget(self.wbuteveryn,3,6)
+		self.wbuteveryn.clicked[bool].connect(self.do_everyn)
 
 		self.wbutsetintsec=QtWidgets.QPushButton("Intersect")
 		self.gblpltctl.addWidget(self.wbutsetintsec,0,7)
 
 		self.wbutsetunion=QtWidgets.QPushButton("Union")
 		self.gblpltctl.addWidget(self.wbutsetunion,1,7)
+
+		self.wbutsetdel=QtWidgets.QPushButton("Delete")
+		self.gblpltctl.addWidget(self.wbutsetdel,2,7)
+
+		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
+		self.gblpltctl.addWidget(self.wbutsetsave,3,7)
 
 
 
@@ -1117,6 +1123,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def saveparm(self,mode=None):
 		"""mode is used to decide which parameters to update. neutral, dynamics or None"""
 		self.currun={}
+		self.currun["net_style"]=str(self.wcbnetstl.currentText())
 		self.currun["targres"]=float(self.wedres.text())
 		self.currun["gausthr"]=self.wedgthr.text()
 		try: self.currun["ngauss"]=len(self.amps)
@@ -1640,6 +1647,26 @@ class EMGMM(QtWidgets.QMainWindow):
 		for i in range(nseg):
 			ptdist=np.where(classes==i)[0]
 			newmap=[None,local_datetime(),(cols,kmseg.cluster_centers_[i]),0,0,ptdist]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		print("done")
+		get_application().restoreOverrideCursor()
+
+	def do_everyn(self):
+		print("Every N in a group ...")
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		from sklearn.cluster import KMeans
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("N Sets must be an integer for this operation")
+			return
+
+		try: nset=max([int(k) for k in self.curmaps])+1
+		except: nset=0
+
+		for i in range(nseg):
+			newmap=[None,local_datetime(),([0],i),0,0,np.arange(i,self.data.shape[1],nseg)]
 			self.curmaps[str(nset+i)]=newmap
 
 		self.sets_changed()
@@ -2234,13 +2261,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		lsxs=None
 
 		# refine the neutral model against some real data in entropy training mode
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.02  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/particles_subset.lst --decoderentropy --npt {self.currun['ngauss']} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --ampreg 0.02  --ptclsclip {self.jsparm['boxsize']} --net_style {self.currun["net_style"]}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
 			return
 
 		# Now we train latent zero to the neutral conformation
-		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 40  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 0.05  --ptclsclip {self.jsparm['boxsize']}")
+		er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf --decoderin {decoder} --sym {sym} --maxboxsz {maxbox} --minressz {minboxp} --model {modelseg} --modelout {modelout} --niter 40  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 0.05  --ptclsclip {self.jsparm['boxsize']} --net_style {self.currun["net_style"]}")
 		#er=run(f"e2gmm_refine_point.py --projs {self.gmm}/proj_in.hdf  --sym {sym} --maxboxsz {maxbox} --model {modelseg} --modelout {modelout} --niter 20  --nmid {self.currun['dim']} --evalmodel {self.gmm}/{self.currunkey}_model_projs.hdf --evalsize {self.jsparm['boxsize']} --decoderout {decoder} {conv} --modelreg {self.currun['modelreg']} --ampreg 1.0 --ndense -1 --ptclsclip {self.jsparm['boxsize']}")
 		if er :
 			showerror("Error running e2gmm_refine, see console for details. GPU memory exhaustion is a common issue. Consider reducing the target resolution.")
@@ -2375,9 +2402,9 @@ class EMGMM(QtWidgets.QMainWindow):
 		if int(self.currun['batches'])<=1 :
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']}")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
 			print("Training network (single batch)")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp}")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} --net_style {self.currun["net_style"]}")
 		else:
 			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
 			nb=int(self.currun['batches'])
@@ -2386,7 +2413,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
 			for b in range(nb):
-				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']}")
+				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
 
 			print("Training in ",nb," batches")
 			for it in range(0,self.currun['trainiter'],itsize):
@@ -2397,14 +2424,14 @@ class EMGMM(QtWidgets.QMainWindow):
 						first=False
 					else: encin=f" --encoderin {encoder}"
 
-					er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {nit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} {encin} --encoderout {encoder} --chunk {b},{nb}")
+					er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {nit} {mask} --nmid {self.currun['dim']} --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} {encin} --encoderout {encoder} --chunk {b},{nb} --net_style {self.currun["net_style"]}")
 
 					if er: break
 
 		# generate latent representation for all particles using final trained encoder
 		if not er:
 			print("Generating latent vectors with final encoder")
-			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout}")
+			run(f"e2gmm_refine_point.py --encoderin {encoder} --ptclrepin {ptrep} --midout {self.gmm}/{self.currunkey}_mid.txt --model {modelout} --net_style {self.currun["net_style"]}")
 			self.augment_mid()
 		else:
 			showerror("Error running e2gmm_refine_point, see console for details. If memory exhausted, increase batches.")
@@ -2491,6 +2518,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			if len(lsx)<100000: dbatch=1
 			else: dbatch=len(lsx)//50000
 		except: dbatch=1
+		self.wcbpntpln.setCurrentText(self.currun.setdefault("net_style","leaky_5"))
 		self.wedbatch.setText(f'{self.jsparm.getdefault("batches",dbatch):d}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedngauss.setText(f'{self.currun.get("ngauss",64)}')
@@ -2693,6 +2721,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.app().setOverrideCursor(Qt.ArrowCursor)
 
+
 		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
@@ -2834,6 +2863,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			run(f"cp {rpath}/aliptcls2d_{itr:02d}.lst {self.gmm}/particles.lst; echo ")
 			self.app().setOverrideCursor(Qt.ArrowCursor)
 
+		# self.wcbpntpln.setCurrentText(self.currun.getdefault("net_style","leaky_5"))
 		self.wedsym.setText(f'{self.jsparm.getdefault("sym","c1")}')
 		self.wedapix.setText(f'{self.jsparm.getdefault("apix",0.0):0.5f}')
 		self.wedbox.setText(f'{self.jsparm.getdefault("boxsize",128)}')
