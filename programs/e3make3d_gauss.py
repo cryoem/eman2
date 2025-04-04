@@ -212,8 +212,9 @@ def main():
 
 	batchsize=192
 	if options.combineiters>0:
-		stages[-1][2]+=options.combineiters # Increase the number of iterations so can save Gaussians
-
+		stages[-1][2]+=options.combineiters*24 # Increase the number of iterations so can save Gaussians
+		final_gaus = Gaussians()
+		final_gaus._data = []
 	times=[time.time()]
 
 	# Cache initialization
@@ -299,10 +300,6 @@ def main():
 	rnd = np.concatenate((rnd, neg))
 	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
-
-	if options.combineiters>0:
-		final_gaus = Gaussians()
-		final_gaus._data = []
 
 	times.append(time.time())
 	ptcls=[]
@@ -435,13 +432,27 @@ def main():
 
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
 
+			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
+
+			if qual>0.99: break
+
 			# Combine final few iterations to give the final volume
-			if options.combineiters>0 and sn == len(stages)-1 and stages[sn][2] - i <= options.combineiters:
+			if options.combineiters>0 and sn == len(stages)-1 and stages[sn][2] - i <= options.combineiters*24 and (i+1-(stages[sn][2]-options.combineiters*24))%24 == 0:
 				if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
 				else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
-
-			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
-			if qual>0.99: break
+				rng=np.random.default_rng()
+				gaus.coerce_jax()
+				std=1/(5*min(1024,nxraw))
+				gaus._data+=rng.normal(0,std,gaus._data.shape)
+#				outsz=min(1024,nxraw)
+#				vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz).emdata[0]
+#				vol["apix_x"]=apix*nxraw/outsz
+#				vol["apix_y"]=apix*nxraw/outsz
+#				vol["apix_z"]=apix*nxraw/outsz
+#				if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
+#				if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
+#				vol.process_inplace("normalize.edgemean")
+#				vol.write_image("testing_combineiters_vol.hdf",-1)
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -496,7 +507,7 @@ def main():
 		# filter results and prepare for stage 2
 		if stage[5]>0:			# no filter/replicate in the last stage
 			g0=len(gaus)
-			if options.tomo: gaus.norm_filter(sig=stage[4])		# gaussians outside the box may be important!
+			if options.tomo: gaus.norm_filter(sig=stage[4], cyl_mask=0.45)		# gaussians outside the box may be important!
 			else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
 			g1=len(gaus)
 			# Replicate gaussians to produce a specified total number for each stage. Critical that these numbers
@@ -517,7 +528,10 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
+<<<<<<< HEAD
 	if options.profile : jax.profiler.stop_trace()
+=======
+>>>>>>> projection
 
 	if options.outbox>0: outsz=options.outbox
 	else: outsz=min(1024,nxraw)
