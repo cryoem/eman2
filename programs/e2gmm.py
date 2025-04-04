@@ -558,10 +558,15 @@ class EMGMM(QtWidgets.QMainWindow):
 		# self.gblpltctl.addWidget(self.wbutspectr,4,5)
 		# self.wbutspectr.clicked[bool].connect(self.do_spectral)
 
-		self.wbutcir=QtWidgets.QPushButton("Circle")
-		self.wbutcir.setToolTip("Circular shells. 2 values for Axes. Sets should be comma separated list of integers starting with 1 or 0 for the center.")
-		self.gblpltctl.addWidget(self.wbutcir,3,5)
-		self.wbutcir.clicked[bool].connect(self.do_cirsplit)
+		# self.wbutcir=QtWidgets.QPushButton("Circle")
+		# self.wbutcir.setToolTip("Circular shells. 2 values for Axes. Sets should be comma separated list of integers starting with 1 or 0 for the center.")
+		# self.gblpltctl.addWidget(self.wbutcir,3,5)
+		# self.wbutcir.clicked[bool].connect(self.do_cirsplit)
+
+		self.wbutlinu=QtWidgets.QPushButton("Line U")
+		self.wbutlinu.setToolTip("Sequential split along a single axis, uniformly dividing the particles among groups")
+		self.gblpltctl.addWidget(self.wbutlinu,3,5)
+		self.wbutlinu.clicked[bool].connect(self.do_linusplit)
 
 		self.wbutlin=QtWidgets.QPushButton("Line")
 		self.wbutlin.setToolTip("Sequential split along a single axis. Single value for Axes.")
@@ -1880,6 +1885,30 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.sets_changed()
 		get_application().restoreOverrideCursor()
 
+	def do_linusplit(self):
+		get_application().setOverrideCursor(Qt.BusyCursor)
+		print("Split along a single axis (uniformly) ...")
+		try: nseg=int(self.wvbnsets.getValue())
+		except:
+			showerror("For Line mode please specify a single number for Sets (number of sets)")
+			return
+		try: col=int(self.wstbaxes.getValue())
+		except:
+			showerror("For Line mode please specify a single value for Axes")
+			return
+
+		try: nset=max([int(k) for k in self.curmaps])+1		# starting set number
+		except: nset=0
+
+		idxs=np.argsort(self.data[col])
+		grpn=len(idxs)//nseg
+		for i in range(nseg):
+			newmap=[None,local_datetime(),(col,None),0,0,idxs[i*grpn:(i+1)*grpn]]
+			self.curmaps[str(nset+i)]=newmap
+
+		self.sets_changed()
+		get_application().restoreOverrideCursor()
+
 	def do_cirsplit(self):
 		get_application().setOverrideCursor(Qt.BusyCursor)
 		print("Split in rings on 2 axes")
@@ -2399,12 +2428,23 @@ class EMGMM(QtWidgets.QMainWindow):
 		#if not os.path.exists(ptrep):
 
 		print("Training network")
-		if int(self.currun['batches'])<=1 :
+		if int(self.currun['batches']) in (0,1) :
 			# We really do need to rerun this each time in case parameters have changed
 			print("Pregenerating per-particle Gaussian representation")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
 			print("Training network (single batch)")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} --net_style {self.currun["net_style"]}")
+		elif int(self.currun['batches'])<0 :
+			# if batches is less than zero, then only one batch of the specified fractional size (eg -8 -> 1/8 data) will be used for training
+			# but the entire set will still be processed through the latent space.
+			print("Pregenerating per-particle Gaussian representation")
+			nb=-int(self.currun['batches'])
+			for b in range(nb):
+				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
+
+			print("Training network (single fractional batch, first chunk only)")
+			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} --chunk 0,{nb} --net_style {self.currun["net_style"]}")
+
 		else:
 			# batched run. Run 10 iterations using each batch of data, and repeat until all requested iterations are complete for all data
 			nb=int(self.currun['batches'])
