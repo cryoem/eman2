@@ -1582,12 +1582,12 @@ def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	frc=jnp.stack(frc)
 	w=jnp.linspace(weight,2.0-weight,nr)
 #	frc=frc*w
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2)).mean(axis=1) # average over frequencies
+	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)).mean(axis=1) # average over frequencies # TODO: This has shape ny//2 not stop at ny//2. Same as nimg but that seems fine
 	return jnp.clip(ret,ret.mean()-ret.std()*frc_Z,1.0).mean()
 #	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
 #	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
 
-jax_frc_jit=jax.jit(__jax_frc_jit)
+jax_frc_jit=jax.jit(__jax_frc_jit, static_argnames="minfreq")
 
 FSC_REFS={}
 def jax_fsc(ima,imb):
