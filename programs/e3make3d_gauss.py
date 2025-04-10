@@ -52,7 +52,7 @@ jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_
 
 jax.config.update("jax_default_matmul_precision", "float32")
 
-# @profile
+#@profile
 def main():
 
 	usage="""e3make3d_gauss.py <projections>
@@ -139,6 +139,11 @@ def main():
 	if options.savesteps: 
 		try: os.unlink("steps.hdf")
 		except: pass
+
+	if options.fscdebug is not None:
+		dbugvol=EMStack3D(EMData(options.fscdebug)).do_fft().jax
+		rad_vol_int(dbugvol.shape[2])
+	else: dbugvol=None
 
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
@@ -415,8 +420,8 @@ def main():
 					print("ERROR: nan on gradient descent, saving crash images and exiting")
 					ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
 					out=open("crash_lastb_ortdydx.txt","w")
-					for i in range(len(orts)):
-						out.write(f"{orts[i][0]:1.6f}\t{orts[i][1]*1000:1.6f}\t{orts[i][2]*1000:1.6f}\t{tytx[i][0]*1000:1.2f}\t{tytx[i][1]*1000:1.2f} (/1000)\n")
+					for io in range(len(orts)):
+						out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
 					sys.exit(1)
 				else:
 					print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
@@ -431,6 +436,20 @@ def main():
 			gaus._data = optax.apply_updates(gaus._data, update)
 
 			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
+
+			if dbugvol is not None:
+				nyd=dbugvol.shape[1]
+				if options.sym not in ("c1","C1","I","i"):
+					vol=gaus.volume(nyd,zmax)
+					vol.emdata[0].process_inplace("xform.applysym",{"sym":options.sym})
+					vol=vol.do_fft().jax
+				else: vol=gaus.volume(nyd,zmax).do_fft().jax
+				fsc=jax_fsc_jit(vol,dbugvol)
+				out=open(f"fscm3d_{sn:02d}_{i:02d}.txt","w")
+				for s in range(nyd//2): out.write(f"{s/nyd:1.4f}\t{float(fsc[0][s]):1.5f}\n")
+				out=None
+				dbfsc=float(fsc[0][:nyd//2].mean())
+				print(f"{dbfsc:0.5f}\t",end="")
 
 			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
 
@@ -528,10 +547,7 @@ def main():
 #		if options.verbose>2:
 #			print("TYTX: ",(caches[stage[1]].tytx*nxraw).astype(np.int32))
 
-<<<<<<< HEAD
 	if options.profile : jax.profiler.stop_trace()
-=======
->>>>>>> projection
 
 	if options.outbox>0: outsz=options.outbox
 	else: outsz=min(1024,nxraw)

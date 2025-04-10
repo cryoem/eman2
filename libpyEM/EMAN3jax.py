@@ -342,7 +342,7 @@ class EMStack3D(EMStack):
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
 		self.coerce_jax()
 
-		return jax_fft3d(self._data)
+		return EMStack3D(jax_fft3d(self._data))
 
 	def do_ift(self,keep_type=False):
 		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
@@ -1461,6 +1461,15 @@ given size are cached for reuse. """
 		GEN_RAD2[ny]=rad2_img
 		return rad2_img
 
+FSC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the integer Fourier radius to each point in the image
+def rad_vol_int(ny):
+	global FSC_RADS
+	try: return FSC_RADS[ny]
+	except:
+		rad_img=jnp.array(np.fromfunction(lambda z,y,x: np.int32(np.sqrt((x**2+np.min((y,ny-y),axis=0)**2+np.min((z,ny-z),axis=0)**2))),(ny,ny,ny//2+1)))
+		FSC_RADS[ny]=rad_img
+		return rad_img
+
 #FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
@@ -1565,7 +1574,6 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
-# Note that this isn't JIT compiled, because we had segfaults when done at this level
 def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
@@ -1608,9 +1616,43 @@ def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 jax_frc_jit=jax.jit(__jax_frc_jit, static_argnames="minfreq")
 
 FSC_REFS={}
-def jax_fsc(ima,imb):
-	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
+def __jax_fsc_jit(ima,imb):
+	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves. Note that rad_vol_int(ny) MUST be called prior to using this function"""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
+
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!"""
+	global FSC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.86602)+1	# max radius we consider
+	rad_img=FSC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	fsc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		fsc.append(cross/jnp.sqrt(aprd*bprd))
+
+	return jnp.stack(fsc)
+
+jax_fsc_jit=jax.jit(__jax_fsc_jit)
 
 #TODO: consider implementing this. Issue is we need a radial filter for each image being processed, which may be expensive
 # def jax_subtract_filt(ptcl,proj,masked_proj):
