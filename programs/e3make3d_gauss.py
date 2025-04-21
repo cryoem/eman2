@@ -133,6 +133,8 @@ def main():
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
 	else: zmax=0.5
+	if options.outbox>0: outsz=options.outbox
+	else: outsz=min(1024,nxraw)
 
 	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit +-{zmax}. {nptcl} input images")
 
@@ -526,7 +528,7 @@ def main():
 		# filter results and prepare for stage 2
 		if stage[5]>0:			# no filter/replicate in the last stage
 			g0=len(gaus)
-			if options.tomo: gaus.norm_filter(sig=stage[4], cyl_mask=0.45)		# gaussians outside the box may be important!
+			if options.tomo: gaus.norm_filter(sig=stage[4], cyl_mask=1/outsz)		# gaussians outside the box may be important!
 			else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
 			g1=len(gaus)
 			# Replicate gaussians to produce a specified total number for each stage. Critical that these numbers
@@ -549,8 +551,6 @@ def main():
 
 	if options.profile : jax.profiler.stop_trace()
 
-	if options.outbox>0: outsz=options.outbox
-	else: outsz=min(1024,nxraw)
 	times.append(time.time())
 #	if options.combineiters>0:np.savetxt("testing_combine_iters.hdf", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
 	if options.combineiters>0 and options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
@@ -647,7 +647,8 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
