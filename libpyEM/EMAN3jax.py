@@ -894,11 +894,12 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
 		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box.
-		cyl_mask, if >0 will apply a cylindrical mask along xz to account for what space in 3d the tilts cover """
+		cyl_mask, if >0 will apply a cylindrical mask along xz to account for what space in 3d the tilts cover. The value is assumed to be the Gaussian corrdinate equivalent of 1px in the final boxsize """
 		self.coerce_jax()
 		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(jnp.absolute(self._data[:,3]))))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
 		if cyl_mask>0:
-			self._data = self._data[jnp.linalg.norm(self._data[:,(0,2)], axis=1)<cyl_mask]
+			self._data = self._data[jnp.linalg.norm(self._data[:,(0,2)], axis=1)<0.5-cyl_mask*10]
+			self._data = self._data[(self._data[:,1]>=-0.5+cyl_mask*3) & (self._data[:,1]<=0.5-cyl_mask*3)]
 		if rad_downweight>0:
 			famp=jnp.absolute(self._data[:,3])*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
 		else: famp=jnp.absolute(self._data[:,3])
@@ -1046,31 +1047,32 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
 
-def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+# def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
+#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+#
+#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+#	gausary - a Gaussians.jax array
+#	mx - an Orientations object converted to a stack of 2d matrices
+#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+#
+#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+#	used for comparisons should be resampled without any "clip" operations.
+#	"""
+#
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for (potentially) better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
+#	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
-	mx - an Orientations object converted to a stack of 2d matrices
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-	used for comparisons should be resampled without any "clip" operations.
-	"""
-
-	proj2=[]
-
-	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for (potentially) better performance
-	# note that the mx dimensions have N as the 3rd not 1st component!
-	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
-
-	for j in range(mx.shape[2]):
-		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
-
-	return jnp.stack(proj2)
-	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
 def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
@@ -1112,34 +1114,37 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")		# projection
 	return proj
 
-def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
-	mx - an Orientations object converted to a stack of 2d matrices
-	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
-	dfmin - the min defocus value used in ctfary
-	dfmax - the max defocus value used in ctfary
-	dfstep - the defocus step between images in ctfary
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-	used for comparisons should be resampled without any "clip" operations.
-	"""
-	proj2=[]
-
-	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-	# note that the mx dimensions have N as the 3rd not 1st component!
-	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
-	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
-
-	for j in range(mx.shape[2]):
-		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
-
-	return jnp.stack(proj2)
+#def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
+#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+#
+#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+#	gausary - a Gaussians.jax array
+#	mx - an Orientations object converted to a stack of 2d matrices
+#	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
+#	dfmin - the min defocus value used in ctfary
+#	dfmax - the max defocus value used in ctfary
+#	dfstep - the defocus step between images in ctfary
+#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+#
+#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+#	used for comparisons should be resampled without any "clip" operations.
+#	"""
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
+#	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
 
 def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
@@ -1179,18 +1184,20 @@ def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall, mode="drop"))		# projection
 	return jnp.fft.irfft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
 
-def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
-	proj2=[]
+gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, None, None, 0]) ,static_argnames=["boxsize"])
 
-	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-	# note that the mx dimensions have N as the 3rd not 1st component!
-	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
-
-	for j in range(mx.shape[2]):
-		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
-
-	return jnp.stack(proj2)
+#def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
 
 def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx):
 	proj2=[]
@@ -1229,6 +1236,7 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 	proj=proj*lax.dynamic_slice_in_dim(ctfary, jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)-offset, proj.shape[0], axis=0)
 	return jnp.fft.irfft2(jnp.sum(proj, axis=0))
 
+gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, None, None, 0]) ,static_argnames=["boxsize","apix","dfstep"])
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
