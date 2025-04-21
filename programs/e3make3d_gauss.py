@@ -65,6 +65,7 @@ def main():
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
 	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
+	parser.add_argument("--frc_weight", type=float, help="Testing only at present", default=-1)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
@@ -219,13 +220,14 @@ def main():
 			[1024,  32,32,1.5,-1  ,8,.005,1.0],
 			[4096,  64,32,1.2,-1.5,16,.003,1.0],
 			[16384, 256,32,1.0,-2 ,32,.003,1.0],
-			[65536, 512,32,0.8,-2 ,0,.001,0.75]
+			[65536*2, 512,32,1.0,-2 ,0,.001,0.75]
 		]
 
 	# limit sampling to (at most) the box size of the raw data
 	# we do this by altering stages to help with jit compilation
 	for i in range(len(stages)):
 		stages[i][1]=min(stages[i][1],nxrawm2)
+		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
 	batchsize=192
 	if options.combineiters>0:
