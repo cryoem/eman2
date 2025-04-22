@@ -219,7 +219,8 @@ def main():
 
 	batchsize=192
 	if options.combineiters>0:
-		stages[-1][2]+=options.combineiters*24 # Increase the number of iterations so can save Gaussians
+		refineiters=5
+		stages[-1][2]+=(options.combineiters-1)*refineiters # Increase the number of iterations so can save Gaussians
 		final_gaus = Gaussians()
 		final_gaus._data = []
 	times=[time.time()]
@@ -458,22 +459,23 @@ def main():
 			if qual>0.99: break
 
 			# Combine final few iterations to give the final volume
-			if options.combineiters>0 and sn == len(stages)-1 and stages[sn][2] - i <= options.combineiters*24 and (i+1-(stages[sn][2]-options.combineiters*24))%24 == 0:
-				if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
-				else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
-				rng=np.random.default_rng()
-				gaus.coerce_jax()
-				std=1/(5*min(1024,nxraw))
-				gaus._data+=rng.normal(0,std,gaus._data.shape)
-#				outsz=min(1024,nxraw)
-#				vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz).emdata[0]
-#				vol["apix_x"]=apix*nxraw/outsz
-#				vol["apix_y"]=apix*nxraw/outsz
-#				vol["apix_z"]=apix*nxraw/outsz
-#				if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
-#				if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
-#				vol.process_inplace("normalize.edgemean")
-#				vol.write_image("testing_combineiters_vol.hdf",-1)
+			if options.combineiters>0 and sn == len(stages)-1 and stage[2] - i -1 <= (options.combineiters-1)*refineiters:
+				if (i+1-(stage[2]-options.combineiters*refineiters))%refineiters == 0:
+					if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
+					else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
+					rng=np.random.default_rng()
+					gaus.coerce_jax()
+					std=1/(5*outsz)
+					gaus._data+=rng.normal(0,std,gaus._data.shape)
+					if options.verbose>5:
+						vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz).emdata[0]
+						vol["apix_x"]=apix*nxraw/outsz
+						vol["apix_y"]=apix*nxraw/outsz
+						vol["apix_z"]=apix*nxraw/outsz
+						if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
+						if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
+						vol.process_inplace("normalize.edgemean")
+						vol.write_image("testing_combineiters_vol.hdf",-1)
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -552,7 +554,7 @@ def main():
 	if options.profile : jax.profiler.stop_trace()
 
 	times.append(time.time())
-#	if options.combineiters>0:np.savetxt("testing_combine_iters.hdf", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
+	if options.combineiters>0 and options.verbose>5:np.savetxt("testing_combine_iters.hdf", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
 	if options.combineiters>0 and options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
 	elif options.combineiters>0: vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz)
 	elif options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
