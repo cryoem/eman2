@@ -72,7 +72,7 @@ it is not recommended due to inefficiency, and making files which are difficult 
 will be raised if the file doesn't exist."""
 
 	if url[-5:]!=".json" :
-		raise Exception("JSON databases must have .json extension")
+		raise Exception(f"JSON databases must have .json extension ({url})")
 
 	if not create and not os.path.isfile(url): raise Exception(f"Attempt to open missing JSON file for reading ({url})")
 
@@ -645,8 +645,6 @@ synchronization with the disk file.
 
 There is no name/path separation as existed with BDB objects. 'path' is a full path to the .json file. A normalized version
 of the path is stored as self.normpath"""
-
-		from EMAN3 import e2getcwd
 
 		self.path=path
 		try: self.normpath=os.path.abspath(path)

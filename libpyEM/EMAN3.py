@@ -55,6 +55,8 @@ import traceback
 from pathlib import Path
 import numpy as np
 import threading
+from EMAN3jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
+
 
 ### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.
 ## if the program exits nicely, close all of the databases
@@ -87,15 +89,6 @@ def e2gethome():
 			url = url.replace("\\", "/")
 	return url
 
-
-def e2getcwd():
-	"""platform independent path with '/'"""
-	url = os.getcwd()
-	url = url.replace("\\", "/")
-	return url
-
-HOMEDB=None
-
 # This next line is to initialize the Transform object for threadsafety. Utterly stupid approach, but a functional hack
 T=Transform({"type":"2d","alpha":0})
 
@@ -112,20 +105,7 @@ try:
 	os.putenv("LC_ALL","en_US.UTF-8")
 except: pass
 
-# This block attempts to open the standard EMAN2 database interface
-# if it fails, it sets db to None. Applications can then alter their
-# behavior appropriately
-#try:
-#import EMAN2db
-#from EMAN2db import EMAN2DB,db_open_dict,db_close_dict,db_remove_dict,db_list_dicts,db_check_dict,db_parse_path,db_convert_path,db_get_image_info,e2gethome, e2getcwd
-from EMAN3jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
-#except:
-#	HOMEDB=None
-
 XYData.__len__=XYData.get_size
-
-# Who is using this? Transform3D is deprecated use the Transform instead
-#Transform3D.__str__=lambda x:"Transform3D(\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g\n\t\t%7.4g\t%7.4g\t%7.4g)\nPretrans:%s\nPosttrans:%s"%(x.at(0,0),x.at(0,1),x.at(0,2),x.at(1,0),x.at(1,1),x.at(1,2),x.at(2,0),x.at(2,1),x.at(2,2),str(x.get_pretrans()),str(x.get_posttrans()))
 
 try:
 	if __session__ is not None :
@@ -275,6 +255,31 @@ file_mode_range={
 class NotImplementedException(Exception):
 	def __init__(self,val=None): pass
 
+prog_t0=0
+def print_progress(tlast,prefix,cur,n):
+	"""Prints/updates a progress message on the console based on elapsed time since tlast. Returns the appropriate tlast for the next
+	call. This can be used for overall progress of the program or for progress in individual stages. This is a stateful function, not
+	appropriate for threading, and MUST be called with cur==n at the end to reset for the next use in the current kernel."""
+	global prog_t0
+
+#	print(prog_t0,tlast,prefix,cur,n)
+	if cur>=n:
+		prog_t0=0
+		print(f"\n{prefix} complete")
+		return 0
+
+	if prog_t0==0:
+		prog_t0=time.time()
+		return tlast
+
+	ct=time.time()
+	if ct-tlast<2 : return tlast
+	if cur>0 : eta=int((ct-prog_t0)/(cur/n)-(ct-prog_t0))  # estimated time remaining
+	else : eta=9999*60
+	print(f"  {prefix}: {cur/n*100:3.1f}% {eta//60:02d}:{eta%60:02d} ETA   ",end="\r")
+	sys.stdout.flush()
+	return ct
+
 def E3init(argv, ppid=-1) :
 	"""E3init(argv)
 This function is called to log information about the current job to the local logfile. The flags stored for each process
@@ -351,20 +356,6 @@ def E3loadappwin(app,key,win):
 		geom[1]=max(60,geom[1])
 		win.move(geom[0],geom[1])
 #		print(app,key,geom)
-	except: return
-
-def E3saveprojtype(app,key,win):
-	"""stores the project type using the application default mechanism for later restoration. Note that
-	this will only work with Qt windows"""
-	try: E2setappval(app,key,win.modeCB.currentIndex())
-	except: print("Error saving project type")
-
-def E3loadprojtype(app,key,win):
-	"""restores project type saved with E2saveappwin"""
-	try:
-		idx=E2getappval(app,key)
-		win.modeCB.setCurrentIndex(idx)
-		win._onModeChange(idx)
 	except: return
 
 def E3setappval(app,key,value):
@@ -458,19 +449,6 @@ This function will return a list of lists containing all currently set applicati
 
 	return ret2+ret
 
-def e2getinstalldir() :
-	"""Final path needs to be computed relative to a path within the installation.
-	 An alternative could be to get the installation directory from cmake,
-	 but cmake is not run during binary installations."""
-	
-	this_file_dirname = os.path.dirname(__file__)
-	if get_platform() != "Windows":
-		rel_path = '../../../'
-	else:
-		rel_path = '../../Library/'
-	
-	return os.path.abspath(os.path.join(this_file_dirname, rel_path))
-
 def get_temp_name():
 	"""Returns a suitable name for a temporary HDF file in the current directory. Does not create or delete the file."""
 	fsp=f"tmp_{random.randint(0,9999999):07d}.hdf"
@@ -509,102 +487,6 @@ def num_path_last(prefix,create=False):
 	
 	return path
 
-#def numbered_path(prefix,makenew=False):
-	#"""Finds or creates folders of the form prefix_NN. If makenew is set, will create a new folder with NN one
-	#larger than the largest existing path. If makenew is not set, returns the highest existing numbered path of that form."""
-	#if prefix[-1]=="_" : prefix=prefix[:-1]
-	#cur=[int(p.split("_")[-1]) for p in os.listdir(".") if p.rsplit("_",1)[0]==prefix and p.split("_")[-1].isdigit()]
-	
-	#if makenew:
-		#cur.append(0)		# in case of no matches
-		#path=f"{prefix}_{max(cur)+1:02d}"
-		#try: os.mkdir(path)
-		#except: 
-			#raise Exception(f"ERROR: numbered_path() could not create {path}")
-		#return path
-	#if len(cur)==0 : raise Exception(f"ERROR: no paths of the form {prefix}_NN found")
-	#return f"{prefix}_{max(cur):02d}"
-
-#def get_numbered_directories(prefix,wd=e2getcwd()):
-	#'''
-	#Gets the numbered directories starting with prefix in the given working directory (wd)
-	#A prefix example would be "refine_" or "r2d_" etc. Used originally form within the workflow context
-	#'''
-	#dirs, files = get_files_and_directories(wd)
-	#dirs.sort()
-	#l = len(prefix)
-	#for i in range(len(dirs)-1,-1,-1):
-		#if len(dirs[i]) != l+2:# plus two because we only check for two numbered directories
-			#dirs.pop(i)
-		#elif dirs[i][:l] != prefix:
-			#dirs.pop(i)
-		#else:
-			#try: int(dirs[i][l:])
-			#except: dirs.pop(i)
-
-	## allright everything left in dirs is "refine_??" where the ?? is castable to an int, so we should be safe now
-
-	#return dirs
-
-def get_prefixed_directories(prefix,wd=e2getcwd()):
-	'''
-	gets directories starting with prefix and without any '.'
-	'''
-	dirs, files = get_files_and_directories(wd)
-	dirs.sort()
-	dirs=[i for i in dirs if i.startswith(prefix) and not "." in i]
-
-	return dirs
-
-def get_image_directory():
-	dtag = get_dtag()
-	
-	return e2getinstalldir()+ dtag + "images" + dtag
-
-def get_dtag():
-#	pfrm = get_platform()
-#	if pfrm == "Windows": return "\\"
-#	else: return "/"
-	return "/"
-
-def get_files_and_directories(path=".",include_hidden=False):
-	if path == ".": l_path = "./"
-	else: l_path = path
-	if len(l_path) == 0: path = get_dtag()
-	elif l_path[-1] not in ["/","\\"]: l_path += get_dtag()
-
-	dirs = []
-	files = []
-	try:
-		entries = os.listdir(l_path)
-	except: # something is wrong with the path
-		#print "path failed",l_path
-		return dirs,files
-
-	for name in entries:
-		if len(name) == 0: continue
-		if not include_hidden:
-			if name[0] == ".":
-				continue
-
-		try:
-			if os.path.isdir(l_path+name):
-				dirs.append(name)
-			else:
-				files.append(name)
-		except:
-			pass # something was wrong with the directory
-	return dirs,files
-
-
-def numbered_bdb(bdb_url):
-	'''
-	give something like "bdb:refine_01#class_indices (which means bdb:refine_01#class_indices_??.bdb files exist)
-
-	will return the next available name bdb:refine_01#class_indices_?? (minus the bdb)
-	'''
-	print("ERROR: numbered_bdb no longer functions. Please report to developers.")
-	sys.exit(1)
 
 def compress_hdf(fsp,bits,nooutliers=False,level=1):
 	"""This will take an existing HDF file and rewrite it with the specified compression
@@ -620,22 +502,10 @@ def compress_hdf(fsp,bits,nooutliers=False,level=1):
 def get_header(filename,i):
 	return EMData(filename,i,True).get_attr_dict()
 
-def remove_image(fsp):
-	"""This will remove the image file pointed to by fsp. The reason for this function
-	to exist is formats like IMAGIC which store data in two files. This insures that
-	both files are removed."""
-
-	try:
-		os.unlink(fsp)
-		if fsp[-4:]==".hed" : os.unlink(fsp[:-3]+"img")
-		elif fsp[-4:]==".img" : os.unlink(fsp[:-3]+"hed")
-	except: pass
-
 # since there are only 3 odd numbers in the entire list, we remove them, and just limit ourselves to even numbers
 # Values thru 512 are carefully calculated as shown on the wiki. Larger values have prime factors 7 or lower.
 # 9/2/17 removing low numbers not divisible by 4 for convenience
 good_box_sizes=[16, 24, 32, 36, 40, 44, 48, 52, 56, 60, 64, 72, 84, 96, 100, 104, 112, 120, 128, 132, 140, 168, 180, 192, 196, 208, 216, 220, 224, 240, 256, 260, 288, 300, 320, 352, 360, 384, 416, 440, 448, 480, 512, 540, 560, 576, 588, 600, 630, 640, 648, 672, 686, 700, 720, 750, 756, 768, 784, 800, 810, 840, 864, 882, 896, 900, 960, 972, 980, 1000, 1008, 1024, 1050, 1080, 1120, 1134, 1152, 1176, 1200, 1250, 1260, 1280, 1296, 1344, 1350, 1372, 1400, 1440, 1458, 1470, 1500, 1512, 1536, 1568, 1600, 1620, 1680, 1728, 1750, 1764, 1792, 1800, 1890, 1920, 1944, 1960, 2000, 2016, 2048, 2058, 2100, 2160, 2240, 2250, 2268, 2304, 2352, 2400, 2430, 2450, 2500, 2520, 2560, 2592, 2646, 2688, 2700, 2744, 2800, 2880, 2916, 2940, 3000, 3024, 3072, 3136, 3150, 3200, 3240, 3360, 3402, 3430, 3456, 3500, 3528, 3584, 3600, 3750, 3780, 3840, 3888, 3920, 4000, 4032, 4050, 4096, 4116, 4200, 4320, 4374, 4410, 4480, 4500, 4536, 4608, 4704, 4800, 4802, 4860, 4900, 5000, 5040, 5120, 5184, 5250, 5292, 5376, 5400, 5488, 5600, 5670, 5760, 5832, 5880, 6000, 6048, 6144, 6174, 6250, 6272, 6300, 6400, 6480, 6720, 6750, 6804, 6860, 6912, 7000, 7056, 7168, 7200, 7290, 7350, 7500, 7560, 7680, 7776, 7840, 7938, 8000, 8064, 8100, 8192, 8232, 8400, 8640, 8748, 8750, 8820, 8960, 9000, 9072, 9216, 9408, 9450, 9600, 9604, 9720, 9800, 10000, 10080, 10206, 10240, 10290, 10368, 10500, 10584, 10752, 10800, 10976, 11200, 11250, 11340, 11520, 11664, 11760, 12000, 12096, 12150, 12250, 12288, 12348, 12500, 12544, 12600, 12800, 12960, 13122, 13230, 13440, 13500, 13608, 13720, 13824, 14000, 14112, 14336, 14400, 14406, 14580, 14700, 15000, 15120, 15360, 15552, 15680, 15750, 15876, 16000, 16128, 16200, 16384]
-#good_box_sizes=[16,24,32, 36, 40, 42, 44, 48, 50, 52, 54, 56, 60, 64, 66, 70, 72, 84, 96, 98, 100, 104, 112, 120, 128,130, 132, 140, 150, 154, 168, 180, 182, 192, 196, 208, 210, 220, 224, 240, 250, 256,260, 288, 300, 320, 330, 352, 360, 384, 416, 440, 448, 450, 480, 512, 540, 560, 576, 588, 600, 630, 640, 648, 672, 686, 700, 720, 750, 756, 768, 784, 800, 810, 840, 864, 882, 896, 900, 960, 972, 980, 1000, 1008, 1024, 1050, 1080, 1120, 1134, 1152, 1176, 1200, 1250, 1260, 1280, 1296, 1344, 1350, 1372, 1400, 1440, 1458, 1470, 1500, 1512, 1536, 1568, 1600, 1620, 1680, 1728, 1750, 1764, 1792, 1800, 1890, 1920, 1944, 1960, 2000, 2016, 2048, 2058, 2100, 2160, 2240, 2250, 2268, 2304, 2352, 2400, 2430, 2450, 2500, 2520, 2560, 2592, 2646, 2688, 2700, 2744, 2800, 2880, 2916, 2940, 3000, 3024, 3072, 3136, 3150, 3200, 3240, 3360, 3402, 3430, 3456, 3500, 3528, 3584, 3600, 3750, 3780, 3840, 3888, 3920, 4000, 4032, 4050, 4096, 4116, 4200, 4320, 4374, 4410, 4480, 4500, 4536, 4608, 4704, 4800, 4802, 4860, 4900, 5000, 5040, 5120, 5184, 5250, 5292, 5376, 5400, 5488, 5600, 5670, 5760, 5832, 5880, 6000, 6048, 6144, 6174, 6250, 6272, 6300, 6400, 6480, 6720, 6750, 6804, 6860, 6912, 7000, 7056, 7168, 7200, 7290, 7350, 7500, 7560, 7680, 7776, 7840, 7938, 8000, 8064, 8100, 8192, 8232, 8400, 8640, 8748, 8750, 8820, 8960, 9000, 9072, 9216, 9408, 9450, 9600, 9604, 9720, 9800, 10000, 10080, 10206, 10240, 10290, 10368, 10500, 10584, 10752, 10800, 10976, 11200, 11250, 11340, 11520, 11664, 11760, 12000, 12096, 12150, 12250, 12288, 12348, 12500, 12544, 12600, 12800, 12960, 13122, 13230, 13440, 13500, 13608, 13720, 13824, 14000, 14112, 14336, 14400, 14406, 14580, 14700, 15000, 15120, 15360, 15552, 15680, 15750, 15876, 16000, 16128, 16200, 16384]
 
 def good_size(size):
 	"""Will return the next larger 'good' box size (with good refinement performance)"""
@@ -656,34 +526,6 @@ def good_size_small(size):
 def clamp(low,value,high):
 	"""Fast function to return value "clamped" to specified low-high range. Float or int."""
 	return low if value<low else high if value>high else value
-
-def re_filter_list(listtofilter, regex, invert=False):
-	"""
-	Filter a list by a regular expression
-	"""
-	r1 = re.compile(regex,flags=re.I)
-	returndict = {}
-	for key in listtofilter:
-		if bool(r1.search(key)) ^ invert: returndict[key] = listtofilter[key]
-	return returndict
-
-def get_optionlist(argv):
-	optionlist = []
-	for arg1 in argv:
-		if arg1[0] == "-":
-			argname = arg1.split("=")
-			optionlist.append(argname[0].lstrip("-"))
-	return optionlist
-
-def intvararg_callback(option, opt_str, value, parser):
-	v = [int(i) for i in value.split(',')]
-	setattr(parser.values, option.dest, v)
-	return
-
-def floatvararg_callback(option, opt_str, value, parser):
-	v = [float(i) for i in value.split(',')]
-	setattr(parser.values, option.dest, v)
-	return
 
 def commandoptions(options,exclude=[]):
 	"""This will reconstruct command-line options, excluding any options in exclude"""
@@ -792,16 +634,9 @@ class EMArgumentParser(argparse.ArgumentParser):
 	def getGUIOptions(self):
 		return self.optionslist
 
+#	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
 def parsesym(optstr):
 	return Symmetries.get(optstr)
-
-#	# FIXME - this function is no longer necessary since I overwrite the Symmetry3D::get function (on the c side). d.woolford
-#	[sym, dict] = parsemodopt(optstr)
-#	if sym[0] in ['c','d','h']:
-#		dict["nsym"] = int(sym[1:])
-#		sym = sym[0]
-#
-#	return Symmetries.get(sym, dict)
 
 parseparmobj1=re.compile(r"([^\(]*)\(([^\)]*)\)")	# This parses test(n=v,n2=v2) into ("test","n=v,n2=v2")
 parseparmobj2=re.compile(r"([^=,]*)=([^,]*)")		# This parses "n=v,n2=v2" into [("n","v"),("n2","v2")]
@@ -1896,32 +1731,18 @@ abs_path=os.path.abspath
 	#'''
 	#return os.path.abspath(name)
 
-def base_name( file_name,extension=False,bdb_keep_dir=False,nodir=False ):
+def base_name( file_name):
 	'''
-	wraps os.path.basename but returns something sensible for bdb syntax
-	if nodir is set, then the last path element will never be included, otherwise it is included following a set of standard rules.
+	Returns a portion of the filename without path or extension/modifiers, and the extension as a tuple
+	eg - "test/folder/myfile_test__filtered.hdf:1:10" -> ("myfile_test","hdf")
 	'''
-	if extension : print("base_name() with extension. please check")
-	if bdb_keep_dir : print("base_name() with bdb_keep_dir. please check")
 
-	file_name=str(file_name)
+	full=os.path.basename(str(file_name))
+	return (full.rsplit(".",1)[0].split("__")[0],full.split(":")[0].rsplit(".",1)[-1])
 
-	apath=os.path.relpath(file_name).replace("\\","/").split("/")
-	# for specific directories, we want any references to the same micrograph to share an id
-	if nodir or (len(apath)>1 and apath[-2] in ("sets","particles","micrographs","movies","movieparticles","ddd","raw","info", "tiltseries", "tomograms", "particles3d", "segmentations")) :
-		if extension :
-			return os.path.basename(file_name)
-		else :
-			return os.path.splitext(os.path.basename(file_name))[0].split("__")[0].replace("_ptcls","").replace("_info","")		# double underscore is used to mark tags added to micrograph names
-
-	# but for other files, like classes_xx which users might make selection lists on, we want to include the
-	# subdirectory name, to prevent mixing between different refinement directories
-	if extension : return "-".join(apath[-2:])
-	else : return "-".join(apath[-2:]).rsplit(".",1)[0]
-
-def info_name(file_name,nodir=False):
-	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.js"""
-	return "info/{}_info.json".format(base_name(file_name,nodir=nodir))
+def info_name(file_name):
+	"""This will return the name of the info file associated with a given image file, in the form info/basename_info.json"""
+	return "info/{}_info.json".format(base_name(file_name)[0])
 
 def file_exists( file_name ):
 	'''
@@ -3306,6 +3127,13 @@ and the file size will increase.
 	
 EMData.write_compressed=im_write_compressed
 
+
+def file_image_type(fsp):
+	fsp=fsp.split(":")[0]
+	return EMUtil.get_image_type_c(fsp)
+
+EMUtil.get_image_type_c=staticmethod(EMUtil.get_image_type)
+EMUtil.get_image_type=file_image_type
 
 # This way "file_image_count(fsp)" is available as a shortcut
 def file_image_count(fsp):

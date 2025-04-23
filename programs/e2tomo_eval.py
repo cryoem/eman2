@@ -422,7 +422,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.wg_tltimage=EMImage2DWidget()
 			self.wg_tltimage.setWindowTitle("Tiltseries")
 			self.wg_tltimage.set_scale(.2)
-			
+
 		if EMUtil.get_image_count(info["tltfile"])==1:
 			tmp=EMData(info["tltfile"],0)
 			nx=tmp["nx"]

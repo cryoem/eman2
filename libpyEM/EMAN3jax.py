@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 #
 # Author: Steven Ludtke, 09/10/2024 (sludtke@bcm.edu)
@@ -343,7 +342,7 @@ class EMStack3D(EMStack):
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
 		self.coerce_jax()
 
-		return jax_fft3d(self._data)
+		return EMStack3D(jax_fft3d(self._data))
 
 	def do_ift(self,keep_type=False):
 		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
@@ -399,7 +398,9 @@ class EMStack2D(EMStack):
 	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
 	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
 
-	Individual images in the stack may be accessed using emdata[n], tensor[n], numpy[n]
+	Note that EMData headers are lost if converted to jax or numpy!
+
+	Individual images in the stack may be accessed using emdata[n], jax[n], numpy[n]
 	"""
 
 	def set_data(self,imgs):
@@ -540,6 +541,21 @@ class EMStack2D(EMStack):
 
 		if newsize==self.shape[1]: return EMStack2D(self.jax) # this won't copy, but since the tensor is constant should be ok?
 		return EMStack2D(jax_downsample_2d(self.jax,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
+	def normalize_standard(self):
+		"""linear transform of values such that the mean of each image is 0 and the standard deviation is 1"""
+		return EMStack2D((self.jax-jnp.mean(self.jax,axis=(1,2)))[:,jnp.newaxis,jnp.newaxis]/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis])
+
+	def normalize_edgemean(self):
+		"""linear transform of values such that the mean of each image over a 3-pixel wide border around the edge
+		of each image is set to zero and the standard deviation is 1"""
+		N,ny,nx=self.shape
+		edgemean=(jnp.mean(self.jax[:,0:ny-3,0:3],axis=(1,2))+
+			jnp.mean(self.jax[:,ny-3:ny,0:nx-3],axis=(1,2))+
+			jnp.mean(self.jax[:,3:ny,nx-3:nx],axis=(1,2))+
+			jnp.mean(self.jax[:,0:3,3:nx],axis=(1,2)))/4.0
+
+		return EMStack2D((self.jax-edgemean[:,jnp.newaxis,jnp.newaxis])/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis])
 
 	def center_align_seq(self,region_size=-1):
 		"""Aligns a stack of (real space) images using the middle 1/2 (in x/y) of each image, and the middle image as a starting point.
@@ -875,10 +891,15 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
 
-	def norm_filter(self,sig=0.5,rad_downweight=-1):
-		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed. rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box. """
+	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
+		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
+		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box.
+		cyl_mask, if >0 will apply a cylindrical mask along xz to account for what space in 3d the tilts cover. The value is assumed to be the Gaussian corrdinate equivalent of 1px in the final boxsize """
 		self.coerce_jax()
 		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(jnp.absolute(self._data[:,3]))))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
+		if cyl_mask>0:
+			self._data = self._data[jnp.linalg.norm(self._data[:,(0,2)], axis=1)<0.5-cyl_mask*10]
+			self._data = self._data[(self._data[:,1]>=-0.5+cyl_mask*3) & (self._data[:,1]<=0.5-cyl_mask*3)]
 		if rad_downweight>0:
 			famp=jnp.absolute(self._data[:,3])*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
 		else: famp=jnp.absolute(self._data[:,3])
@@ -955,11 +976,43 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_jax()
 
-		zsize=good_size(boxsize*zaspect*2.0)
+		if zaspect<=0 : zsize=boxsize
+		else: zsize=good_size(boxsize*zaspect*2.0)
 
 		return EMStack3D(gauss_volume_fn(self._data,boxsize,zsize))
 
 		vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32)		# output
+
+	def volume_np(self, boxsize, zaspect=0.5):
+		"""A numpy implementation of volume since the jax at method makes a copy instead of updating in place when not in jit compiled and was causing OOM errors"""
+		zsize=good_size(boxsize*zaspect*2.0)
+		vol=np.zeros((zsize,boxsize,boxsize))
+		xfgauss=np.flip((self[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+
+		xfgaussf=np.floor(xfgauss)
+		xfgaussi=np.ndarray.astype(xfgaussf,np.int32)   # integer index
+		xfgaussf=xfgauss-xfgaussf			       # remainder used for bilinear interpolation
+
+		# messy trilinear interpolation
+		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
+		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bampall=np.concatenate([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
+		bposall=np.concatenate([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+
+		# Jax doesn't give OOB errors it just puts them at the closest available index, but numpy will so need an extra check
+		mask = np.logical_and(np.logical_and(np.logical_and(bposall[:,0]>=0, bposall[:,0]<zsize), np.logical_and(bposall[:,1]>=0, bposall[:,1]<boxsize)),np.logical_and(bposall[:,2]>=0, bposall[:,2]<boxsize))
+		bampall=bampall[mask]
+		bposall=bposall[mask]
+		vol[bposall[:,0], bposall[:,1],bposall[:,2]]+=bampall
+
+		return EMStack3D(vol)
+
 
 	def volume_tiled(self,xsize,ysize,boxz,xtiles,ytiles,zaspect=0.5):
 		"""A numpy version of creating a volume because the GPU can't allocate the full tomogram volume in memory. Returns an EMData object not a EMStack3D object."""
@@ -994,31 +1047,32 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
 
-def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+# def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
+#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+#
+#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+#	gausary - a Gaussians.jax array
+#	mx - an Orientations object converted to a stack of 2d matrices
+#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+#
+#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+#	used for comparisons should be resampled without any "clip" operations.
+#	"""
+#
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for (potentially) better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
+#	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
-	mx - an Orientations object converted to a stack of 2d matrices
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-	used for comparisons should be resampled without any "clip" operations.
-	"""
-
-	proj2=[]
-
-	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for (potentially) better performance
-	# note that the mx dimensions have N as the 3rd not 1st component!
-	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
-
-	for j in range(mx.shape[2]):
-		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
-
-	return jnp.stack(proj2)
-	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
 
 def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
@@ -1042,55 +1096,55 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps = gausary[:,3]*pos_mask 			# Turn amps outside to 0 so don't overadd to edges
 
 		# messy tensor math here to implement bilinear interpolation
-	bamp0=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=xfamps*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=xfamps*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=xfamps*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])		#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-	proj=proj.at[bposall[0],bposall[1]].add(bampall)		# projection
+	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")		# projection
 	return proj
 
-def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
-	mx - an Orientations object converted to a stack of 2d matrices
-	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
-	dfmin - the min defocus value used in ctfary
-	dfmax - the max defocus value used in ctfary
-	dfstep - the defocus step between images in ctfary
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-	used for comparisons should be resampled without any "clip" operations.
-	"""
-	proj2=[]
-
-	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-	# note that the mx dimensions have N as the 3rd not 1st component!
-	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
-	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
-
-	for j in range(mx.shape[2]):
-		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
-
-	return jnp.stack(proj2)
+#def gauss_project_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,tytx):
+#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+#
+#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+#	gausary - a Gaussians.jax array
+#	mx - an Orientations object converted to a stack of 2d matrices
+#	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
+#	dfmin - the min defocus value used in ctfary
+#	dfmax - the max defocus value used in ctfary
+#	dfstep - the defocus step between images in ctfary
+#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+#
+#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+#	used for comparisons should be resampled without any "clip" operations.
+#	"""
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
+#	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
 
 def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
@@ -1112,39 +1166,38 @@ def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps = gausary[:,3]*pos_mask 			# Turn amps outside to 0 so don't overadd to edges
 
 	# messy tensor math here to implement bilinear interpolation
-	bamp0=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=xfamps*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=xfamps*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=xfamps*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall))		# projection
+	proj=jnp.fft.rfft2(proj.at[bposall[0],bposall[1]].add(bampall, mode="drop"))		# projection
 	return jnp.fft.irfft2(ctfary[jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)]*proj)
 
-def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
-	proj2=[]
+gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, None, None, 0]) ,static_argnames=["boxsize"])
 
-	# iterate over projections
-	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-	# note that the mx dimensions have N as the 3rd not 1st component!
-	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
-
-	for j in range(mx.shape[2]):
-		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
-
-	return jnp.stack(proj2)
+#def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
 
 def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx):
 	proj2=[]
@@ -1161,31 +1214,29 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfmax,dfstep,a
 	xfgaussz = xfgauss[:,0]
 	xfgauss = xfgauss[:,1:]+tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
 	xfgaussz *= boxsize
 	xfgaussz = jnp.round(xfgaussz/boxstep).astype(jnp.int32)
-	xfgaussz = jnp.clip(xfgaussz, 0, 2*offset) # Clip z such that if any Gaussians are outside the expected range but in the box they will be in the outermost sections
+#	xfgaussz = jnp.clip(xfgaussz, 0, 2*offset) # Clip z such that if any Gaussians are outside the expected range but in the box they will be in the outermost sections
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
 	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps = gausary[:,3]*pos_mask 			# Turn amps outside to 0 so don't overadd to edges
 
 	# messy tensor math here to implement bilinear interpolation
-	bamp0=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=xfamps*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=xfamps*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=xfamps*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
+	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
+	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
+	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
-	proj=jnp.fft.rfft2(proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall))		# projection
+	proj=jnp.fft.rfft2(proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall, mode="drop"))		# projection
 	proj=proj*lax.dynamic_slice_in_dim(ctfary, jnp.round((tytx[2]-dfmin)/dfstep).astype(jnp.int32)-offset, proj.shape[0], axis=0)
 	return jnp.fft.irfft2(jnp.sum(proj, axis=0))
 
+gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, None, None, 0]) ,static_argnames=["boxsize","apix","dfstep"])
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
@@ -1418,6 +1469,15 @@ given size are cached for reuse. """
 		GEN_RAD2[ny]=rad2_img
 		return rad2_img
 
+FSC_RADS={}		# dictionary (cache) of constant tensors of size ny/2+1,ny containing the integer Fourier radius to each point in the image
+def rad_vol_int(ny):
+	global FSC_RADS
+	try: return FSC_RADS[ny]
+	except:
+		rad_img=jnp.array(np.fromfunction(lambda z,y,x: np.int32(np.sqrt((x**2+np.min((y,ny-y),axis=0)**2+np.min((z,ny-z),axis=0)**2))),(ny,ny,ny//2+1)))
+		FSC_RADS[ny]=rad_img
+		return rad_img
+
 #FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
@@ -1522,7 +1582,6 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
-# Note that this isn't JIT compiled, because we had segfaults when done at this level
 def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
@@ -1557,17 +1616,51 @@ def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	frc=jnp.stack(frc)
 	w=jnp.linspace(weight,2.0-weight,nr)
 #	frc=frc*w
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2)).mean(axis=1) # average over frequencies
+	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)).mean(axis=1) # average over frequencies # TODO: This has shape ny//2 not stop at ny//2. Same as nimg but that seems fine
 	return jnp.clip(ret,ret.mean()-ret.std()*frc_Z,1.0).mean()
 #	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
 #	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
 
-jax_frc_jit=jax.jit(__jax_frc_jit)
+jax_frc_jit=jax.jit(__jax_frc_jit, static_argnames="minfreq")
 
 FSC_REFS={}
-def jax_fsc(ima,imb):
-	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves."""
+def __jax_fsc_jit(ima,imb):
+	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves. Note that rad_vol_int(ny) MUST be called prior to using this function"""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
+
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!"""
+	global FSC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.86602)+1	# max radius we consider
+	rad_img=FSC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	fsc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		fsc.append(cross/jnp.sqrt(aprd*bprd))
+
+	return jnp.stack(fsc)
+
+jax_fsc_jit=jax.jit(__jax_fsc_jit)
 
 #TODO: consider implementing this. Issue is we need a radial filter for each image being processed, which may be expensive
 # def jax_subtract_filt(ptcl,proj,masked_proj):

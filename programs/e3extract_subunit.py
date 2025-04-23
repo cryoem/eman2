@@ -97,6 +97,7 @@ The program proceeds in several steps:
 	lsxout=LSXFile(output.replace(".hdf",".lst"))
 	hdr=lsxin.read_image(0,True)
 	nx=hdr["nx"]
+	apix=hdr["apix_x"]
 	N=len(lsxin)
 #	N=100
 
@@ -105,10 +106,11 @@ The program proceeds in several steps:
 	nblk=int(1.0e9/(nx*nx*4))	# target 1G of ram at a time for the particles
 
 	sym=Symmetries.get(options.sym)
+	tlast=0
 	for sn in range(sym.get_nsym()):
 		sxf=sym.get_sym(sn)
 		for i in range(0,N,nblk):
-			print(f"{i}({sn})")
+			tlast=print_progress(tlast,f"{i}({sn})",sn*N+i,sym.get_nsym()*N)
 			ptcl=EMStack2D(EMData.read_images(args[0],range(i,min(i+nblk,N))))
 			orts=ptcl.orientations_withxf(sxf)
 			ortsxf=orts[0].transforms(orts[1])
@@ -126,6 +128,7 @@ The program proceeds in several steps:
 			for im,pr,prexcl in zip(ptcl.emdata,proj.emdata,projexcl.emdata):
 				#out.append(im)
 				out.append(im.process("math.sub.optimal",{"ref":pr,"actual":prexcl,"return_fft":0}))
+				out[-1]["apix_x"]=out[-1]["apix_y"]=out[-1]["apix_z"]=apix
 				# im.write_image("dbg_im.hdf:6",-1)
 				# pr.write_image("dbg_pr.hdf:6",-1)
 				# prm.write_image("dbg_prm.hdf:6",-1)

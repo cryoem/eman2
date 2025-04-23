@@ -74,6 +74,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--minlosnr", type=float, help="Integrated SNR from 1/200-1/20 1/A must be larger than this",default=-1,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--maxdf", type=float, help="Maximum defocus",default=-1,guitype='floatbox', row=8, col=0)
+	parser.add_argument("--maxscore", type=float, help="Per-particle score used to exclude particles above a specified value. Works only with --create, with .lst inputs. Some other options may also prevent it. ",default=1)
 	
 	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
@@ -390,6 +391,10 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 					
 					if fromlst:
 						ln = lstin.read(i)
+						try:
+							if ln[2]["score"]>options.maxscore: continue
+						except: pass
+
 						if options.inplace:
 							lst.write(kk,ln[0],ln[1],ln[2])
 						else:

@@ -507,6 +507,17 @@ inline bool has_attr(const string& key) const {
  */
 Dict get_attr_dict() const;
 
+/** Get the image attribute dictionary containing all cacheable
+ * image attributes. Excludes calculated values and unsettable
+ * values, like nx,ny,nz. This represents all attributes which
+ * should be preserved on copy.
+ *
+ * @return The image attribute dictionary containing all
+ * attribute names and values.
+ */
+Dict get_attr_dict_cache() const;
+
+
 #ifdef EMAN2_USING_CUDA
 /** get_attr_dict can be expensive. Sometimes we just need attr_dict
  * for use in constructing new EMData object in the cuda context

@@ -56,7 +56,9 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	parser.add_header(name="text4", help='Important instructions', title="* exit PM, cd eman3, run PM from new eman2 folder", row=3, col=0, rowspan=1, colspan=3)
 	parser.add_pos_argument(name="star_file",help="Select STAR file", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=False)",  row=6, col=0,rowspan=1, colspan=3)
 	parser.add_argument("--datapath", type=str, default=None, help="If the path to the image files in the STAR file is not valid from the current folder, specify the full path to where the image stacks live", guitype='strbox', row=7, col=0, rowspan=1, colspan=2)
-	parser.add_argument("--phaseflip", action="store_true",help="If set, will also generate a set of phase-flipped particles. Phase flipped particles will not permit defocus refinement.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
+	parser.add_argument("--projectfolder", type=str, default="eman3", help="Name of the new project folder to create, default 'eman3'")
+	parser.add_argument("--phaseflip", action="store_true",help="If set, will also generate a set of phase-flipped particles. Phase flipped particles will not permit defocus refinement.")
+	parser.add_argument("--nophaseflip", action="store_true", help="If set, will skip generation of phase-flipped particles. Phase flipped particles will not permit defocus refinement.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--apix", default=0, type=float,help="The angstrom per pixel of the input particles, if not found in the file.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--voltage", default=0, type=float,help="Microscope voltage in kV, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
 	parser.add_argument("--cs", default=0, type=float,help="Spherical aberration in mm, if not found in STAR file", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
@@ -72,17 +74,19 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 
 	logid=E3init(sys.argv,options.ppid)
 
+	if options.phaseflip: print("--phaseflip is now the default behavior, use --nophaseflip to suppress")
+
 	# datapath will be used from eman3/ so ../ may need to be prepended
 	if options.datapath is not None:
 		if options.datapath[0]!="/" : options.datapath="../"+options.datapath
 
-	try: os.mkdir("eman3")
+	try: os.mkdir(options.projectfolder)
 	except: pass
-	try: os.mkdir("eman3/particles")
+	try: os.mkdir(f"{options.projectfolder}/particles")
 	except: pass
-	try: os.mkdir("eman3/sets")
+	try: os.mkdir("{options.projectfolder}/sets")
 	except: pass
-	os.chdir("eman3")	# many things need to happen with the project directory as a base
+	os.chdir(options.projectfolder)	# many things need to happen with the project directory as a base
 
 	if options.verbose>0 : print("Parsing STAR file")
 	star=StarFile("../"+args[0])
@@ -173,7 +177,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	try: os.unlink("sets/fromstar.lst")
 	except: pass
 	lst=LSXFile("sets/fromstar.lst")
-	if options.phaseflip: 
+	if not options.nophaseflip:
 		try: os.unlink("sets/fromstar__ctf_flip.lst")
 		except: pass
 		lstf=LSXFile("sets/fromstar__ctf_flip.lst")
@@ -255,7 +259,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		lst[-1]=(ptclno,ptclname.split(":")[0],{"class":i%2,"xform.projection":xform})
 
 		# write the phase flipped image/lst if requested
-		if options.phaseflip:
+		if not options.nophaseflip:
 			imgf=img.do_fft()
 			if lastctf!=ctf.to_vector():
 				flipim=imgf.copy()
