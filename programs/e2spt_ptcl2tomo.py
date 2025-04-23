@@ -8,6 +8,7 @@ def main():
 	usage="map a lst file of aligned particles to box coordinates in tomograms. "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--label", type=str,help="particle label", default="fromlst")
+	parser.add_argument("--tomo", type=str,help="only for one tomogram", default=None)
 	(options, args) = parser.parse_args()
 	
 	
@@ -32,7 +33,12 @@ def main():
 		b=coord[i]+["fromlst", 0, 0]
 		dic[iname[i]].append(b)
 		
+		
 	for ky in dic.keys():
+		if options.tomo:
+			if base_name(ky)!=base_name(options.tomo):
+				continue
+			
 		boxes=dic[ky]
 		
 		js=dict(js_open_dict(ky)).copy()

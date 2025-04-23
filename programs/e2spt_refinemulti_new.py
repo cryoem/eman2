@@ -42,6 +42,7 @@ def main():
 	parser.add_argument("--setsf", type=str,help="set structure factor from text file", default=None)
 	parser.add_argument("--maxshift", type=int, help="maximum shift for local alignment. default box size/6",default=-1)
 	parser.add_argument("--maxang", type=int, help="maximum angle difference for local alignment. ",default=-1)
+	parser.add_argument("--startiter", type=int, help="start iteration for continuing an existing run. ",default=1)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -140,7 +141,7 @@ def main():
 	if options.loadali2d: opt+=f" --plst {options.loadali2d}"
 		
 	#### refinement loop. most of the work is dealt with in e2spt_align_subtlt. here we just parse the input/output
-	for itr in range(1,1+options.niter):
+	for itr in range(options.startiter,1+options.niter):
 		ali2d=[]
 		ali3d=[]
 		print("######################")
@@ -192,7 +193,7 @@ def main():
 		for i in np.unique(clsid):
 			print("  class {} - {} particles".format(i, np.sum(clsid==i)))
 			
-		if itr>1:
+		if itr>options.startiter:
 			print("{:.1f}% particles changed classes".format(np.mean(clsid!=lastclsid)*100))
 		lastclsid=clsid.copy()
 		

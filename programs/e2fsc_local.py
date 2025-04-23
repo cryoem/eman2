@@ -44,6 +44,7 @@ def main():
 	parser.add_argument("--overwrite", action="store_true", default=False ,help="overwrite even/odd input")
 	parser.add_argument("--gauss", action="store_true", default=False ,help="gauss instead of tophat")
 	parser.add_argument("--ppid", type=int,help="", default=-1)
+	parser.add_argument("--fscvol", type=str,help="use volume as fsc input", default=None)	
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -76,38 +77,29 @@ def main():
 	msk.process_inplace("mask.gaussian",{"inner_radius":lnx//6,"outer_radius":lnx//6})
 	# vout=EMData(ny,ny,ny)
 	cs=(np.arange(20)*.025+.0125)#.tolist()
-	pl=Pool(20)
-	scrs=pl.map(local_ccc, cs)
-	pl.close()
+	if options.fscvol==None:
+		pl=Pool(20)
+		scrs=pl.map(local_ccc, cs)
+		pl.close()
 	
-	#jsd=queue.Queue(0)
-	#thrds=[threading.Thread(target=local_ccc,args=(c, jsd)) for c in cs]
-	#for t in thrds:
-		#t.start()
-	
-	#scrs=[0]*len(cs)
-	#while threading.active_count()>1 or not jsd.empty():
-		#time.sleep(1)
-		#while not jsd.empty():
-			#c,s=jsd.get()
-			#i=cs.index(c)
-			#scrs[i]=s
-	#for t in thrds:
-		#t.join()
-	
-	scrs=np.array(scrs)
-	cut=options.cut
-	res=np.sum(np.cumsum(scrs<cut, axis=0)==0, axis=0)#-1
-	res[res==len(cs)]=len(cs)-1
-	res=cs[res]
-	ii=np.indices((ns,ns,ns)).reshape((3,-1))
-	fvol=np.zeros((ns,ns,ns))
-	fvol[ii[0], ii[1], ii[2]]=np.array(res)
-	f=from_numpy(fvol.T.copy())
-	f.clip_inplace(Region((ns-ny)//2,(ns-ny)//2,(ns-ny)//2, ny, ny, ny))
-	f.scale(step)
-	#tx=lnx//4
-	#f.translate(tx,tx,tx)
+		
+		scrs=np.array(scrs)
+		cut=options.cut
+		res=np.sum(np.cumsum(scrs<cut, axis=0)==0, axis=0)#-1
+		res[res==len(cs)]=len(cs)-1
+		res=cs[res]
+		ii=np.indices((ns,ns,ns)).reshape((3,-1))
+		fvol=np.zeros((ns,ns,ns))
+		fvol[ii[0], ii[1], ii[2]]=np.array(res)
+		f=from_numpy(fvol.T.copy())
+		f.clip_inplace(Region((ns-ny)//2,(ns-ny)//2,(ns-ny)//2, ny, ny, ny))
+		f.scale(step)
+		#tx=lnx//4
+		#f.translate(tx,tx,tx)
+		
+	else:
+		f=EMData(options.fscvol)
+		
 	f.process_inplace("filter.lowpass.gauss",{"cutoff_abs":.3})
 	f.process_inplace("xform.applysym",{"sym":options.sym})
 	f.mult(mask)
@@ -157,7 +149,7 @@ def main():
 	f.mult(1./mp["apix_x"])
 	f.write_image(options.output.replace("threed","fscvol"))
 	E2end(logid)
-	pl.join()
+	if options.fscvol==None: pl.join()
 	
 def run(cmd):
 	print(cmd)

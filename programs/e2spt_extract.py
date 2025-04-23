@@ -558,6 +558,8 @@ as well as alignment parameters, so use of tomograms from other software is not 
 				if options.compressbits<0: threed.write_image(options.output, pid)
 				else: threed.write_compressed(options.output, pid,options.compressbits,nooutliers=True)
 				
+				del threed
+				for p in projs: del p
 				ndone+=1
 				if options.verbose>0:
 					sys.stdout.write("\r{}/{} finished.".format(ndone, nptcl))
@@ -566,6 +568,8 @@ as well as alignment parameters, so use of tomograms from other software is not 
 
 		for t in thrds: t.join()
 			
+		for m in imgs: del m
+		
 		print("Done. Particles written to {} ({:.1f} s)".format(options.output, time.time()-time0))
 	
 	
@@ -734,6 +738,7 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 					fft1.mult(flt)
 				
 				e=fft1.do_ift()
+				del fft1, flipim
 				e["ctf"]=ctf
 			
 			#### save the metadata in header of 2d particle
@@ -767,6 +772,8 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			if not options.skip3d:
 				e1=recon.preprocess_slice(e0, trans)
 				recon.insert_slice(e1,xform,1)
+				del e1
+			del e0
 		
 		#### for testing purposes
 		if options.skip3d:

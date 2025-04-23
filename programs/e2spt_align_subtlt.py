@@ -170,6 +170,8 @@ class SptAlignTask(JSTask):
 			fscs=fscs.reshape((len(fscs), 3, -1))[:,1,:]
 			scr=-np.mean(fscs[:, minp:maxp], axis=1)
 			
+			for x in pjs: del x
+			
 			if return_2d:
 				return scr
 			else:
@@ -399,7 +401,7 @@ class SptAlignTask(JSTask):
 						ccf=imgsmall.calc_ccf(refrot)
 						pos=ccf.calc_max_location_wrap(mxsft, mxsft, mxsft)
 						
-						refrot=refrot.process("xform", {"tx":pos[0], "ty":pos[1], "tz":pos[2]})
+						refrot.process_inplace("xform", {"tx":pos[0], "ty":pos[1], "tz":pos[2]})
 						scr=imgsmall.cmp("ccc.tomo.thresh", refrot)
 						score.append(scr)
 						xf.translate(pos)
@@ -408,7 +410,9 @@ class SptAlignTask(JSTask):
 						if options.debug: 
 							sys.stdout.write("\r {}/{}    {:.3f}  ".format(len(newxfs), len(xfcrs), score[-1]).ljust(40))
 							sys.stdout.flush()
-					
+						
+					del imgsmall, ccf, refrot
+
 				else:
 					#### local orientation search
 					## make small projections
@@ -453,7 +457,9 @@ class SptAlignTask(JSTask):
 							scr0 = testxf(x0)
 							sys.stdout.write("\r {}/{}    {:.3f}    {:.3f}     ".format(len(newxfs), len(curxfs), scr0, score[-1]))
 							sys.stdout.flush()
-				
+					
+					for x in imgsmallpjs: del x
+					
 				if options.debug: print()
 					
 				#### now look for a number of best orientations that are not too close to each other
@@ -488,6 +494,8 @@ class SptAlignTask(JSTask):
 					
 				npos=max(1, npos//2)
 				curxfs=newxfs
+				
+				del refsmall
 				if ss>=maxy and si>0:
 					break
 				
@@ -528,6 +536,9 @@ class SptAlignTask(JSTask):
 				c2d.append(c)
 				
 			rets.append((data["ii"], c3d, c2d))
+			
+			for x in imgpjs: del x
+			del img
 			
 			if options.debug:
 				x=xfout.get_params("eman")

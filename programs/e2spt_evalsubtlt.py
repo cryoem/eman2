@@ -30,6 +30,7 @@ def main():
 	parser.add_argument("--loadali3d", type=str,help="previous 3d alignment", default=None)
 	parser.add_argument("--submean", action="store_true", default=False ,help="substract mean movement of the vector field")
 	parser.add_argument("--defocus", action="store_true", default=False ,help="plot defocus refinement result")
+	parser.add_argument("--evenodd", action="store_true", default=False ,help="color even/odd differently")
 
 
 	(options, args) = parser.parse_args()
@@ -145,6 +146,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 		for i,a in zip(self.info2d, alipm):
 			i["pastxf"]=a["xform.projection"]
 			i["score"]=a["score"]
+			i["class"]=a["class"]
 			if "defocus" in a:
 				i["defocus"]=a["defocus"]
 			else:
@@ -177,6 +179,8 @@ class EMSptEval(QtWidgets.QMainWindow):
 		self.sel_defocus=[]
 		self.sel_dxy=[]
 		self.tltang=[]
+		self.sel_evenodd=[]
+		
 		for td in tid:
 		
 			d3ds=[d for d in self.info3d if d["src"]==fname]
@@ -204,11 +208,13 @@ class EMSptEval(QtWidgets.QMainWindow):
 			dxy=np.array([a.get_trans() for a in pastxf])
 			score=[d["score"] for d in d2d]
 			defocus=[d["defocus"] for d in d2d]
+			evenodd=[d["class"] for d in d2d]
 			
 			self.sel_score.append(score)
 			self.sel_dxy.append(dxy)
 			self.sel_coord.append(coord)
 			self.sel_defocus.append(defocus)
+			self.sel_evenodd.append(evenodd)
 		
 		self.plt_scr=[np.mean(s) for s in self.sel_score]
 		self.plt_def=[np.mean(abs(np.array(s))) for s in self.sel_defocus]
@@ -240,9 +246,14 @@ class EMSptEval(QtWidgets.QMainWindow):
 		tid=self.sel_tid
 		coord=self.sel_coord[tid]
 		dxy=self.sel_dxy[tid].copy()
-		score=self.sel_score[tid]
-		if self.options.defocus:
+		if self.options.evenodd:
+			score=np.array(self.sel_evenodd[tid])*2-1
+			print(score)
 			
+		else:
+			score=self.sel_score[tid]
+			
+		if self.options.defocus:			
 			defocus=self.sel_defocus[tid]
 			
 			plot=self.ploty

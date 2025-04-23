@@ -22,6 +22,7 @@ def main():
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
 	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
 	parser.add_argument("--axis", type=str,help="axis for regress. one number for a line, and two numbers separated by comma to draw circles.", default='0')
+	parser.add_argument("--pos_pca", type=str,help="manually pick positions from PCA space.", default=None)
 	parser.add_argument("--sym", type=str,help="symmetry", default="c1")
 	parser.add_argument("--nptcl", type=int,help="number of particles per class in regress mode", default=2000)
 	parser.add_argument("--apix", type=float,help="overwrite apix for pdb morphing", default=-1)
@@ -57,7 +58,15 @@ def main():
 	if options.pcaout:
 		np.savetxt(options.pcaout, p2)
 
-	if options.mode=="classify":
+	if options.pos_pca:
+		print("using custom locations")
+		pos=[float(p) for p in options.pos_pca.split(',')]
+		pos=np.array(pos).reshape((-1, options.nbasis))
+		print(pos)
+		axis=[0,1]
+		rg=pos
+		
+	elif options.mode=="classify":
 		clust=cluster.KMeans(options.ncls)
 		lbs=clust.fit_predict(p2)
 		lbunq=np.unique(lbs)
@@ -106,8 +115,6 @@ def main():
 			pcnt*=imsk[None,:,None]
 			
 		if options.pdb:
-			
-			#print(pcnt.shape)
 			
 			pdb=pdb2numpy(options.pdb, allatom=True)
 			e=EMData(options.ptclsin)

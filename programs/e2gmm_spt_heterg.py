@@ -95,6 +95,7 @@ def main():
 	imsk=make_mask_gmm(options.mask, pts)
 	print("masking {} out of {} points".format(np.sum(imsk), len(imsk)))
 	
+	path=os.path.dirname(options.midout)
 	#### anchor points
 	if options.anchor==None:
 		options.anchor=f"{path}/model_00_anchor.txt"
@@ -105,7 +106,7 @@ def main():
 		print(f"load {len(anchor)} anchor points from {options.anchor}")
 
 	else:
-		path=os.path.dirname(options.midout)
+		
 		pn=options.n_anchor//2
 		km=KMeans(pn,max_iter=30)
 		km.fit(pts[:,:3])

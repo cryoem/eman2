@@ -93,7 +93,7 @@ def main():
 		
 		for it in range(nbatch):
 			print("#######################")
-			print(f"batch {it+1}/{nbatch}...")
+			print(f"iter {rawiter}, batch {it+1}/{nbatch}...")
 			if options.ptcl3d:
 				ul=p3did[it*batch:(it+1)*batch]
 				ll=np.concatenate(ul).tolist()

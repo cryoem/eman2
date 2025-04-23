@@ -30,7 +30,7 @@ def main():
 	parser.add_argument("--aliptcls2d",type=str,help="optional aliptcls input. the program can start search from the position from last run.",default="")
 	parser.add_argument("--aliptcls3d",type=str,help="optional aliptcls input.",default="")
 
-
+	parser.add_argument("--range", type=str,help="process a range or 2d particles instead of the full set", default=None)
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:4")
 	parser.add_argument("--debug",action="store_true",help="for testing.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -42,7 +42,11 @@ def main():
 	options.info2dname="{}/particle_info_2d.lst".format(options.path)
 	options.info3dname="{}/particle_info_3d.lst".format(options.path)
 	n=EMUtil.get_image_count(options.info2dname)
-	tasks=list(range(n))
+	if options.range:
+		tasks=eval(f"range({options.range})")
+		tasks=list(tasks)
+	else:
+		tasks=list(range(n))
 
 	if options.preprocess!=None: options.preprocess = parsemodopt(options.preprocess)
 
@@ -75,7 +79,7 @@ def main():
 		if np.min(st_vals) == 100: break
 		time.sleep(5)
 	
-	output=[None]*len(tasks)
+	output=[None]*n
 	for i in tids:
 		rets=etc.get_results(i)[1]
 		for r in rets:
@@ -83,8 +87,15 @@ def main():
 		
 	del etc
 	
-	fm="{}/aliptcls2d_{:02d}.lst".format(options.path, options.iter)
-	save_lst_params(output, fm)
+	if options.range:
+		r=options.range.split(',')
+		fm="{}/aliptcls2d_{:02d}_{:08d}_{:08d}.lst".format(options.path, options.iter, r[0],r[1])
+		out=[o for o in output if o!=None]
+		save_lst_params(out, fm)
+		
+	else:
+		fm="{}/aliptcls2d_{:02d}.lst".format(options.path, options.iter)
+		save_lst_params(output, fm)
 	
 	E2end(logid)
 

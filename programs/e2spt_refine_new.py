@@ -372,14 +372,15 @@ def gather_metadata(pfile, maxtilt=-1):
 	# print("Loading 3D particles")
 	if pfile.endswith(".lst"):
 		lst=load_lst_params(pfile)
-		if "xform.align3d" in lst[0]:
-			params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
-		else:
-			params=[[l["src"], l["idx"]] for l in lst]
+		params=lst
+		#if "xform.align3d" in lst[0]:
+			#params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
+		#else:
+			#params=[[l["src"], l["idx"]] for l in lst]
 		
 	else:
 		nptcl=EMUtil.get_image_count(pfile)
-		params=[[pfile, i] for i in range(nptcl)]
+		params=[{"src":pfile, "idx":i} for i in range(nptcl)]
 	
 	
 	imgs=EMData.read_images(pfile,[],True)
@@ -415,9 +416,12 @@ def gather_metadata(pfile, maxtilt=-1):
 			idx2d.append(len(info2d))
 			info2d.append(dc)
 		
-		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
-		if len(pm)>2:
-			dc["xform.align3d"]=pm[2]
+		dc={"src":pm["src"], "idx":pm["idx"], "coord":coord, "idx2d":idx2d}
+		keys=["xform.align3d", "class"]
+		for k in keys:
+			if k in pm: dc[k]=pm[k]
+		#if len(pm)>2:
+			#dc["xform.align3d"]=pm[2]
 		
 		info3d.append(dc)
 

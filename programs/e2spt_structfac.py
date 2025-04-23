@@ -102,8 +102,10 @@ def main():
 	co=fit_curve(init, False)
 	from scipy.optimize import minimize
 	res=minimize(fit_curve, init, 
-				method='Nelder-Mead',options={'ftol': 1e-4, 'disp': False, "maxiter":30})
+				method='Powell',options={'ftol': 1e-3, 'disp': False, "maxiter":10})
 	co=fit_curve(res.x, False)
+	print(res)
+	co[:3]=0
 
 	np.savetxt(options.sfout,np.vstack([s,co]).T)
 	

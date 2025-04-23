@@ -690,6 +690,8 @@ class EMTomobox(QtWidgets.QMainWindow):
 			imgs=[r for r in oldref if r["fromtomo"]==tomo]
 			self.datafile=tomo
 			self.data=EMData(tomo)
+			self.data.process_inplace("filter.highpass.gauss",{"cutoff_pixels":8})
+			self.data.process_inplace("normalize")
 			self.data.mult(self.options.mult)
 			for m in imgs:
 				p=m["pos"]

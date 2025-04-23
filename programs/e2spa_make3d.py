@@ -127,11 +127,11 @@ def main():
 		r0=0; r1=-1
 		if options.minres>0:
 			r0=int(apix*ny/options.minres)
-# 			wts[:,:r0]=np.mean(wts[:,:r0], axis=0)
+			wts[:,:r0]=np.mean(wts[:,:r0], axis=0)
 # 		
 		if options.maxres>0:
 			r1=int(apix*ny/options.maxres)
-# 			wts[:,r1:]=np.mean(wts[:,r1:], axis=0)
+			wts[:,r1:]=np.mean(wts[:,r1:], axis=0)
 
 		scr=np.mean(wts[:,r0:r1], axis=1)
 		
@@ -146,7 +146,7 @@ def main():
 			scrs[scrs<thr]=-1
 		
 		for i,d in enumerate(data):
-			# d["curve"]=wts[i]
+			d["curve"]=wts[i]
 			d["weight"]=float(scrs[i])
 			
 			

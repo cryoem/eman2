@@ -46,17 +46,31 @@ def gather_metadata(options):
 			
 		print("total {} out of {} particles excluded".format(len(data)-len(data2), len(data)))
 		data=data2
-		
-	if "xform.align3d" in data[0]:
-		print("Using 3d alignment from the input lst instead of image header.")
-		xflst=True
-	else:
-		xflst=False
-	
 	print("Loading 3D particles")
 	imgs=EMData.read_images(options.ptcls,[],True)
 	src2d=np.unique([m["class_ptcl_src"] for m in imgs])
 	print(f"\rLoading 3D particles - {len(imgs)} particles from {len(src2d)} tomograms")
+	
+		
+	if "xform.align3d" in data[0]:
+		print("Using 3d alignment from the input lst.")
+		xflst=2
+	elif imgs[0].has_attr("xform.align3d"):
+		print("Using 3d alignment from the image header.")
+		xflst=1
+	else:
+		print("No 3d alignment info. Set empty transforms")
+		xflst=0
+		
+	if "class" in data[0]:
+		print("Using 'class' in input lst to assign class")
+		usecls=2
+	elif imgs[0].has_attr("orig_class"):
+		print("Using 'orig_class' in image header to assign class")
+		usecls=1
+	else:
+		print("seperate even/odd by particle ID")
+		usecls=0
 	
 	pl=Pool(32)
 	ret=pl.map(read_2d, src2d)
@@ -88,15 +102,20 @@ def gather_metadata(options):
 			idx2d.append(len(info2d))
 			info2d.append(dc)
 		
-		if xflst:
+		if xflst==2:
 			xfali=dt["xform.align3d"]
-		else:
+		elif xflst==1:
 			xfali=img["xform.align3d"]
+		else:
+			xfali=Transform()
 		
-		if img.has_attr("orig_class"):
+		if usecls==2:
+			cls=dt["class"]
+		elif usecls==1:
 			cls=img["orig_class"]
 		else:
 			cls=ii%2
+			
 		dc={"src":dt["src"], "idx":dt["idx"],
 			"coord":img["ptcl_source_coord"], "idx2d":idx2d,
 			"class":cls, "xform.align3d":xfali

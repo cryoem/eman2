@@ -18,6 +18,7 @@ def main():
 	parser.add_argument("--minres", type=float,help="resolution", default=100)
 	parser.add_argument("--startn", type=int,help="", default=1000)
 	parser.add_argument("--maxn", type=int,help="", default=20000)
+	parser.add_argument("--evenodd", action="store_true", default=False ,help="segment on combined map and refine on even/odd")
 
 	(options, args) = parser.parse_args()
 	
@@ -81,17 +82,38 @@ def main():
 			print(f"stop. using N={n}")
 			break
 			
-	run(f"e2project3d.py {fname} --outfile {fname[:-4]}_tmp_projection.hdf --orientgen=eman:delta=4 --parallel=thread:16")
-	run(f"e2gmm_refine_new.py --ptclsin {fname[:-4]}_tmp_projection.hdf --model {pdbname} --maxres {options.maxres} --minres {options.minres} --modelout {gmmname} --niter 40 --trainmodel --evalmodel {fname[:-4]}_tmp_model_projections.hdf --learnrate 1e-5")
-	run(f"e2spa_make3d.py --input {fname[:-4]}_tmp_model_projections.hdf --output {avgname} --thread 32")
-	run(f"e2proc3d.py {avgname} {avgname} --process mask.soft:outer_radius=-16 --matchto {fname}")
-	run(f"e2proc3d.py {avgname} {fscname} --calcfsc {fname}")
+	if options.evenodd:
+		for eo in ["even", "odd"]:
+			run(f"e2project3d.py {fname[:-4]}_{eo}.hdf --outfile {fname[:-4]}_tmp_projection.hdf --orientgen=eman:delta=4 --parallel=thread:16")
+			run(f"e2gmm_refine_new.py --ptclsin {fname[:-4]}_tmp_projection.hdf --model {pdbname} --maxres {options.maxres} --minres {options.minres} --modelout {gmmname[:-4]}_{eo}.txt --niter 40 --trainmodel --evalmodel {fname[:-4]}_tmp_model_projections.hdf --learnrate 1e-5")
+			run(f"e2spa_make3d.py --input {fname[:-4]}_tmp_model_projections.hdf --output {avgname[:-4]}_{eo}.hdf --thread 32")
+			run(f"e2proc3d.py {avgname[:-4]}_{eo}.hdf {avgname[:-4]}_{eo}.hdf --process mask.soft:outer_radius=-16 --matchto {fname[:-4]}_{eo}.hdf")
+			run(f"e2proc3d.py {avgname[:-4]}_{eo}.hdf {fscname[:-4]}_{eo}.txt --calcfsc {fname[:-4]}_{eo}.hdf")
+			
+			os.remove(f"{fname[:-4]}_tmp_projection.hdf")
+			os.remove(f"{fname[:-4]}_tmp_model_projections.hdf")
+			
+		print("final pdb model: "+ pdbname)
+		print(f"final GMM in text file: {gmmname[:-4]}_even/odd.txt")
+		print(f"final GMM in density map: {avgname[:-4]}_even/odd.hdf")
+		print(f"map-model FSC: {fscname[:-4]}_even/odd.txt")
+		
+	else:
+		run(f"e2project3d.py {fname} --outfile {fname[:-4]}_tmp_projection.hdf --orientgen=eman:delta=4 --parallel=thread:16")
+		run(f"e2gmm_refine_new.py --ptclsin {fname[:-4]}_tmp_projection.hdf --model {pdbname} --maxres {options.maxres} --minres {options.minres} --modelout {gmmname} --niter 40 --trainmodel --evalmodel {fname[:-4]}_tmp_model_projections.hdf --learnrate 1e-5")
+		run(f"e2spa_make3d.py --input {fname[:-4]}_tmp_model_projections.hdf --output {avgname} --thread 32")
+		run(f"e2proc3d.py {avgname} {avgname} --process mask.soft:outer_radius=-16 --matchto {fname}")
+		run(f"e2proc3d.py {avgname} {fscname} --calcfsc {fname}")
 	
+		
+		print("final pdb model: "+ pdbname)
+		print("final GMM in text file: "+ gmmname)
+		print("final GMM in density map: "+avgname)
+		print("map-model FSC: "+fscname)
+		
+		os.remove(f"{fname[:-4]}_tmp_projection.hdf")
+		os.remove(f"{fname[:-4]}_tmp_model_projections.hdf")
 	
-	print("final pdb model: "+ pdbname)
-	print("final GMM in text file: "+ gmmname)
-	print("final GMM in density map: "+avgname)
-	print("map-model FSC: "+fscname)
 	E2end(logid)
 	
 	

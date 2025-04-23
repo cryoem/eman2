@@ -110,7 +110,7 @@ class EMPDBItem3D(EMItem3D):
 
 	def getBoundingBoxDimensions(self):
 		data = self.getData()
-		return np.abs(np.max(data,axis=0).astype(np.int)) + np.std(data,axis=0).astype(np.int)
+		return np.abs(np.max(data,axis=0).astype(int)) + np.std(data,axis=0).astype(int)
 
 	def getRenderBoundingBox(self): return self.renderBoundingBox
 	def setRenderBoundingBox(self,state): self.renderBoundingBox = state

@@ -193,6 +193,7 @@ def main():
 	parser.add_argument("--writetxt", action="store_true", default=False ,help="write txt for model in addtion to pdb.")
 	parser.add_argument("--load", action="store_true", default=False ,help="load existing data from gmm folder.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--minres", type=float,help="minimum resolution.", default=100.)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv,options.ppid)
@@ -304,13 +305,14 @@ def main():
 	trainset=trainset.batch(options.batchsz)
 
 	options.nmid=4
-	options.minpx=4
+	options.minpx=int(maxboxsz*apix/options.minres)
 	options.maxpx=maxboxsz//2
+	print(f"Compare Fourier pixels: {options.minpx} to {options.maxpx}")
 	nbatch=int(trainset.cardinality())
 	opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 	
 	##########################################
-	maxpx_morph=options.maxpx//2
+	maxpx_morph=options.maxpx#//2
 	etc=""
 	print("Large scale model morphing...")
 	wts=gen_model.trainable_variables

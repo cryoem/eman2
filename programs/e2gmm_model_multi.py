@@ -212,7 +212,7 @@ def main():
 		tname0=options.maps
 		n=EMUtil.get_image_count(tname0)
 		for i in range(n):
-			tname=f"{path}tmp3d.hdf"
+			tname=f"{path}/tmp3d.hdf"
 			if os.path.isfile(tname): os.remove(tname)
 			pname=f"{path}/tmp2d.hdf"
 			if os.path.isfile(pname): os.remove(pname)
