@@ -154,14 +154,24 @@ def main():
 	# replication skipped in final stage
 	if options.tomo:
 		stages=[
-			[256,32,  32,1.8, -1,1,.05, 3.0],
-			[256,32,  32,1.8, -1,4,.05, 1.0],
-			[256,64,  48,1.5, -2,4,.04,1.0],
-			[256,64,  48,1.5, -2,16,.02,0.5],
-			[256,128, 32,1.2, -3,16,.01,2.0],
-			[256,256, 32,1.2, -2,64,.01,3.0],
-			[256,512, 48,1.2, -2,128,.01,3.0],
-			[256,1024,48,1.2, -3,0,.004,5.0]
+#			[256,32,  32,1.8, -1,1,.05, 3.0],
+#			[256,32,  32,1.8, -1,4,.05, 1.0],
+#			[256,64,  48,1.5, -2,4,.04,1.0],
+#			[256,64,  48,1.5, -2,16,.02,0.5],
+#			[256,128, 32,1.2, -3,16,.01,2.0],
+#			[256,256, 32,1.2, -2,64,.01,3.0],
+#			[256,512, 48,1.2, -2,128,.01,3.0],
+#			[256,1024,48,1.2, -3,0,.004,5.0]
+			[256,32,  32,1.8, -5,1,.05, 3.0],
+			[256,32,  32,1.8, -5,4,.05, 1.0],
+			[256,64,  48,1.5, -5,4,.04,1.0],
+			[256,64,  48,1.5, -5,16,.02,0.5],
+			[256,128, 32,1.2, -5,16,.01,2.0],
+#			[256,256, 32,1.2, -5,64,.01,3.0],
+#			[256,512, 48,1.2, -5,128,.01,3.0],
+			[256,256, 32,1.2, -5,64,.006,3.0],
+			[256,512, 48,1.2, -5,128,.003,3.0],
+			[256,1024,48,1.2, -5,0,.004,5.0]
 		]
 	elif options.cttomo:
 		stages=[
@@ -465,8 +475,8 @@ def main():
 					else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
 					rng=np.random.default_rng()
 					gaus.coerce_jax()
-					std=1/(5*outsz)
-					gaus._data+=rng.normal(0,std,gaus._data.shape)
+					std= 1/(2*outsz)
+					gaus._data+=np.hstack((rng.normal(0,std,(gaus._data.shape[0], 3)), np.zeros((gaus._data.shape[0], 1))))
 					if options.verbose>5:
 						vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz).emdata[0]
 						vol["apix_x"]=apix*nxraw/outsz
@@ -475,7 +485,8 @@ def main():
 						if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 						if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
 						vol.process_inplace("normalize.edgemean")
-						vol.write_image("testing_combineiters_vol.hdf",-1)
+						vol.write_image(f"testing_combineiters_vol_{i}.hdf:12",-1)
+						os.system(f'e2proc3d.py testing_combineiters_vol_{i}.hdf testing_combineiters_vol_{i}_fsc.txt --calcfsc {options.fscdebug}')
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -554,9 +565,10 @@ def main():
 	if options.profile : jax.profiler.stop_trace()
 
 	times.append(time.time())
-	if options.combineiters>0 and options.verbose>5:np.savetxt("testing_combine_iters.hdf", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
-	if options.combineiters>0 and options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
-	elif options.combineiters>0: vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz)
+	if options.combineiters>0:
+		if options.verbose>5:np.savetxt("testing_combine_iters.txt", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
+		if options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
+		else: vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz)
 	elif options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
 	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
