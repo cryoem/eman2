@@ -2360,10 +2360,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		try:
 			m=str(self.currun["mask"]).split(",")
 			if m[0]!="" : masks=[EMData(f) for f in m]
-			else: return
+			else: 
+				self.cengroups=None
+				return
 		except:
 			traceback.print_exc()
 			showerror("Invalid mask. Comma separated list of filenames or blank!")
+			self.cengroups=None
 			return
 
 		print(f"Group by mask: {masks}")

@@ -1628,8 +1628,6 @@ def __jax_fsc_jit(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves. Note that rad_vol_int(ny) MUST be called prior to using this function"""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
 
-	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
-	be called with the appropriate size prior to using this function!"""
 	global FSC_RADS
 
 	ny=ima.shape[1]
