@@ -253,6 +253,9 @@ def main():
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
+		if options.ctf>0:
+			mindf = min(mindf, float(jnp.min(tytx[:, 2])))
+			maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
 		for im in stk.emdata: im-=im["mean"]
 			#im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
