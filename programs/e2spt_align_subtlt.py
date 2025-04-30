@@ -43,6 +43,7 @@ def main():
 	
 	parser.add_argument("--skipali",action="store_true",help="Skip alignment and only calculate the score. Incompatible with --fromscratch, but --breaksym will still be considered.",default=False)
 	parser.add_argument("--breaksym",type=str,default=None,help="Specify symmetry to break. Ignored when --fromscratch is on.")
+	parser.add_argument("--range", type=str,help="process a range or 2d particles instead of the full set", default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -58,11 +59,18 @@ def main():
 	if options.preprocess!=None: options.preprocess = parsemodopt(options.preprocess)
 		
 	#### this should generate a list of dictionaries (one dictionary per 3d particle)
-	tasks=load_lst_params(args[0])
+	if options.range:
+		rg=eval(f"range({options.range})")
+		rg=list(rg)
+		tasks=load_lst_params(args[0], rg)
+		
+	else:
+		tasks=load_lst_params(args[0])
+		rg=list(range(len(tasks)))
 	
 	#### keep a copy of the particle index here, so we can make sure the output list has the same order as the input list
 	for i,t in enumerate(tasks):
-		t["ii"]=i
+		t["ii"]=rg[i]
 
 	from EMAN2PAR import EMTaskCustomer
 	etc=EMTaskCustomer(options.parallel, module="e2spt_align_subtlt.SptAlignTask")
@@ -106,20 +114,30 @@ def main():
 	for i in tids:
 		rets=etc.get_results(i)[1]
 		for r in rets:
-			output3d[r[0]]=r[1]
-			output2d[r[0]]=r[2]
+			ri=rg.index(r[0])
+			output3d[ri]=r[1]
+			output2d[ri]=r[2]
 		
 	del etc
 	
 	#### merge the 2d particle alignment info into one list
 	output2d=sum(output2d, [])
 	
-	#### just dump the list of dictionaries to list files
-	fm3d=f"{options.path}/aliptcls3d_{options.iter:02d}.lst"
-	save_lst_params(output3d, fm3d)
-	
-	fm2d=f"{options.path}/aliptcls2d_{options.iter:02d}.lst"
-	save_lst_params(output2d, fm2d)
+	if options.range:
+		r=options.range.split(',')
+		fm3d=f"{options.path}/aliptcls3d_{options.iter:02d}_{r[0].zfill(9)}_{r[1].zfill(9)}.lst"
+		save_lst_params(output3d, fm3d)
+		
+		fm2d=f"{options.path}/aliptcls2d_{options.iter:02d}_{r[0].zfill(9)}_{r[1].zfill(9)}.lst"
+		save_lst_params(output2d, fm2d)
+		
+	else:
+		#### just dump the list of dictionaries to list files
+		fm3d=f"{options.path}/aliptcls3d_{options.iter:02d}.lst"
+		save_lst_params(output3d, fm3d)
+		
+		fm2d=f"{options.path}/aliptcls2d_{options.iter:02d}.lst"
+		save_lst_params(output2d, fm2d)
 	
 	E2end(logid)
 

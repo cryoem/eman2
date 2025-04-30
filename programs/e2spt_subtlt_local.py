@@ -89,7 +89,7 @@ def main():
 	
 	if options.range:
 		r=options.range.split(',')
-		fm="{}/aliptcls2d_{:02d}_{:08d}_{:08d}.lst".format(options.path, options.iter, r[0],r[1])
+		fm="{}/aliptcls2d_{:02d}_{:09d}_{:09d}.lst".format(options.path, options.iter, int(r[0]),int(r[1]))
 		out=[o for o in output if o!=None]
 		save_lst_params(out, fm)
 		

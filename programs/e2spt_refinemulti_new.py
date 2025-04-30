@@ -212,7 +212,7 @@ def main():
 			for d in ali3dpms[i]: del d["class"]
 			save_lst_params(ali2dpms[i], ali2d[i])
 			save_lst_params(ali3dpms[i], ali3d[i])
-			if itr>1:
+			if itr>options.startiter:
 				ali=ali3dpms[i]
 				ltmp=load_lst_params(lastali3d[i])
 				idx0=[l["rawid"] for l in ltmp]
