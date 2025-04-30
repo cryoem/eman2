@@ -92,7 +92,7 @@ def main():
 	bonds3=[] # bonds between DNA/RNA base paris 
 	sgid=np.array([i for i,a in enumerate(atoms) if a.get_id()=='SG'])
 
-	ncbond=[1.336, 0.018] ## peptide bonds length and std
+	ncbond=[1.336, 0.012] ## peptide bonds length and std
 	ssbond=[2.033, 0.04] ## S-S bonds length and std
 	dnabond=[1.601, 0.012] ## DNA/RNA bonds length and std
 	for ai,at in enumerate(atoms):
@@ -156,7 +156,7 @@ def main():
 	bond_len=calc_bond(atom_pos[None,:,:], bonds[:,:2].astype(int))
 	bond_df=(bond_len-bonds[:,2])/bonds[:,3]
 	bond_df=abs(bond_df[0].numpy())
-	print("  Average bond length deviation: {:.2f} std. {} outliers beyond 3 std.".format(np.mean(bond_df), np.sum(bond_df>3)))
+	print("  Average bond length deviation: {:.2f} std. {} outliers beyond 5 std.".format(np.mean(bond_df), np.sum(bond_df>5)))
 	np.savetxt(f"{path}/model_bond.txt", bonds)
 		
 		
@@ -174,6 +174,8 @@ def main():
 		for i0,i1 in pairs:
 			ky0='_'.join([atoms[i].get_id() for i in [i0,ai,i1]])
 			ky='_'.join([resname, ky0])
+			if ky=="LEU_C_N_CA": 
+				print(ky, [atoms[i].parent.id[1] for i in [i0,ai,i1]])
 			if ky in e2pc.bond_angle_std:
 				sc=e2pc.bond_angle_std[ky]
 				angs.append([i0,ai,i1, sc[0], sc[1]])
@@ -193,7 +195,7 @@ def main():
 	ang_df=(ang_val-angs[:,3])/angs[:,4]
 	ang_df=abs(ang_df[0].numpy())
 	print("  {} bonds angles total.".format(len(angs)))
-	print("  Average bond angle deviation: {:.2f} std. {} outliers beyond 3 std.".format(np.mean(ang_df), np.sum(ang_df>3)))
+	print("  Average bond angle deviation: {:.2f} std. {} outliers beyond 5 std.".format(np.mean(ang_df), np.sum(ang_df>5)))
 	
 	np.savetxt(f"{path}/model_angle.txt", angs)
 	
@@ -320,6 +322,10 @@ def main():
 		rot=np.degrees(np.arcsin(abs(rot)))
 		print("  Average peptide dihedral angle deviation: {:.2f} degrees".format(np.mean(rot)))
 		print("  {} angle outliers beyond 30 degrees".format(np.sum(rot>30)))
+		#ii=np.where(rot>30)[0]
+		#for i in ii:
+			#d=dihs_peptide[i,:4]
+			#print(i, rot[i], [atoms[j].get_parent().get_id()[1] for j in d])
 	
 	np.savetxt(f"{path}/model_dih_plane.txt", dihs_plane.astype(int))
 	np.savetxt(f"{path}/model_dih_piptide.txt", dihs_peptide.astype(int))

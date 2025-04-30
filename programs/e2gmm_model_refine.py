@@ -591,19 +591,15 @@ def eval_chem(model, theta_all, theta_h, options):
 	
 		pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
 		
+		rot0=calc_dihedral_tf(pt)
+		rot=tf.sin(rot0*np.pi/180.)
+		rot=tf.maximum(0, abs(rot)-np.sin(options.thr_piptide*np.pi/180))
+		plane_score+=np.sum(rot>0)
+		
 		if options.nocis:
-			rot=calc_dihedral_tf(pt)
-			rot=tf.cos(rot*np.pi/180.)			
+			rot=tf.cos(rot0*np.pi/180.)			
 			rot=tf.maximum(0, rot-np.cos(options.thr_piptide*np.pi/180))
 			plane_score+=np.sum(rot>0)
-# 			
-		else:
-		
-			rot=calc_dihedral_tf(pt)
-			rot=tf.sin(rot*np.pi/180.)
-			rot=tf.maximum(0, abs(rot)-np.sin(options.thr_piptide*np.pi/180))
-			plane_score+=np.sum(rot>0)
-			
 		
 		rotout=[]
 		for chin in range(4):
@@ -950,16 +946,14 @@ def refine_backbone(model, theta_all, theta_h, options, optimizer, niter=100, tr
 				
 				pt=tf.gather(atom_pos, options.idx_dih_piptide, axis=1)
 				
+				rot0=calc_dihedral_tf(pt)
+				rot=tf.sin(rot0*np.pi/180.)
+				rot=tf.maximum(1e-8, abs(rot)-np.sin(options.thr_piptide*np.pi/180))
+				plane_score+=tf.reduce_mean(rot)*1000
+				
 				if options.nocis:
-					rot=calc_dihedral_tf(pt)
-					rot=tf.cos(rot*np.pi/180.)
+					rot=tf.cos(rot0*np.pi/180.)			
 					rot=tf.maximum(1e-8, rot-np.cos(options.thr_piptide*np.pi/180))
-					plane_score+=tf.reduce_mean(rot)*1000
-					
-				else:
-					rot=calc_dihedral_tf(pt)
-					rot=tf.sin(rot*np.pi/180.)
-					rot=tf.maximum(1e-8, abs(rot)-np.sin(options.thr_piptide*np.pi/180))
 					plane_score+=tf.reduce_mean(rot)*1000
 			
 			lossetc+=plane_score * options.weight["plane"]
@@ -1202,11 +1196,11 @@ def main():
 		options.has_rna=True
 		
 	##########################################
-	options.thr_plane=9.5
-	options.thr_piptide=29.5
+	options.thr_plane=8.
+	options.thr_piptide=25.
 	options.clash_nb=128 ## number of neighbors to compute clash
-	options.nstd_bond=4.5
-	options.nstd_angle=4.5
+	options.nstd_bond=4.9
+	options.nstd_angle=4.9
 	options.vdroverlap=options.clash0
 	ramalevel=[0.0005,0.02]
 	options.rama_thr0=1-ramalevel[1]*1.1
