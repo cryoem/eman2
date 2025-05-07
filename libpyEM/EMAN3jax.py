@@ -172,6 +172,7 @@ class EMStack():
 		self._data=None	# representation in whatever the current format is
 		self._npy_list=None # list of NumPy arrays sharing memory with EMData objects. RISKY - never copy this list, only use in place!
 		self.set_data(imgs)
+		self.apix=None
 
 	def set_data(self,imgs):
 		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
@@ -301,6 +302,7 @@ class EMStack3D(EMStack):
 			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
 			self._data=[imgs]
 			self._npy_list=None
+			self.apix=imgs[0]["apix_x"]
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)==3:
 				imgs=jnp.expand_dims(imgs,0)
@@ -309,6 +311,7 @@ class EMStack3D(EMStack):
 			self._npy_list=None
 		elif isinstance(imgs,str):
 			self._data=EMData.read_images(imgs)
+			self.apix=self._data[0]["apix_x"]
 			if imgs[0].get_ndim()!=3: raise Exception(f"EMStack3D only supports stacks of 3-D data. {imgs} is {imgs[0].get_ndim()}-D")
 			self._npy_list=None
 		else:
@@ -418,12 +421,14 @@ class EMStack2D(EMStack):
 			try: self._df=np.array([imgs["ctf"].to_dict()["defocus"]])
 			except: pass
 			self._npy_list=None
+			self.apix=imgs[0]["apix_x"]
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
 			self._npy_list=None
 		elif isinstance(imgs,str):
 			self._data=EMData.read_images(imgs)
+			self.apix=self._data[0]["apix_x"]
 			try: self._xforms=[im["xform.projection"] for im in self._data]
 			except: pass
 			try: self._df=np.array([im["ctf"].to_dict()["defocus"] for im in self._data])

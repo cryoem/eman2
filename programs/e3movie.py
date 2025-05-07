@@ -30,7 +30,7 @@
 #
 
 from EMAN3 import *
-from EMAN3tensor import *
+from EMAN3jax import *
 import random
 from sys import argv
 
@@ -44,9 +44,12 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
 	parser.add_argument("--seqavg",type=int,default=-1,help="Average N frames in sequence before alignment")
 	parser.add_argument("--shrinkout",type=float,default=-1,help="Fourier downsample the output movie stack by a factor of N (may be fractional)")
+	parser.add_argument("--apix", type=float, help="Override A/pixel from header on all inputs",default=None)
 	parser.add_argument("--alignbyccf",action="store_true",default=False,help="Performs movie alignment via sequential ccfs ")
 	parser.add_argument("--alignbyacfccf",action="store_true",default=False,help="Performs movie alignment via progressive ")
 	parser.add_argument("--align_gain",type=str,help="Gain image for correcting movie images before alignment. Applied correction is to divide by the gain image.",default=None)
+	parser.add_argument("--keepunali",action="store_true",default=False,help="If set, stores unaligned as well as aligned micrograph average")
+	parser.add_argument("--noinvert",action="store_true",default=False,help="Default behavior is to invert averaged image contrast. This disables that behavior.")
 	parser.add_argument("--clip",type=str,default=None,help="nx,ny output image size. Trims both edges equally as necessary")
 	parser.add_argument("--frames",type=str,default=None,help="<first>,<last+1> movie frames to use, first frame is 0, '0,3' will use frames 0,1,2")
 	parser.add_argument("--acftest",action="store_true",default=False,help="compute ACF images for input stack")
@@ -58,7 +61,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	(options, args) = parser.parse_args()
-	tf_set_device(dev=0,maxmem=options.gpuram)
+	jax_set_device(dev=0,maxmem=options.gpuram)
 
 	pid=E3init(argv)
 	nmov=len(args)
@@ -87,6 +90,8 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		avg.mult(sigm)
 		avg.write_image(options.est_gain,0)
 		sig.write_image(options.est_gain,1)
+		print("Gain image computed, exiting")
+		sys.exit(0)
 
 	if options.alignbyccf :
 		rsz=128				# 1/2 the size of the CCF regions to correlate
@@ -99,6 +104,9 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 				framesteps=(frames[1]-frames[0])//options.seqavg
 				imgs=EMStack2D([sum(EMData.read_images(f"{args[mi]}:{frames[0]+i*options.seqavg}:{frames[0]+(i+1)*options.seqavg}")) for i in range(framesteps)])
 			else: imgs=EMStack2D(EMData.read_images(f"{args[mi]}:{frames[0]}:{frames[1]}"))
+			apix=imgs.apix
+			if options.apix is not None: apix=options.apix
+			if apix is None: apix=1.0
 			if options.align_gain is not None:
 				for i in imgs.emdata: i.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
 			# normalization only for alignment
@@ -117,22 +125,23 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 				i-=np.mean(i)
 				i/=np.std(i)
 #			ccfsr.write_images("ccfsr.hdf")
-			ccfsr.coerce_tensor()
+			ccfsr.coerce_jax()
 			ccfsf=ccfsr.do_fft()
 
 			# make a gaussian low pass filter to smooth the ccfs after removing the 0 translation value
-			filt=EMData(rsz*2,rsz*2,1)
-			filt.to_one()
-			filt.process_inplace("mask.gaussian",{"outer_radius":2})
-			filt.process_inplace("xform.phaseorigin.tocorner")
-			filttf=tf_fft2d(to_tf(filt))
+			filtj=jax_gaussfilt_2d(rsz*2,0.125)
+			# filt=EMData(rsz*2,rsz*2,1)
+			# filt.to_one()
+			# filt.process_inplace("mask.gaussian",{"outer_radius":2})
+			# filt.process_inplace("xform.phaseorigin.tocorner")
+			# filttf=jax_fft2d(to_jax(filt))
 
-			ccfsfilt=ccfsf.convolve(filttf)
+			ccfsfilt=ccfsf.convolve(filtj)
 			ccfsreal=ccfsfilt.do_ift()
 
 			# Extract the peak locations
-			peaks=tf.math.argmax(tf.reshape(ccfsreal.tensor,[len(ccfsreal),rsz*2*rsz*2]),axis=1)
-			seqoff=np.insert((tf.unravel_index(peaks,dims=[rsz*2,rsz*2])-rsz).numpy(),0,(0,0),1)		# insert adds a 0 shift element for the first image
+			peaks=jnp.argmax(jnp.reshape(ccfsreal.jax,[len(ccfsreal),rsz*2*rsz*2]),axis=1)
+			seqoff=np.insert(np.array(jnp.unravel_index(peaks,[rsz*2,rsz*2]))-rsz,0,(0,0),1)		# insert adds a 0 shift element for the first image
 			# Convert the n -> n+1 shifts into absolute shifts
 			print(seqoff)
 			for i in range(1,len(seqoff[0])):
@@ -159,12 +168,21 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 				avgali.add_image(im)
 
 			avgo=avgorig.finish()
+			if not options.noinvert: avgo.mult(-1.0)
+			avgo["apix_x"]=apix
+			avgo["apix_y"]=apix
+			avgo["apix_z"]=apix
 			avga=avgali.finish()
-			if options.shrinkout>1.0: 
+			if not options.noinvert: avga.mult(-1.0)
+			avga["apix_x"]=apix
+			avga["apix_y"]=apix
+			avga["apix_z"]=apix
+			if options.shrinkout>1.0:
 				avgo.process_inplace("math.fft.resample",{"n":options.shrinkout})
 				avga.process_inplace("math.fft.resample",{"n":options.shrinkout})
-			avgo.write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}_unali.hdf:6")
-			avga.write_image(f"micrographs/{base}_{frames[0]}-{frames[1]}.hdf:6")
+
+			if options.keepunali: avgo.write_image(f"micrographs/{base}__{frames[0]}-{frames[1]}_unali.hdf:6")
+			avga.write_image(f"micrographs/{base}__{frames[0]}-{frames[1]}.hdf:6")
 			js=js_open_dict(info_name(args[mi]))
 			js["movie_frames"]=frames
 			js["movie_align_x"]=seqoff[1]
@@ -193,7 +211,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			acfs=ffts.calc_ccf(ffts,offset=0)	# ACF stack
 			acfsr=acfs.do_ift()					# real space version
 			_,nx,ny=acfsr.shape
-			acfsrc=acfsr.tensor[:,nx//2-rsz:nx//2+rsz,ny//2-rsz:ny//2+rsz]	# pull out the central region limiting shifts to +-rsz pixels
+			acfsrc=acfsr.jax[:,nx//2-rsz:nx//2+rsz,ny//2-rsz:ny//2+rsz]	# pull out the central region limiting shifts to +-rsz pixels
 			acfav=EMStack2D(tf.math.reduce_mean(acfsrc,0,keepdims=True))	# average acf over all images
 			a=acfav.numpy[0]		# this is to permit manipulation, since TF object is a constant
 
@@ -218,7 +236,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			# CCF between each image and the subsequent image
 			ccfs=ffts.calc_ccf(ffts,offset=1)
 			ccfsr=ccfs.do_ift()
-			ccfsr=EMStack2D(ccfsr.tensor[:,nx//2-rsz:nx//2+rsz,ny//2-rsz:ny//2+rsz])
+			ccfsr=EMStack2D(ccfsr.jax[:,nx//2-rsz:nx//2+rsz,ny//2-rsz:ny//2+rsz])
 			ccfsr.numpy[:,rsz,rsz]=(ccfsr[:,rsz-1,rsz]+ccfsr[:,rsz+1,rsz]+ccfsr[:,rsz,rsz-1]+ccfsr[:,rsz,rsz+1])/4.0
 			for i in ccfsr.numpy:
 				i-=np.mean(i)
@@ -233,7 +251,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 #			ccfacfr.write_images("ccfacfr.hdf")
 
 			# Extract the peak locations
-			peaks=tf.math.argmax(tf.reshape(ccfacfr.tensor,[len(ccfacfr),rsz*2*rsz*2]),axis=1)
+			peaks=tf.math.argmax(tf.reshape(ccfacfr.jax,[len(ccfacfr),rsz*2*rsz*2]),axis=1)
 			seqoff=np.insert((tf.unravel_index(peaks,dims=[rsz*2,rsz*2])-rsz).numpy(),0,(0,0),1)		# insert adds a 0 shift element for the first image
 			# Convert the n -> n+1 shifts into absolute shifts
 			print(seqoff)
@@ -283,7 +301,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		ccfsr=ccfs.do_ift()
 		_,nx,ny=ccfsr.shape
 
-		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		cens=EMStack2D(ccfsr.jax[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
 		cens.write_images("ccfs.hdf")
 
 	if options.acftest:
@@ -299,7 +317,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		ccfsr=ccfs.do_ift()
 		_,nx,ny=ccfsr.shape
 
-		cens=EMStack2D(ccfsr.tensor[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
+		cens=EMStack2D(ccfsr.jax[:,nx//2-64:nx//2+64,ny//2-64:ny//2+64])
 		for im in cens.emdata: im.process_inplace("normalize.edgemean")
 		cens.write_images("ccfs.hdf")
 
@@ -325,7 +343,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		for im in aimgs:
 			im.process_inplace("math.fixgain.counting",{"gain":avg,"gainmin":3,"gainmax":3})
 		imgs=EMStack2D(np.stack([sum(aimgs.numpy[i:i+10:2]) for i in range(40)]))
-		imgs.coerce_tensor()
+		imgs.coerce_jax()
 		print(imgs.shape)
 		ffts=imgs.do_fft()
 		ccfs=ffts.calc_ccf(ffts,offset=1)
@@ -341,7 +359,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			imgs=EMStack2D(EMData.read_images(f"{args[0]}:{i-1}:{min(i+25,nimg)}"))
 			for im in imgs:
 				im.process_inplace("math.fixgain.counting",{"gain":avg,"gainmin":3,"gainmax":3})
-			imgs.coerce_tensor()
+			imgs.coerce_jax()
 #		imgs=imgs.downsample(4096)
 			ffts=imgs.do_fft()
 			ccfs=ffts.calc_ccf(ffts,offset=1)
@@ -382,7 +400,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 
 		for x in range(0,nx-1024,1024):
 			for y in range(0,ny-1024,1024):
-				imgt=EMStack2D(imgs.tensor[:,x:x+1024,y:y+1024])
+				imgt=EMStack2D(imgs.jax[:,x:x+1024,y:y+1024])
 
 				ffts=imgt.do_fft()
 				ccfs=ffts.calc_ccf(ffts,offset=1)

@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
 # This program doesn't have any EMAN dependencies, does some basic tensorflow testing
+print("Ignore any warnings you see here:")
 
 import tensorflow as tf
 import numpy as np
 import time
+
+print("\n\n\nThis performs a very basic test to insure TensorFlow is installed and running. If you see 'test successful', then TensorFlow should be installed correctly. Otherwise, a careful reading of the error may help.")
 
 # make a base image (noise) and a then 1024 unique noise images. Add the base to each unique one
 imgnoise=np.random.normal(0,1,(1024,256,256))
@@ -24,3 +27,4 @@ ccfsf=imgnoisef*imgbasefc							# cross correlation in Fourier space
 ccfs=tf.signal.irfft2d(ccfsf)						# in real space
 t1=time.time()
 print(t1-t0)
+print("\ntest successful")

@@ -105,6 +105,16 @@ def main():
 	n - file number in command-line order starting at 0
 	base - the 'base name' of the input, excludes path, extension and anything following "__"
 
+	--formula permits arbitrary mathematical modification of images
+		(note, variable names are case-sensitive)
+		i - original image value
+		X - x location (pixels), origin center
+		Y - y location (pixels), origin center
+		R - radius (from center)
+
+	eg:
+	--formula i*-1		# invert the image
+	--formula "(i-i.mean())/i.std()"	# normalize an image, mean->0 std->1
 
 	"""
 
@@ -112,8 +122,9 @@ def main():
 
 	parser.add_argument("--output", type=str, help="Output filename or pattern. Appends output images to existing image files. ",default=None)
 	parser.add_argument("--apix", type=float, help="Override A/pixel from header on all inputs",default=0)
-	parser.add_argument("--fouriershrink", metavar="n", type=float, action="append", help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
-	parser.add_argument("--outmode", type=str, default="float", help="All EMAN3 programs write images with 4-byte floating point values by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range. The ':bits' filename specification is the preferred approach for this.")
+	parser.add_argument("--fouriershrink", metavar="n", type=float, help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
+	parser.add_argument("--formula",type=str,help="Apply a mathematical formula to each image to produce the new image. See general help above for details.",default=None)
+#	parser.add_argument("--outmode", type=str, default="float", help="All EMAN3 programs write images with 4-byte floating point values by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range. The ':bits' filename specification is the preferred approach for this.")
 	parser.add_argument("--createnew", type=str, default=None, help="<nx>,<ny>[,<nimg=1>[,<value=0>]]  If specified with no input filenames, will create nimg nx x ny images with constant value to use as input.")
 	parser.add_argument("--normalize", type=str, default=None, help="<mode>  Normalize images: standard, edgemean")
 
@@ -243,6 +254,12 @@ def main():
 		# if ":" in outfile:
 		# 	outfile, bits, mode, rendermin_abs, rendermax_abs, rendermin_s, rendermax_s = parse_outfile_arg(outfile)
 
+		# note that some of these images may get calculated if these variable
+		if options.formula is not None:
+			if "X" in options.formula : X=jnp.array(jnp.fromfunction(lambda y,x: x-DIM[0]//2))
+			if "Y" in options.formula : Y=jnp.array(jnp.fromfunction(lambda y,x: y-DIM[1]//2))
+			if "R" in options.formula : R=jnp.array(jnp.fromfunction(lambda y,x: jnp.sqrt((x-DIM[0]//2)**2+(y-DIM[1]//2)**2)))
+
 		chunksize=max(1000000000//(DIM[0]*DIM[1]*4),1)		# target no more than ~1 GB of input at a time
 		for chunk in range(0,N,chunksize):
 			if options.verbose>0 and len(args)<=100 :
@@ -254,6 +271,11 @@ def main():
 			hdrs=[im.get_attr_dict_cache() for im in imgs.emdata]		# do this fast before the data gets converted to JAX
 			if options.apix>0:
 				for hdr in hdrs: hdr["apix_x"]=hdr["apix_y"]=hdr["apix_z"]=options.apix
+
+			if options.formula:
+				i=imgs
+				imgs=eval(options.formula)
+
 
 			if options.fouriershrink :
 				fac=imgs.shape[1]/good_size(imgs.shape[1]/options.fouriershrink)
