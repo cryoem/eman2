@@ -2356,7 +2356,7 @@ if the lst file does not exist."""
 					if len(ln)==0 : break
 					maxlen=max(maxlen,len(ln))
 
-				self.linelen=maxlen+1+4						# we make the lines 4 characters longer than necessary to reduce rewrite calls as "n" gets bigger
+				self.linelen=maxlen+1+4						# we make the lines 8 characters longer than necessary to reduce rewrite calls as "n" gets bigger
 				tmpfile.write("# {}\n".format(self.linelen))	# the new line length
 				newseekbase=tmpfile.tell()
 
@@ -2435,8 +2435,7 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 			else: outln="{}\t{}".format(nextfile,extfile)
 			
 		# We can't write in the middle of the file if the existing linelength is too short
-		if len(outln)+1>self.linelen : self.rewrite(len(outln))
-
+		if len(outln)+1>self.linelen : self.rewrite(len(outln)+5)	# +5 just reduces the chance of many rewrites at a small cost in file size
 
 		fmtstr="{{:<{}}}\n".format(self.linelen-1)	# string for formatting
 		outln=fmtstr.format(outln)					# padded output line
@@ -2557,6 +2556,21 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 		return ret
 
+	def cache_name(self): return f'cache/{os.path.basename(self.path).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
+
+	def write_cache(self):
+		"""This will (re)create a multi-scale cache file for the entire .lst file"""
+		from EMAN3jax import *
+		if not os.path.exists("cache"):
+			try: os.mkdir("cache")
+			except: error_exit("Requires write permission in the current folder")
+
+		im0=self.read_image(0,True)		# get header info
+		chunk=256000000//(im0["nx"]*im0["ny"]*im0["nz"])		# limit to ~1G of RAM
+		for i in range(0,self.n,chunk):
+			imgs=EMStack(self.read_images(range(i,min(i+chunk,self.n))))
+
+
 
 	def __len__(self): return self.n
 
@@ -2594,7 +2608,7 @@ line length. Used when a line must be added in the middle of the file."""
 			if len(ln)==0 : break
 			maxlen=max(maxlen,len(ln))
 
-		self.linelen=maxlen+1+4						# we make the lines 4 characters longer than necessary to reduce rewrite calls as "n" gets bigger
+		self.linelen=maxlen+1+8						# we make the lines 8 characters longer than necessary to reduce rewrite calls as "n" gets bigger
 		tmpfile.write("# {}\n".format(self.linelen))	# the new line length
 		newseekbase=tmpfile.tell()
 

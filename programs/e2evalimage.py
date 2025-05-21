@@ -554,11 +554,11 @@ class GUIEvalImage(QtWidgets.QWidget):
 #			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 
 			self.wplot.set_data((s,fit),"fit",color=1,linetype=0)
-			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
+			self.wplot.setAxisParms("s (1/"+ r"$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==1:
 			self.wplot.set_data((s[1:],self.fft1d[1:]),"fg",quiet=True,color=1)
 			self.wplot.set_data((s[1:],bg1d[1:]),"bg",color=0,linetype=0)
-			self.wplot.setAxisParms("s (1/"+ "$\AA$" +")","Intensity (a.u)")
+			self.wplot.setAxisParms("s (1/"+ r"$\AA$" +")","Intensity (a.u)")
 		elif self.plotmode==2:
 			if self.fft1dang==None: self.recalc_real()
 			bgsub=self.fft1d-bg1d
@@ -586,7 +586,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			fit/=rto
 
 			self.wplot.set_data((s,fit),"fit",color=1)
-			self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Intensity (a.u)")
+			self.wplot.setAxisParms("s (1/"+ r"$\AA$" + ")","Intensity (a.u)")
 
 		elif self.plotmode==3:
 			if self.fft1dang==None: self.recalc_real()
@@ -638,7 +638,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 ##			print ctf_cmp((self.sdefocus.value,self.sbfactor.value,rto),(ctf,bgsub,int(.04/ds)+1,min(int(0.15/ds),len(s)-1),ds,self.sdefocus.value))
 
 			#self.wplot.set_data((s,fit),"fit",color=1)
-			self.wplot.setAxisParms("s (1/"+ "$\AA$" + ")","Est. SSNR")
+			self.wplot.setAxisParms("s (1/"+ r"$\AA$" + ")","Est. SSNR")
 
 
 	def timeOut(self):
@@ -905,11 +905,11 @@ class GUIEvalImage(QtWidgets.QWidget):
 		# mode where user selects/deselcts tiled image set
 		elif self.calcmode==1:
 			# update the box display on the image
-			nx=old_div(self.data["nx"],parms[0])-1
+			nx=(self.data["nx"]-128)//parms[0]
 			self.fft=None
 			nbx=0
 			for x in range(nx):
-				for y in range(old_div(self.data["ny"],parms[0])-1):
+				for y in range((self.data["ny"]-128)//parms[0]):
 					# User deselected this one
 					try:
 						if int(x+y*nx) in parms[3] : continue
@@ -918,7 +918,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 						parms[3]=set()
 
 					# read the data and make the FFT
-					clip=self.data.get_clip(Region(x*parms[0]+old_div(parms[0],2),y*parms[0]+old_div(parms[0],2),parms[0],parms[0]))
+					clip=self.data.get_clip(Region(x*parms[0]+64,y*parms[0]+64,parms[0],parms[0]))
 					clip.process_inplace("normalize.edgemean")
 					if parms[5]>1 :
 						clip=clip.get_clip(Region(0,0,parms[0]*parms[5],parms[0]*parms[5]))		# since we aren't using phases, doesn't matter if we center it or not
@@ -1009,15 +1009,15 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.wimage.updateGL()
 		elif self.calcmode==1:
 			# update the box display on the image
-			nx=old_div(self.data["nx"],parms[0])-1
+			nx=(self.data["nx"]-128)//parms[0]
 			shp={}
 			for x in range(nx):
-				for y in range(old_div(self.data["ny"],parms[0])-1):
+				for y in range((self.data["ny"]-128)//parms[0]):
 					# User deselected this one
 					if int(x+y*nx) in parms[3] : continue
 
 					# Make a shape for this box
-					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,(x+.5)*parms[0],(y+.5)*parms[0],(x+1.5)*parms[0],(y+1.5)*parms[0],1))
+					shp["box%02d%02d"%(x,y)]=EMShape(("rect",.3,.9,.3,x*parms[0]+128,y*parms[0]+128,(x+1)*parms[0]+128,(y+1)*parms[0]+128,1))
 
 			self.wimage.del_shapes()
 			self.wimage.add_shapes(shp)
@@ -1151,8 +1151,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 		m=self.wimage.scr_to_img((event.x(),event.y()))
 		if self.calcmode==1:
 			parms=self.parms[self.curset]
-			nx=old_div(self.data["nx"],parms[0])-1
-			grid=int(old_div((m[0]-old_div(parms[0],2)),parms[0]))+int(old_div((m[1]-old_div(parms[0],2)),parms[0]))*nx
+			nx=(self.data["nx"]-128)//parms[0]
+			grid=int((m[0]-64)//parms[0])+int((m[1]-64)//parms[0])*nx
 			if grid in parms[3] : parms[3].remove(grid)
 			else: parms[3].add(grid)
 			self.needredisp=True
@@ -1163,7 +1163,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 		#m=self.wfft.scr_to_img((event.x(),event.y()))
 
 		if self.f2danmode==1:
-			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
+			self.ringrad=hypot(m[0]-self.fft["nx"]//2,m[1]-self.fft["ny"]//2)
 			self.needredisp=True
 		elif self.f2danmode==2:
 			if (event.modifiers()&Qt.ControlModifier): self.xpos2=(old_div((m[0]-old_div(self.fft["nx"],2)),3.0),old_div((m[1]-old_div(self.fft["ny"],2)),3.0))
