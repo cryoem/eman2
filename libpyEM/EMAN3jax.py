@@ -416,7 +416,12 @@ class EMStack2D(EMStack):
 			try: self._xforms=[imgs["xform.projection"]]
 			except: pass
 			try: self._df=np.array([imgs["ctf"].to_dict()["defocus"]])
-			except: pass
+			except:
+				try:
+					js=js_open_dict(info_name(imgs["ptcl_source_image"]))
+					self._df=np.array([js["ctf"][0].to_dict()["defocus"]])
+					js.close()
+				except: pass
 			self._npy_list=None
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
@@ -427,7 +432,15 @@ class EMStack2D(EMStack):
 			try: self._xforms=[im["xform.projection"] for im in self._data]
 			except: pass
 			try: self._df=np.array([im["ctf"].to_dict()["defocus"] for im in self._data])
-			except: pass
+			except:
+				try:
+					df=[]
+					for im in self._data:
+						js=js_open_dict(info_name(imgs["ptcl_source_image"]))
+						df.append(js["ctf"][0].to_dict()["defocus"])
+						js.close()
+					self._df=np.array(df)
+				except: pass
 			if self._data[0].get_ndim()!=2:
 				if len(self._data)!=1 : raise Exception(f"EMStack2D only supports stacks of 2-D data or a single volume. {imgs} is a stack of {self._data[0].get_ndim()}-D")
 				self._data=to_jax(self._data[0])
@@ -1294,6 +1307,36 @@ def create_ctf_stack(dfrange,voltage,cs,ampcont,ny,apix):
 	dflist=jnp.arange(dfrange[0],dfrange[1],dfstep,jnp.complex64)
 	ctf_sign = EMStack2D(jnp.cos(-g1*rad2*rad2+g2*rad2*dflist[:,jnp.newaxis, jnp.newaxis]-phase))
 	return ctf_sign, dfstep
+
+def jax_to_mx2d(ortary,swapxy=False):
+	"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
+	2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+
+	To apply to a set of vectors:
+	mx=self.to_mx2d()
+	vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2),(1,1,0),(0,1,1)),dtype=tf.float32)
+
+	tf.transpose(tf.matmul(mx[:,:,0],tf.transpose(vecs)))
+	or
+	tf.einsum("ij,kj->ki",mx[:,:,0],vecs)
+
+	if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Gaussians are XYZA,
+	but images are YX.
+	"""
+	# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
+	# it is much slower, and the tiny pertutbation should not significantly impact the math.
+	l=jnp.linalg.norm(ortary,axis=1)+1.0e-37
+
+	w=jnp.cos(pi*l)  # cos "real" component of quaternion
+	s=jnp.sin(-pi*l)/l
+	q=jnp.transpose(ortary)*s		# transpose makes the vectorized math below work properly
+	if swapxy :
+		mx=jnp.array(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
+		(1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w)))
+	else:
+		mx=jnp.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
+	return jnp.array(mx)
 
 JAXDEV=jax.devices()[0]
 def jax_set_device(dev=0,maxmem=4096):
