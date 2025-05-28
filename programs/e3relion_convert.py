@@ -239,11 +239,11 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-1]}",imn-1)
 			except:
 				# maybe the files were converted to HDF ?
-				try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-1].replace('.mrcs','.hdf')}",imn-1)
+				try: img=EMData(f"{options.datapath}/{imfsp.split('/')[-1].replace('.mrcs','.hdf')}",imn-1)
 				except:
 					# if that fails,then try the last 2 path elements from the STAR file
-					try: img=EMData(f"{options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}",imn-1)
-					except: error_exit(f"Cannot find image file: {options.datapath}/{imfsp.split("/")[-1]} or {options.datapath}/{imfsp.split("/")[-2]}/{imfsp.split("/")[-1]}")
+					try: img=EMData(f"{options.datapath}/{imfsp.split('/')[-2]}/{imfsp.split('/')[-1]}",imn-1)
+					except: error_exit(f"Cannot find image file: {options.datapath}/{imfsp.split('/')[-1]} or {options.datapath}/{imfsp.split('/')[-2]}/{imfsp.split('/')[-1]}")
 		else: img=EMData("../"+imfsp,imn-1)		# relion starts with #1, EMAN #0
 		img["apix_x"]=apix
 		img["apix_y"]=apix

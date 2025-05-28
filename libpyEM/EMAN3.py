@@ -2560,7 +2560,7 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 	def write_cache(self):
 		"""This will (re)create a multi-scale cache file for the entire .lst file"""
-		from EMAN3jax import *
+		import EMAN3jax
 		if not os.path.exists("cache"):
 			try: os.mkdir("cache")
 			except: error_exit("Requires write permission in the current folder")
@@ -2568,9 +2568,9 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		im0=self.read_image(0,True)		# get header info
 		chunk=256000000//(im0["nx"]*im0["ny"]*im0["nz"])		# limit to ~1G of RAM
 		for i in range(0,self.n,chunk):
-			imgs=EMStack(self.read_images(range(i,min(i+chunk,self.n))))
+			imgs=EMAN3jax.EMStack(self.read_images(range(i,min(i+chunk,self.n))))
 
-
+		#TODO - finish caching
 
 	def __len__(self): return self.n
 
