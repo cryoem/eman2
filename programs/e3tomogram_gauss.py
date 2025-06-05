@@ -451,14 +451,14 @@ def cache_tiles(filename, options, stages, apix, ttparams, cs, volt, defocus, ph
 #					for i in range(ntilts):
 	#				for i in range(nt):
 					pos = [stepx*step, stepy*step, 0]
-					pxf = get_xf_pos(ttparams[tiltn],pos)
-					tx = tilt_imgs[tiltn]["nx"]//2 + pxf[0]
-					ty = tilt_imgs[tiltn]["ny"]//2 + pxf[1]
+					pxf = get_xf_pos(ttparams[i+tiltn],pos)
+					tx = tilt_imgs[i+tiltn]["nx"]//2 + pxf[0]
+					ty = tilt_imgs[i+tiltn]["ny"]//2 + pxf[1]
 					m=tilt_imgs[tiltn].get_clip(Region(int(tx) - step, int(ty) - step, options.tilesize, options.tilesize), fill=0) # Step used instead of recalculating tilesize//2
 					m.mult(-1) # Make sure to invert contrast
-					xform = Transform({"type":"xyz","ytilt":ttparams[tiltn][3],"xtilt":ttparams[tiltn][4],"ztilt":ttparams[tiltn][2], "tx":tx-int(tx), "ty":ty-int(ty)}) # I skipped the dxfs part from e2spt_extract for now...was that important?
+					xform = Transform({"type":"xyz","ytilt":ttparams[i+tiltn][3],"xtilt":ttparams[tiltn][4],"ztilt":ttparams[i+tiltn][2], "tx":tx-int(tx), "ty":ty-int(ty)}) # I skipped the dxfs part from e2spt_extract for now...was that important?
 					m["xform.projection"]=xform
-					rot=Transform({"type":"xyz","xtilt":float(ttparams[tiltn][4]), "ytilt":float(ttparams[tiltn][3])}) #TODO: Figure out why made separate transform instead of reusing xform
+					rot=Transform({"type":"xyz","xtilt":float(ttparams[i+tiltn][4]), "ytilt":float(ttparams[i+tiltn][3])}) #TODO: Figure out why made separate transform instead of reusing xform
 					p1=rot.transform(pos)
 					pz=p1[2]*apix/10000. # Convert distance from center into defocus change due to tilt
 					tilted_defocus = defocus[tiltn]-pz
@@ -475,20 +475,23 @@ def cache_tiles(filename, options, stages, apix, ttparams, cs, volt, defocus, ph
 						fft1.mult(flipim)
 						m=fft1.do_ift()
 					full_tiles.append(m)
-			if options.savetiles:
-				EMData.write_images("debug_tiling.hdf", full_tiles, (i+tiltn)*(xtiles*ytiles))
-				#Appears to tile correctly--starts in bottom left and goes up in columns moving right ^^^^ ->
-			if options.verbose>1:
-				print(f" Caching {(i+tiltn)*(xtiles*ytiles)}/{nptcls}",end="\r",flush=True)
-				sys.stdout.flush()
-			stk=EMStack2D(full_tiles)
-			orts,tytx=stk.orientations
-			tytx/= jnp.array((nxraw, nyraw, 1)) # TODO: Did I break this in tiling/accepting non-square imgs?
-			for im in stk.emdata: im.process_inplace("normalize.edgemean")
-			stkf=stk.do_fft()
-			for down in downs:
-				stkfds=stkf.downsample(down)
-				caches[down].write(stkfds,(i+tiltn)*(xtiles*ytiles),orts,tytx)
+		if options.savetiles:
+	#			EMData.write_images("debug_tiling.hdf", full_tiles, (i+tiltn)*(xtiles*ytiles))
+			EMData.write_images("debug_tiling.hdf", full_tiles, (i*nt)*(xtiles*ytiles))
+			#Appears to tile correctly--starts in bottom left and goes up in columns moving right ^^^^ ->
+		if options.verbose>1:
+				#print(f" Caching {(i+tiltn)*(xtiles*ytiles)}/{nptcls}",end="\r",flush=True)
+				#sys.stdout.flush()
+			print(f" Caching {(i*nt)*(xtiles*ytiles)}/{nptcls}",end="\r",flush=True)
+			sys.stdout.flush()
+		stk=EMStack2D(full_tiles)
+		orts,tytx=stk.orientations
+		tytx/= jnp.array((nxraw, nyraw, 1)) # TODO: Did I break this in tiling/accepting non-square imgs?
+		for im in stk.emdata: im.process_inplace("normalize.edgemean")
+		stkf=stk.do_fft()
+		for down in downs:
+			stkfds=stkf.downsample(down)
+			caches[down].write(stkfds,(i+tiltn)*(xtiles*ytiles),orts,tytx)
 	tilt_imgs=None
 	return caches, downs, mindf, maxdf
 
