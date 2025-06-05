@@ -218,6 +218,7 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 
 	batchsize=192
+	ctf_refine=18
 	times=[time.time()]
 
 	# Cache initialization
@@ -285,21 +286,19 @@ def main():
 
 	if options.ctf>0:
 		try:
-			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
+			ctf=EMData(args[0],0,True)["ctf"] # Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
 		except:
 			print("Warning: Did not find CTF info in header of input. Checking for micrograph level CTF info")
 			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement which we have to go back to the per micrograph I think
-			ctf=js["ctf"][0].to_dict()
+			ctf=js["ctf"][0]
 			js.close()
-		cs=ctf["cs"]
-		voltage=ctf["voltage"]
-		ampcont=ctf["ampcont"]
-		dfstep = apix*apix/100 # Rough approximation of the correct step that doesn't involve calculating the wavelength
+		jctf = jaxCTF(ctf=ctf, dfmajor=ctf.defocus, dfminor=ctf.defocus)
+		dfstep = jctf.defocus_step
 		boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
-		df_buffer = (boxlen/2)/(dfstep*10000) + dfstep
+		df_buffer = (boxlen/20000) + dfstep # TODO: This is a sensible buffer for multislice tomography but isn't working for SPA--and doesn't work for when we refine defocus
 		dfrange=(mindf - df_buffer, maxdf + df_buffer)
 		# Create the ctf stack
-		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix)
+		ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
 
 	if options.fromscratch:
 		# Reseed orientations for global search at low resolution
@@ -375,7 +374,7 @@ def main():
 					# 	out.close()
 				elif options.ctf==2:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3])
+					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3])
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -385,7 +384,7 @@ def main():
 						shift+=shift0
 						sca+=sca
 				elif options.ctf==1:
-					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
+					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -479,7 +478,11 @@ def main():
 				norm=len(nliststg)//batchsize+1
 				for j in range(0,len(nliststg),batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time
 					ptclsfds,orts,tytx=ccache.read(nliststg[j:j+batchsize])
-					ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,stage[3]) # TODO: Doesn't work because how do I correlate the specific orts with ort as a whole'
+					if options.ctf > 0 and sn>ctf_refine:
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
+					else:
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,stage[3])
+
 					if j==0:
 						qual,ortstd,dydxstd=-qual0,ortstd0,dydxstd0
 					else:
@@ -516,9 +519,11 @@ def main():
 			projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
 			if options.ctf>0:
 				mx3d=orts.to_mx3d()
-				ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
-				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
-				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+				ctfaryds=jax_downsample_2d(ctf_stack, ny)
+				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfrange[0],dfstep,ny,tytx))
+				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,dfrange[0],dfstep,dsapix,ny,tytx))
+				ctf = EMAN2Ctf()
+				ctf.from_dict({"defocus":1.0, "voltage":jctf.voltage, "bfactor":0., "cs":jctf.cs, "ampcont":jctf.ampcont, "apix":jctf.apix})
 			transforms=orts.transforms(tytx)
 #			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
@@ -534,6 +539,7 @@ def main():
 				a.process_inplace("normalize")
 				b.process_inplace("filter.matchto",{"to":a})
 				if options.ctf>0:
+					ctf.defocus = tytx[i,2]
 					c=ctf_projs.emdata[i]
 					d=layered_ctf_projs.emdata[i]
 					c["apix_x"]=dsapix
@@ -544,6 +550,10 @@ def main():
 					d.process_inplace("filter.matchto",{"to":a})
 					c["xform.projection"]=transforms[i]
 					d["xform.projection"]=transforms[i]
+					a["ctf"] = ctf
+					b["ctf"] = ctf
+					c["ctf"] = ctf
+					d["ctf"] = ctf
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
 					c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
@@ -665,24 +675,23 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weig
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight)
+	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight)
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight):
+def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
-	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)  # last arg is frc_z which we are trying to remove
 
-gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf))
+gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfmin","dfstep"])
 
 def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
@@ -698,24 +707,23 @@ def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfs
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight)
+	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,dsapix,tytx,ptcls,weight)
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight):
+def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfstep,apix,tytx,ptcls,weight):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
-	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,dfmin,dfstep,apix,ny,tytx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)  # last arg is frc_z which we are trying to remove
 
-gradvalfnl_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf_loss)
+gradvalfnl_layered_ctf=jax.jit(jax.value_and_grad(prj_frc_layered_ctf_loss), static_argnames=["dfmin","dfstep","apix"])
 
 def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
@@ -749,6 +757,40 @@ def prj_frc_ort_loss(gausary,ortary, tytx, ptcls, weight):
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
 
 gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,2)))
+
+def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0):
+	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
+	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
+	unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns ort_step, dytx_step, qual, ort_std, tytx_std, and the 1-tensor with the per particle integrated FRCs for potential
+	quality control.
+	step - one gradient step to be applied with (gaus.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	gausary=gaus.jax
+	ortary=orts.jax
+	ptcls=ptclsfds.jax
+
+	frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight)
+#	print("gradtytx", gradtytx)
+
+	qual=frcs
+	stdort=gradort.std()		# orientation spinvec std
+	stdtytx=gradtytx.std()	# tytx std
+
+	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
+
+def prj_frc_ort_ctf_loss(gausary,ortary,ctfaryds,dfmin,dfstep,tytx, ptcls, weight):
+	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
+	of the Gaussians in gaus to particles in their current orientation"""
+	ny=ptcls.shape[1]
+	mx2d=jax_to_mx2d(ortary, swapxy=True)
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfmin,dfstep,ny,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
+
+gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfmin","dfstep"])
 
 
 def ccf_step_align(gaus,ptclsfds,orts,tytx):
