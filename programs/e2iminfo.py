@@ -74,13 +74,13 @@ def main():
 	parser.add_argument("-a", "--all", action="store_true",help="Show info for all images in file",default=False)
 	parser.add_argument("-C", "--check", action="store_true",help="Checks to make sure all image numbers are populated with images, and that all images have valid CTF parameters",default=False)
 	parser.add_argument("-c", "--count", action="store_true",help="Just show a count of the number of particles in each file",default=False)
-	parser.add_argument("--extractkey", type=str, default=None, help="This will extract a single named header value from each image as a text file. Output will be multicolumn if the referenced label is an object, such as CTF.")
+	parser.add_argument("--extractkey", action="append",dest="extractkey", default=None, help="This will extract a single named header value from each image as a text file. Output will be multicolumn if the referenced label is an object, such as CTF.")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	
 	(options, args) = parser.parse_args()
-	
+
 	if len(args)<1:
 		print(usage)
 		parser.error("Specify image file")
@@ -93,26 +93,29 @@ def main():
 	if options.extractkey is not None:
 		nf=0
 		for fsp in args:
-			out=open(f"{fsp.rsplit('.',1)[0]}_{options.extractkey}.txt","w")
+			out=open(f"{fsp.rsplit('.',1)[0]}_{options.extractkey[0]}.txt","w")
 			if fsp.endswith(".lst"):
 				lsx=LSXFile(fsp)
 				hdrs=[e[2] for e in lsx]
 			else: hdrs=[h.get_attr_dict() for h in EMData.read_images(fsp,None,True)]
 
-			if options.extractkey in hdrs[0].keys():
-				for i,h in enumerate(hdrs):
-					v=h[options.extractkey]
+			for i,h in enumerate(hdrs):
+				for k in options.extractkey:
+					if k in hdrs[0].keys():
+						v=h[k]
 
-					if isinstance(v,EMAN2Ctf) :
-						out.write("{:1.5f}\t{:1.1f}\t{:1.4f}\t{:1.5f}\t{:1.2f}\t{:1.1f}\t{:1.3f}\t{:1.2f}\n".format(v.defocus,v.bfactor,v.apix,v.dfdiff,v.dfang,v.voltage,v.cs,v.get_phase()))
-					elif isinstance(v,Transform) :
-						dct=v.get_params("eman")
-						out.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(dct["az"],dct["alt"],dct["phi"],dct["tx"],dct["ty"],dct["tz"]))
-					elif isinstance(v,list) or isinstance(v,tuple):
-						out.write([str(i) for i in v].join("\t")+"\n")
-					else:
-						out.write("{}\n".format(v))
-			else: print(options.extractkey," not present in ",fsp)
+						if isinstance(v,EMAN2Ctf) :
+							out.write("{:1.5f}\t{:1.1f}\t{:1.4f}\t{:1.5f}\t{:1.2f}\t{:1.1f}\t{:1.3f}\t{:1.2f}".format(v.defocus,v.bfactor,v.apix,v.dfdiff,v.dfang,v.voltage,v.cs,v.get_phase()))
+						elif isinstance(v,Transform) :
+							dct=v.get_params("eman")
+							out.write("{}\t{}\t{}\t{}\t{}\t{}".format(dct["az"],dct["alt"],dct["phi"],dct["tx"],dct["ty"],dct["tz"]))
+						elif isinstance(v,list) or isinstance(v,tuple):
+							out.write([str(i) for i in v].join("\t"))
+						else:
+							out.write("{}".format(v))
+					else: print(options.extractkey," not present in ",fsp)
+					if k == options.extractkey[-1] : out.write("\n")
+					else: out.write("\t")
 
 	nimgs=0
 	for imagefile in args:
