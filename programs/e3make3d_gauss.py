@@ -81,7 +81,7 @@ def main():
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
-	parser.add_argument("--keep", type=str, help="The fraction of images to use, based on quality scores (1.0 = use all). Optionally 3 values for SPT only: 3d qual, 2d qual, other",default=".9")
+	parser.add_argument("--keep", type=str, help="The fraction of images to use, based on quality scores (1.0 = use all). Optionally 3 values for SPT only: 3d qual, 2d qual, other",default="1.0")
 	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use : for range with excluded upper limit)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
 	parser.add_argument("--dfmin", type=float, help="Minimum defocus override, for use with --ctf",default=-1)
@@ -108,8 +108,7 @@ def main():
 	nptcl=len(lsx)
 
 	# Particle selection based on various options
-	if sum(options.keep)>1.0: error_exit("The sum of the --keep values must be 0<keep<=1.0")
-	if sum(options.keep)==1.0 and options.ptcl3d_id is not None: selimg=tuple(range(nptcl))
+	if min(options.keep)==1.0 and options.ptcl3d_id is not None: selimg=tuple(range(nptcl))
 	else:
 		# in spt mode we consider all 3 keep values, looking at scores on 3-D and 2-D particles, The third value was used for something else in the original program. Here we just combine with the second
 		if options.spt:
@@ -151,8 +150,8 @@ def main():
 
 	selimg=list(selimg)
 	selimg.sort()
+	if options.quick : selimg=selimg[:8192+4096]
 	nptcl=len(selimg)
-	if options.quick : nptcl=min(nptcl,8192+4096)
 	if options.verbose>0: print(f"{nptcl}/{len(lsx)} 2-D images selected")
 	lsx=None
 
