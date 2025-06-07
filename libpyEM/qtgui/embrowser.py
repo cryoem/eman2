@@ -2933,7 +2933,7 @@ class EMFolderInfoPane(EMInfoPane) :
 
 
 class EMBDBInfoPane(EMInfoPane) :
-	maxim = 500
+	maxim = 1000
 
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)

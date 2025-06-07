@@ -120,6 +120,10 @@ def main():
 			
 			p3ds=[(min(v),k) for k,v in p3d.items()]	# list of (score,3d_id) for 3d particles, we are using the best score among the 2-D particles, _not_ the average
 			p3ds.sort()
+			if options.verbose>2:
+				out=open("dbg_3d.txt","w")
+				for s,i in p3ds: out.write(f"{i}\t{s[0]}\t{s[1]}\n")
+				out=None
 			good_3d=set([i for s,i in p3ds[:int(len(p3ds)*options.keep[0])]])	# set of good ptcl3d_id numbers
 			# include only particles in the specified range (if specified)
 			if options.ptcl3d_id is not None:
@@ -134,6 +138,10 @@ def main():
 
 			# 2D filtering
 			p2ds.sort()
+			if options.verbose>2:
+				out=open("dbg_2d.txt","w")
+				for s,i,t in p2ds: out.write(f"{i}\t{s}\t{t}\n")
+				out=None
 			selimg=set([i for s,i,t in p2ds[:int(len(p2ds)*options.keep[1]*options.keep[2])] if t in good_3d])
 		
 		# normal mode (not spt) where we just have a score per-particle
