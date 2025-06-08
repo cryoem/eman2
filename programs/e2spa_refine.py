@@ -98,7 +98,7 @@ def main():
 				if options.parallel[:6]=="thread" and options.parallel.count(":")==2: 
 					cache=options.parallel.split(":")[2]
 				else: cache="." 
-				run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --gaussout {options.path}/threed_{i+1:02d}_{eo}.txt --sym {sym} --volfiltlp={res*0.75:.2f} --class {ieo} --cachepath {cache} --initgauss {options.gaussrecon}")
+				run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --keep {options.keep} --gaussout {options.path}/threed_{i+1:02d}_{eo}.txt --sym {sym} --volfiltlp={res*0.75:.2f} --class {ieo} --cachepath {cache} --initgauss {options.gaussrecon}")
 			else:
 				run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 			run("e2proc3d.py {pt}/threed_{i1:02d}_{eo}.hdf {pt}/threed_raw_{eo}.hdf".format(pt=options.path, i1=i+1, eo=eo))
