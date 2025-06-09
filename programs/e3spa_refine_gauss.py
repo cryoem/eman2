@@ -498,6 +498,8 @@ def main():
 #					ccache.set_frcs(nliststg[j:j+batchsize],frcs)
 #					for ii,n in enumerate(nliststg[j:j+batchsize]): fout.write(f"{n}\t{frcs[ii]:1.4f}\t{orts[ii][0]:1.4f}\t{orts[ii][1]:1.4f}\t{orts[ii][2]:1.4f}\n")
 
+				ort_grads=jnp.nan_to_num(ort_grads)
+				tytx_grads=jnp.nan_to_num(tytx_grads)
 				qual/=norm
 				ortstd/=norm
 				dydxstd/=norm
