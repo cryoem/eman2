@@ -37,6 +37,7 @@ import numpy as np
 import sys
 import time
 import os
+from collections import defaultdict
 
 # used for profiling. This can be commented out as long as the @profile line is also commented out
 #from line_profiler import profile
@@ -80,7 +81,8 @@ def main():
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
-	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use + for range)",default=None)
+	parser.add_argument("--keep", type=str, help="The fraction of images to use, based on quality scores (1.0 = use all). Optionally 3 values for SPT only: 3d qual, 2d qual, other",default="1.0")
+	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use : for range with excluded upper limit)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
 	parser.add_argument("--dfmin", type=float, help="Minimum defocus override, for use with --ctf",default=-1)
 	parser.add_argument("--dfmax", type=float, help="Maximum defocus override, for use with --ctf",default=-1)
@@ -98,28 +100,68 @@ def main():
 	jax_set_device(dev=0,maxmem=options.gpuram)
 	llo=E3init(sys.argv,options.ppid)
 
-	nptcl=EMUtil.get_image_count(args[0])
-	if options.quick : nptcl=min(nptcl,8192+4096)
+	options.keep=[float(k) for k in options.keep.split(',')]
+	if len(options.keep)<3: options.keep=[options.keep[0]]*3
 
-	if options.ptcl3d_id is not None:
-		if args[0][-4:]!=".lst" : error_exit("--ptcl3d_id only works with .lst input files")
-		try:
-			options.ptcl3d_id=int(options.ptcl3d_id)
-			rng=1
-		except:
-			rng=int(options.ptcl3d_id.split("+")[1])
-			options.ptcl3d_id=int(options.ptcl3d_id.split("+")[0])
-		lsx=LSXFile(args[0])
-		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"] in range(options.ptcl3d_id,options.ptcl3d_id+rng)]
-		nptcl=len(selimg)
-		lsx=None
+	if args[0][-4:]!=".lst" : error_exit("Only LST input files are supported. If working with an HDF with embedded parameters, create a .lst file and extract the parameters with e2proclst.py")
+	lsx=LSXFile(args[0])
+	nptcl=len(lsx)
+
+	# Particle selection based on various options
+	if min(options.keep)==1.0 and options.ptcl3d_id is not None: selimg=tuple(range(nptcl))
+	else:
+		# in spt mode we consider all 3 keep values, looking at scores on 3-D and 2-D particles, The third value was used for something else in the original program. Here we just combine with the second
+		if options.spt:
+			p3d=defaultdict(list)		# construct dictionary keyed by 3d particle, with scores and image numbers in value
+			p2ds=[]						# construct list of (score,#,ptcl3d_id) for 2-D particles at the same time
+			for i,l in enumerate(lsx):
+				p3d[l[2]["ptcl3d_id"]].append((l[2]["score"],i))
+				p2ds.append((l[2]["score"],i,l[2]["ptcl3d_id"]))
+			
+			p3ds=[(min(v),k) for k,v in p3d.items()]	# list of (score,3d_id) for 3d particles, we are using the best score among the 2-D particles, _not_ the average
+			p3ds.sort()
+			if options.verbose>2:
+				out=open("dbg_3d.txt","w")
+				for s,i in p3ds: out.write(f"{i}\t{s[0]}\t{s[1]}\n")
+				out=None
+			good_3d=set([i for s,i in p3ds[:int(len(p3ds)*options.keep[0])]])	# set of good ptcl3d_id numbers
+			# include only particles in the specified range (if specified)
+			if options.ptcl3d_id is not None:
+				try:
+					idmin=int(options.ptcl3d_id)
+					idmax=idmin+1
+				except:
+					idmin,idmax=[int(i) for i in options.ptcl3d_id.split(":")]
+				mrg=set(range(idmin,idmax))
+				good_3d=good_3d.intersection(mrg)
+			if options.verbose>0: print(f"SPT mode: {len(good_3d)}/{len(p3d)} 3-D particles selected")
+
+			# 2D filtering
+			p2ds.sort()
+			if options.verbose>2:
+				out=open("dbg_2d.txt","w")
+				for s,i,t in p2ds: out.write(f"{i}\t{s}\t{t}\n")
+				out=None
+			selimg=set([i for s,i,t in p2ds[:int(len(p2ds)*options.keep[1]*options.keep[2])] if t in good_3d])
+		
+		# normal mode (not spt) where we just have a score per-particle
+		else:
+			p2ds=[]						# construct list of (score,#) for 2-D particles at the same time
+			for i,l in enumerate(lsx):
+				p2ds.append((l[2]["score"],i))
+			p2ds.sort()
+			selimg=set([i for s,i in p2ds[:int(len(p2ds)*options.keep[0])]])
 
 	if options.classid>=0:
-		if args[0][-4:]!=".lst" : error_exit("--class only works with .lst input files")
-		lsx=LSXFile(args[0])
-		selimg=[i for i in range(len(lsx)) if lsx[i][2]["class"]==options.classid]
-		nptcl=len(selimg)
-		lsx=None
+		selcls=set([i for i in range(len(lsx)) if lsx[i][2]["class"]==options.classid])
+		selimg=selimg.intersection(selcls)
+
+	selimg=list(selimg)
+	selimg.sort()
+	if options.quick : selimg=selimg[:8192+4096]
+	nptcl=len(selimg)
+	if options.verbose>0: print(f"{nptcl}/{len(lsx)} 2-D images selected")
+	lsx=None
 
 	if options.profile:
 		selimg=tuple(range(0,min(2050,nptcl)))
