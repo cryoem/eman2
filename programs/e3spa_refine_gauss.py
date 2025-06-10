@@ -266,7 +266,7 @@ def main():
 				print(f"""\nERROR: No orientations found and --fromscratch not provided. Check that the input has
 					xform.projections in the header or rerun with --fromscratch""")
 				sys.exit(1)
-			elif options.fromscratch:
+			elif options.fromscratch: # TODO: the orts at least here will need to be put in an Orientations object instead of just a numpy array
 				tytx=np.zeros((stk.shape[0],3))
 				orts=rng.random((stk.shape[0],3))-0.5
 			else: tytx/= jnp.array((nxraw,nxraw, 1))
@@ -472,9 +472,6 @@ def main():
 				ort_grads = jnp.zeros(ccache.orts.shape)
 				tytx_grads = jnp.zeros(ccache.tytx.shape)
 
-				"""TODO: Idea for making gradient work with ccache.orts/tytx but also only using gradients at a time: Create a zero grad array right after nliststg to hold the gradients, then use nliststg to update the correct listing.
-				Con: The gradient for the ones never computed will be 0 and that might mess up the moments"""
-
 				norm=len(nliststg)//batchsize+1
 				for j in range(0,len(nliststg),batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time
 					ptclsfds,orts,tytx=ccache.read(nliststg[j:j+batchsize])
@@ -501,6 +498,23 @@ def main():
 				qual/=norm
 				ortstd/=norm
 				dydxstd/=norm
+
+				if isnan(ortstd) or isnan(dydxstd) :
+					if i==0:
+						print("ERROR: nan on gradient descent, saving crash images and exiting")
+						ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
+						out=open("crash_lastb_ortdydx.txt","w")
+						for io in range(len(orts)):
+							out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+						sys.exit(1)
+					else:
+						print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
+						try: os.unlinK("crash_img.lst")
+						except: pass
+						out=LSXFile(f"crash_img_{sn}_{i}.lst")
+						for ii in nliststg: out.write(-1,ii,args[0])
+						out=None
+						continue
 
 				ort_update, ort_optim_state = ort_optim.update((ort_grads, tytx_grads), ort_optim_state, (ccache.orts, ccache.tytx))
 				(ccache.orts, ccache.tytx) = optax.apply_updates((ccache.orts, ccache.tytx), ort_update)

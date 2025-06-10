@@ -1450,12 +1450,15 @@ def jax_to_mx2d(ortary,swapxy=False):
 	if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Gaussians are XYZA,
 	but images are YX.
 	"""
-	# Adding a tiny value avoids the issue with zero rotations. While it would be more correct to use a conditional
-	# it is much slower, and the tiny pertutbation should not significantly impact the math.
-	l=jnp.linalg.norm(ortary,axis=1)+1.0e-37
+	# Find the zero rotation values
+	l=jnp.linalg.norm(ortary, axis=1)
+	is_zero = l < 1e-12
+	# Filter them out so there won't be nans when I take the gradient
+	l = jnp.linalg.norm(jnp.where(is_zero[:,None], jnp.ones_like(ortary), ortary), axis=1)
 
-	w=jnp.cos(pi*l)  # cos "real" component of quaternion
-	s=jnp.sin(-pi*l)/l
+	# jnp.where calls from here on are to fix second derivative at the zero (fixed) values
+	w = jnp.where(is_zero, pi*pi*(l**2)/2, jnp.cos(pi*l)) # cos "real" component of quaternion
+	s = jnp.where(is_zero, pi*pi*pi*(l**2)/6, jnp.sin(-pi*l)/l)
 	q=jnp.transpose(ortary)*s		# transpose makes the vectorized math below work properly
 	if swapxy :
 		mx=jnp.array(((2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
