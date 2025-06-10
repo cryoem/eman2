@@ -1457,7 +1457,7 @@ def jax_to_mx2d(ortary,swapxy=False):
 	l = jnp.linalg.norm(jnp.where(is_zero[:,None], jnp.ones_like(ortary), ortary), axis=1)
 
 	# jnp.where calls from here on are to fix second derivative at the zero (fixed) values
-	w = jnp.where(is_zero, pi*pi*(l**2)/2, jnp.cos(pi*l)) # cos "real" component of quaternion
+	w = jnp.where(is_zero, -pi*pi*(l**2)/2, jnp.cos(pi*l)) # cos "real" component of quaternion
 	s = jnp.where(is_zero, pi*pi*pi*(l**2)/6, jnp.sin(-pi*l)/l)
 	q=jnp.transpose(ortary)*s		# transpose makes the vectorized math below work properly
 	if swapxy :
