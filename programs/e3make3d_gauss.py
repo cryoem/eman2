@@ -108,7 +108,7 @@ def main():
 	nptcl=len(lsx)
 
 	# Particle selection based on various options
-	if min(options.keep)==1.0 and options.ptcl3d_id is not None: selimg=tuple(range(nptcl))
+	if min(options.keep)==1.0 and options.ptcl3d_id is None: selimg=tuple(range(nptcl))
 	else:
 		# in spt mode we consider all 3 keep values, looking at scores on 3-D and 2-D particles, The third value was used for something else in the original program. Here we just combine with the second
 		if options.spt:

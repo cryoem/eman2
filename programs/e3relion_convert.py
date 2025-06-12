@@ -56,6 +56,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 	parser.add_header(name="text4", help='Important instructions', title="* exit PM, cd eman3, run PM from new eman2 folder", row=3, col=0, rowspan=1, colspan=3)
 	parser.add_pos_argument(name="star_file",help="Select STAR file", default="", guitype='filebox', browser="EMParticlesEditTable(withmodal=True,multiselect=False)",  row=6, col=0,rowspan=1, colspan=3)
 	parser.add_argument("--datapath", type=str, default=None, help="If the path to the image files in the STAR file is not valid from the current folder, specify the full path to where the image stacks live", guitype='strbox', row=7, col=0, rowspan=1, colspan=2)
+	parser.add_argument("--replaceimages", type=str, default=None, help="If the images are in a single stack file with the same ordering, instead of the individual files referenced in the STAR file, this will override the filenames/numbers in the STAR file", guitype='strbox', row=8, col=0, rowspan=1, colspan=2)
 	parser.add_argument("--projectfolder", type=str, default="eman3", help="Name of the new project folder to create, default 'eman3'")
 	parser.add_argument("--phaseflip", action="store_true",help="If set, will also generate a set of phase-flipped particles. Phase flipped particles will not permit defocus refinement.")
 	parser.add_argument("--nophaseflip", action="store_true", help="If set, will skip generation of phase-flipped particles. Phase flipped particles will not permit defocus refinement.", guitype='floatbox', row=8, col=0, rowspan=1, colspan=1)
@@ -231,8 +232,12 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 			# Make a "micrograph" CTF entry for each set of different defocuses to use when fitting
 			jdb["ctf_frame"]=[1024,ctf,(256,256),tuple(),5,1]
 
-		imn,imfsp=star[rkey]["rlnImageName"][i].split("@")
-		imn=int(imn)
+		if options.replaceimages is None:
+			imn,imfsp=star[rkey]["rlnImageName"][i].split("@")
+			imn=int(imn)
+		else:
+			imn=i
+			imfsp=options.replaceimages
 
 		# if datapath is specified, then look for datapath/filename
 		if options.datapath is not None: 
