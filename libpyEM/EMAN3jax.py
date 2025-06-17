@@ -140,7 +140,7 @@ class StackCache():
 				stack.append(np.load(self.fp))
 #				stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))  # TODO
 			except:
-				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]}")
+				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]} ({nlist})")
 
 		self.locked=False
 		ret=EMStack2D(jnp.stack(stack))

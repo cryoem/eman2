@@ -111,7 +111,7 @@ def main():
 	if min(options.keep)==1.0 and options.ptcl3d_id is None: selimg=tuple(range(nptcl))
 	else:
 		# in spt mode we consider all 3 keep values, looking at scores on 3-D and 2-D particles, The third value was used for something else in the original program. Here we just combine with the second
-		if options.spt:
+		if options.spt or options.tomo :
 			p3d=defaultdict(list)		# construct dictionary keyed by 3d particle, with scores and image numbers in value
 			p2ds=[]						# construct list of (score,#,ptcl3d_id) for 2-D particles at the same time
 			for i,l in enumerate(lsx):
@@ -290,42 +290,27 @@ def main():
 	for d in downs: rad_img_int(d)
 
 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 :
+	for i in range(0,nptcl,1000):
 		if options.verbose>1:
-			print(f" Caching {nptcl}")
-		stk=EMStack2D(EMData.read_images(args[0],selimg))
+			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
+			sys.stdout.flush()
+		stk=EMStack2D(EMData.read_images(args[0],selimg[i:min(i+1000,nptcl)]))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
+		if options.tomo and options.tomo_seqali!=0 :
+			stk.center_align_seq(options.tomo_seqali)
+			if options.verbose>3: stk.write_images("dbg_ali.hdf")
 		orts,tytx=stk.orientations
-		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
+		tytx/= jnp.array((nxraw,nxraw, 1))
 		if options.ctf>0:
 			mindf = min(mindf, float(jnp.min(tytx[:, 2])))
 			maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
-		for im in stk.emdata: im-=im["mean"]
-			#im.process_inplace("normalize.edgemean")
+		for im in stk.emdata: im.process_inplace("normalize.edgemean")
+		if options.verbose>3: stk.write_images("dbg_m3dg.hdf:12")
 		stkf=stk.do_fft()
+#		print(stkf.shape)
 		for down in downs:
 			stkfds=stkf.downsample(down)
-			caches[down].write(stkfds,0,orts,tytx)
-	else:
-		for i in range(0,nptcl,1000):
-			if options.verbose>1:
-				print(f" Caching {i}/{nptcl}",end="\r",flush=True)
-				sys.stdout.flush()
-			stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
-			if options.preclip>0 : stk=stk.center_clip(options.preclip)
-			if options.tomo and options.tomo_seqali!=0 :
-				stk.center_align_seq(options.tomo_seqali)
-				if options.verbose>3: stk.write_images("dbg_ali.hdf")
-			orts,tytx=stk.orientations
-			tytx/= jnp.array((nxraw,nxraw, 1))
-			if options.ctf>0:
-				mindf = min(mindf, float(jnp.min(tytx[:, 2])))
-				maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
-			for im in stk.emdata: im.process_inplace("normalize.edgemean")
-			stkf=stk.do_fft()
-			for down in downs:
-				stkfds=stkf.downsample(down)
-				caches[down].write(stkfds,i,orts,tytx)
+			caches[down].write(stkfds,i,orts,tytx)
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
@@ -623,7 +608,7 @@ def main():
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
 	vol["apix_z"]=apix*nxraw/outsz
-	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
+	if options.ptcl3d_id is not None : vol["ptcl3d_id"]=options.ptcl3d_id
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
