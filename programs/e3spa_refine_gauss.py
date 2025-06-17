@@ -64,6 +64,7 @@ def main():
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
+	parser.add_argument("--preclip", type=int, help="Trim the input images to the specified (square) box size in pixels", default=-1)
 	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
@@ -121,6 +122,7 @@ def main():
 		lsx=None
 
 	nxraw=EMData(args[0],0,True)["nx"]
+	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
 	if options.apix>0: apix=options.apix
 	else: apix=EMData(args[0],0,True)["apix_x"]
@@ -151,16 +153,39 @@ def main():
 		]
 	elif options.spt:
 		stages=[
-			[2**10,32,  32,1.8, -1, 1,.05,9],
-			[2**10,32,  32,1.8, -1, 2,.05,9],
-			[2**10,32,  32,1.8, -1, 2,.05,-3],
-			[2**10,32,  32,1.8, -1, 2,.05,-2],
-			[2**12,64,  48,1.5, -2, 2,.04,-3],
-			[2**12,64,  48,1.5, -2, 8,.02,-2],
-			[2**14,128, 32,1.2, -3,16,.01,-3],
-			[2**16,256, 16,1.2, -2,32,.01,-3],
-			[2**17,512,  8,1.2, -2, 0,.01,-3]
-#			[2**20,1024,48,1.2, -3,.004,5]
+			[2**10, 32, 32, 1.8, -1,  1,.05, 9], # 0
+			[2**10, 32, 32, 1.8, -1,  1,.05, 9], # 1
+			[2**10, 32, 48, 1.8, -1,  2,.05,-3], # 2
+			[2**12, 64, 48, 1.5, -2,  2,.04, 9], # 3
+			[2**12, 64,   8, 1.5, -2,  2,.04,-2], # 4
+			[2**12, 64,   8, 1.5, -2,  2,.04,-2], # 5
+			[2**12, 64,   8, 1.5, -2,  2,.04,-2], # 6
+			[2**12, 64,   8, 1.5, -2,  2,.04,-2], # 7
+			[2**12, 64,   8, 1.5, -2,  2,.04,-2], # 8
+			[2**12, 64,   8, 1.5, -2,  8,.04,-2], # 9
+			[2**12, 64, 48, 1.5, -2,  8,.02, 9], # 10
+			[2**12, 64,   8, 1.5, -2,  8,.02,-2], # 11
+			[2**12, 64,   8, 1.5, -2,  8,.02,-2], # 12
+			[2**12, 64,   8, 1.5, -2,  8,.02,-2], # 13
+			[2**12, 64,   8, 1.5, -2,  8,.02,-2], # 14
+			[2**12, 64,   8, 1.5, -2,  8,.02,-2], # 15
+			[2**12, 64,   8, 1.5, -2,16,.02,-2], # 16
+			[2**14,128,32, 1.2, -3,16,.01, 9], # 17
+			[2**14,128,  8, 1.2, -3,16,.01,-2], # 18
+			[2**14,128,  8, 1.2, -3,16,.01,-2], # 19
+			[2**14,128,  8, 1.2, -3,16,.01,-2], # 20
+			[2**14,128,  8, 1.2, -3,32,.01,-2], # 21
+			[2**16,256,16, 1.2, -2,32,.01, 9], # 22
+			[2**16,256,  8, 1.2, -2,32,.01,-2], # 23
+			[2**16,256,  8, 1.2, -2,32,.01,-2], # 24
+			[2**16,256,  8, 1.2, -2,32,.01,-2], # 25
+			[2**16,256,  8, 1.2, -2,32,.01,-2], # 26
+			[2**17,512,  8, 1.2, -2,32,.01, 9], # 27
+			[2**17,512,  4, 1.2, -2,32,.01,-2], # 28
+			[2**17,512,  4, 1.2, -2,32,.01,-2], # 29
+			[2**17,512,  4, 1.2, -2,32,.01,-2], # 30
+			[2**17,512,  4, 1.2, -2,32,.01,-2], # 31
+			[2**17,512,16, 1.2, -2,  0,.01, 9]  # 32
 		]
 	elif options.quick:
 		stages=[
@@ -261,6 +286,7 @@ def main():
 				print(f" Caching {i}/{nptcl}",end="\r",flush=True)
 				sys.stdout.flush()
 			stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
+			if options.preclip>0 : stk=stk.center_clip(options.preclip)
 			orts,tytx=stk.orientations
 			if orts is None and options.fromscratch==False:
 				print(f"""\nERROR: No orientations found and --fromscratch not provided. Check that the input has
