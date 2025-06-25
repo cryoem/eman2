@@ -95,7 +95,6 @@ import traceback
 
 def scatter_hist(x, y, ax, ax_histx, ax_histy,bins, col):
 	# no labels
-	print(bins,col)
 	ax_histx.tick_params(axis="x", labelbottom=False)
 	ax_histy.tick_params(axis="y", labelleft=False)
 
