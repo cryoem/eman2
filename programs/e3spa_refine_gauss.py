@@ -623,8 +623,13 @@ def main():
 		lsxout=LSXFile(f"{options.path}/ptcls_{sn:02d}.lst")
 		for i in range(len(lsxin)):
 			a,b,c=lsxin[i]
-			lsxout[i]=(a,b,{"xform.projection":Transform({"type":"spinvec","v1":float(ccache.orts[i][0]),"v2":float(ccache.orts[i][1]),"v3":float(ccache.orts[i][2]),"tx":float(ccache.tytx[i][1]*nxraw),"ty":float(ccache.tytx[i][0]*nxraw)}),"frc":float(ccache.frcs[i])})
+			lsxout[i]=(a,b,{"xform.projection":Transform({"type":"spinvec","v1":float(ccache.orts[i][0]),"v2":float(ccache.orts[i][1]),"v3":float(ccache.orts[i][2]),"tx":float(ccache.tytx[i][1]*nxraw),"ty":float(ccache.tytx[i][0]*nxraw)}),"frc":float(ccache.frcs[i]), "defocus":ccache.tytx[i][2]})
 		lsxout=None
+
+		# Re-force all caches to have the same orientation information
+		for down in downs:
+			caches[down].orts=ccache.orts
+			caches[down].tytx=ccache.tytx
 
 		# Gaussian locations
 		np.savetxt(f"{options.path}/threed_{sn:02d}.txt",gaus.numpy,fmt="%0.4f",delimiter="\t")
