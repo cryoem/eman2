@@ -1,33 +1,46 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 PROJECT(EMAN
-		VERSION 2.99.70
-		LANGUAGES CXX
-		)
+    VERSION 2.99.70
+    LANGUAGES CXX
+)
+
+# Detect target architecture
+if(NOT DEFINED TARGET_ARCH)
+    if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64")
+        set(TARGET_ARCH "x86_64")
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+        set(TARGET_ARCH "arm64")
+    else()
+        set(TARGET_ARCH "unknown")
+    endif()
+endif()
+
+message(STATUS "Building for target architecture: ${TARGET_ARCH}")
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(CMAKE_COMPILER_IS_GNUCXX AND "${CMAKE_CXX_COMPILER_VERSION}" LESS 5)
-	message(FATAL_ERROR "\nExpected GCC compiler minimum version: 5\nFound GCC version: ${CMAKE_CXX_COMPILER_VERSION}")
+    message(FATAL_ERROR "\nExpected GCC compiler minimum version: 5\nFound GCC version: ${CMAKE_CXX_COMPILER_VERSION}")
 endif()
 
 include(cmake/functions.cmake)
 
 OPTION(DEBUG_CMAKE_TARGETS "enable debug output for cmake target properties" OFF)
 if(DEBUG_CMAKE_TARGETS)
-	set(CMAKE_DEBUG_TARGET_PROPERTIES
-		INCLUDE_DIRECTORIES
-		COMPILE_DEFINITIONS
-		COMPILE_OPTIONS
-		COMPILE_FEATURES
-		LINK_DIRECTORIES
-		LINK_OPTIONS
-		SOURCES
-		POSITION_INDEPENDENT_CODE
-		CONTAINER_SIZE_REQUIRED
-		LIB_VERSION
-		)
+    set(CMAKE_DEBUG_TARGET_PROPERTIES
+        INCLUDE_DIRECTORIES
+        COMPILE_DEFINITIONS
+        COMPILE_OPTIONS
+        COMPILE_FEATURES
+        LINK_DIRECTORIES
+        LINK_OPTIONS
+        SOURCES
+        POSITION_INDEPENDENT_CODE
+        CONTAINER_SIZE_REQUIRED
+        LIB_VERSION
+        )
 endif()
 
 # for 64-bit large file support
@@ -54,22 +67,22 @@ MARK_AS_ADVANCED(CLEAR CMAKE_VERBOSE_MAKEFILE)
 
 # Set EMAN_PREFIX
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-	message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
-	if(NOT WIN32)
-		set(EMAN_PREFIX $ENV{PREFIX})
-	else()
-		set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
-	endif()
+    message("ENV{CONDA_BUILD_STATE}: $ENV{CONDA_BUILD_STATE}")
+    if(NOT WIN32)
+        set(EMAN_PREFIX $ENV{PREFIX})
+    else()
+        set(EMAN_PREFIX $ENV{LIBRARY_PREFIX})
+    endif()
 else()
-	find_package(Conda REQUIRED)
-		
-	if(CONDA_PREFIX)
-		if(NOT WIN32)
-			set(EMAN_PREFIX ${CONDA_PREFIX})
-		else()
-			set(EMAN_PREFIX ${CONDA_PREFIX}/Library)
-		endif()
-	endif()
+    find_package(Conda REQUIRED)
+        
+    if(CONDA_PREFIX)
+        if(NOT WIN32)
+            set(EMAN_PREFIX ${CONDA_PREFIX})
+        else()
+            set(EMAN_PREFIX ${CONDA_PREFIX}/Library)
+        endif()
+    endif()
 endif()
 
 set(EMAN_PREFIX_INC      ${EMAN_PREFIX}/include)
@@ -81,9 +94,9 @@ cmake_print_variables(CMAKE_PREFIX_PATH)
 include(cmake/find_all.cmake)
 
 if("$ENV{CONDA_BUILD_STATE}" STREQUAL "BUILD" )
-	set(CMAKE_INSTALL_RPATH "${Python3_SITELIB}")
+    set(CMAKE_INSTALL_RPATH "${Python3_SITELIB}")
 else()
-	set(CMAKE_INSTALL_RPATH "${Python3_SITELIB};${EMAN_PREFIX_LIB}")
+    set(CMAKE_INSTALL_RPATH "${Python3_SITELIB};${EMAN_PREFIX_LIB}")
 endif()
 
 option(ENABLE_CATCH2 "Enable Catch 2 framework for unit testing (internal development only)" OFF)
@@ -115,159 +128,176 @@ OPTION(ENABLE_DEBUG "enable debug support" OFF)
 OPTION(ENABLE_PROFILE "enable symbol generation without debug support" OFF)
 OPTION(ENABLE_OPTIMIZE_X86_64 "GCC optimizations for generic X86_64" OFF)
 OPTION(ENABLE_OPTIMIZE_MACHINE "Optimize code for this specific computer (typ 5-10% speedup). Binaries may incompatible with some other computers." OFF)
+OPTION(ENABLE_OPTIMIZE_ARM64 "Optimize code for ARM64 architecture" OFF)
 OPTION(ENABLE_OPTIMIZE_PHI "Optimize code for the Intel compiler on the PHI" OFF)
 OPTION(ENABLE_OPTIMIZE_WINDOWS_VC "Windows visual c++ specific optimization" OFF)
 
 set(optimization_options
-		ENABLE_DEBUG
-		ENABLE_PROFILE
-		ENABLE_OPTIMIZE_X86_64
-		ENABLE_OPTIMIZE_MACHINE
-		ENABLE_OPTIMIZE_PHI
-		ENABLE_OPTIMIZE_WINDOWS_VC
-	)
+        ENABLE_DEBUG
+        ENABLE_PROFILE
+        ENABLE_OPTIMIZE_X86_64
+        ENABLE_OPTIMIZE_MACHINE
+        ENABLE_OPTIMIZE_ARM64
+        ENABLE_OPTIMIZE_PHI
+        ENABLE_OPTIMIZE_WINDOWS_VC
+    )
 
 check_if_options_on_greater_than("${optimization_options}" 1)
 
 IF(CMAKE_SYSTEM_NAME MATCHES "Darwin")
-	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" ON)
+    OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" ON)
 ELSE()
-	OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
+    OPTION(ENABLE_OPTIMIZE_OSX "enable OSX support" OFF)
 ENDIF()
 
 if(NOT WIN32)
-	set(WARNING_FLAGS_ON  "-W -Wall")
-	set(WARNING_FLAGS_OFF "-w")
+    set(WARNING_FLAGS_ON  "-W -Wall")
+    set(WARNING_FLAGS_OFF "-w")
 else()
-	set(WARNING_FLAGS_ON  "")
-	set(WARNING_FLAGS_OFF "/W0")
+    set(WARNING_FLAGS_ON  "")
+    set(WARNING_FLAGS_OFF "/W0")
 endif()
 
 if(ENABLE_WARNINGS)
-	add_definitions(${WARNING_FLAGS_ON})
+    add_definitions(${WARNING_FLAGS_ON})
 else()
-	add_definitions(${WARNING_FLAGS_OFF})
+    add_definitions(${WARNING_FLAGS_OFF})
 endif()
 
 IF(ENABLE_MEMDEBUG)
-	ADD_DEFINITIONS(-DMEMDEBUG)
+    ADD_DEFINITIONS(-DMEMDEBUG)
 ENDIF()
 
 IF(ENABLE_MEMDEBUG2)
-	ADD_DEFINITIONS(-DMEMDEBUG2)
+    ADD_DEFINITIONS(-DMEMDEBUG2)
 ENDIF()
 
 IF(ENABLE_V4L2)
-	ADD_DEFINITIONS(-DBOUNDS_CHECKING -DENABLE_V4L2)
+    ADD_DEFINITIONS(-DBOUNDS_CHECKING -DENABLE_V4L2)
 ENDIF()
 
 IF(ENABLE_BOUNDS_CHECKING)
-	ADD_DEFINITIONS(-DBOUNDS_CHECKING)
+    ADD_DEFINITIONS(-DBOUNDS_CHECKING)
 ENDIF()
 
 IF(ENABLE_DEBUG)
-	SET (OPT_FLAGS "-DDEBUG -g -fno-inline")
+    SET (OPT_FLAGS "-DDEBUG -g -fno-inline")
 ELSEIF(ENABLE_PROFILE)
-	SET (OPT_FLAGS "-O2 -march=native -m64 -ffast-math -pipe")
-	OPTION(ENABLE_DEBUG "enable debug support" OFF)
+    IF(TARGET_ARCH STREQUAL "arm64")
+        SET (OPT_FLAGS "-O2 -mcpu=native -ffast-math -pipe")
+    ELSE()
+        SET (OPT_FLAGS "-O2 -march=native -m64 -ffast-math -pipe")
+    ENDIF()
+    OPTION(ENABLE_DEBUG "enable debug support" OFF)
 ELSEIF(ENABLE_OPTIMIZE_OSX)
 #	SET (OPT_FLAGS "-O3 -ffast-math")
-	SET (OPT_FLAGS "-O3 -D _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION")
-#	SET (OPT_FLAGS "-Os -ffast-math")
+    SET (OPT_FLAGS "-O3 -D _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION")
 ELSEIF(ENABLE_OPTIMIZE_MACHINE)
-	SET (OPT_FLAGS "-O5 -march=native -m64 -ffast-math -pipe")
-ELSEIF(ENABLE_OPTIMIZE_COMPATIBILITY)
-	SET (OPT_FLAGS "-O5 -march=haswell -m64 -ffast-math -pipe")
+    IF(TARGET_ARCH STREQUAL "arm64")
+        SET (OPT_FLAGS "-O3 -mcpu=native -ffast-math -pipe")
+    ELSE()
+        SET (OPT_FLAGS "-O5 -march=native -m64 -ffast-math -pipe")
+    ENDIF()
+ELSEIF(ENABLE_OPTIMIZE_ARM64)
+    SET (OPT_FLAGS "-O3 -mcpu=native -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_X86_64)
-	SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
+    SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
 #	SET (OPT_FLAGS "-O5 -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_WINDOWS_VC)
-	SET (OPT_FLAGS "/Ox /DHAVE_INLINE /MP /Gm-")
+    SET (OPT_FLAGS "/Ox /DHAVE_INLINE /MP /Gm-")
 ELSEIF(ENABLE_OPTIMIZE_PHI)
-	SET (OPT_FLAGS "-fast")
+    SET (OPT_FLAGS "-fast")
 #	SET (OPT_FLAGS "-O3 -xHost")
 ELSE()
-	IF(WIN32)
-		SET(OPT_FLAGS "")
-	ELSE()
-		SET (OPT_FLAGS "-O3 -ffast-math")     # This is the default
-	ENDIF()
+    IF(WIN32)
+        SET(OPT_FLAGS "")
+    ELSE()
+        IF(TARGET_ARCH STREQUAL "arm64")
+            SET (OPT_FLAGS "-O3 -ffast-math")
+        ELSE()
+            SET (OPT_FLAGS "-O3 -m64 -ffast-math")
+        ENDIF()
+    ENDIF()
 ENDIF()
 
 IF(CMAKE_SYSTEM MATCHES "IRIX.*")
 #	SET(EMAN_CXX_FLAGS "-n32 -LANG:std -w2 -fullwarn -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
-	SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:std -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "-n32 -woffall -LANG:std -LANG:ansi-for-init-scope=ON" CACHE INTERNAL "C++ compiler flags")
 ENDIF()
 
 IF(CMAKE_SYSTEM MATCHES "AIX*")
-	SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "C++ compiler flags")
 ENDIF()
 
 IF(CMAKE_SYSTEM MATCHES "OSF1-V*")
-	SET(EMAN_CXX_FLAGS "-w0" CACHE INTERNAL "C++ compiler flags")
+    SET(EMAN_CXX_FLAGS "-w0" CACHE INTERNAL "C++ compiler flags")
 ENDIF()
 
 IF(CMAKE_COMPILER_IS_GNUCXX)
 #	SET(EMAN_CXX_FLAGS " " CACHE INTERNAL "EMAN CXX FLAGS")
-	IF(ENABLE_DEBUG)
-		SET(EMAN_CXX_FLAGS "-g -Wcast-qual -Wwrite-strings" CACHE INTERNAL "EMAN CXX FLAGS")
-		SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -g")
-		SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -g")
-	ELSE()
-		SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "EMAN CXX FLAGS")
-	ENDIF()
+    IF(ENABLE_DEBUG)
+        SET(EMAN_CXX_FLAGS "-g -Wcast-qual -Wwrite-strings" CACHE INTERNAL "EMAN CXX FLAGS")
+        SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -g")
+        SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -g")
+    ELSE()
+        IF(TARGET_ARCH STREQUAL "arm64")
+            SET(EMAN_CXX_FLAGS "-mabi=lp64" CACHE INTERNAL "EMAN CXX FLAGS")
+        ELSE()
+            SET(EMAN_CXX_FLAGS "" CACHE INTERNAL "EMAN CXX FLAGS")
+        ENDIF()
+    ENDIF()
 
-	if(${Boost_VERSION} LESS_EQUAL "106900")
-		message("Setting _GLIBCXX_USE_CXX11_ABI=0...")
-		SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
-	endif()
+    if(${Boost_VERSION} LESS_EQUAL "106900")
+        message("Setting _GLIBCXX_USE_CXX11_ABI=0...")
+        SET(EMAN_CXX_FLAGS "${EMAN_CXX_FLAGS} -D_GLIBCXX_USE_CXX11_ABI=0" CACHE INTERNAL "EMAN CXX FLAGS")
+    endif()
 ENDIF()
 
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EMAN_CXX_FLAGS} ${OPT_FLAGS}")
 
 if(WIN32)
-	add_definitions(-DNOMINMAX)
+    add_definitions(-DNOMINMAX)
 endif()
 
 IF(ENABLE_IOCACHE)
-	ADD_DEFINITIONS(-DIMAGEIO_CACHE)
+    ADD_DEFINITIONS(-DIMAGEIO_CACHE)
 ENDIF()
 
 
 IF(ENABLE_FFTW_PLAN_CACHING)
-	ADD_DEFINITIONS(-DFFTW_PLAN_CACHING)
+    ADD_DEFINITIONS(-DFFTW_PLAN_CACHING)
 ENDIF()
 
 IF(ENABLE_FFT_CACHING)
-	ADD_DEFINITIONS(-DFFT_CACHING)
+    ADD_DEFINITIONS(-DFFT_CACHING)
 ENDIF()
 
 set(fft_options
-	ENABLE_FFTW3
-	ENABLE_NATIVE_FFT
-	ENABLE_ACML_FFT
-	)
+    ENABLE_FFTW3
+    ENABLE_NATIVE_FFT
+    ENABLE_ACML_FFT
+    )
 check_if_options_not_equal_to("${fft_options}" 1)
 
 IF(ENABLE_NATIVE_FFT)
-	ADD_DEFINITIONS(-DNATIVE_FFT)
+    ADD_DEFINITIONS(-DNATIVE_FFT)
 ENDIF()
 
 IF(ENABLE_SPARX_CUDA)
-	INCLUDE(${CMAKE_SOURCE_DIR}/libEM/cuda/FindCUDA.cmake)
-	CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM)
-	CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM/sparx/cuda)
-	ADD_DEFINITIONS(-DSPARX_USING_CUDA)
-	INCLUDE_DIRECTORIES(${CUDA_TOOLKIT_INCLUDE})
-	ADD_SUBDIRECTORY(libEM/sparx/cuda)
+    INCLUDE(${CMAKE_SOURCE_DIR}/libEM/cuda/FindCUDA.cmake)
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM)
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM/sparx/cuda)
+    ADD_DEFINITIONS(-DSPARX_USING_CUDA)
+    INCLUDE_DIRECTORIES(${CUDA_TOOLKIT_INCLUDE})
+    ADD_SUBDIRECTORY(libEM/sparx/cuda)
 ENDIF()
 
 IF(ENABLE_EMAN_CUDA)
-	INCLUDE(${CMAKE_SOURCE_DIR}/libEM/cuda/FindCUDA.cmake)
-	CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM)
-	ADD_DEFINITIONS(-DEMAN2_USING_CUDA)
-	INCLUDE_DIRECTORIES(${CUDA_TOOLKIT_INCLUDE})
-	ADD_SUBDIRECTORY(libEM/cuda)
+    INCLUDE(${CMAKE_SOURCE_DIR}/libEM/cuda/FindCUDA.cmake)
+    CUDA_INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/libEM)
+    ADD_DEFINITIONS(-DEMAN2_USING_CUDA)
+    INCLUDE_DIRECTORIES(${CUDA_TOOLKIT_INCLUDE})
+    ADD_SUBDIRECTORY(libEM/cuda)
 ENDIF()
 
 ADD_SUBDIRECTORY(libEM)
@@ -281,22 +311,22 @@ ADD_SUBDIRECTORY(doc)
 ADD_SUBDIRECTORY(images)
 
 add_custom_target(PythonFiles
-				  COMMAND ${CMAKE_COMMAND} -DCOMPONENT=PythonFiles -P cmake_install.cmake
-				  )
+                 COMMAND ${CMAKE_COMMAND} -DCOMPONENT=PythonFiles -P cmake_install.cmake
+                 )
 
 if(NOT WIN32)
-	install(CODE "execute_process(
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ./sp_gui.py ${EMAN_PREFIX}/bin/sphire
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ./sp_sx.py ${EMAN_PREFIX}/bin/sp_sparx
-					COMMAND ${CMAKE_COMMAND} -E create_symlink ./sx.py    ${EMAN_PREFIX}/bin/sparx
-				 )"
-			)
+    install(CODE "execute_process(
+                    COMMAND ${CMAKE_COMMAND} -E create_symlink ./sp_gui.py ${EMAN_PREFIX}/bin/sphire
+                    COMMAND ${CMAKE_COMMAND} -E create_symlink ./sp_sx.py ${EMAN_PREFIX}/bin/sp_sparx
+                    COMMAND ${CMAKE_COMMAND} -E create_symlink ./sx.py    ${EMAN_PREFIX}/bin/sparx
+                 )"
+            )
 endif()
 
 
 IF(ENABLE_RT)
-	include(cmake/testing.cmake)
-	ADD_SUBDIRECTORY(rt)
+    include(cmake/testing.cmake)
+    ADD_SUBDIRECTORY(rt)
 ENDIF()
 
 install(CODE "MESSAGE(\"\nTo install SPHIRE, run 'make install-sphire'.\n\")")
