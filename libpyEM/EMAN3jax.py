@@ -645,16 +645,9 @@ class EMStack2D(EMStack):
 
 		return jnp.transpose(peaks)
 
-class jaxCTF():
-	"""This class represents a stack of images in either an EMData, NumPy or Jax representation, with easy interconversion
-	- Shape of the array is {N,Y,X}, as EMData, it is a list of N x EMData(X,Y,Z)
-	- All images in the stack must have the same dimensions.
-	- Only one representation exists at a time. Coercing to a new type is relatively expensive in terms of time.
-	- Coerce routines will insure that the required representation exists, but others will be lost to insure self-consistency.
-
-	Individual images in the stack may be accessed using [n]
-	"""
-	# TODO: Still need to check if serializable/implement serialize function if not
+class EMAN3Ctf():
+	# TODO: Change this to be accurate
+	"""This class represents CTF conditions for an image."""
 
 	def __init__(self, ctf=None, dfmajor = None, dfminor=None, dfang=None, voltage=None, cs=None, ampcont=None,apix=None, bfactor=None):
 		"""	imgs - one of:
@@ -665,7 +658,8 @@ class jaxCTF():
 		numpy array, with first axis being image number {N,Z,Y,X} | {N,Y,X} | {N,X}
 		Tensor, with first axis being image number {N,Z,Y,X} ...
 		"""
-		if ctf != None:
+
+		if ctf != None: # TODO: make sure you can pass either EMAN2 or EMAN3 ctf
 			self.voltage=ctf.voltage
 			self.cs=ctf.cs
 			self.ampcont=ctf.ampcont
@@ -676,16 +670,15 @@ class jaxCTF():
 			self.dfminor=ctf.defocus-ctf.dfdiff/2
 		if voltage !=None: self.voltage=voltage
 		if cs != None: self.cs=cs
-		if ampcont!= None: self.ampcont=ampcont
+		if ampcont!= None: self.ampcont=ampcont # TODO: Store internally as phase shift
 		if apix!=None: self.apix=apix
 		if dfmajor!=None: self.dfmajor=dfmajor
 		if dfminor!=None: self.dfminor=dfminor
 		if dfang!=None: self.dfang=dfang
-		if bfactor!=None: self.bfactor=bfactor
 
 	@property
 	def wavelength(self):
-		"""Calculates wavelength of light (in A) for a given voltage"""
+		"""Calculates relativistic wavelength of electron (in A) for a given voltage"""
 		return 12.2639/np.sqrt(self.voltage*1000.0+0.97845*self.voltage*self.voltage)
 
 	@property
@@ -739,6 +732,16 @@ class jaxCTF():
 		return ctf
 
 	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None):
+	def to_dict(self):
+		"""Returns a dictionary representation of the object"""
+		return {"voltage": self.voltage, "cs": self.cs, "ampcont": self.ampcont, "apix":self.apix, "defocus":self.defocus, "dfang":self.dfang, "dfdiff":self.dfdiff}
+
+	def to_jsondict(self): # Included here instead of EMAN3jsondb.py because of recursive imports
+		"""Creates a dict representation of the object for JSON serialization purposes."""
+		ret = self.to_dict()
+		ret["__class__"] = "EMAN3Ctf"
+		return ret
+
 		"""Returns a stack of CTF images, with size ny, of type ctf_type. The stack will vary var_name in the range var_range.
 			Inputs:
 			ny--Size of images to make. Will assume it corresponds to the apix unless overriden
