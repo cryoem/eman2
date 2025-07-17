@@ -2090,16 +2090,29 @@ class EMGMM(QtWidgets.QMainWindow):
 		# Strong positive peaks
 		seg=map3d.process("segment.gauss",opt)
 		print("pos:",len(seg["segment_amps"]))
-		map3d2=map3d.process("normalize.edgemean")
-		map3d2.mult(-1.0)
 
-		# strong negative peaks
+		# "shell" surrounding existing density
+		map3d2=seg.process("threshold.binary",{"value":minpos/3.0})
+		map3d2a=map3d2.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+		map3d2.mult(-1)
+		map3d2.add(1)
+		map3d2a.mult(map3d2)
 		opt["minratio"]=minneg
-		segneg=map3d2.process("segment.gauss",opt)
+		map3d2a.write_image("tst_3d2a.hdf:16",0)
+		segneg=map3d2a.process("segment.gauss",opt)
+		segneg.write_image("tst_segneg.hdf:16",0)
 		print("neg:",len(segneg["segment_amps"]))
-#		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
+
+# 		# strong negative peaks
+		# map3d2=map3d.process("normalize.edgemean")
+		# map3d2.mult(-1.0)
+# 		opt["minratio"]=minneg
+# 		segneg=map3d2.process("segment.gauss",opt)
+# 		print("neg:",len(segneg["segment_amps"]))
+# #		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
+
 		if self.currun["pas"][1]=="0":
-			print("No amplitude modification, so 'negative' peaks set to small positive value")
+			print("No amplitude modification, so 'negative' peaks set to small positive value as probes")
 			amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))+.05)
 			centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
 		else:

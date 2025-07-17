@@ -894,7 +894,7 @@ class EMPlot2DWidget(EMGLWidget):
 		if contoursteps==None : contoursteps=self.pparm[key][8]
 		if contourlevels==None : contourlevels=self.pparm[key][9]
 		if hist==None : hist=self.pparm[key][10]
-		if histsteps==None : histsteps=pparm[key][11]
+		if histsteps==None : self.histsteps=self.pparm[key][11]
 		if self.pparm[key]==(color,line,linetype,linewidth,sym,symtype,symsize,contour,contoursteps,contourlevels,hist,histsteps) : return
 		self.pparm[key]=(color,line,linetype,linewidth,sym,symtype,symsize,contour,contoursteps,contourlevels,hist,histsteps)
 		self.needupd=1

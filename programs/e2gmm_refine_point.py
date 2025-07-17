@@ -839,10 +839,11 @@ def build_encoder(ninp,nmid,grps=None,style="new_leaky"):
 			print(f"Encoder hybrid {max(ninp,nmid*8)} {max(ninp//4,nmid*4)} {max(ninp//16,nmid*2)}")
 			layers=[
 			tf.keras.layers.Flatten(),
-			tf.keras.layers.Dense(max(ninp,nmid*8), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
-			tf.keras.layers.Dense(max(ninp//4,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+			tf.keras.layers.Dense(max(ninp,nmid*16), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
+			tf.keras.layers.Dense(max(ninp//4,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 			tf.keras.layers.Dropout(.3),
-			tf.keras.layers.Dense(max(ninp//16,nmid*2), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+			tf.keras.layers.Dense(max(ninp//16,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+			tf.keras.layers.Dense(max(ninp//32,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
 			tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
 			]
 
@@ -964,17 +965,13 @@ def build_decoder(nmid, pt, style="new_leaky" ):
 		]
 	elif style=="hybrid_3":
 		layers=[
-			#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
-			#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
-			#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
-			tf.keras.layers.Dense(nmid*4,activation="linear",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2,bias_initializer=binit),
-			tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2),
-			tf.keras.layers.Dropout(.3),
-			tf.keras.layers.Dense(nmid*16,activation="linear",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2),
+			tf.keras.layers.Dense(nout*4,activation="linear",kernel_initializer=kinit2,use_bias=True,bias_initializer=binit,kernel_regularizer=l2),
+	#		tf.keras.layers.Dropout(.3),
 	#		tf.keras.layers.BatchNormalization(),
 			layer_output,
 			tf.keras.layers.Reshape((nout,4))
 		]
+
 	elif style=="linear":
 		layers=[
 			tf.keras.layers.Dense(nout*4,activation="linear",kernel_initializer=kinit2,use_bias=True,bias_initializer=binit,kernel_regularizer=l2),
