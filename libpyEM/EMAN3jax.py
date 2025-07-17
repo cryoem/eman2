@@ -80,6 +80,7 @@ class StackCache():
 		self.locs=np.zeros(n+1,dtype=np.int64)			# list of seek locations in the binary file for each image
 		self.orts=np.zeros((n,3),dtype=np.float32)		# orientations in spinvec format
 		self.tytx=np.zeros((n,3),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format, third column used for per particle defocus
+		self.astig=np.zeros((n,3), dtype=np.float32)
 		self.frcs=np.zeros((n),dtype=np.float32)+2.0	# FRCs from previous round, initialize to 2.0 (> 1.0 normal max)
 		self.cloc=0
 		self.locked=False
@@ -90,7 +91,7 @@ class StackCache():
 		os.unlink(self.filename)
 		self.locs=None
 
-	def write(self,stack,n0,ortss=None,tytxs=None):
+	def write(self,stack,n0,ortss=None,tytxs=None, astigs=None):
 		"""writes stack of images starting at n0 to cache"""
 		while self.locked: time.sleep(0.1)
 		self.locked=True
@@ -103,6 +104,9 @@ class StackCache():
 			except:
 #				print(tytxs,tytxs.shape)
 				self.tytx[n0:n0+len(stack)]=np.array(tytxs)
+		if astigs is not None:
+			try: self.astig[n0:n0+len(stack)]=astigs
+			except: self.astig[n0:n0+len(stack)]=np.array(astigs)
 
 		# we go through the images one at a time, serialze, and write to a file with a directory
 		self.fp.seek(self.cloc)
@@ -146,7 +150,8 @@ class StackCache():
 		ret=EMStack2D(jnp.stack(stack))
 		orts=Orientations(self.orts[nlist])
 		tytx=np.array(self.tytx[nlist])
-		return ret,orts,tytx
+		astig=np.array(self.astig[nlist])
+		return ret,orts,tytx,astig
 
 class EMStack():
 	"""This class represents a stack of images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
@@ -410,6 +415,7 @@ class EMStack2D(EMStack):
 		""" """
 		self._xforms=None
 		self._df=None
+		self._astig=None
 		if imgs is None:
 			self._data=None
 			self._npy_list=None
@@ -418,11 +424,16 @@ class EMStack2D(EMStack):
 			self._data=[imgs]
 			try: self._xforms=[imgs["xform.projection"]]
 			except: pass
-			try: self._df=np.array([imgs["ctf"].to_dict()["defocus"]])
+			try:
+				ctf = imgs["ctf"]
+				self._df=np.array([ctf.defocus])
+				self._astig=np.array([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
 			except:
 				try:
 					js=js_open_dict(info_name(imgs["ptcl_source_image"]))
-					self._df=np.array([js["ctf"][0].to_dict()["defocus"]])
+					ctf = js["ctf"][0]
+					self._df=np.array([ctf.defocus])
+					self._astig=np.array([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
 					js.close()
 				except: pass
 			self._npy_list=None
@@ -436,15 +447,21 @@ class EMStack2D(EMStack):
 			self.apix=self._data[0]["apix_x"]
 			try: self._xforms=[im["xform.projection"] for im in self._data]
 			except: pass
-			try: self._df=np.array([im["ctf"].to_dict()["defocus"] for im in self._data])
+			try:
+				self._df=np.array([im["ctf"].defocus for im in self._data])
+				self._astig=np.array([[im["ctf"].dfdiff, im["ctf"].dfang, np.pi/2 - im["ctf"].get_phase()] for im in self._data])
 			except:
 				try:
 					df=[]
+					astig=[]
 					for im in self._data:
 						js=js_open_dict(info_name(im["ptcl_source_image"]))
-						df.append(js["ctf"][0].to_dict()["defocus"])
+						ctf=js["ctf"][0]
+						df.append(ctf.defocus)
+						astig.append([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
 						js.close()
 					self._df=np.array(df)
+					self._astig=np.array(astig)
 				except: pass
 			if self._data[0].get_ndim()!=2:
 				if len(self._data)!=1 : raise Exception(f"EMStack2D only supports stacks of 2-D data or a single volume. {imgs} is a stack of {self._data[0].get_ndim()}-D")
@@ -456,15 +473,21 @@ class EMStack2D(EMStack):
 				self._data=list(imgs)		# copy the list, not the elements of the list
 				try: self._xforms=[im["xform.projection"] for im in self._data]
 				except: pass
-				try: self._df=np.array([im["ctf"].to_dict()["defocus"] for im in self._data])
+				try:
+					self._df=np.array([im["ctf"].defocus for im in self._data])
+					self._astig=np.array([[im["ctf"].dfdiff, im["ctf"].dfang, im["ctf"].get_phase()] for im in self._data])
 				except:
 					try:
 						df=[]
+						astig=[]
 						for im in self._data:
 							js=js_open_dict(info_name(im["ptcl_source_image"]))
-							df.append(js["ctf"][0].to_dict()["defocus"])
+							ctf=js["ctf"][0]
+							df.append(ctf.defocus)
+							astig.append([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
 							js.close()
 						self._df=np.array(df)
+						self._astig=np.array(astig)
 					except: pass
 				self._npy_list=None
 			except: raise Exception("EMStack2D may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Y,X}")
@@ -487,6 +510,12 @@ class EMStack2D(EMStack):
 		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
 		else: tytx = jnp.stack([tytx[:,0],tytx[:,1], jnp.zeros(tytx.shape[0])], axis=-1)
 		return orts,tytx
+
+	@property
+	def astigmatism(self):
+		"""Returns the nx2 astigmatism parameter array [dfdiff, dfang] for the current images if available or None if not."""
+		if self._astig is None: return None
+		else: return jnp.array(self._astig)
 
 	def orientations_withxf(self,prexf=None):
 		"""Will apply prexf rotatation to each orientation before returning. Typically used to modify orientations for
@@ -649,8 +678,9 @@ class EMAN3Ctf():
 	# TODO: Change this to be accurate
 	"""This class represents CTF conditions for an image."""
 
-	def __init__(self, ctf=None, dfmajor = None, dfminor=None, dfang=None, voltage=None, cs=None, ampcont=None,apix=None, bfactor=None):
-		"""	imgs - one of:
+	def __init__(self, defocus = None, dfdiff=None, dfang=None, voltage=None, cs=None, ampcont=None,apix=None, ctf=None): # TODO: Have phaseshift with ampcont get/set like in EMAN2. Also add defocus setter
+		# TODO: Will need to add params for beam divergence/beam tilt later on
+		"""	imgs - one of: # TODO: Fix this to be accurate (and include units)
 		None
 		filename, with optional ":" range specifier (see https://eman2.org/ImageFormats)
 		single EMData object
@@ -664,16 +694,15 @@ class EMAN3Ctf():
 			self.cs=ctf.cs
 			self.ampcont=ctf.ampcont
 			self.apix=ctf.apix
-			self.bfactor=ctf.bfactor
-			self.dfang=ctf.dfang
-			self.dfmajor=ctf.defocus+ctf.dfdiff/2
-			self.dfminor=ctf.defocus-ctf.dfdiff/2
+			self.defocus=ctf.defocus
+			self.dfang=ctf.dfang # TODO: Check if EMAN/CTFfind have same angle conventions--CTFfind's angle is the angle between the major axis and the x axis (counterclockwise), so is EMAN's
+			self.dfdiff=ctf.dfdiff
 		if voltage !=None: self.voltage=voltage
 		if cs != None: self.cs=cs
 		if ampcont!= None: self.ampcont=ampcont # TODO: Store internally as phase shift
 		if apix!=None: self.apix=apix
-		if dfmajor!=None: self.dfmajor=dfmajor
-		if dfminor!=None: self.dfminor=dfminor
+		if defocus!=None: self.defocus=defocus
+		if dfdiff!=None: self.dfdiff=dfdiff
 		if dfang!=None: self.dfang=dfang
 
 	@property
@@ -690,27 +719,19 @@ class EMAN3Ctf():
 
 	def get_defocus(self):
 		"""Returns the EMAN style defocus"""
-		return (self.dfmajor+self.dfminor)/2
+		return self.defocus
 
-	def df(self, ang):
-		"""Returns defocus as a function of angle, ang should be in radians"""
-		if self.dfmajor == self.dfminor: return self.dfmajor
-		else: return self.get_defocus + ((self.dfmajor - self.dfminor)/2)*cos(2*ang-(2*pi/180)*self.dfang)
+	def get_dfdiff(self):
+		"""Returns the EMAN style defocus difference"""
+		return self.dfdiff
 
-	def df_range(self, ang, defocus, dfang):
-		"""Returns defocus as a function of angle using a provided defocus instead of the one in self
-		Inputs:
-		ang--The angle to calculate the defocus at. It should be in radians
-		defocus--The defocus to use instead of calculating average defocus from self
-		dfang--The astigmatism angle to use instead of dfang from self (should be in degrees)"""
-		if self.dfmajor == self.dfminor: return defocus
-		else: return defocus + ((self.dfmajor - self.dfminor)/2)*cos(2*ang-(2*pi/180)*dfang)
+	def get_defocusU(self):
+		"""Returns RELION style defocus along astigmatism axis"""
+		return self.defocus + self.dfdiff/2
 
-	def df_img(self, ny, defocus, dfang):
-		return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: self.df_range(jnp.arctan2(x,y), defocus, dfang),(ny//2,ny//2+1)),jnp.fromfunction(lambda y,x: self.df_range(jnp.arctan2(x,(ny//2-y)),defocus,dfang),(ny//2,ny//2+1)))))
-
-	df_defocus_img = jax.vmap(df_img, in_axes=(None, None, 0, None))
-	df_dfang_img = jax.vmap(df_img, in_axes=(None, None, None, 0))
+	def get_defocusV(self):
+		"""Returns RELION style defocus along minor astigmatism axis"""
+		return self.defocus - self.dfdiff/2
 
 	def get_phase(self):
 		"""Returns the phase shift based on the percent amplitude contrast"""
@@ -725,13 +746,17 @@ class EMAN3Ctf():
 		elif phase>-pi and phase<-pi/2: self.ampcont=(-2-sin(phase))*100
 		else: print(f"Phase={phase*180/pi} degrees out of range")
 
-	def to_emanCTF(self):
+	def to_eman2CTF(self):
 		"""Returns an EMAN CTF object with the information in the object"""
 		ctf = EMAN2Ctf()
-		ctf.from_dict({"voltage": self.voltage, "cs": self.cs, "ampcont": self.ampcont, "apix": self.apix, "bfactor": self.bfactor, "dfang": self.dfang, "defocus": self.get_defocus, "dfdiff": self.dfmajor-self.dfminor})
+		ctf.from_dict({"voltage": self.voltage, "cs": self.cs, "ampcont": self.ampcont, "apix": self.apix, "dfang": self.dfang, "defocus": self.defocus, "dfdiff": self.dfdiff})
 		return ctf
 
-	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None):
+	def to_jax(self):
+		"""Returns a jax array with the information in the object. The order is similar to EMAN2Ctf.to_vector(), with some ommissions for variables not included in EMAN3Ctf
+		[defocus, dfdiff, dfang, ampcont, voltage, cs, apix]"""
+		return jax.array([self.defocus, self.dfdiff, self.dfang, self.ampcont, self.voltage, self.cs, self.apix])
+
 	def to_dict(self):
 		"""Returns a dictionary representation of the object"""
 		return {"voltage": self.voltage, "cs": self.cs, "ampcont": self.ampcont, "apix":self.apix, "defocus":self.defocus, "dfang":self.dfang, "dfdiff":self.dfdiff}
@@ -742,40 +767,112 @@ class EMAN3Ctf():
 		ret["__class__"] = "EMAN3Ctf"
 		return ret
 
+	def df(self, ang):
+		"""Returns defocus as a function of angle, ang should be in radians"""
+		if self.dfdiff == 0: return self.defocus
+		else: return self.defocus + (self.dfdiff/2)*cos(2*ang-(2*pi/180)*self.dfang)
+
+	# def df_range(self, ang, defocus, dfang):
+	# 	"""Returns defocus as a function of angle using a provided defocus instead of the one in self
+	# 	Inputs:
+	# 	ang--The angle to calculate the defocus at. It should be in radians
+	# 	defocus--The defocus to use instead of calculating average defocus from self
+	# 	dfang--The astigmatism angle to use instead of dfang from self (should be in degrees)"""
+	# 	if self.dfmajor == self.dfminor: return defocus
+	# 	else: return defocus + ((self.dfmajor - self.dfminor)/2)*jnp.cos(2*ang-(2*pi/180)*dfang)
+ #
+	# def df_img(self, ny, defocus, dfang):
+	# 	return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: self.df_range(jnp.arctan2(x,y), defocus, dfang),(ny//2,ny//2+1)),jnp.fromfunction(lambda y,x: self.df_range(jnp.arctan2(x,(ny//2-y)),defocus,dfang),(ny//2,ny//2+1)))))
+ #
+	# df_defocus_img = jax.vmap(df_img, in_axes=(None, None, 0, None))
+	# df_dfang_img = jax.vmap(df_img, in_axes=(None, None, None, 0))
+
+	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None, use_astig=True, ewald_sphere=False, beam_tilt=False):
 		"""Returns a stack of CTF images, with size ny, of type ctf_type. The stack will vary var_name in the range var_range.
 			Inputs:
 			ny--Size of images to make. Will assume it corresponds to the apix unless overriden
 			ctf_type--One of 'amplitude', 'sign'
 			var_range--The range to let the variable vary
-			var_name--Which variable to vary, right now 'defocus' and 'dfang' are supported
+			var_name--Which variable to vary, right now 'defocus' and 'none' are supported
 			apix--Override in case ny is downsampled from the original
 			Returns:
 			ctfary--A jax array of the CTF images
 			step--The step that was used to fill the range"""
-		if apix==None: apix=self.apix
+		if apix ==None: apix = self.apix
 		wl = self.wavelength
-		g1=(jnp.pi/2.0)*self.cs*1.0e7*pow(wl,3)
-		g2=jnp.pi*wl*10000.0
-		phase=jnp.pi/2.0-self.get_phase()
-		rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-		if var_name == "defocus":
-			step = self.defocus_step
-			dfimg = self.df_defocus_img(ny, jnp.arange(var_range[0], var_range[1], step, jnp.complex64), self.dfang)
-		elif var_name == "dfang":
-			step = 1 # TODO: If I can, calculate a better angular step eg based on defocus_step
-			dfimg = self.df_dfang_img(ny, self.get_defocus(), jnp.arange(var_range[0], var_range[1], step, jnp.complex64))
-		else:
-			print("var_name was not recognized. It should be one of 'defocus' or 'dfang'")
-			return
+		phase = jnp.pi/2.0-self.get_phase()
+
 		if ctf_type == "amplitude":
-			ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*dfimg-phase)
+			sign_only = False
 		elif ctf_type == "sign":
-			ctf = jnp.sign(jnp.cos(-g1*rad2*rad2+g2*rad2*dfimg-phase))
+			sign_only = True
 		else:
 			print("The ctf_type was not recognized, it should be one of 'amplitude', 'sign'.")
 			return
-		return ctf, step
 
+		if var_name == "defocus":
+			step = self.defocus_step
+			defocus = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
+			dfdiff = self.get_dfdiff()
+			dfang = self.dfang
+			variable = 1
+			return jax_compute_2d_ctf(wl, self.cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only)
+			# return jit_compute_2d_ctf_stack_astig_defocus(wl, self.cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only)
+		# elif var_name == "dfdiff":
+		# 	step = self.defocus_step # TODO: Figure out if I should use a different step for dfdiff (probably)
+		# 	defocus = self.get_defocus()
+		# 	dfdiff = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
+		# 	dfang = self.dfang
+		# 	variable = 2
+		# elif var_name == "dfang":
+		# 	step = 1 # TODO: If I can, calculate a better angular step eg based on defocus_step
+		# 	defocus = self.get_defocus()
+		# 	dfdiff = self.get_dfdiff()
+		# 	dfang = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
+		# 	variable = 3
+		elif var_name == "none":
+			defocus = jnp.reshape(self.get_defocus(), (1,))
+			dfdiff = self.get_dfdiff()
+			dfang = self.dfang
+			variable = 0
+			return jit_compute_2d_ctf(wl, self.cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only)
+		else:
+			# print("var_name was not recognized. It should be one of 'defocus', 'dfdiff', 'dfang', or 'none'")
+			print("var_name was not recognized. It should be one of 'defocus', 'none'")
+			return
+
+def jax_df_img(ny, defocus, dfdiff, dfang):
+	return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2(y,x)-(2.0*jnp.pi/180)*dfang) , (ny//2, ny//2+1)),
+														jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2((y-ny//2),x)-(2.0*jnp.pi/180)*dfang), (ny//2, ny//2+1)))))
+
+jax_df_defocus_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, 0, None, None)), static_argnames=["ny"])
+# jax_df_dfdiff_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, None, 0, None)), static_argnames=["ny"])
+# jax_df_dfang_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, None, None, 0)), static_argnames=["ny"])
+
+def jax_compute_2d_ctf_stack_defocus(wavelength, cs, phase, apix, ny, dfmin, dfmax, num_df, dfdiff, dfang, sign_only):
+	defocus = jnp.linspace(dfmin, dfmax, num_df)
+	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
+	g2=jnp.pi*wavelength*10000.0
+	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
+	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
+	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
+	if sign_only:
+		ctf = jnp.sign(ctf)
+	return ctf
+
+jit_compute_2d_ctf_stack_defocus = jax.jit(jax_compute_2d_ctf_stack_defocus, static_argnames=["ny", "num_df", "sign_only"])
+
+def jax_compute_2d_ctf(wavelength, cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only):
+	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
+	g2=jnp.pi*wavelength*10000.0
+	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
+	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
+	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
+	if sign_only:
+		ctf = jnp.sign(ctf)
+	return ctf
+
+jit_compute_2d_ctf= jax.jit(jax_compute_2d_ctf, static_argnames=["ny", "sign_only"])
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
@@ -1304,7 +1401,8 @@ gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None,
 #
 #	return jnp.stack(proj2)
 
-def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
+# def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
+def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
@@ -1339,9 +1437,9 @@ def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")
-	return jit_apply_ctf(ctfary, proj, tytx[2], dfmin, dfstep)
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
-gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0]) ,static_argnames=["boxsize"])
+gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
 
 #def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
 #	proj2=[]
@@ -1356,7 +1454,8 @@ gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None
 #
 #	return jnp.stack(proj2)
 
-def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfstep,apix,boxsize,tytx):
+# def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfstep,apix,boxsize,tytx):
+def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
 	shift11=jnp.array((1,1))
@@ -1389,10 +1488,10 @@ def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfstep,apix,bo
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall, mode="drop")
-	proj = jit_apply_ctf(ctfary, proj, jnp.linspace(tytx[2]-offset*dfstep, tytx[2]+offset*dfstep, 2*offset+1), dfmin, dfstep)
+	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]-offset*dfstep, tytx[2]+offset*dfstep, 2*offset+1), astig, dfstep, apix)
 	return jnp.sum(proj, axis=0)
 
-gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, None, 0]) ,static_argnames=["boxsize","apix","dfstep"])
+gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
@@ -1433,10 +1532,19 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 	return vol
 
-def jit_apply_ctf(ctfary, projs, dfary, dfmin, dfstep):
+# def jit_apply_ctf(ctfary, projs, dfary, dfmin, dfstep):
+def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
-	jax.debug.print("defocus value(s): {df}\nindex in array: {i}", df=dfary, i=jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32))
-	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * ctfary[jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32)])
+# #	jax.debug.print("defocus value(s): {df}\nindex in array: {i}", df=dfary, i=jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32))
+# 	dfary = jnp.reshape(dfary, (jnp.size(dfary))) # dfary should be of shape () or (n,), this reshapes it to always be (n,)
+# 	ctfary_idxi = jnp.floor((dfary-dfmin)/dfstep).astype(jnp.int32)
+# 	ctfary_idxf = (dfary-dfmin)/dfstep - ctfary_idxi
+# 	interpolated_ctf = jnp.expand_dims(1.0-ctfary_idxf, [1,2])*ctfary[ctfary_idxi]+jnp.expand_dims(ctfary_idxf, [1,2])*ctfary[ctfary_idxi+1]
+# 	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * interpolated_ctf)
+# #	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * ctfary[jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32)])
+	ctfary = jax_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], False)
+	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
+
 
 def jax_to_mx2d(ortary,swapxy=False):
 	"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
