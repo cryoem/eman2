@@ -37,8 +37,8 @@ def main():
 	parser.add_argument("--fulldist", action="store_true", default=False ,help="use full distance in reduced space instead of project to one axis.")
 
 	parser.add_argument("--spt", action="store_true", default=False ,help="mode for subtomogram particles.")
+	parser.add_argument("--parallel", type=str,help="parallel options for 3d reconstruction", default="thread:32")
 
-	parser.add_argument("--threads", default=32,type=int,help="Number of threads to run in parallel on a single computer. This is the only parallelism supported by e2make3dpar")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -212,7 +212,7 @@ def main():
 			
 		for j in range(options.ncls):
 			t="tmp_classify_{:04d}.hdf".format(np.random.randint(10000))
-			cmd="e2spa_make3d.py --input {} --output {} --pad {} --outsize {} --keep 1 --parallel thread:{} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.outsize, options.threads, options.setsf, options.sym, j)
+			cmd="e2spa_make3d.py --input {} --output {} --pad {} --outsize {} --keep 1 --parallel {} {} --sym {} --clsid {}".format(options.ptclsout, t, options.pad, options.outsize, options.parallel, options.setsf, options.sym, j)
 			run(cmd)
 			e=EMData(t)
 			e.write_compressed(name3d,-1,12)

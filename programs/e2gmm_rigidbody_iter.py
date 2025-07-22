@@ -25,7 +25,7 @@ def main():
 	parser.add_argument("--l2_weight", type=float, help="weighting factor for L2. default is 1",default=1.)
 	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=25000)
 	parser.add_argument("--storexf", action="store_true", default=False ,help="store the transform after refinement and start from the transform in the last iteration each time.")
-	parser.add_argument("--thread", type=int,help="thread for 3d reconstruction", default=32)
+	parser.add_argument("--parallel", type=str,help="parallel options for 3d reconstruction", default="thread:32")
 
 	# parser.add_argument("--recover",action="store_true", default=False ,help="continue previous crashed refinement")
 
@@ -36,6 +36,7 @@ def main():
 	
 	fname=args[0]
 	oldpath=os.path.dirname(fname)
+	options.thread=int(options.parallel.split(':')[1])
 	
 	c=[i for i in fname if i.isdigit()]
 	olditer=int(''.join(c[-2:]))
@@ -159,7 +160,7 @@ def main():
 		
 			
 			for pid in range(options.npatch):
-				run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_p{pid:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_p{pid:02d}_{eo}.hdf --parallel thread:{options.thread} --keep 1 --sym c1")
+				run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_p{pid:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_p{pid:02d}_{eo}.hdf --parallel {options.parallel} --keep 1 --sym c1")
 		
 			
 			#### merge patches here
@@ -194,7 +195,7 @@ def main():
 			
 		rr=options.maxres*resmult[iiter+1]
 		for eo in ["even","odd"]:
-			run(f"e2project3d.py {path}/threed_{iiter:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:{options.thread}")
+			run(f"e2project3d.py {path}/threed_{iiter:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel={options.parallel}")
 			
 			run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{iiter-1:02d}_even.txt --maxres {rr} --modelout {path}/model_{iiter:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 			
