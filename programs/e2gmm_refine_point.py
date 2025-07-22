@@ -55,7 +55,7 @@ def main():
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	parser.add_argument("--ptclsclip",type=int,help="clip particles to specified box size before use",default=-1)
-	parser.add_argument("--net_style",type=str,help="Multiple network designs are available: leaky_5, relu_3",default="leaky_5")
+	parser.add_argument("--net_style",type=str,help="Multiple network designs are available: leaky_5, relu_3, linear",default="leaky_5")
 	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
 #	parser.add_argument("--sigmareg", type=float,help="regularizer for the sigma of gaussian width. Larger value means all Gaussian functions will have essentially the same width. Smaller value may help compensating local resolution difference.", default=.5)
 	parser.add_argument("--modelreg", type=float,help="regularizer for for Gaussian positions based on the starting model, ie the result will be biased towards the starting model when training the decoder (0-1 typ). Default 0", default=0)
@@ -804,7 +804,7 @@ def build_encoder(ninp,nmid,grps=None,style="new_leaky"):
 	#		print(in1,in2s,mid,mid2,outs,out)
 	elif style=="relu_3":
 		if grps is None:
-			print(f"Encoder {max(ninp//2,nmid)} {max(ninp//8,nmid)} {max(ninp//32,nmid)}")
+			print(f"Encoder relu3 {max(ninp//2,nmid*8)} {max(ninp//8,nmid*4)} {max(ninp//32,nmid*2)}")
 			layers=[
 			tf.keras.layers.Flatten(),
 			tf.keras.layers.Dense(max(ninp//2,nmid*8), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
@@ -830,6 +830,38 @@ def build_encoder(ninp,nmid,grps=None,style="new_leaky"):
 			drop=[tf.keras.layers.Dropout(0.3)(in2s[i]) for i in range(len(ngrp))]
 			mid=[tf.keras.layers.Dense(max(ngrp[i]//8,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
 			mid2=[tf.keras.layers.Dense(max(ngrp[i]//32,latpergrp*2), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(mid[i]) for i in range(len(ngrp))]
+			outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
+			out=tf.keras.layers.Concatenate()(outs)
+			encode_model=tf.keras.Model(inputs=in1,outputs=out)
+	#		print(in1,in2s,mid,mid2,outs,out)
+	elif style=="hybrid_3":
+		if grps is None:
+			print(f"Encoder hybrid {max(ninp,nmid*8)} {max(ninp//4,nmid*4)} {max(ninp//16,nmid*2)}")
+			layers=[
+			tf.keras.layers.Flatten(),
+			tf.keras.layers.Dense(max(ninp,nmid*8), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit),
+			tf.keras.layers.Dense(max(ninp//4,nmid*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+			tf.keras.layers.Dropout(.3),
+			tf.keras.layers.Dense(max(ninp//16,nmid*2), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True),
+			tf.keras.layers.Dense(nmid, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True),
+			]
+
+			encode_model=tf.keras.Sequential(layers)
+		else:
+			# the goal is to produce something with the same input/output layers as the unsegmented network
+			# but connectivity from specific gaussians limited to specific latent variables
+			ngrp=[grps[i] for i in sorted(grps)]
+			latpergrp=nmid//len(grps)
+			in1=tf.keras.layers.Input(ninp)
+			in2s=[]
+			t=0
+			for i in ngrp:
+				in2s.append(tf.keras.layers.Dense(max(i,latpergrp*8), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True,bias_initializer=binit)(in1[:,t:t+i]))
+				t+=i
+			# Add Dropout here?
+			mid=[tf.keras.layers.Dense(max(ngrp[i]//4,latpergrp*4), activation="relu", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(in2s[i]) for i in range(len(ngrp))]
+			drop=[tf.keras.layers.Dropout(0.3)(mid[i]) for i in range(len(ngrp))]
+			mid2=[tf.keras.layers.Dense(max(ngrp[i]//16,latpergrp*2), activation="linear", kernel_initializer=kinit, kernel_regularizer=l2,use_bias=True)(drop[i]) for i in range(len(ngrp))]
 			outs=[tf.keras.layers.Dense(latpergrp, kernel_regularizer=l2, kernel_initializer=kinit,use_bias=True)(mid2[i]) for i in range(len(ngrp))]
 			out=tf.keras.layers.Concatenate()(outs)
 			encode_model=tf.keras.Model(inputs=in1,outputs=out)
@@ -926,6 +958,19 @@ def build_decoder(nmid, pt, style="new_leaky" ):
 			tf.keras.layers.Dense(nmid*4,activation="relu",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2),
 			tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2),
 			tf.keras.layers.Dropout(.3),
+	#		tf.keras.layers.BatchNormalization(),
+			layer_output,
+			tf.keras.layers.Reshape((nout,4))
+		]
+	elif style=="hybrid_3":
+		layers=[
+			#tf.keras.layers.Dense(nmid*2,activation="relu",use_bias=True,bias_initializer=kinit,kernel_constraint=Localize1()),
+			#tf.keras.layers.Dense(nmid*4,activation="relu",use_bias=True,kernel_constraint=Localize2()),
+			#tf.keras.layers.Dense(nmid*8,activation="relu",use_bias=True,kernel_constraint=Localize3()),
+			tf.keras.layers.Dense(nmid*4,activation="linear",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2,bias_initializer=binit),
+			tf.keras.layers.Dense(nmid*8,activation="relu",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2),
+			tf.keras.layers.Dropout(.3),
+			tf.keras.layers.Dense(nmid*16,activation="linear",kernel_initializer=kinit,use_bias=True,kernel_regularizer=l2),
 	#		tf.keras.layers.BatchNormalization(),
 			layer_output,
 			tf.keras.layers.Reshape((nout,4))

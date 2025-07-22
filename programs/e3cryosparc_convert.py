@@ -38,9 +38,9 @@ import numpy as np
 import os
 import traceback
 import re
-import line_profiler
+#import line_profiler
 
-@line_profiler.profile
+#@line_profiler.profile
 def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = """prog [options] <CryoSparc .cs file>

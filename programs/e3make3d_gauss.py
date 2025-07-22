@@ -37,6 +37,7 @@ import numpy as np
 import sys
 import time
 import os
+from collections import defaultdict
 
 # used for profiling. This can be commented out as long as the @profile line is also commented out
 #from line_profiler import profile
@@ -65,6 +66,7 @@ def main():
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
 	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
+	parser.add_argument("--frc_weight", type=float, help="Testing only at present", default=-1)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
@@ -79,7 +81,8 @@ def main():
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
-	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use + for range)",default=None)
+	parser.add_argument("--keep", type=str, help="The fraction of images to use, based on quality scores (1.0 = use all). Optionally 3 values for SPT only: 3d qual, 2d qual, other",default="1.0")
+	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use : for range with excluded upper limit)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
 	parser.add_argument("--dfmin", type=float, help="Minimum defocus override, for use with --ctf",default=-1)
 	parser.add_argument("--dfmax", type=float, help="Maximum defocus override, for use with --ctf",default=-1)
@@ -97,28 +100,68 @@ def main():
 	jax_set_device(dev=0,maxmem=options.gpuram)
 	llo=E3init(sys.argv,options.ppid)
 
-	nptcl=EMUtil.get_image_count(args[0])
-	if options.quick : nptcl=min(nptcl,8192+4096)
+	options.keep=[float(k) for k in options.keep.split(',')]
+	if len(options.keep)<3: options.keep=[options.keep[0]]*3
 
-	if options.ptcl3d_id is not None:
-		if args[0][-4:]!=".lst" : error_exit("--ptcl3d_id only works with .lst input files")
-		try:
-			options.ptcl3d_id=int(options.ptcl3d_id)
-			rng=1
-		except:
-			rng=int(options.ptcl3d_id.split("+")[1])
-			options.ptcl3d_id=int(options.ptcl3d_id.split("+")[0])
-		lsx=LSXFile(args[0])
-		selimg=[i for i in range(len(lsx)) if lsx[i][2]["ptcl3d_id"] in range(options.ptcl3d_id,options.ptcl3d_id+rng)]
-		nptcl=len(selimg)
-		lsx=None
+	if args[0][-4:]!=".lst" : error_exit("Only LST input files are supported. If working with an HDF with embedded parameters, create a .lst file and extract the parameters with e2proclst.py")
+	lsx=LSXFile(args[0])
+	nptcl=len(lsx)
+
+	# Particle selection based on various options
+	if min(options.keep)==1.0 and options.ptcl3d_id is None: selimg=set(range(nptcl))
+	else:
+		# in spt mode we consider all 3 keep values, looking at scores on 3-D and 2-D particles, The third value was used for something else in the original program. Here we just combine with the second
+		if options.spt or options.tomo :
+			p3d=defaultdict(list)		# construct dictionary keyed by 3d particle, with scores and image numbers in value
+			p2ds=[]						# construct list of (score,#,ptcl3d_id) for 2-D particles at the same time
+			for i,l in enumerate(lsx):
+				p3d[l[2]["ptcl3d_id"]].append((l[2]["score"],i))
+				p2ds.append((l[2]["score"],i,l[2]["ptcl3d_id"]))
+			
+			p3ds=[(min(v),k) for k,v in p3d.items()]	# list of (score,3d_id) for 3d particles, we are using the best score among the 2-D particles, _not_ the average
+			p3ds.sort()
+			if options.verbose>2:
+				out=open("dbg_3d.txt","w")
+				for s,i in p3ds: out.write(f"{i}\t{s[0]}\t{s[1]}\n")
+				out=None
+			good_3d=set([i for s,i in p3ds[:int(len(p3ds)*options.keep[0])]])	# set of good ptcl3d_id numbers
+			# include only particles in the specified range (if specified)
+			if options.ptcl3d_id is not None:
+				try:
+					idmin=int(options.ptcl3d_id)
+					idmax=idmin+1
+				except:
+					idmin,idmax=[int(i) for i in options.ptcl3d_id.split(":")]
+				mrg=set(range(idmin,idmax))
+				good_3d=good_3d.intersection(mrg)
+			if options.verbose>0: print(f"SPT mode: {len(good_3d)}/{len(p3d)} 3-D particles selected")
+
+			# 2D filtering
+			p2ds.sort()
+			if options.verbose>2:
+				out=open("dbg_2d.txt","w")
+				for s,i,t in p2ds: out.write(f"{i}\t{s}\t{t}\n")
+				out=None
+			selimg=set([i for s,i,t in p2ds[:int(len(p2ds)*options.keep[1]*options.keep[2])] if t in good_3d])
+		
+		# normal mode (not spt) where we just have a score per-particle
+		else:
+			p2ds=[]						# construct list of (score,#) for 2-D particles at the same time
+			for i,l in enumerate(lsx):
+				p2ds.append((l[2]["score"],i))
+			p2ds.sort()
+			selimg=set([i for s,i in p2ds[:int(len(p2ds)*options.keep[0])]])
 
 	if options.classid>=0:
-		if args[0][-4:]!=".lst" : error_exit("--class only works with .lst input files")
-		lsx=LSXFile(args[0])
-		selimg=[i for i in range(len(lsx)) if lsx[i][2]["class"]==options.classid]
-		nptcl=len(selimg)
-		lsx=None
+		selcls=set([i for i in range(len(lsx)) if lsx[i][2]["class"]==options.classid])
+		selimg=selimg.intersection(selcls)
+
+	selimg=list(selimg)
+	selimg.sort()
+	if options.quick : selimg=selimg[:8192+4096]
+	nptcl=len(selimg)
+	if options.verbose>0: print(f"{nptcl}/{len(lsx)} 2-D images selected")
+	lsx=None
 
 	if options.profile:
 		selimg=tuple(range(0,min(2050,nptcl)))
@@ -219,13 +262,14 @@ def main():
 			[1024,  32,32,1.5,-1  ,8,.005,1.0],
 			[4096,  64,32,1.2,-1.5,16,.003,1.0],
 			[16384, 256,32,1.0,-2 ,32,.003,1.0],
-			[65536, 512,32,0.8,-2 ,0,.001,0.75]
+			[65536*2, 512,32,1.0,-2 ,0,.001,0.75]
 		]
 
 	# limit sampling to (at most) the box size of the raw data
 	# we do this by altering stages to help with jit compilation
 	for i in range(len(stages)):
 		stages[i][1]=min(stages[i][1],nxrawm2)
+		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
 	batchsize=192
 	if options.combineiters>0:
@@ -246,39 +290,27 @@ def main():
 	for d in downs: rad_img_int(d)
 
 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 :
+	for i in range(0,nptcl,1000):
 		if options.verbose>1:
-			print(f" Caching {nptcl}")
-		stk=EMStack2D(EMData.read_images(args[0],selimg))
+			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
+			sys.stdout.flush()
+		stk=EMStack2D(EMData.read_images(args[0],selimg[i:min(i+1000,nptcl)]))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
+		if options.tomo and options.tomo_seqali!=0 :
+			stk.center_align_seq(options.tomo_seqali)
+			if options.verbose>3: stk.write_images("dbg_ali.hdf")
 		orts,tytx=stk.orientations
-		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
-		for im in stk.emdata: im-=im["mean"]
-			#im.process_inplace("normalize.edgemean")
+		tytx/= jnp.array((nxraw,nxraw, 1))
+		if options.ctf>0:
+			mindf = min(mindf, float(jnp.min(tytx[:, 2])))
+			maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
+		for im in stk.emdata: im.process_inplace("normalize.edgemean")
+		if options.verbose>3: stk.write_images("dbg_m3dg.hdf:12")
 		stkf=stk.do_fft()
+#		print(stkf.shape)
 		for down in downs:
 			stkfds=stkf.downsample(down)
-			caches[down].write(stkfds,0,orts,tytx)
-	else:
-		for i in range(0,nptcl,1000):
-			if options.verbose>1:
-				print(f" Caching {i}/{nptcl}",end="\r",flush=True)
-				sys.stdout.flush()
-			stk=EMStack2D(EMData.read_images(args[0],range(i,min(i+1000,nptcl))))
-			if options.preclip>0 : stk=stk.center_clip(options.preclip)
-			if options.tomo and options.tomo_seqali!=0 :
-				stk.center_align_seq(options.tomo_seqali)
-				if options.verbose>3: stk.write_images("dbg_ali.hdf")
-			orts,tytx=stk.orientations
-			tytx/= jnp.array((nxraw,nxraw, 1))
-			if options.ctf>0:
-				mindf = min(mindf, float(jnp.min(tytx[:, 2])))
-				maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
-			for im in stk.emdata: im.process_inplace("normalize.edgemean")
-			stkf=stk.do_fft()
-			for down in downs:
-				stkfds=stkf.downsample(down)
-				caches[down].write(stkfds,i,orts,tytx)
+			caches[down].write(stkfds,i,orts,tytx)
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
 	for down in downs[1:]:
@@ -287,23 +319,20 @@ def main():
 
 	if options.ctf>0:
 		if options.tomo:
-			ctf=EMData(args[0],0,True)["ctf"].to_dict() # Assuming tomo uses the file from particles, created by extract particles
+			ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
 		else:
 			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-			ctf=js["ctf"][0].to_dict()
+			ctf=js["ctf"][0]
 			js.close()
-		cs=ctf["cs"]
-		voltage=ctf["voltage"]
-		ampcont=ctf["ampcont"]
-#		dfrange=(options.dfmin,options.dfmax)
-		dfstep = apix*apix/100 # Rough approximation of the correct step that doesn't involve calculating the wavelength
+		jctf = jaxCTF(ctf=ctf, dfmajor=ctf.defocus, dfminor=ctf.defocus) # TODO: Forcing astigmatism to be none for now
+		dfstep = jctf.defocus_step
 		boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
-		df_buffer = (boxlen/2)/(dfstep*10000) + dfstep
+		df_buffer = (boxlen/20000) + dfstep
 		dfrange=(mindf - df_buffer, maxdf + df_buffer)
 		if options.dfmin > 0 and options.dfmax > 0:
 			dfrange=(options.dfmin, options.dfmax)
 		# Create the ctf stack
-		ctf_stack,dfstep=create_ctf_stack(dfrange,voltage,cs,ampcont,nxrawm2,apix)
+		ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
@@ -376,7 +405,7 @@ def main():
 					# 	out.close()
 				elif options.ctf==2:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3],stage[7],frc_Z)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -386,7 +415,7 @@ def main():
 						shift+=shift0
 						sca+=sca
 				elif options.ctf==1:
-					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack.jax,ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7],frc_Z)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -497,9 +526,9 @@ def main():
 			projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
 			if options.ctf>0:
 				mx3d=orts.to_mx3d()
-				ctfaryds=jax_downsample_2d(ctf_stack.jax,ny)
-				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,tytx))
-				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,ny,dfrange[0],dfrange[1],dfstep,dsapix,tytx))
+				ctfaryds=jax_downsample_2d(ctf_stack,ny)
+				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfrange[0],dfstep,ny,tytx))
+				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,dfrange[0],dfstep,dsapix,ny,tytx))
 			transforms=orts.transforms(tytx)
 #			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
 			ptclds=ptclsfds.do_ift()
@@ -579,7 +608,7 @@ def main():
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
 	vol["apix_z"]=apix*nxraw/outsz
-	if options.ptcl3d_id is not None and options.ptcl3d_id>=0 : vol["ptcl3d_id"]=options.ptcl3d_id
+	if options.ptcl3d_id is not None : vol["ptcl3d_id"]=options.ptcl3d_id
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
 	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
@@ -765,7 +794,7 @@ def gradient_step_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0
 	ptcls=ptclsfds.jax
 #	print("mx ",mx.shape)
 
-	frcs,grad=gradvalfn_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight,frc_Z)
+	frcs,grad=gradvalfn_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight,frc_Z)
 
 #	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
@@ -778,14 +807,14 @@ def gradient_step_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0
 
 	return (step,float(qual),float(shift),float(sca))
 
-def prj_frc_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight,frc_Z):
+def prj_frc_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
-	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn_ctf=jax.value_and_grad(prj_frc_ctf)
@@ -805,7 +834,7 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weig
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,tytx,ptcls,weight,frc_Z)
+	frcs,grad=gradvalfnl_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight,frc_Z)
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
@@ -814,12 +843,12 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weig
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfmax,dfstep,tytx,ptcls,weight,frc_Z):
+def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
-	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,ny,dfmin,dfmax,dfstep,tytx)
+	prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfnl_ctf=jax.value_and_grad(prj_frc_loss_ctf)
@@ -839,7 +868,7 @@ def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,ds
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfn_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
+	frcs,grad=gradvalfn_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
 
 #	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
@@ -852,14 +881,14 @@ def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,ds
 
 	return (step,float(qual),float(shift),float(sca))
 
-def prj_frc_layered_ctf(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight,frc_Z):
+def prj_frc_layered_ctf(gausary,mx3d,ctfary,dfmin,dfstep,apix,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
-	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,dfmin,dfstep,apix,ny,tytx)
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf)
@@ -878,7 +907,7 @@ def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfs
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfrange[1],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
+	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
@@ -887,12 +916,12 @@ def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfs
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfmax,dfstep,apix,tytx,ptcls,weight,frc_Z):
+def prj_frc_layered_ctf_loss(gausary,mx3d,ctfary,dfmin,dfstep,apix,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
-	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,ny,dfmin,dfmax,dfstep,apix,tytx)
+	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,dfmin,dfstep,apix,ny,tytx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfnl_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf_loss)

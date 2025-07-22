@@ -74,6 +74,7 @@ def main():
 	parser.add_argument("--box", "-B", type=str, help="Box size in pixels, <xyz> or <x>,<y>,<z>")
 	parser.add_argument("--het", action="store_true", help="Include HET atoms in the map", default=False)
 	parser.add_argument("--center", action="store_true", help="Move the atomic center to the center of the box", default=False)
+	parser.add_argument("--trans", type=str, help="additional translation to coordinates.",default=None)
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'")
 	parser.add_argument("--info", action="store_true", help="If this is specified, information on the PDB file is displayed, no conversion is performed.",default=False)
 	parser.add_argument("--full", action="store_true", help="Apply non-crystallographic symmetry to obtain 'full' structure.",default=False)
@@ -84,7 +85,6 @@ def main():
 	parser.add_argument("--quick", action="store_true", help="Use a slight approximation to the Gaussian during insertion. Does not support B-factors.",default=False)
 	parser.add_argument("--addpdbbfactor", action="store_true", help="Use the bfactor/temperature factor as the atom blurring radius, equivalent to Gaussian lowpass with 1/e width at 1/bfactor",default=False)
 	parser.add_argument("--omit", type=float, help="Randomly omit this percentage of atoms in the output map.",default=0.0)
-	parser.add_argument("--trans", type=str, help="additional translation to coordinates.",default=None)
 
 	(options, args) = parser.parse_args()
 	if len(args)<2 : parser.error("Input and output files required")

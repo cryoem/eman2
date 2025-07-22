@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.14)
 PROJECT(EMAN
-		VERSION 2.99.66
+		VERSION 2.99.70
 		LANGUAGES CXX
 		)
 
@@ -168,19 +168,19 @@ ENDIF()
 IF(ENABLE_DEBUG)
 	SET (OPT_FLAGS "-DDEBUG -g -fno-inline")
 ELSEIF(ENABLE_PROFILE)
-	SET (OPT_FLAGS "-O2 -march=native -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O2 -march=native  -ffast-math -pipe")
 	OPTION(ENABLE_DEBUG "enable debug support" OFF)
 ELSEIF(ENABLE_OPTIMIZE_OSX)
 #	SET (OPT_FLAGS "-O3 -ffast-math")
 	SET (OPT_FLAGS "-O3 -D _LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION")
 #	SET (OPT_FLAGS "-Os -ffast-math")
 ELSEIF(ENABLE_OPTIMIZE_MACHINE)
-	SET (OPT_FLAGS "-O5 -march=native -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O5 -march=native  -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_COMPATIBILITY)
-	SET (OPT_FLAGS "-O5 -march=haswell -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O5 -march=haswell  -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_X86_64)
-	SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse -m64 -ffast-math -pipe")
-#	SET (OPT_FLAGS "-O5 -mfpmath=both -march=core-avx-i -m64 -ffast-math -pipe")
+	SET (OPT_FLAGS "-O5 -march=k8 -mfpmath=sse  -ffast-math -pipe")
+#	SET (OPT_FLAGS "-O5 -mfpmath=both -march=core-avx-i  -ffast-math -pipe")
 ELSEIF(ENABLE_OPTIMIZE_WINDOWS_VC)
 	SET (OPT_FLAGS "/Ox /DHAVE_INLINE /MP /Gm-")
 ELSEIF(ENABLE_OPTIMIZE_PHI)

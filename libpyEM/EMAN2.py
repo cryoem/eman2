@@ -84,6 +84,13 @@ renumfind = re.compile(r"-?\d*\.?\d+[eE]?[+-]?\d*")
 
 os.environ['QT_MAC_WANTS_LAYER'] = '1'
 
+try: RUN_PREFIX=os.getenv("EMAN_RUN_PREFIX")
+except: RUN_PREFIX=""
+if RUN_PREFIX is None: RUN_PREFIX=""
+
+try: RUN_POSTFIX=os.getenv("EMAN_RUN_POSTFIX")
+except: RUN_POSTFIX=""
+if RUN_POSTFIX is None: RUN_POSTFIX=""
 
 def e2gethome():
 	"""platform independent path with '/'"""
@@ -1507,7 +1514,8 @@ def launch_childprocess(cmd,handle_err=0):
 	'''
 	Convenience function to launch child processes
 	'''
-	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
+#	p = subprocess.Popen(str(cmd)+" --ppid=%d"%os.getpid(), shell=True)
+	p = subprocess.Popen(f"{RUN_PREFIX}{cmd} --ppid {os.getpid()} {RUN_POSTFIX}", shell=True)
 
 	if get_platform() == 'Windows':
 		error = p.wait()	#os.waitpid does not work on windows

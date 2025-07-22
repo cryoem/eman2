@@ -394,6 +394,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wcbnetstl=QtWidgets.QComboBox()
 		self.wcbnetstl.addItem("leaky_5")
 		self.wcbnetstl.addItem("relu_3")
+		self.wcbnetstl.addItem("hybrid_3")
 		self.wcbnetstl.addItem("linear")
 		self.gblrun.addWidget(self.wcbnetstl,4,0)
 		self.wcbnetstl.setCurrentText("relu_3")
@@ -2360,10 +2361,13 @@ class EMGMM(QtWidgets.QMainWindow):
 		try:
 			m=str(self.currun["mask"]).split(",")
 			if m[0]!="" : masks=[EMData(f) for f in m]
-			else: return
+			else: 
+				self.cengroups=None
+				return
 		except:
 			traceback.print_exc()
 			showerror("Invalid mask. Comma separated list of filenames or blank!")
+			self.cengroups=None
 			return
 
 		print(f"Group by mask: {masks}")

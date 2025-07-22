@@ -31,7 +31,7 @@ atomdefs={'H':(1.0,1.00794),'C':(6.0,12.0107),'A':(7.0,14.00674),'N':(7.0,14.006
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """Usage:\nprocpdb.py <input>\nprocpdb.py <input> <output> [rot=<alt,az,phi>] [trans=<dx,dy,dz>] [centeratoms] [centerelec] [centermass] \n."""
+	usage = """Usage: e2procpdb.py <input> <output> [options]\n."""
 
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	####################
@@ -39,7 +39,7 @@ def main():
 	parser.add_argument("--scale", "-S", type=float, help="scale", default=1.0)
 	parser.add_argument("--center", "-C", type=str, help="center of the rotation, (0,0,0)", default='0.0,0.0,0.0')
 	parser.add_argument("--chains",type=str,help="String list of chain identifiers to include, eg 'ABEFG'", default=None)
-	parser.add_argument("--trans", "-TR", type=str, help="transform, (0,0,0)",default='0,0,0')
+	parser.add_argument("--trans", "-TR", type=str, help="translate, (0,0,0)",default='0,0,0')
 	parser.add_argument("--include", type=str,help="savetype", default=["helix","sheet","other"])
 	parser.add_argument("--mirror",type=bool, help="mirror",default=0)
 #matrix

@@ -324,7 +324,7 @@ def main():
 			
 		for ieo,eo in enumerate(["even", "odd"]):
 			if options.gaussrecon>0 :
-				run(f"e3make3d_gauss.py {path}/aliptcls2d_{itr:02d}.lst --volout {path}/threed_{itr:02d}_{eo}.hdf:12 --sym {options.sym} --volfiltlp={res*0.75:.2f} --class {ieo} --initgauss {options.gaussrecon} --postclip {boxsize} --spt")
+				run(f"e3make3d_gauss.py {path}/aliptcls2d_{itr:02d}.lst --volout {path}/threed_{itr:02d}_{eo}.hdf:12 --sym {options.sym} --keep {options.keep} --volfiltlp={res*0.75:.2f} --class {ieo} --initgauss {options.gaussrecon} --postclip {boxsize} --spt")
 			else:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
 
