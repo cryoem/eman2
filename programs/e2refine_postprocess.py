@@ -73,6 +73,9 @@ def main():
 	parser.add_argument("--mergelowres",type=float,default=-1,help="merge low resolution information of the two subset.")
 
 	parser.add_argument("--automask3d2", default=None, type=str,help="Default=None. Specify as a processor. This will be applied to the mask produced by the first automask." )
+	
+	parser.add_argument("--filterfsc", default=None, type=str,help="use provided text file as fsc curve for filtering" )
+	
 	parser.add_argument("--underfilter",action="store_true",default=False,help="This will shift the computed Wiener filter to be about 10%% more resolution than has been achieved.")
 	parser.add_argument("--sym", dest="sym", type=str,default="c1", help="Symmetry so we can decide how to align the particle.")
 	parser.add_argument("--threads", default=2,type=int,help="Number of threads to run in parallel on a single computer when multi-computer parallelism isn't useful")
@@ -507,17 +510,21 @@ def main():
 		compress_hdf(oddfile,options.compressbits)
 		compress_hdf(f"{path}threed_{options.iter:02d}.hdf",options.compressbits)
 	else:
+		fscfile=f"{path}fsc_masked_{options.iter:02d}.txt"
+		if options.filterfsc:
+			fscfile=options.filterfsc
+		
 		# _unmasked volumes are filtered
-		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
-		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
+		run("e2proc3d.py {evenfile} {path}threed_even_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={fscfile}:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(evenfile=evenfile,path=path,itr=options.iter,ampcorrect=ampcorrect, fscfile=fscfile, underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
+		run("e2proc3d.py {oddfile} {path}threed_odd_unmasked.hdf {ampcorrect} --process filter.wiener.byfsc:fscfile={fscfile}:snrmult=2{underfilter}:maxfreq={maxfreq} --process filter.lowpass.tophat:cutoff_abs=0.5".format(oddfile=oddfile,path=path,itr=options.iter,ampcorrect=ampcorrect, fscfile=fscfile,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 		# Technically snrmult should be 1 here, but we use 2 to help speed convergence
-		cmd="e2proc3d.py {evenfile} {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
-		evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
+		cmd="e2proc3d.py {evenfile} {evenfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={fscfile}:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
+		evenfile=evenfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect, fscfile=fscfile, underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 
-		cmd="e2proc3d.py {oddfile} {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
-		oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
+		cmd="e2proc3d.py {oddfile} {oddfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={fscfile}:snrmult=2{underfilter}:maxfreq={maxfreq}".format(
+		oddfile=oddfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect, fscfile=fscfile, underfilter=underfilter,maxfreq=old_div(1.0,options.restarget),postproc=m3dpostproc)
 		run(cmd)
 		
 		run("e2proc3d.py {evenfile} {evenfile} --multfile {path}mask.hdf {normproc} {postproc}".format(evenfile=evenfile,path=path, normproc=massnorm,postproc=m3dpostproc,noisecutoff=noisecutoff))
@@ -533,8 +540,8 @@ def main():
 		if options.sym=="c1" : symopt=""
 		else: symopt="--sym {}".format(options.sym)
 
-		run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={path}fsc_masked_{itr:02d}.txt:snrmult=2{underfilter}:maxfreq={maxfreq} {symopt}  --multfile {path}mask.hdf {normproc} {postproc}".format(
-			combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt,underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
+		run("e2proc3d.py {combfile} {combfile} {ampcorrect} --process filter.wiener.byfsc:fscfile={fscfile}:snrmult=2{underfilter}:maxfreq={maxfreq} {symopt}  --multfile {path}mask.hdf {normproc} {postproc}".format(
+			combfile=combfile,path=path,itr=options.iter,normproc=massnorm,ampcorrect=ampcorrect,postproc=m3dpostproc,symopt=symopt, fscfile=fscfile, underfilter=underfilter,maxfreq=old_div(1.0,options.restarget)))
 
 		compress_hdf(evenfile,options.compressbits)
 		compress_hdf(oddfile,options.compressbits)
