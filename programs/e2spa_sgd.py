@@ -9,6 +9,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path", default=None)
 	parser.add_argument("--breaksym", type=str,help="symmetry breaking", default="c1")
+	parser.add_argument("--ref", type=str,help="reference file", default=None)
 	parser.add_argument("--res", type=int,help="res", default=30)
 	parser.add_argument("--learnrate", type=float,help="learning rate", default=0.1)
 	parser.add_argument("--batch", type=int,help="batch", default=128)
@@ -18,6 +19,8 @@ def main():
 	parser.add_argument("--curve", action="store_true", default=False ,help="curve mode")
 	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start alignment from scratch even if the lst input contains orientation")
 	parser.add_argument("--skipali", action="store_true", default=False ,help="load transform from image header and skip alignment here")
+	parser.add_argument("--sym", type=str,help="", default="c1")
+	parser.add_argument("--parallel", type=str,help="", default="thread:32")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -32,10 +35,8 @@ def main():
 	options.hdr=hdr=e.get_attr_dict()
 	options.sz=sz=e["nx"]
 	options.pad=pad=good_size(sz*1.5)
-	options.sym='c1'
 	options.shrink=1
 	path=options.path
-	options.parallel="thread:32"
 	if options.breaksym!="c1":
 		options.skipali=True
 	
@@ -66,11 +67,14 @@ def main():
 		d["class"]=cls[ii]
 		ali2d.append(d)
 		
-	save_lst_params(ali2d, f"{path}/ptcls.lst")
 		
 	threeds=[]
 	for ic in range(options.ncls):
 		al=[a for a in ali2d if a["class"]==ic]
+		if options.ref:
+			save_lst_params(al, f"{path}/ptcls.lst")
+			launch_childprocess(f"e2spa_align.py --ptclin {path}/ptcls.lst --ptclout {path}/ptcls_ali_cls{ic}.lst --ref {options.ref} --maxres {options.res} --parallel {options.parallel}")
+			al=load_lst_params(f"{path}/ptcls_ali_cls{ic}.lst")
 		thrd0=make_3d(al, options)
 		threeds.append(thrd0)
 		avg0=post_process(thrd0, options)
@@ -78,6 +82,7 @@ def main():
 		avg0.write_compressed(f"{path}/output_all_cls{ic}.hdf", -1, 8, nooutliers=True)
 		
 	lr=options.learnrate
+	save_lst_params(ali2d, f"{path}/ptcls.lst")
 	
 	for itr in range(options.niter):
 		print(itr)

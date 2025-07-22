@@ -102,7 +102,7 @@ def main():
 	
 	fm=options.ptclout
 	
-	output_tmp=np.array(output_tmp)
+	#output_tmp=np.array(output_tmp)
 	#print(output_tmp)
 	#print(output_tmp.shape)
 	#for i,o in enumerate(output_tmp):
