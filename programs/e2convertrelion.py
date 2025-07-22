@@ -6,6 +6,7 @@ import numpy as np
 def main():
 	req={
 		"name":"_rlnImageName", 
+		"mname":"_rlnMicrographName", 
 		"dfu":"_rlnDefocusU", 
 		"dfv":"_rlnDefocusV",
 		"dfang":"_rlnDefocusAngle",
@@ -21,11 +22,11 @@ def main():
 	
 	usage=" read a relion refinement star file and convert to a EMAN list format. currently only read {}".format(','.join(req.values()))
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--skipheader", type=int,help="skip the first N lines of the star file (before the parameter names starting with _). default is 1", default=1)
-	parser.add_argument("--voltage", type=int,help="voltage", default=300)
-	parser.add_argument("--cs", type=float,help="cs", default=2.7)
-	parser.add_argument("--amp", type=float,help="amplitude contrast. default 0 (0-100)", default=10)
-	parser.add_argument("--apix", type=float,help="apix", default=1.0)
+	parser.add_argument("--skipheader", type=int,help="skip the first N lines of the star file (before the parameter names starting with _). default is auto", default=-1)
+	parser.add_argument("--voltage", type=int,help="voltage", default=-1)
+	parser.add_argument("--cs", type=float,help="cs", default=-1)
+	parser.add_argument("--amp", type=float,help="amplitude contrast (0-100)", default=-1)
+	parser.add_argument("--apix", type=float,help="apix", default=-1)
 	parser.add_argument("--output", type=str,help="output lst file", default="sets/all_relion.lst")
 	parser.add_argument("--shrink", type=str,help="shrink factor", default=None)
 	parser.add_argument("--head", type=int,help="use only first N particles. for testing", default=-1)
@@ -52,12 +53,60 @@ def main():
 	alllines=f.readlines()
 	f.close()
 	
+	############
+	has_optics=False
+	opt_keys=["_rlnVoltage", "_rlnSphericalAberration", "_rlnAmplitudeContrast", "_rlnImagePixelSize"]
+	opt_idx=[-1 for k in opt_keys]
+	for i in range(100):
+		m=alllines[i]
+		if m.startswith("data_optics"):
+			has_optics=True
+			continue
+			
+		if has_optics:
+			for j,k in enumerate(opt_keys):
+				if m.startswith(k):
+					opt_idx[j]=int(m.split()[1][1:])-1
+					continue
+				
+			if max(opt_idx)>=0 and not m.startswith("_"):
+				break
+					
+	if min(opt_idx)<0:
+		print(opt_idx)
+		print("Cannot find all optics parameters. please specify through options")
+		print("Required keys are:")
+		print('\n  '.join(opt_keys))
+		
+	else:
+		opt=alllines[i].split()
+		if options.voltage<0: 
+			options.voltage=float(opt[opt_idx[0]])
+		print(f"Voltage: {options.voltage}")
+		
+		if options.cs<0: 
+			options.cs=float(opt[opt_idx[1]])
+		print(f"CS: {options.cs}")
+		
+		if options.amp<0: 
+			options.amp=float(opt[opt_idx[2]])*100
+		print(f"Amp: {options.amp}")
+		
+		if options.apix<0: 
+			options.apix=float(opt[opt_idx[3]])
+		print(f"Apix: {options.apix}")
+		
+		if options.skipheader<0:
+			options.skipheader=i
+		print(f"Start reading data from line {i}")
+	
+	############
 	keys=[]
 	starti=options.skipheader
 	for i in range(starti,1000):
 		if alllines[i].startswith('_'):
 			keys.append(alllines[i][:-1])
-		elif i>starti+5:
+		elif len(keys)>0 and i>starti+5:
 			starti=i
 			break
 			
@@ -102,12 +151,29 @@ def main():
 		except: pass
 					  
 	src0=""
+	mcount={}
 	for i in range(nptcl):
 		ln=lines[i]
 		if len(ln)<5: 
 			continue
 		l=ln.split()
-		ii,src=l[rid["name"]].split('@')
+		if "name" in rid:
+			ii,src=l[rid["name"]].split('@')
+			
+		elif "mname" in rid:
+			ky=l[rid["mname"]]
+			if ky not in mcount:
+				mcount[ky]=0
+				
+			mcount[ky]+=1 ## since star index start from 1
+			
+			src=ky
+			ii=mcount[ky]
+		
+		else:
+			print("error: no micrograph or particle file name")
+			exit()
+			
 		ii=int(ii)-1
 		if options.onestack:
 			fm=options.onestack
@@ -187,19 +253,23 @@ def main():
 		ln=lines[i]
 		if len(ln)<5: 
 			continue
+		
+		dic={"src":fm[1], "idx":fm[2]}
 		l=ln.split()
-		psi,tlt,rot=float(l[rid["psi"]]), float(l[rid["tilt"]]), float(l[rid["rot"]])
-		if txa:
-			try: tx,ty=float(l[rid["txa"]])/apix, float(l[rid["tya"]])/apix
-			except: tx,ty=0,0		# for symmetry replicated files, this may be right?
-		else:
-			tx,ty=float(l[rid["tx"]]), float(l[rid["ty"]])
-			
-		d={"type":"spider", "psi":psi, "theta":tlt, "phi":rot,"tx":-tx, "ty":-ty}
-		d=Transform(d)
+		
+		if "psi" in rid:
+			psi,tlt,rot=float(l[rid["psi"]]), float(l[rid["tilt"]]), float(l[rid["rot"]])
+			if txa:
+				try: tx,ty=float(l[rid["txa"]])/apix, float(l[rid["tya"]])/apix
+				except: tx,ty=0,0		# for symmetry replicated files, this may be right?
+			else:
+				tx,ty=float(l[rid["tx"]]), float(l[rid["ty"]])
+				
+			d={"type":"spider", "psi":psi, "theta":tlt, "phi":rot,"tx":-tx, "ty":-ty}
+			d=Transform(d)
+			dic["xform.projection"]=d
 		
 		#fm=fnames[i]
-		dic={"src":fm[1], "idx":fm[2], "xform.projection":d}
 		if "class" in rid:
 			dic["class"]=int(l[rid["class"]])-1
 		towrite.append(dic)
