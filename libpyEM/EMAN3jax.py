@@ -307,7 +307,7 @@ class EMStack3D(EMStack):
 			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
 			self._data=[imgs]
 			self._npy_list=None
-			self.apix=imgs[0]["apix_x"]
+			self.apix=imgs["apix_x"]
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)==3:
 				imgs=jnp.expand_dims(imgs,0)
@@ -475,7 +475,7 @@ class EMStack2D(EMStack):
 				except: pass
 				try:
 					self._df=np.array([im["ctf"].defocus for im in self._data])
-					self._astig=np.array([[im["ctf"].dfdiff, im["ctf"].dfang, im["ctf"].get_phase()] for im in self._data])
+					self._astig=np.array([[im["ctf"].dfdiff, im["ctf"].dfang, np.pi/2 - im["ctf"].get_phase()] for im in self._data])
 				except:
 					try:
 						df=[]

@@ -299,16 +299,17 @@ def main():
 		stk=EMStack2D(EMData.read_images(args[0],selimg))
 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
 		orts,tytx=stk.orientations
+		astig=stk.astigmatism
 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
-		if options.ctf>0:
-			mindf = min(mindf, float(jnp.min(tytx[:, 2])))
-			maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
+		# if options.ctf>0:
+		# 	mindf = min(mindf, float(jnp.min(tytx[:, 2])))
+		# 	maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
 		for im in stk.emdata: im-=im["mean"]
 			#im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
 		for down in downs:
 			stkfds=stkf.downsample(down)
-			caches[down].write(stkfds,0,orts,tytx)
+			caches[down].write(stkfds,0,orts,tytx,astig)
 	else:
 		for i in range(0,nptcl,1000):
 			if options.verbose>1:
@@ -340,10 +341,21 @@ def main():
 		if options.tomo:
 			ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
 		else:
-			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-			ctf=js["ctf"][0]
-			js.close()
-		jctf = EMAN3Ctf(ctf=ctf) # TODO: Forcing astigmatism to be none for now
+			try:
+				js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
+				ctf=js["ctf"][0]
+				js.close()
+			except:
+				try: ctf = EMData(args[0],0,True)["ctf"]
+				except:
+					try:
+						js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
+						ctf=js["ctf_frame"][1]
+						js.close()
+					except:
+						print("Could not find ctf info--Proceeding with no ctf applied") # TODO: This will actually crash because "ctf" doesn't get defined'
+						options.ctf=0
+		jctf = EMAN3Ctf(ctf=ctf)
 		dfstep = jctf.defocus_step
 		wavelength = jctf.wavelength
 		# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
@@ -435,7 +447,7 @@ def main():
 						step+=step0
 						qual-=qual0
 						shift+=shift0
-						sca+=sca
+						sca+=sca0
 				elif options.ctf==1:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					# step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3],stage[7],frc_Z)
@@ -447,7 +459,7 @@ def main():
 						step+=step0
 						qual-=qual0
 						shift+=shift0
-						sca+=sca
+						sca+=sca0
 				# optimize gaussians and image shifts
 				else:
 					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
@@ -871,6 +883,7 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
+#	print(grad[:,3])
 	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
