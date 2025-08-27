@@ -2922,7 +2922,7 @@ def db_write_images(fsp,
                     header_only=False,
                     region=None,
                     filestoragetype=EM_FLOAT,
-                    use_host_endian=True):
+                    use_host_endian=True,compress_level=1):
 	"""fsp - output filename, accepts ":" syntax for compression
 imgs - list of EMData objects
 idx0 - index in the file of the first image, eg - 5 would write imgs[0] to position 5 in the file and imgs[1] to position 6
@@ -2963,7 +2963,7 @@ use_host_endian - rarely should be altered"""
 				continue
 
 			im["render_bits"]=bits
-			im["render_compress_level"]=1
+			im["render_compress_level"]=compress_level
 			# float compression, no range change
 			if bits==0 :
 				im.del_attr("render_min")
