@@ -124,7 +124,7 @@ def main():
 	parser.add_argument("--apix", type=float, help="Override A/pixel from header on all inputs",default=0)
 	parser.add_argument("--fouriershrink", metavar="n", type=float, help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
 	parser.add_argument("--formula",type=str,help="Apply a mathematical formula to each image to produce the new image. See general help above for details.",default=None)
-#	parser.add_argument("--outmode", type=str, default="float", help="All EMAN3 programs write images with 4-byte floating point values by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range. The ':bits' filename specification is the preferred approach for this.")
+	parser.add_argument("--outmode", type=str, default="float", help="All EMAN3 programs write images with 4-byte floating point values by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range. The ':bits' filename specification is the preferred approach for this.")
 	parser.add_argument("--createnew", type=str, default=None, help="<nx>,<ny>[,<nimg=1>[,<value=0>]]  If specified with no input filenames, will create nimg nx x ny images with constant value to use as input.")
 	parser.add_argument("--normalize", type=str, default=None, help="<mode>  Normalize images: standard, edgemean")
 
