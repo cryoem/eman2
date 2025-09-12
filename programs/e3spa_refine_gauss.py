@@ -397,11 +397,16 @@ def main():
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
 		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
-		optim = optax.adam(.003)		# parm is learning rate
+		if stage[1]==stages[-1][1]:
+			learn_rate = 0.001
+		else:
+			learn_rate = 0.003
+		optim = optax.adam(learn_rate)		# parm is learning rate
 #		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
 #		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
 #		optim = optax.fromage(.01)		# tried, not as good
 		optim_state=optim.init(gaus._data)		# initialize with data
+		all_frcs = []
 		for i in range(stage[2]):		# training epochs
 			if nptcl>stage[0]*2: idx0=sn+i
 			else: idx0=0
@@ -474,8 +479,32 @@ def main():
 					out=open("crash_lastb_ortdydx.txt","w")
 					for io in range(len(orts)):
 						out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
-					sys.exit(1)
+					# np.savetxt(f"crash_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
+					# np.savetxt("crash_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
+					# np.savetxt("crash_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
+					# np.savetxt("crash_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
+					# if options.ctf > 0:
+					# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
+					# else:
+					# 	print("weight", stage[3])
+					# sys.exit(1)
+					continue
 				else:
+					# Added
+					# ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
+					# out=open("crash_lastb_ortdydx.txt","w")
+					# for io in range(len(orts)):
+					# 	out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+					# np.savetxt(f"crash_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
+					# np.savetxt("crash_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
+					# np.savetxt("crash_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
+					# np.savetxt("crash_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
+					# if options.ctf > 0:
+					# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
+					# else:
+					# 	print("weight", stage[3])
+					# sys.exit(1)
+					# added end
 					print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
 					try: os.unlinK("crash_img.lst")
 					except: pass
@@ -488,12 +517,16 @@ def main():
 			gaus._data = optax.apply_updates(gaus._data, update)
 
 			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
+			all_frcs.append((i, qual))
 
 			if qual>0.99: break
 
+		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
+
 		if stage[7]<9:
-			# Orientations/defocus
-			np.savetxt(f"{options.path}/prerefine_orts_{sn:02d}.txt",np.array(ccache.tytx),fmt="%0.4f",delimiter="\t")
+			all_ort_frcs = []
+		# 	# Orientations/defocus
+		# 	np.savetxt(f"{options.path}/prerefine_orts_{sn:02d}.txt",np.array(ccache.tytx),fmt="%0.4f",delimiter="\t")
 
 			if options.verbose: print(f"Adjusting translational alignment of particles")
 			for j in range(0,nptcl,1000):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
@@ -649,6 +682,8 @@ def main():
 				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
 				# print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}")
 				# print(f"{i}: {qual:1.4f}\t\t{dydxstd:1.4f}")
+				all_ort_frcs.append((i, qual))
+			np.savetxt(f"{options.path}/ort_epoch_frcs_{sn:02d}.txt",np.array(all_ort_frcs),fmt="%0.4f",delimiter="\t")
 		else: print("Skipping orientation gradient this step")
 
 
