@@ -976,9 +976,10 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 	gausary=gaus.jax
 	ortary=orts.jax
 	ptcls=ptclsfds.jax
+	max_freq = int(dsapix*ny/8)
 
 	# frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight)
-	frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
+	frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,max_freq)
 	# frcs, gradort = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
 	# frcs, gradtytx = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
 #	print("gradtytx", gradtytx)
@@ -992,17 +993,18 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 	# return (gradtytx,float(qual),float(stdtytx))
 
 # def prj_frc_ort_ctf_loss(gausary,ortary,ctfaryds,dfmin,dfstep,tytx, ptcls, weight):
-def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,weight):
+def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,max_freq):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
 	mx2d=jax_to_mx2d(ortary, swapxy=True)
 	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfmin,dfstep,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
+	return -jax_frc_maxfreq_jit(jax_fft2d(prj),ptcls,max_freq,weight,1)
 
 # gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfmin","dfstep"])
-gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep"])
+gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])
 # gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=1), static_argnames=["dfstep"])
 # gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=5), static_argnames=["dfstep"])
 
