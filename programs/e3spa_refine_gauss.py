@@ -938,12 +938,16 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
 	ptcls=ptclsfds.jax
 
 	frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,tytx,ptcls,weight)
+	# frcs, gradort = gradval_ol(gausary,ortary,tytx,ptcls,weight)
+	# frcs, gradtytx = gradval_ol(gausary,ortary,tytx,ptcls,weight)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
 	stdtytx=gradtytx.std()	# tytx std
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
+	# return (gradort, float(qual),float(stdort))
+	# return (gradtytx,float(qual),float(stdtytx))
 
 def prj_frc_ort_loss(gausary,ortary, tytx, ptcls, weight):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
@@ -954,6 +958,8 @@ def prj_frc_ort_loss(gausary,ortary, tytx, ptcls, weight):
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
 
 gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,2)))
+# gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=1))
+# gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=2))
 
 # def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0):
 def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0):
@@ -973,6 +979,8 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 
 	# frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight)
 	frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
+	# frcs, gradort = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
+	# frcs, gradtytx = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
 #	print("gradtytx", gradtytx)
 
 	qual=frcs
@@ -980,6 +988,8 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 	stdtytx=gradtytx.std()	# tytx std
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
+	# return (gradort,float(qual),float(stdort))
+	# return (gradtytx,float(qual),float(stdtytx))
 
 # def prj_frc_ort_ctf_loss(gausary,ortary,ctfaryds,dfmin,dfstep,tytx, ptcls, weight):
 def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,weight):
@@ -993,6 +1003,8 @@ def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,we
 
 # gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfmin","dfstep"])
 gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep"])
+# gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=1), static_argnames=["dfstep"])
+# gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=5), static_argnames=["dfstep"])
 
 def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""
