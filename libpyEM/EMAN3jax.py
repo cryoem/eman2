@@ -437,7 +437,7 @@ class EMStack2D(EMStack):
 					js.close()
 				except: pass
 			self._npy_list=None
-			self.apix=imgs[0]["apix_x"]
+			self.apix=imgs["apix_x"]
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
@@ -873,6 +873,7 @@ def jax_compute_2d_ctf(wavelength, cs, phase, apix, ny, defocus, dfdiff, dfang, 
 	return ctf
 
 jit_compute_2d_ctf= jax.jit(jax_compute_2d_ctf, static_argnames=["ny", "sign_only"])
+
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
@@ -1437,7 +1438,7 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
 
@@ -1488,7 +1489,8 @@ def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall, mode="drop")
-	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]-offset*dfstep, tytx[2]+offset*dfstep, 2*offset+1), astig, dfstep, apix)
+	# proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]-offset*dfstep, tytx[2]+offset*dfstep, 2*offset+1), astig, dfstep, apix, False)
+	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]+offset*dfstep, tytx[2]-offset*dfstep, 2*offset+1), astig, dfstep, apix, False) # linspace start/end flipped
 	return jnp.sum(proj, axis=0)
 
 gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
@@ -1532,8 +1534,7 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 	return vol
 
-# def jit_apply_ctf(ctfary, projs, dfary, dfmin, dfstep):
-def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix):
+def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
 # #	jax.debug.print("defocus value(s): {df}\nindex in array: {i}", df=dfary, i=jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32))
 # 	dfary = jnp.reshape(dfary, (jnp.size(dfary))) # dfary should be of shape () or (n,), this reshapes it to always be (n,)
@@ -1542,7 +1543,7 @@ def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix):
 # 	interpolated_ctf = jnp.expand_dims(1.0-ctfary_idxf, [1,2])*ctfary[ctfary_idxi]+jnp.expand_dims(ctfary_idxf, [1,2])*ctfary[ctfary_idxi+1]
 # 	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * interpolated_ctf)
 # #	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * ctfary[jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32)])
-	ctfary = jax_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], False)
+	ctfary = jax_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
 
 
