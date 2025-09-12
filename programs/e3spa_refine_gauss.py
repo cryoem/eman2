@@ -200,43 +200,57 @@ def main():
 			[8192, 256,24,1.0,-2  , 0,.003,-3],
 		]
 	else:
+		# stages=[
+		# 	[512,    16,32,1.8,-3  , 1,.01,9],   # 0
+		# 	[512,    16,32,1.8, 0  , 1,.01,9],   # 1
+		# 	[512,    16,32,1.8,-3  , 4,.01,-3],  # 2
+		# 	[1024,   32,32,1.5, 0  , 4,.005,9],  # 3
+		# 	[1024,   32, 8,1.5,-1  , 4,.005,-2], # 4
+		# 	[1024,   32, 8,1.5,-1  , 4,.005,-2], # 5
+		# 	[1024,   32, 8,1.5,-1  , 4,.005,-2], # 6
+		# 	[1024,   32, 8,1.5,-1  , 8,.005,-2], # 7
+		# 	[1024,   32,32,1.5,-1  , 8,.005,9],  # 8
+		# 	[1024,   32, 8,1.5,-1  , 8,.005,-2], # 9
+		# 	[1024,   32, 8,1.5,-1  , 8,.005,-2], # 10
+		# 	[1024,   32, 8,1.5,-1  , 8,.005,-2], # 11
+		# 	[1024,   32, 8,1.5,-1  ,16,.005,-2], # 12
+		# 	[4096,   64,32,1.2,-1.5,16,.003,9],  # 13
+		# 	[4096,   64, 8,1.2,-1.5,16,.003,-3], # 14
+		# 	[4096,   64, 8,1.2,-1.5,16,.003,-3], # 15
+		# 	[4096,   64, 8,1.2,-1.5,16,.003,-3], # 16
+		# 	[4096,   64, 8,1.2,-1.5,32,.003,-3], # 17
+		# 	[16384, 128,32,1.0,-2  ,32,.003,9],  # 18
+		# 	[16384, 128, 8,1.0,-2  ,32,.003,-3], # 19
+		# 	[16384, 128, 8,1.0,-2  ,32,.003,-3], # 20
+		# 	[16384, 128, 8,1.0,-2  ,32,.003,-3], # 21
+		# 	[16384, 128, 8,1.0,-2  ,32,.003,-3], # 22
+		# 	[16384, 256,32,1.0,-2  ,32,.003,9],  # 23
+		# 	[16384, 256,8,1.0,-2  ,32,.003,-3],  # 24
+		# 	[16384, 256,8,1.0,-2  ,32,.003,-3],  # 25
+		# 	[16384, 256,8,1.0,-2  ,32,.003,-3],  # 26
+		# 	[16384, 256,8,1.0,-2  ,32,.003,-3],  # 27
+		# 	[16384, 512,16,1.0,-2  ,32,.003, 9], # 28
+		# 	[65536, 512, 8,0.8,-2  ,32,.001,-3], # 29
+		# 	[65536, 512, 8,0.8,-2  ,32,.001,-3], # 30
+		# 	[65536, 512, 8,0.8,-2  ,32,.001,-3], # 31
+		# 	[65536, 512, 8,0.8,-2  ,32,.001,-3], # 32
+		# 	[65536, 512, 8,0.8,-2  ,32,.001,-3], # 33
+		# 	[65536, 512, 8,0.8,-2  ,32,.001,-3], # 34
+		# 	[65536, 512,32,0.8,-2  , 0,.001,9]  # 35
+		# ]
 		stages=[
-			[512,    16,32,1.8,-3  , 1,.01,9],   # 0
-			[512,    16,32,1.8, 0  , 1,.01,9],   # 1
-			[512,    16,32,1.8,-3  , 4,.01,-3],  # 2
-			[1024,   32,32,1.5, 0  , 4,.005,9],  # 3
-			[1024,   32, 8,1.5,-1  , 4,.005,-2], # 4
-			[1024,   32, 8,1.5,-1  , 4,.005,-2], # 5
-			[1024,   32, 8,1.5,-1  , 4,.005,-2], # 6
-			[1024,   32, 8,1.5,-1  , 8,.005,-2], # 7
-			[1024,   32,32,1.5,-1  , 8,.005,9],  # 8
-			[1024,   32, 8,1.5,-1  , 8,.005,-2], # 9
-			[1024,   32, 8,1.5,-1  , 8,.005,-2], # 10
-			[1024,   32, 8,1.5,-1  , 8,.005,-2], # 11
-			[1024,   32, 8,1.5,-1  ,16,.005,-2], # 12
-			[4096,   64,32,1.2,-1.5,16,.003,9],  # 13
-			[4096,   64, 8,1.2,-1.5,16,.003,-3], # 14
-			[4096,   64, 8,1.2,-1.5,16,.003,-3], # 15
-			[4096,   64, 8,1.2,-1.5,16,.003,-3], # 16
-			[4096,   64, 8,1.2,-1.5,32,.003,-3], # 17
-			[16384, 128,32,1.0,-2  ,32,.003,9],  # 18
-			[16384, 128, 8,1.0,-2  ,32,.003,-3], # 19
-			[16384, 128, 8,1.0,-2  ,32,.003,-3], # 20
-			[16384, 128, 8,1.0,-2  ,32,.003,-3], # 21
-			[16384, 128, 8,1.0,-2  ,32,.003,-3], # 22
-			[16384, 256,32,1.0,-2  ,32,.003,9],  # 23
-			[16384, 256,8,1.0,-2  ,32,.003,-3],  # 24
-			[16384, 256,8,1.0,-2  ,32,.003,-3],  # 25
-			[16384, 256,8,1.0,-2  ,32,.003,-3],  # 26
-			[16384, 256,8,1.0,-2  ,32,.003,-3],  # 27
-			[16384, 512,16,1.0,-2  ,32,.003, 9], # 28
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 29
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 30
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 31
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 32
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 33
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 34
-			[65536, 512,32,0.8,-2  , 0,.001,9]  # 35
+			[512,   16,32,1.8,-3  ,1,.01, 9], # 0
+			[512,   16,32,1.8, 0  ,4,.01, 9], # 1
+			[1024,  32,32,1.5, 0  ,4,.005,9], # 2
+			[1024,  32,32,1.5,-1  ,8,.005,9], # 3
+			[4096,  64,32,1.2,-1.5,16,.003,9], # 4
+			[16384, 256,32,1.0,-2 ,32,.003,9], # 5
+			[65536*2, 512,32,1.0,-2 ,0,.001,9], # 6
+			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 7
+			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 8
+			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 9
+			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 10
+			[65536*2, 512,16,1.0,-2 ,0,.001,9], # 11
 		]
 
 	# limit sampling to (at most) the box size of the raw data
@@ -245,7 +259,7 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 
 	batchsize=192
-	ctf_refine=18
+	ctf_refine=40 # Set larger than stages so will never trigger defocus refinement because it is causing NANs somewhere I haven't found yet'
 	times=[time.time()]
 
 	# Cache initialization
@@ -489,7 +503,7 @@ def main():
 				ccache.tytx[range(j,min(j+1000,nptcl)),:2]=tytx
 				dif=(tytx-oldtytx[:,:2])**2
 				print(f"{j}-{j+1000}: shift rmsd: {sqrt(float(jnp.mean(dif)))*nxraw:.2f}")
-#				print("tytx difference:", ccache.tytx[range(j,min(j+1000,nptcl))]-oldtytx)
+				# print("tytx difference:", ccache.tytx[range(j,min(j+1000,nptcl))]-oldtytx)
 
 			if options.fromscratch:
 				# reseed orientations of particles with low FRCs
@@ -519,42 +533,54 @@ def main():
 
 			ort_optim = optax.adam(.003)		# parm is learning rate
 			ort_optim_state=ort_optim.init((ccache.orts, ccache.tytx))		# initialize with data
+			# ort_optim_state=ort_optim.init(ccache.orts)
+			# ort_optim_state=ort_optim.init(ccache.tytx)
 
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
 			fout=open(f"{options.path}/fscs.txt","w")
 			for i in range(stage[2]):		# training epochs
-				if nptcl>stage[0]*2: idx0=sn+i
-				else: idx0=0
-				nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current stage, sn start gives some stochasticity
 				#grads=jnp.zeros((ccache.orts.shape[0], ccache.	orts.shape[1]+ccache.tytx.shape[1]))
 				ort_grads = jnp.zeros(ccache.orts.shape)
 				tytx_grads = jnp.zeros(ccache.tytx.shape)
 
-				norm=len(nliststg)//batchsize+1
-				for j in range(0,len(nliststg),batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time
-					ptclsfds,orts,tytx,astig=ccache.read(nliststg[j:j+batchsize])
-					if options.ctf > 0 and sn>ctf_refine:
-						print("Refining defocus")
-						dsapix=apix*nxraw/ptclsfds.shape[1]
-						# ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
+				norm=nptcl//batchsize+1
+				for j in range(0,nptcl,batchsize):
+					ptclsfds,orts,tytx,astig=ccache.read(range(j, min(j+batchsize, nptcl)))
+					if options.ctf ==0:
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus, ptclsfds, orts, tytx, stage[3])
+					elif options.ctf ==1:
+						dsapix = apix*nxraw/ptclsfds.shape[1]
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-					else:
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,stage[3])
+					elif options.ctf == 2:
+						print("Layered ctf not currently supported for orientation refinement. Proceeding with single ctf")
+						dsapix = apix*nxraw/ptclsfds.shape[1]
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
+					# if options.ctf > 0 and sn>ctf_refine:
+					# 	# print("Refining defocus")
+					# 	dsapix=apix*nxraw/ptclsfds.shape[1]
+					# 	# ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
+					# 	ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
+					# else:
+					# 	ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,stage[3])
+					# dsapix=apix*nxraw/ptclsfds.shape[1]
+					# ort_step,qual0,ortstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
+					# tytx_step,qual0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 
 					if j==0:
 						qual,ortstd,dydxstd=-qual0,ortstd0,dydxstd0
+						# qual,ortstd=-qual0,ortstd0
+						# qual,dydxstd=-qual0,dydxstd0
 					else:
 						qual-=qual0
 						ortstd+=ortstd0
 						dydxstd+=dydxstd0
 
-					ort_grads = ort_grads.at[jnp.array(nliststg[j:j+batchsize])].add(ort_step)
-					tytx_grads = tytx_grads.at[jnp.array(nliststg[j:j+batchsize])].add(tytx_step)
+					ort_grads = ort_grads.at[jnp.arange(j, min(j+batchsize, nptcl))].add(ort_step)
+					if options.ctf > 0 and sn<ctf_refine: # If the stage isn't one we are refining defocus don't include the defocus gradient
+						tytx_grads = tytx_grads.at[jnp.arange(j, min(j+batchsize, nptcl)), :2].add(tytx_step[:,:2])
+					else:
+						tytx_grads = tytx_grads.at[jnp.arange(j, min(j+batchsize, nptcl))].add(tytx_step)
 
-					#print(len(nliststg[j:j+500]),ortstep.shape,dydxstep.shape)
-#					ccache.add_orts(nliststg[j:j+batchsize],ortstep,dydxstep)
-#					ccache.set_frcs(nliststg[j:j+batchsize],frcs)
-#					for ii,n in enumerate(nliststg[j:j+batchsize]): fout.write(f"{n}\t{frcs[ii]:1.4f}\t{orts[ii][0]:1.4f}\t{orts[ii][1]:1.4f}\t{orts[ii][2]:1.4f}\n")
 
 				ort_grads=jnp.nan_to_num(ort_grads)
 				tytx_grads=jnp.nan_to_num(tytx_grads)
@@ -563,34 +589,66 @@ def main():
 				dydxstd/=norm
 
 				if isnan(ortstd) or isnan(dydxstd) :
+				# if isnan(ortstd):
+				# if isnan(dydxstd):
 					if i==0:
-						print("ERROR: nan on gradient descent, saving crash images and exiting")
-						ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
-						out=open("crash_lastb_ortdydx.txt","w")
+						print("ERROR: nan on orientation gradient descent, saving crash images and exiting")
+						ptclsfds.do_ift().write_images("crash_ort_lastb_images.hdf",0)
+						out=open("crash_ort_lastb_ortdydx.txt","w")
 						for io in range(len(orts)):
 							out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
-						sys.exit(1)
+						# np.savetxt(f"crash_ort_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
+						# np.savetxt("crash_ort_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_ort_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_ort_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
+						# if options.ctf > 0:
+						# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
+						# else:
+						# 	print("weight", stage[3])
+						# sys.exit(1)
+						continue
 					else:
-						print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
+						# Added
+						# ptclsfds.do_ift().write_images("crash_ort_lastb_images.hdf",0)
+						# out=open("crash_ort_lastb_ortdydx.txt","w")
+						# for io in range(len(orts)):
+						# 	out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+						# np.savetxt(f"crash_ort_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
+						# np.savetxt("crash_ort_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_ort_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_ort_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
+						# if options.ctf > 0:
+						# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
+						# else:
+						# 	print("weight", stage[3])
+						# sys.exit(1)
+						# added end
+						print("ERROR: encountered nan on orientation gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
 						try: os.unlinK("crash_img.lst")
 						except: pass
 						out=LSXFile(f"crash_img_{sn}_{i}.lst")
-						for ii in nliststg: out.write(-1,ii,args[0])
+						for ii in range(j, min(j+batchsize, nptcl)): out.write(-1,ii,args[0])
 						out=None
 						continue
 
 #				print("old orts:", ccache.orts)
-				oldtytx = ccache.tytx
+				# oldtytx = ccache.tytx
 				ort_update, ort_optim_state = ort_optim.update((ort_grads, tytx_grads), ort_optim_state, (ccache.orts, ccache.tytx))
+				# ort_update,ort_optim_state = ort_optim.update(ort_grads, ort_optim_state, ccache.orts)
+				# ort_update,ort_optim_state = ort_optim.update(tytx_grads, ort_optim_state, ccache.tytx)
 				(ccache.orts, ccache.tytx) = optax.apply_updates((ccache.orts, ccache.tytx), ort_update)
+				# ccache.orts=optax.apply_updates(ccache.orts, ort_update)
+				# ccache.tytx=optax.apply_updates(ccache.tytx, ort_update)
 				ccache.orts = np.array(ccache.orts)
 				ccache.tytx = np.array(ccache.tytx)
 #				print("new orts:", ccache.orts)
-				if np.sum(ccache.tytx-oldtytx, axis=0)[2] != 0: print("diff tytx (grad):", ccache.tytx-oldtytx)
-				else: print(f"defocus change sum to {np.sum(ccache.tytx-oldtytx, axis=0)[2]}, probably all 0")
+				# if np.sum(ccache.tytx-oldtytx, axis=0)[2] != 0: print("diff tytx (grad):", ccache.tytx-oldtytx)
+				# else: print(f"defocus change sum to {np.sum(ccache.tytx-oldtytx, axis=0)[2]}, probably all 0")
 
 
 				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
+				# print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}")
+				# print(f"{i}: {qual:1.4f}\t\t{dydxstd:1.4f}")
 		else: print("Skipping orientation gradient this step")
 
 
@@ -677,6 +735,9 @@ def main():
 
 		# Gaussian locations
 		np.savetxt(f"{options.path}/threed_{sn:02d}.txt",gaus.numpy,fmt="%0.4f",delimiter="\t")
+
+		# Orientations/defocus
+		np.savetxt(f"{options.path}/orts_{sn:02d}.txt",np.hstack((np.array(ccache.orts), np.array(ccache.tytx))),fmt="%0.4f",delimiter="\t")
 
 		# show individual shifts at high verbosity
 #		if options.verbose>2:
@@ -926,6 +987,7 @@ def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	# 	sys.exit(1)
 
 	return newtytx
+
 
 
 if __name__ == '__main__':
