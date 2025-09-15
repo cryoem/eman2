@@ -1950,6 +1950,53 @@ def __jax_frc_maxfreq_jit(ima,imb,maxfreq,weight=1.0,minfreq=0):
 
 jax_frc_maxfreq_jit=jax.jit(__jax_frc_maxfreq_jit, static_argnames=["maxfreq","minfreq"])
 
+
+def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!"""
+	global FRC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	intensity=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+		intensity.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0]))
+
+	snr_weight=jnp.stack(intensity)
+	frc=jnp.stack(frc)
+#	frc=frc*w
+	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) # average over frequencies # TODO: This has shape ny//2 not stop at ny//2. Same as nimg but that seems fine
+
+	return  jnp.clip(ret, 0.0, 1.0).mean()
+#	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
+#	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
+
+jax_frc_snr_jit=jax.jit(__jax_frc_snr_jit, static_argnames="minfreq")
+
+
 FSC_REFS={}
 def __jax_fsc_jit(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves. Note that rad_vol_int(ny) MUST be called prior to using this function"""

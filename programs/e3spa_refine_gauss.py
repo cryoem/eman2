@@ -1001,7 +1001,8 @@ def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,we
 	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfmin,dfstep,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
 	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
-	return -jax_frc_maxfreq_jit(jax_fft2d(prj),ptcls,max_freq,weight,1)
+	return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,1)
+	# return -jax_frc_maxfreq_jit(jax_fft2d(prj),ptcls,max_freq,weight,1)
 
 # gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfmin","dfstep"])
 gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])
