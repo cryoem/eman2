@@ -4683,21 +4683,6 @@ void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 }
 
 
-string MeanZeroEdgeProcessor::get_desc() const
-{
-    return "Fill zero-valued edges by tapering from the nearest interior pixel. "
-           "Modes: 'edgelinearzero' (default, linear to 0.0) or "
-           "'edgetapermean' (legacy exponential taper to mean_nonzero).";
-}
-
-TypeDict MeanZeroEdgeProcessor::get_param_types() const
-{
-    TypeDict d;
-    d.put("mode", EMObject::STRING, "Edge fill mode: 'edgelinearzero' (default) or 'edgetapermean'.");
-    return d;
-}
-
-
 /**
 void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 {

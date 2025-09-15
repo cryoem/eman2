@@ -98,6 +98,20 @@ bispec_invar_parm=(32,10)
 # These are processors which don't support in-place operation
 outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum","morph.blackhat.binary","morph.close.binary","morph.dilate.binary","morph.erode.binary","morph.ext_grad.binary","morph.gradient.binary","morph.grow","morph.int_grad.binary","morph.majority","morph.object.density","morph.object.label","morph.open.binary","morph.prune","morph.thin","morph.tophat.binary"]
 
+def cache_path():
+	"""Returns the path to where .lsx file caches should be placed. Uses, in order:
+	- EMAN3_CACHE_PATH env variable
+	- project .json file
+	- current folder
+"""
+	cp=os.getenv("EMAN3_CACHE_PATH")
+	if cp is None:
+		try:
+			js=js_open_dict("info/project.json",false)
+			cp=js["global.cache_path"]
+		except: cp="cache/"
+	return cp
+
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
 try:
@@ -2556,10 +2570,11 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 		return ret
 
-	def cache_name(self): return f'cache/{os.path.basename(self.path).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
+
+	def cache_name(self): return f'{cache_path()}/{self.path.split("/")[-3]}_{self.path.split("/")[-2]}_{os.path.basename(self.path).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
 
 	def write_cache(self):
-		"""This will (re)create a multi-scale cache file for the entire .lst file"""
+		"""This will create a multi-scale cache file for the entire .lst file if necessary"""
 		import EMAN3jax
 		if not os.path.exists("cache"):
 			try: os.mkdir("cache")
