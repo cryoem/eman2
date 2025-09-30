@@ -1951,7 +1951,7 @@ def __jax_frc_maxfreq_jit(ima,imb,maxfreq,weight=1.0,minfreq=0):
 jax_frc_maxfreq_jit=jax.jit(__jax_frc_maxfreq_jit, static_argnames=["maxfreq","minfreq"])
 
 
-def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0):
+def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=100):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
 	global FRC_RADS
@@ -1983,7 +1983,9 @@ def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0):
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
 		frc.append(cross/jnp.sqrt(aprd*bprd))
 
-		intensity.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0]))
+		# intensity.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0]))
+		ctf=jnp.real(jnp.squeeze(jit_compute_2d_ctf(ctf_info[0],ctf_info[1],phase[i],apix,ny,jnp.reshape(dfary[i], (1,)),0,0,False)) * jnp.exp(-(bfactor/4)*rad2_img(ny)/(apix*apix*ny*ny)))
+		intensity.append(jnp.square(ctf[0]))
 
 	snr_weight=jnp.stack(intensity)
 	frc=jnp.stack(frc)
