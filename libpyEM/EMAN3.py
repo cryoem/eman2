@@ -2571,7 +2571,9 @@ but this method prevents multiple open/close operations on the #LSX file."""
 		return ret
 
 
-	def cache_name(self): return f'{cache_path()}/{self.path.split("/")[-3]}_{self.path.split("/")[-2]}_{os.path.basename(self.path).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
+	def cache_name(self):
+		ap=os.path.abspath(self.path)
+		return f'{cache_path()}/{ap.split("/")[-3]}_{ap.split("/")[-2]}_{os.path.basename(ap).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
 
 	def write_cache(self):
 		"""This will create a multi-scale cache file for the entire .lst file if necessary"""
