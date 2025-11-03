@@ -1951,7 +1951,7 @@ def __jax_frc_maxfreq_jit(ima,imb,maxfreq,weight=1.0,minfreq=0):
 jax_frc_maxfreq_jit=jax.jit(__jax_frc_maxfreq_jit, static_argnames=["maxfreq","minfreq"])
 
 
-def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=100):
+def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=50):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
 	global FRC_RADS
