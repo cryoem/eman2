@@ -116,7 +116,7 @@ class StackCache():
 			np.save(self.fp,im)
 			# self.fp.write(tf.io.serialize_tensor(im).numpy())	#TODO
 			self.cloc=self.fp.tell()
-			self.locs[n0+i+1]=self.cloc
+#			self.locs[n0+i+1]=self.cloc		# not sure why this existed...
 
 		self.locked=False
 
@@ -144,7 +144,7 @@ class StackCache():
 				stack.append(np.load(self.fp))
 #				stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))  # TODO
 			except:
-				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]} ({nlist})")
+				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]} ({nlist})\n{os.stat(self.filename)}\n{[(j,self.locs[j]) for j in range(i-3,i+4)]}")
 
 		self.locked=False
 		ret=EMStack2D(jnp.stack(stack))
