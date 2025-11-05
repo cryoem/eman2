@@ -144,7 +144,7 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 					if df[i]!=df[i-1]: n+=1
 					ugnums.append(n)
 			if len(dfs)>=nptcl/5 or ugnums[-1]>nptcl/5:
-				print(df[:1000])
+				print(list(dfs)[:1000])
 				print(f'WARNING: Unable to group particles usefully by micrograph ({len(dfs)} defoci, {len(ugnums)} migrographs), collapsing to a single file. Consider rerunning with sufficiently large --dftolerance')
 				ugnums=np.zeros(nptcl,"int32")
 
