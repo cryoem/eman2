@@ -295,8 +295,9 @@ def main():
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
 	for d in downs:
 		rad_img_int(d)
-		if options.ctf>0:
-				rad2_img(d)
+		# if options.ctf>0:
+		rad2_img(d)
+		rad2_img(int(d*0.70711)+1)
 	rad_img_int(24) # Even if 24 isn't a size in downs we need it later in the fromscratch orientation determination
 
 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
@@ -355,17 +356,18 @@ def main():
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
 
-	if options.ctf>0:
-		try:
-			ctf=EMData(args[0],0,True)["ctf"] # Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
-		except:
-			print("Warning: Did not find CTF info in header of input. Checking for micrograph level CTF info")
-			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement which we have to go back to the per micrograph I think
-			ctf=js["ctf"][0]
-			js.close()
-		jctf = EMAN3Ctf(ctf=ctf)
-		dfstep = jctf.defocus_step
-		ctf_info = jnp.array([jctf.wavelength, jctf.cs])
+	# I always need ctf_info defined for SNR weighting
+	# if options.ctf>0:
+	try:
+		ctf=EMData(args[0],0,True)["ctf"] # Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
+	except:
+		print("Warning: Did not find CTF info in header of input. Checking for micrograph level CTF info")
+		js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement which we have to go back to the per micrograph I think
+		ctf=js["ctf"][0]
+		js.close()
+	jctf = EMAN3Ctf(ctf=ctf)
+	dfstep = jctf.defocus_step
+	ctf_info = jnp.array([jctf.wavelength, jctf.cs])
 		# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
 		# df_buffer = (boxlen/20000) + dfstep # TODO: This is a sensible buffer for multislice tomography but isn't working for SPA--and doesn't work for when we refine defocus
 		#if options.dfmin>0:
@@ -602,10 +604,12 @@ def main():
 				norm=nptcl//batchsize+1
 				for j in range(0,nptcl,batchsize):
 					ptclsfds,orts,tytx,astig=ccache.read(range(j, min(j+batchsize, nptcl)))
+					dsapix = apix*nxraw/ptclsfds.shape[1]
 					if options.ctf ==0:
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus, ptclsfds, orts, tytx, stage[3])
+						# ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus, ptclsfds, orts, tytx, stage[3])
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,stage[3])
 					elif options.ctf ==1:
-						dsapix = apix*nxraw/ptclsfds.shape[1]
+						# dsapix = apix*nxraw/ptclsfds.shape[1]
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 					elif options.ctf == 2:
 						print("Layered ctf not currently supported for orientation refinement. Proceeding with single ctf")
@@ -707,7 +711,7 @@ def main():
 				# print(f"{i}: {qual:1.4f}\t\t{dydxstd:1.4f}")
 				all_ort_frcs.append((i, qual))
 			np.savetxt(f"{options.path}/ort_epoch_frcs_{sn:02d}.txt",np.array(all_ort_frcs),fmt="%0.4f",delimiter="\t")
-		else: print("Skipping orientation gradient this step")
+		# else: print("Skipping orientation gradient this step")
 
 
 		# end of epoch, save images and projections for comparison
@@ -945,7 +949,8 @@ def prj_frc_layered_ctf_loss(gausary,mx3d,ctf_info,dfstep,apix,tytx,astig,ptcls,
 # gradvalfnl_layered_ctf=jax.jit(jax.value_and_grad(prj_frc_layered_ctf_loss), static_argnames=["dfmin","dfstep","apix"])
 gradvalfnl_layered_ctf=jax.jit(jax.value_and_grad(prj_frc_layered_ctf_loss), static_argnames=["dfstep","apix"])
 
-def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
+# def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
+def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight=1.0):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
 	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
 	unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -960,7 +965,8 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
 	ortary=orts.jax
 	ptcls=ptclsfds.jax
 
-	frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,tytx,ptcls,weight)
+	# frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,tytx,ptcls,weight)
+	frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,ctf_info,dsapix,tytx,astig,ptcls,weight)
 	# frcs, gradort = gradval_ol(gausary,ortary,tytx,ptcls,weight)
 	# frcs, gradtytx = gradval_ol(gausary,ortary,tytx,ptcls,weight)
 
@@ -972,15 +978,18 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
 	# return (gradort, float(qual),float(stdort))
 	# return (gradtytx,float(qual),float(stdtytx))
 
-def prj_frc_ort_loss(gausary,ortary, tytx, ptcls, weight):
+# def prj_frc_ort_loss(gausary,ortary, tytx, ptcls, weight):
+def prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,ptcls,weight):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
 	mx2d=jax_to_mx2d(ortary, swapxy=True)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
+	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
 
-gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,2)))
+# gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,2)))
+gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,4)))
 # gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=1))
 # gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=2))
 
@@ -1024,7 +1033,7 @@ def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,we
 	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfmin,dfstep,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
 	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
-	return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,1)
+	return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
 	# return -jax_frc_maxfreq_jit(jax_fft2d(prj),ptcls,max_freq,weight,1)
 
 # gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfmin","dfstep"])

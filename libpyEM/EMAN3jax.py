@@ -1951,7 +1951,7 @@ def __jax_frc_maxfreq_jit(ima,imb,maxfreq,weight=1.0,minfreq=0):
 jax_frc_maxfreq_jit=jax.jit(__jax_frc_maxfreq_jit, static_argnames=["maxfreq","minfreq"])
 
 
-def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=50):
+def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=10):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
 	global FRC_RADS
@@ -1976,6 +1976,7 @@ def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=50):
 
 	frc=[]
 	intensity=[]
+	# ctf_abs=[]
 	zero=jnp.zeros([nr])
 	for i in range(nimg):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
@@ -1983,14 +1984,17 @@ def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=50):
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
 		frc.append(cross/jnp.sqrt(aprd*bprd))
 
-		# intensity.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0]))
+		# intensity.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0])) # From before bfactor
 		ctf=jnp.real(jnp.squeeze(jit_compute_2d_ctf(ctf_info[0],ctf_info[1],phase[i],apix,ny,jnp.reshape(dfary[i], (1,)),0,0,False)) * jnp.exp(-(bfactor/4)*rad2_img(ny)/(apix*apix*ny*ny)))
 		intensity.append(jnp.square(ctf[0]))
+		# ctf_abs.append(jnp.abs(ctf[0]))
 
 	snr_weight=jnp.stack(intensity)
+	# snr_weight=jnp.stack(ctf_abs)
 	frc=jnp.stack(frc)
 #	frc=frc*w
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) # average over frequencies # TODO: This has shape ny//2 not stop at ny//2. Same as nimg but that seems fine
+	# ret = jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(jnp.bincount(rad_img.flatten(), length=nr), (minfreq, ), (ny//2-minfreq-1, )) # Adding radius weighting
+	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) # average over frequencies
 
 	return  jnp.clip(ret, 0.0, 1.0).mean()
 #	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs

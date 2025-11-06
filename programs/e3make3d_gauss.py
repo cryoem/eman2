@@ -291,8 +291,8 @@ def main():
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
 	for d in downs:
 		rad_img_int(d)
-		if options.ctf>0:
-			rad2_img(d)
+		# if options.ctf>0:
+		rad2_img(d)
 
 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
 	for i in range(0,nptcl,1000):
@@ -324,27 +324,27 @@ def main():
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
 
-	if options.ctf>0:
-		if options.tomo:
-			ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
-		else:
-			try:
-				js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-				ctf=js["ctf"][0]
-				js.close()
+	# if options.ctf>0:
+	if options.tomo:
+		ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
+	else:
+		try:
+			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
+			ctf=js["ctf"][0]
+			js.close()
+		except:
+			try: ctf = EMData(args[0],0,True)["ctf"]
 			except:
-				try: ctf = EMData(args[0],0,True)["ctf"]
+				try:
+					js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
+					ctf=js["ctf_frame"][1]
+					js.close()
 				except:
-					try:
-						js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
-						ctf=js["ctf_frame"][1]
-						js.close()
-					except:
-						print("Could not find ctf info--Proceeding with no ctf applied") # TODO: This will actually crash because "ctf" doesn't get defined'
-						options.ctf=0
-		jctf = EMAN3Ctf(ctf=ctf)
-		dfstep = jctf.defocus_step
-		wavelength = jctf.wavelength
+					print("Could not find ctf info--Proceeding with no ctf applied") # TODO: This will actually crash because "ctf" doesn't get defined'
+					options.ctf=0
+	jctf = EMAN3Ctf(ctf=ctf)
+	dfstep = jctf.defocus_step
+	wavelength = jctf.wavelength
 		# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
 		# df_buffer = (boxlen/20000) + dfstep
 		# dfrange=(mindf - df_buffer, maxdf + df_buffer)
@@ -352,7 +352,7 @@ def main():
 		# 	dfrange=(options.dfmin, options.dfmax)
 		# # Create the ctf stack
 		# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
-		ctf_info = jnp.array([wavelength, jctf.cs])
+	ctf_info = jnp.array([wavelength, jctf.cs])
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
@@ -400,7 +400,9 @@ def main():
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
 				if options.ctf==0:
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+					dsapix=apix*nxraw/ptclsfds.shape[1]
+					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,stage[3],stage[7],frc_Z)
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
 					step0=jnp.nan_to_num(step0)
 					shift0=jnp.nan_to_num(shift0)
@@ -683,7 +685,8 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
 # @profile
-def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
+# def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
+def gradient_step_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -697,7 +700,8 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
+	# frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
+	frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z)
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational (gauss) std
@@ -706,17 +710,27 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0
 	return (grad,float(qual),float(shift),float(sca))
 
 # @profile
-def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+# def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
+# 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+# 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+#
+# 	ny=ptcls.shape[1]
+# 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+# 	#prj=pfn(gausary,mx2d,ny,tytx)
+# 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+# #	print(prj.shape,ptcls.shape,weight,frc_Z)
+# #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+# 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+#
+# gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
+def prj_frc_loss(gausary,mx2d,ctf_info,apix,tytx,astig,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
+	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
-	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
-	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-#	print(prj.shape,ptcls.shape,weight,frc_Z)
-#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)
+	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
