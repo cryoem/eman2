@@ -135,7 +135,7 @@ def main():
 	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. {nptcl} input images")
 
 	# definition of downsampling sequence for stages of refinement
-	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 7) frc loc threshold (9 disables gradient)
+	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 7) frc loc threshold for ort refinement, (0 indicates Gausian stage, negative means ort refinement)
 	# replication skipped in final stage
 	if options.fromscratch:
 		stages=[
@@ -239,19 +239,42 @@ def main():
 		# 	[65536, 512,32,0.8,-2  , 0,.001,9]  # 35
 		# ]
 		stages=[
-			[512,   16,32,1.8,-3  ,1,.01, 9], # 0
-			[512,   16,32,1.8, 0  ,4,.01, 9], # 1
-			[1024,  32,32,1.5, 0  ,4,.005,9], # 2
-			[1024,  32,32,1.5,-1  ,8,.005,9], # 3
-			[4096,  64,32,1.2,-1.5,16,.003,9], # 4
-			[16384, 256,32,1.0,-2 ,32,.003,9], # 5
-			[65536*2, 512,32,1.0,-2 ,0,.001,9], # 6
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 7
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 8
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 9
-			[65536, 512, 8,0.8,-2  ,32,.001,-3], # 10
-			[65536*2, 512,16,1.0,-2 ,0,.001,9], # 11
+			[512,   16,32,1.8,-3  ,1,.01, 0], # 0: Gaussian
+			[512,   16,32,1.8, 0  ,4,.01, 0], # 1: Gaussian
+			[1024,  32,32,1.5, 0  ,4,.005,0], # 2: Gaussian
+			[1024,  32,32,1.5,-1  ,8,.005,0], # 3: Gaussian
+			[4096,  64,32,1.2,-1.5,16,.003,0], # 4: Gaussian
+			[16384, 256,32,1.0,-2 ,32,.003,0], # 5: Gaussian
+			[65536*2, 512,32,1.0,-2 ,32,.001,0], # 6: Gaussian
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 7: Gaussians: don't filter
+			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 8: Orientations
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 9: Gaussians: don't filter
+			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 10: Orientations
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 11: Gaussians: don't filter
+			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 12: Orientations
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 13: Gaussians: don't filter
+			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 14: Orientations
+			[65536*2, 512,16,1.0,-2 ,0,.001,0], # 15: Gaussians
 		]
+		# This version (below) did worse
+		# 	[512,   16,32,1.8,-3  ,1,.01, 0], # 0: Gaussian
+		# 	[512,   16,32,1.8, 0  ,4,.01, 0], # 1: Gaussian
+		# 	[1024,  32,32,1.5, 0  ,4,.005,0], # 2: Gaussian
+		# 	[1024,  32,32,1.5,-1  ,8,.005,0], # 3: Gaussian
+		# 	[4096,  64,32,1.2,-1.5,16,.003,0], # 4: Gaussian
+		# 	[16384, 256,32,1.0,-2 ,32,.003,0], # 5: Gaussian
+		# 	[65536*2, 512,32,1.0,-2 ,0,.001,0], # 6: Gaussian: don't filter
+		# 	[65536*2, 16, 16,0.8,-2  ,32,.001,-3], # 7: Orientations
+		# 	[65536*2, 32, 16,0.8,-2  ,32,.001,-3], # 8: Orientations
+		# 	[65536*2, 64, 16,0.8,-2  ,32,.001,-3], # 9: Orientations
+		# 	[65536*2, 256, 16,0.8,-2  ,32,.001,-3], # 10: Orientations
+		# 	[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 11: Orientations
+		# 	[65536*2, 512,32,1.0,-2 ,0,.001,0], # 12: Gaussian: don't filter
+		# 	[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 13: Orientations
+		# 	[65536*2, 512,32,1.0,-2 ,0,.001,0], # 14: Gaussian: don't filter
+		# 	[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 15: Orientations
+		# 	[65536*2, 512,16,1.0,-2 ,0,.001,0], # 16: Gaussians
+		# ]
 
 	# limit sampling to (at most) the box size of the raw data
 	# we do this by altering stages to help with jit compilation
@@ -393,137 +416,137 @@ def main():
 		ccache = caches[stage[1]]
 
 #		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-
-		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
+		if stage[7]==0: # Refining Gaussians
+			if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]} to refine Gaussians\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
-		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
-		if stage[1]==stages[-1][1]:
-			learn_rate = 0.001
-		else:
-			learn_rate = 0.003
-		optim = optax.adam(learn_rate)		# parm is learning rate
-#		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
-#		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
-#		optim = optax.fromage(.01)		# tried, not as good
-		optim_state=optim.init(gaus._data)		# initialize with data
-		all_frcs = []
-		for i in range(stage[2]):		# training epochs
-			if nptcl>stage[0]*2: idx0=sn+i
-			else: idx0=0
-			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
-			imshift=0.0
-			for j in range(0,len(nliststg)-10,batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time. The "-10" prevents very small residual batches from being computed
-				ptclsfds,orts,tytx,astig=ccache.read(nliststg[j:j+batchsize])
-				if len(orts)<5 :
-					print("Abort tiny batch: ",len(nliststg),j,batchsize)
-					continue
-				# standard mode, optimize gaussian parms only
-				if options.ctf==0:
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3])
-					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
-					step0=jnp.nan_to_num(step0)
-					shift0=jnp.nan_to_num(shift0)
-					sca0=jnp.nan_to_num(sca0)
-					if j==0:
-						step,qual,shift,sca=step0,-qual0,shift0,sca0
+			# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
+			if stage[1]==stages[-1][1]:
+				learn_rate = 0.001
+			else:
+				learn_rate = 0.003
+			optim = optax.adam(learn_rate)		# parm is learning rate
+#			optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
+#			optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
+#			optim = optax.fromage(.01)		# tried, not as good
+			optim_state=optim.init(gaus._data)		# initialize with data
+			all_frcs = []
+			for i in range(stage[2]):		# training epochs
+				if nptcl>stage[0]*2: idx0=sn+i
+				else: idx0=0
+				nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
+				imshift=0.0
+				for j in range(0,len(nliststg)-10,batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time. The "-10" prevents very small residual batches from being computed
+					ptclsfds,orts,tytx,astig=ccache.read(nliststg[j:j+batchsize])
+					if len(orts)<5 :
+						print("Abort tiny batch: ",len(nliststg),j,batchsize)
+						continue
+					# standard mode, optimize gaussian parms only
+					if options.ctf==0:
+						step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3])
+						# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
+						step0=jnp.nan_to_num(step0)
+						shift0=jnp.nan_to_num(shift0)
+						sca0=jnp.nan_to_num(sca0)
+						if j==0:
+							step,qual,shift,sca=step0,-qual0,shift0,sca0
+						else:
+							step+=step0
+							qual-=qual0
+							shift+=shift0
+							sca+=sca0
+
+						# update alignments of data to gaussian projections
+						# if i>3:
+						# 	dtytx=align_2d(gaus,orts,tytx,ptclsfds)
+						# 	caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,-dtytx)
+
+						# if i==stage[2]-1:
+						# # 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
+						# 	out=open(f"fscs_{sn}.txt","a" if j>0 else "w")
+						# 	for ii,fsc in enumerate(np.array(fscs0)): out.write(f"{nliststg[j+ii]:d}\t{fsc:0.5f}\n")
+						# 	out.close()
+					elif options.ctf==2:
+						dsapix=apix*nxraw/ptclsfds.shape[1]
+						# step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3])
+						step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
+						step0=jnp.nan_to_num(step0)
+						if j==0:
+							step,qual,shift,sca=step0,-qual0,shift0,sca0
+						else:
+							step+=step0
+							qual-=qual0
+							shift+=shift0
+							sca+=sca0
+					elif options.ctf==1:
+						dsapix=apix*nxraw/ptclsfds.shape[1]
+						# step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
+						step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
+						step0=jnp.nan_to_num(step0)
+						if j==0:
+							step,qual,shift,sca=step0,-qual0,shift0,sca0
+						else:
+							step+=step0
+							qual-=qual0
+							shift+=shift0
+							sca+=sca0
+				norm=len(nliststg)//batchsize+1
+				qual/=norm
+				shift/=norm
+				sca/=norm
+				imshift/=norm
+
+				if isnan(shift) or isnan(sca) :
+					if i==0:
+						print("ERROR: nan on gradient descent, saving crash images and exiting")
+						ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
+						out=open("crash_lastb_ortdydx.txt","w")
+						for io in range(len(orts)):
+							out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+						# np.savetxt(f"crash_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
+						# np.savetxt("crash_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
+						# if options.ctf > 0:
+						# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
+						# else:
+						# 	print("weight", stage[3])
+						# sys.exit(1)
+						continue
 					else:
-						step+=step0
-						qual-=qual0
-						shift+=shift0
-						sca+=sca0
+						# Added
+						# ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
+						# out=open("crash_lastb_ortdydx.txt","w")
+						# for io in range(len(orts)):
+						# 	out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+						# np.savetxt(f"crash_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
+						# np.savetxt("crash_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
+						# np.savetxt("crash_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
+						# if options.ctf > 0:
+						# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
+						# else:
+						# 	print("weight", stage[3])
+						# sys.exit(1)
+						# added end
+						print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
+						try: os.unlinK("crash_img.lst")
+						except: pass
+						out=LSXFile(f"crash_img_{sn}_{i}.lst")
+						for ii in nliststg: out.write(-1,ii,args[0])
+						out=None
+						continue
 
-					# update alignments of data to gaussian projections
-					# if i>3:
-					# 	dtytx=align_2d(gaus,orts,tytx,ptclsfds)
-					# 	caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,-dtytx)
+				update, optim_state = optim.update(step, optim_state, gaus._data)
+				gaus._data = optax.apply_updates(gaus._data, update)
 
-					# if i==stage[2]-1:
-					# # 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
-					# 	out=open(f"fscs_{sn}.txt","a" if j>0 else "w")
-					# 	for ii,fsc in enumerate(np.array(fscs0)): out.write(f"{nliststg[j+ii]:d}\t{fsc:0.5f}\n")
-					# 	out.close()
-				elif options.ctf==2:
-					dsapix=apix*nxraw/ptclsfds.shape[1]
-					# step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3])
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-					step0=jnp.nan_to_num(step0)
-					if j==0:
-						step,qual,shift,sca=step0,-qual0,shift0,sca0
-					else:
-						step+=step0
-						qual-=qual0
-						shift+=shift0
-						sca+=sca0
-				elif options.ctf==1:
-					dsapix=apix*nxraw/ptclsfds.shape[1]
-					# step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
-					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-					step0=jnp.nan_to_num(step0)
-					if j==0:
-						step,qual,shift,sca=step0,-qual0,shift0,sca0
-					else:
-						step+=step0
-						qual-=qual0
-						shift+=shift0
-						sca+=sca0
-			norm=len(nliststg)//batchsize+1
-			qual/=norm
-			shift/=norm
-			sca/=norm
-			imshift/=norm
+				print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
+				all_frcs.append((i, qual))
 
-			if isnan(shift) or isnan(sca) :
-				if i==0:
-					print("ERROR: nan on gradient descent, saving crash images and exiting")
-					ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
-					out=open("crash_lastb_ortdydx.txt","w")
-					for io in range(len(orts)):
-						out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
-					# np.savetxt(f"crash_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
-					# np.savetxt("crash_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
-					# np.savetxt("crash_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
-					# np.savetxt("crash_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
-					# if options.ctf > 0:
-					# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
-					# else:
-					# 	print("weight", stage[3])
-					# sys.exit(1)
-					continue
-				else:
-					# Added
-					# ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
-					# out=open("crash_lastb_ortdydx.txt","w")
-					# for io in range(len(orts)):
-					# 	out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
-					# np.savetxt(f"crash_lastb_gaus.txt",gaus.numpy,fmt="%0.4f",delimiter="\t") # Added
-					# np.savetxt("crash_lastb_orts.txt",orts.numpy,fmt="%0.4f",delimiter="\t")
-					# np.savetxt("crash_lastb_tytx.txt",tytx,fmt="%0.4f",delimiter="\t")
-					# np.savetxt("crash_lastb_astig.txt",astig,fmt="%0.4f",delimiter="\t")
-					# if options.ctf > 0:
-					# 	print(f"ctf_info: {ctf_info}\napix: {dsapix}\ndfstep: {dfstep}\nweight: {stage[3]}")
-					# else:
-					# 	print("weight", stage[3])
-					# sys.exit(1)
-					# added end
-					print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
-					try: os.unlinK("crash_img.lst")
-					except: pass
-					out=LSXFile(f"crash_img_{sn}_{i}.lst")
-					for ii in nliststg: out.write(-1,ii,args[0])
-					out=None
-					continue
+				if qual>0.99: break
 
-			update, optim_state = optim.update(step, optim_state, gaus._data)
-			gaus._data = optax.apply_updates(gaus._data, update)
+			np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
 
-			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
-			all_frcs.append((i, qual))
-
-			if qual>0.99: break
-
-		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
-
-		if stage[7]<9:
+		if stage[7]<0:
 			all_ort_frcs = []
 		# 	# Orientations/defocus
 		# 	np.savetxt(f"{options.path}/prerefine_orts_{sn:02d}.txt",np.array(ccache.tytx),fmt="%0.4f",delimiter="\t")
