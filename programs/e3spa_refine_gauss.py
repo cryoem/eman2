@@ -297,7 +297,6 @@ def main():
 		rad_img_int(d)
 		# if options.ctf>0:
 		rad2_img(d)
-		rad2_img(int(d*0.70711)+1)
 	rad_img_int(24) # Even if 24 isn't a size in downs we need it later in the fromscratch orientation determination
 
 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
