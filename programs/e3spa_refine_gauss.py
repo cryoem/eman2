@@ -300,7 +300,7 @@ def main():
 		stkf=stk.do_fft()
 		for down in downs:
 			stkfds=stkf.downsample(down)
-			caches[down].write(stkfds,0,orts,tytx,astig)
+			caches[down].write(stkfds,i,orts,tytx,astig)
 	else:
 		for i in range(0,nptcl,1000):
 			if options.verbose>1:
