@@ -229,13 +229,13 @@ def main():
 		]
 	elif options.spt:
 		stages=[
-			[2**10,32,  32,1.8, -1,1,.05, 3.0],
-			[2**10,32,  32,1.8, -1,2,.05, 1.0],
-			[2**12,64,  48,1.5, -2,2,.04,1.0],
-			[2**12,64,  48,1.5, -2,8,.02,0.5],
-			[2**14,128, 32,1.2, -3,16,.01,2],
-			[2**16,256, 16,1.2, -2,32,.01,3],
-			[2**17,512, 8,1.2, -2,0,.01,3]
+			[2**12,32,  32,1.8, -1,1,.05, 3.0],
+			[2**12,32,  32,1.8, -1,2,.05, 1.0],
+			[2**13,64,  48,1.5, -2,2,.04,1.0],
+			[2**13,64,  48,1.5, -2,8,.02,0.5],
+			[2**15,128, 32,1.2, -3,16,.01,2],
+			[2**17,256, 16,1.2, -2,32,.01,3],
+			[2**18,512, 8,1.2, -2,0,.01,3]
 #			[2**20,1024,48,1.2, -3,,.004,5]
 		]
 	elif options.profile:
@@ -271,7 +271,9 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
-	batchsize=192
+	if options.spt: batchsize=320
+	else: batchsize=192
+
 	if options.combineiters>0:
 		refineiters=5
 		stages[-1][2]+=(options.combineiters-1)*refineiters # Increase the number of iterations so can save Gaussians
@@ -314,7 +316,7 @@ def main():
 #		print(stkf.shape)
 		for down in downs:
 			stkfds=stkf.downsample(down)
-			caches[down].write(stkfds,0,orts,tytx,astig)
+			caches[down].write(stkfds,i,orts,tytx,astig)
 
 
 	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
