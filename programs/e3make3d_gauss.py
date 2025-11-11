@@ -700,8 +700,8 @@ def gradient_step_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight=1.0
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	# frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
-	frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z)
+	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
+	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z)
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational (gauss) std
@@ -710,29 +710,29 @@ def gradient_step_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight=1.0
 	return (grad,float(qual),float(shift),float(sca))
 
 # @profile
-# def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
-# 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-# 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
-#
-# 	ny=ptcls.shape[1]
-# 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
-# 	#prj=pfn(gausary,mx2d,ny,tytx)
-# 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-# #	print(prj.shape,ptcls.shape,weight,frc_Z)
-# #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-# 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
-#
-# gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
+def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 
-def prj_frc_loss(gausary,mx2d,ctf_info,apix,tytx,astig,ptcls,weight,frc_Z):
-	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
-	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
+	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
+	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)
-	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
+#	print(prj.shape,ptcls.shape,weight,frc_Z)
+#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
+
+# def prj_frc_loss(gausary,mx2d,ctf_info,apix,tytx,astig,ptcls,weight,frc_Z):
+# 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
+# 	of the Gaussians in gaus to particles in their current orientation"""
+# 	ny=ptcls.shape[1]
+# 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+# 	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)
+# 	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
+#
+# gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
 def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
