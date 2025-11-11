@@ -588,7 +588,8 @@ def main():
 						#ccache.tytx[ii]=(0,0)			# just keep the current center?
 					print(f"{nseeded} orts reseeded ({frcm+frcsg*stage[7]} thr)   {local_datetime()}")
 
-			ort_optim = optax.adam(.003)		# parm is learning rate
+			# ort_optim = optax.adam(.003)		# parm is learning rate
+			ort_optim = optax.adam(.001)
 			ort_optim_state=ort_optim.init((ccache.orts, ccache.tytx))		# initialize with data
 			# ort_optim_state=ort_optim.init(ccache.orts)
 			# ort_optim_state=ort_optim.init(ccache.tytx)
