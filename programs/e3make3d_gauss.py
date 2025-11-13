@@ -387,7 +387,7 @@ def main():
 			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
 			imshift=0.0
 			for j in range(0,len(nliststg)-10,batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time. The "-10" prevents very small residual batches from being computed
-				ptclsfds,orts,tytx,astig=caches[stage[1]].read(nliststg[j:min(j+batchsize, nptcl)])
+				ptclsfds,orts,tytx,astig=caches[stage[1]].read(nliststg[j:j+batchsize])
 				if len(orts)<5 :
 					print("Abort tiny batch: ",len(nliststg),j,batchsize)
 					continue
