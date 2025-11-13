@@ -288,14 +288,10 @@ def main():
 	# Cache initialization
 	if options.verbose: print(f"{local_datetime()}: Caching particle data")
 	downs=sorted(set([s[1] for s in stages]))
-	# if options.ctf > 0:
-	# 	mindf = float('inf')
-	# 	maxdf = 0
 
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
 	for d in downs:
 		rad_img_int(d)
-		# if options.ctf>0:
 		rad2_img(d)
 	rad_img_int(24) # Even if 24 isn't a size in downs we need it later in the fromscratch orientation determination
 
@@ -315,9 +311,6 @@ def main():
 			tytx=np.zeros((stk.shape[0],3))
 			orts=rng.random((stk.shape[0],3))-0.5
 		else: tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
-		# if options.ctf>0:
-		# 	mindf = min(mindf, float(jnp.min(tytx[:, 2])))
-		# 	maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
 		for im in stk.emdata: im-=im["mean"]
 			#im.process_inplace("normalize.edgemean")
 		stkf=stk.do_fft()
@@ -341,9 +334,6 @@ def main():
 				tytx=np.zeros((stk.shape[0],3))
 				orts=rng.random((stk.shape[0],3))-0.5
 			else: tytx/= jnp.array((nxraw,nxraw, 1))
-			# if options.ctf>0:
-			# 	mindf = min(mindf, float(jnp.min(tytx[:, 2])))
-			# 	maxdf = max(maxdf, float(jnp.max(tytx[:, 2])))
 			for im in stk.emdata: im.process_inplace("normalize.edgemean")
 			stkf=stk.do_fft()
 			for down in downs:
@@ -356,7 +346,6 @@ def main():
 		caches[down].tytx=caches[downs[0]].tytx
 
 	# I always need ctf_info defined for SNR weighting
-	# if options.ctf>0:
 	try:
 		ctf=EMData(args[0],0,True)["ctf"] # Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
 	except:
@@ -367,27 +356,6 @@ def main():
 	jctf = EMAN3Ctf(ctf=ctf)
 	dfstep = jctf.defocus_step
 	ctf_info = jnp.array([jctf.wavelength, jctf.cs])
-		# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
-		# df_buffer = (boxlen/20000) + dfstep # TODO: This is a sensible buffer for multislice tomography but isn't working for SPA--and doesn't work for when we refine defocus
-		#if options.dfmin>0:
-			#mindf = options.dfmin
-		#if options.dfmax>0:
-			#maxdf = options.dfmax
-		# dfrange=(mindf - df_buffer, maxdf + df_buffer)
-		# Create the ctf stack
-		# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
-#		header_ctf = EMAN2Ctf()
-#		header_ctf.from_dict({"defocus":1.0, "voltage":ctf.voltage, "bfactor":0., "cs":ctf.cs, "ampcont":ctf.ampcont, "apix":apix})
-#		defocus_range = np.arange(dfrange[0], dfrange[1], dfstep)
-		# print("defocus range/step:", dfrange, dfstep)
-		# print("buffer:", df_buffer)
-		# print("original min/max", mindf, maxdf)
-#		eman_ctf = EMStack2D(ctf_stack)
-#		for i in range(len(ctf_stack)):
-#			im = eman_ctf.emdata[i]
-#			header_ctf.defocus = defocus_range[i]
-#			im["ctf"] = header_ctf
-#			im.write_image(f"debug_ctf.hdf:8",i)
 
 	if options.fromscratch:
 		# Reseed orientations for global search at low resolution
@@ -468,7 +436,6 @@ def main():
 						# 	out.close()
 					elif options.ctf==2:
 						dsapix=apix*nxraw/ptclsfds.shape[1]
-						# step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,dsapix,stage[3])
 						step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 						step0=jnp.nan_to_num(step0)
 						if j==0:
@@ -480,7 +447,6 @@ def main():
 							sca+=sca0
 					elif options.ctf==1:
 						dsapix=apix*nxraw/ptclsfds.shape[1]
-						# step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
 						step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 						step0=jnp.nan_to_num(step0)
 						if j==0:
@@ -549,8 +515,6 @@ def main():
 
 		if stage[7]<0:
 			all_ort_frcs = []
-		# 	# Orientations/defocus
-		# 	np.savetxt(f"{options.path}/prerefine_orts_{sn:02d}.txt",np.array(ccache.tytx),fmt="%0.4f",delimiter="\t")
 
 			if options.verbose: print(f"Adjusting translational alignment of particles")
 			for j in range(0,nptcl,1000):	# compute the alignments piecewise due to memory limitations, 500 particles at a time
@@ -591,13 +555,10 @@ def main():
 			# ort_optim = optax.adam(.003)		# parm is learning rate
 			ort_optim = optax.adam(.001)
 			ort_optim_state=ort_optim.init((ccache.orts, ccache.tytx))		# initialize with data
-			# ort_optim_state=ort_optim.init(ccache.orts)
-			# ort_optim_state=ort_optim.init(ccache.tytx)
 
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
 			fout=open(f"{options.path}/fscs.txt","w")
 			for i in range(stage[2]):		# training epochs
-				#grads=jnp.zeros((ccache.orts.shape[0], ccache.	orts.shape[1]+ccache.tytx.shape[1]))
 				ort_grads = jnp.zeros(ccache.orts.shape)
 				tytx_grads = jnp.zeros(ccache.tytx.shape)
 
@@ -606,30 +567,17 @@ def main():
 					ptclsfds,orts,tytx,astig=ccache.read(range(j, min(j+batchsize, nptcl)))
 					dsapix = apix*nxraw/ptclsfds.shape[1]
 					if options.ctf ==0:
-						# ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus, ptclsfds, orts, tytx, stage[3])
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,stage[3])
 					elif options.ctf ==1:
-						# dsapix = apix*nxraw/ptclsfds.shape[1]
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 					elif options.ctf == 2:
 						print("Layered ctf not currently supported for orientation refinement. Proceeding with single ctf")
 						dsapix = apix*nxraw/ptclsfds.shape[1]
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-					# if options.ctf > 0 and sn>ctf_refine:
-					# 	# print("Refining defocus")
-					# 	dsapix=apix*nxraw/ptclsfds.shape[1]
-					# 	# ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,jax_downsample_2d(ctf_stack, ptclsfds.shape[1]),tytx,dfrange,dfstep,stage[3])
-					# 	ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-					# else:
-					# 	ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,stage[3])
-					# dsapix=apix*nxraw/ptclsfds.shape[1]
-					# ort_step,qual0,ortstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-					# tytx_step,qual0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 
 					if j==0:
 						qual,ortstd,dydxstd=-qual0,ortstd0,dydxstd0
-						# qual,ortstd=-qual0,ortstd0
-						# qual,dydxstd=-qual0,dydxstd0
+
 					else:
 						qual-=qual0
 						ortstd+=ortstd0
@@ -649,8 +597,6 @@ def main():
 				dydxstd/=norm
 
 				if isnan(ortstd) or isnan(dydxstd) :
-				# if isnan(ortstd):
-				# if isnan(dydxstd):
 					if i==0:
 						print("ERROR: nan on orientation gradient descent, saving crash images and exiting")
 						ptclsfds.do_ift().write_images("crash_ort_lastb_images.hdf",0)
@@ -694,11 +640,7 @@ def main():
 #				print("old orts:", ccache.orts)
 				# oldtytx = ccache.tytx
 				ort_update, ort_optim_state = ort_optim.update((ort_grads, tytx_grads), ort_optim_state, (ccache.orts, ccache.tytx))
-				# ort_update,ort_optim_state = ort_optim.update(ort_grads, ort_optim_state, ccache.orts)
-				# ort_update,ort_optim_state = ort_optim.update(tytx_grads, ort_optim_state, ccache.tytx)
 				(ccache.orts, ccache.tytx) = optax.apply_updates((ccache.orts, ccache.tytx), ort_update)
-				# ccache.orts=optax.apply_updates(ccache.orts, ort_update)
-				# ccache.tytx=optax.apply_updates(ccache.tytx, ort_update)
 				ccache.orts = np.array(ccache.orts)
 				ccache.tytx = np.array(ccache.tytx)
 #				print("new orts:", ccache.orts)
@@ -707,11 +649,8 @@ def main():
 
 
 				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
-				# print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}")
-				# print(f"{i}: {qual:1.4f}\t\t{dydxstd:1.4f}")
 				all_ort_frcs.append((i, qual))
 			np.savetxt(f"{options.path}/ort_epoch_frcs_{sn:02d}.txt",np.array(all_ort_frcs),fmt="%0.4f",delimiter="\t")
-		# else: print("Skipping orientation gradient this step")
 
 
 		# end of epoch, save images and projections for comparison
@@ -965,35 +904,24 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight
 	ortary=orts.jax
 	ptcls=ptclsfds.jax
 
-	# frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,tytx,ptcls,weight)
 	frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,ctf_info,dsapix,tytx,astig,ptcls,weight)
-	# frcs, gradort = gradval_ol(gausary,ortary,tytx,ptcls,weight)
-	# frcs, gradtytx = gradval_ol(gausary,ortary,tytx,ptcls,weight)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
 	stdtytx=gradtytx.std()	# tytx std
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
-	# return (gradort, float(qual),float(stdort))
-	# return (gradtytx,float(qual),float(stdtytx))
 
-# def prj_frc_ort_loss(gausary,ortary, tytx, ptcls, weight):
 def prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,ptcls,weight):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
 	mx2d=jax_to_mx2d(ortary, swapxy=True)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
-	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
+	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
 
-# gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,2)))
 gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,4)))
-# gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=1))
-# gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=2))
 
-# def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0):
 def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
 	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
@@ -1010,36 +938,23 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 	ptcls=ptclsfds.jax
 	max_freq = int(dsapix*ny/8)
 
-	# frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight)
 	frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,max_freq)
-	# frcs, gradort = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
-	# frcs, gradtytx = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight)
-#	print("gradtytx", gradtytx)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
 	stdtytx=gradtytx.std()	# tytx std
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
-	# return (gradort,float(qual),float(stdort))
-	# return (gradtytx,float(qual),float(stdtytx))
 
-# def prj_frc_ort_ctf_loss(gausary,ortary,ctfaryds,dfmin,dfstep,tytx, ptcls, weight):
 def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,max_freq):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
 	mx2d=jax_to_mx2d(ortary, swapxy=True)
-	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfmin,dfstep,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
-	return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3,10) #minfreq, bfactor
-	# return -jax_frc_maxfreq_jit(jax_fft2d(prj),ptcls,max_freq,weight,1)
+	return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
 
-# gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfmin","dfstep"])
 gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])
-# gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=1), static_argnames=["dfstep"])
-# gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=5), static_argnames=["dfstep"])
 
 def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""

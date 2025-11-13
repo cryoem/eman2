@@ -772,21 +772,6 @@ class EMAN3Ctf():
 		if self.dfdiff == 0: return self.defocus
 		else: return self.defocus + (self.dfdiff/2)*cos(2*ang-(2*pi/180)*self.dfang)
 
-	# def df_range(self, ang, defocus, dfang):
-	# 	"""Returns defocus as a function of angle using a provided defocus instead of the one in self
-	# 	Inputs:
-	# 	ang--The angle to calculate the defocus at. It should be in radians
-	# 	defocus--The defocus to use instead of calculating average defocus from self
-	# 	dfang--The astigmatism angle to use instead of dfang from self (should be in degrees)"""
-	# 	if self.dfmajor == self.dfminor: return defocus
-	# 	else: return defocus + ((self.dfmajor - self.dfminor)/2)*jnp.cos(2*ang-(2*pi/180)*dfang)
- #
-	# def df_img(self, ny, defocus, dfang):
-	# 	return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: self.df_range(jnp.arctan2(x,y), defocus, dfang),(ny//2,ny//2+1)),jnp.fromfunction(lambda y,x: self.df_range(jnp.arctan2(x,(ny//2-y)),defocus,dfang),(ny//2,ny//2+1)))))
- #
-	# df_defocus_img = jax.vmap(df_img, in_axes=(None, None, 0, None))
-	# df_dfang_img = jax.vmap(df_img, in_axes=(None, None, None, 0))
-
 	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None, use_astig=True, ewald_sphere=False, beam_tilt=False):
 		"""Returns a stack of CTF images, with size ny, of type ctf_type. The stack will vary var_name in the range var_range.
 			Inputs:
@@ -817,19 +802,6 @@ class EMAN3Ctf():
 			dfang = self.dfang
 			variable = 1
 			return jax_compute_2d_ctf(wl, self.cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only)
-			# return jit_compute_2d_ctf_stack_astig_defocus(wl, self.cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only)
-		# elif var_name == "dfdiff":
-		# 	step = self.defocus_step # TODO: Figure out if I should use a different step for dfdiff (probably)
-		# 	defocus = self.get_defocus()
-		# 	dfdiff = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
-		# 	dfang = self.dfang
-		# 	variable = 2
-		# elif var_name == "dfang":
-		# 	step = 1 # TODO: If I can, calculate a better angular step eg based on defocus_step
-		# 	defocus = self.get_defocus()
-		# 	dfdiff = self.get_dfdiff()
-		# 	dfang = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
-		# 	variable = 3
 		elif var_name == "none":
 			defocus = jnp.reshape(self.get_defocus(), (1,))
 			dfdiff = self.get_dfdiff()
@@ -837,7 +809,6 @@ class EMAN3Ctf():
 			variable = 0
 			return jit_compute_2d_ctf(wl, self.cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only)
 		else:
-			# print("var_name was not recognized. It should be one of 'defocus', 'dfdiff', 'dfang', or 'none'")
 			print("var_name was not recognized. It should be one of 'defocus', 'none'")
 			return
 
@@ -846,8 +817,6 @@ def jax_df_img(ny, defocus, dfdiff, dfang):
 														jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2((y-ny//2),x)-(2.0*jnp.pi/180)*dfang), (ny//2, ny//2+1)))))
 
 jax_df_defocus_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, 0, None, None)), static_argnames=["ny"])
-# jax_df_dfdiff_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, None, 0, None)), static_argnames=["ny"])
-# jax_df_dfang_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, None, None, 0)), static_argnames=["ny"])
 
 def jax_compute_2d_ctf_stack_defocus(wavelength, cs, phase, apix, ny, dfmin, dfmax, num_df, dfdiff, dfang, sign_only):
 	defocus = jnp.linspace(dfmin, dfmax, num_df)
@@ -1303,33 +1272,6 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
 
-# def gauss_project_simple_fn(gausary,mx,boxsize,tytx):
-#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
-#
-#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-#	gausary - a Gaussians.jax array
-#	mx - an Orientations object converted to a stack of 2d matrices
-#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-#
-#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-#	used for comparisons should be resampled without any "clip" operations.
-#	"""
-#
-#	proj2=[]
-#
-#	# iterate over projections
-#	# TODO - at some point this outer loop should be converted to a tensor axis for (potentially) better performance
-#	# note that the mx dimensions have N as the 3rd not 1st component!
-#	gpsf=jax.jit(gauss_project_single_fn,static_argnames=["boxsize"])
-#
-#	for j in range(mx.shape[2]):
-#		proj2.append(gpsf(gausary,mx[:,:,j],boxsize,tytx[j]))
-#
-#	return jnp.stack(proj2)
-#	#proj=tf.stack([tf.tensor_scatter_nd_add(proj[i],bposall[i],bampall[i]) for i in range(proj.shape[0])])
-
-
 def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
@@ -1372,37 +1314,6 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 
 gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
-
-#def gauss_project_ctf_fn(gausary,mx,ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
-#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
-#
-#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-#	gausary - a Gaussians.jax array
-#	mx - an Orientations object converted to a stack of 2d matrices
-#	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
-#	dfmin - the min defocus value used in ctfary
-#	dfmax - the max defocus value used in ctfary
-#	dfstep - the defocus step between images in ctfary
-#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-#
-#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-#	used for comparisons should be resampled without any "clip" operations.
-#	"""
-#	proj2=[]
-#
-#	# iterate over projections
-#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-#	# note that the mx dimensions have N as the 3rd not 1st component!
-#	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
-#	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
-#
-#	for j in range(mx.shape[2]):
-#		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
-#
-#	return jnp.stack(proj2)
-
-# def gauss_project_ctf_single_fn(gausary,mx,ctfary,dfmin,dfstep,boxsize,tytx):
 def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
@@ -1442,20 +1353,6 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
 
-#def gauss_project_layered_ctf_fn(gausary,mx,ctfary,boxsize,dfmin,dfmax,dfstep,apix,tytx):
-#	proj2=[]
-#
-#	# iterate over projections
-#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-#	# note that the mx dimensions have N as the 3rd not 1st component!
-#	gplcsf=jax.jit(gauss_project_layered_ctf_single_fn,static_argnames=["boxsize","apix","dfstep"])
-#
-#	for j in range(mx.shape[2]):
-#		proj2.append(gplcsf(gausary,mx[:,:,j],ctfary,dfmin,dfmax,dfstep,apix,boxsize,tytx[j]))
-#
-#	return jnp.stack(proj2)
-
-# def gauss_project_layered_ctf_single_fn(gausary, mx, ctfary,dfmin,dfstep,apix,boxsize,tytx):
 def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
@@ -1536,13 +1433,6 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
-# #	jax.debug.print("defocus value(s): {df}\nindex in array: {i}", df=dfary, i=jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32))
-# 	dfary = jnp.reshape(dfary, (jnp.size(dfary))) # dfary should be of shape () or (n,), this reshapes it to always be (n,)
-# 	ctfary_idxi = jnp.floor((dfary-dfmin)/dfstep).astype(jnp.int32)
-# 	ctfary_idxf = (dfary-dfmin)/dfstep - ctfary_idxi
-# 	interpolated_ctf = jnp.expand_dims(1.0-ctfary_idxf, [1,2])*ctfary[ctfary_idxi]+jnp.expand_dims(ctfary_idxf, [1,2])*ctfary[ctfary_idxi+1]
-# 	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * interpolated_ctf)
-# #	return jnp.fft.irfft2(jnp.fft.rfft2(projs) * ctfary[jnp.round((dfary-dfmin)/dfstep).astype(jnp.int32)])
 	ctfary = jax_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
 
@@ -1975,8 +1865,7 @@ def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=10):
 	imbi=imbi*imbi
 
 	frc=[]
-	intensity=[]
-	# ctf_abs=[]
+	snr=[]
 	zero=jnp.zeros([nr])
 	for i in range(nimg):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
@@ -1984,17 +1873,15 @@ def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=10):
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
 		frc.append(cross/jnp.sqrt(aprd*bprd))
 
-		# intensity.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0])) # From before bfactor
-		ctf=jnp.real(jnp.squeeze(jit_compute_2d_ctf(ctf_info[0],ctf_info[1],phase[i],apix,ny,jnp.reshape(dfary[i], (1,)),0,0,False)) * jnp.exp(-(bfactor/4)*rad2_img(ny)/(apix*apix*ny*ny)))
-		intensity.append(jnp.square(ctf[0]))
-		# ctf_abs.append(jnp.abs(ctf[0]))
+		# snr.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0])) # For not using bfactor
+		ctf=jnp.real(jnp.squeeze(jit_compute_2d_ctf(ctf_info[0],ctf_info[1],phase[i],apix,ny,jnp.reshape(dfary[i], (1,)),0,0,False)) * jnp.exp(-(bfactor/4)*rad2_img(ny)/(apix*apix*ny*ny))) # For CTF with bfactor
+		snr.append(jnp.square(ctf[0]))
+		# snr.append(jnp.abs(ctf[0])) # For using absolute value of CTF instead of intensity
 
-	snr_weight=jnp.stack(intensity)
-	# snr_weight=jnp.stack(ctf_abs)
+	snr_weight=jnp.stack(snr)
 	frc=jnp.stack(frc)
-#	frc=frc*w
-	# ret = jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(jnp.bincount(rad_img.flatten(), length=nr), (minfreq, ), (ny//2-minfreq-1, )) # Adding radius weighting
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) # average over frequencies
+	# ret = jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) / jax.lax.dynamic_slice(jnp.bincount(rad_img.flatten(), length=nr), (minfreq, ), (ny//2-minfreq-1, )) # Adding radius weighting: additional divide by radius. change to * for multiply (worse)
+	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) # average over frequencies # comment out if using radius weighting
 
 	return  jnp.clip(ret, 0.0, 1.0).mean()
 #	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
