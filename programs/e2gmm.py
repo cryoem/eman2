@@ -417,7 +417,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gbll.addLayout(self.gflparm,2,0)
 
 		self.wedbatch = QtWidgets.QLineEdit("1")
-		self.wedbatch.setToolTip("Number of batches for network training (reduces memory requirements)")
+		self.wedbatch.setToolTip("batches for network training (less RAM), negative integer will use only a fraction of the particles for training")
 		self.gflparm.addRow("# Ptcl Batches:",self.wedbatch)
 
 		self.wedrres = QtWidgets.QLineEdit("25")
