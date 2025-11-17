@@ -2421,6 +2421,8 @@ if the lst file does not exist."""
 		if len(tupl)==3 : self.write(n,tupl[0],tupl[1],tupl[2])
 		else : self.write(n,tupl[0],tupl[1])
 
+	def __len__(self): return self.n
+
 	def close(self):
 		"""Once you call this, you should not try to access this object any more"""
 		if self.ptr!=None :
@@ -2594,8 +2596,6 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			imgs=EMAN3jax.EMStack(self.read_images(range(i,min(i+chunk,self.n))))
 
 		#TODO - finish caching
-
-	def __len__(self): return self.n
 
 	def normalize(self):
 		"""This will read the entire file and insure that the line-length parameter is valid. If it is not,
