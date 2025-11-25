@@ -348,6 +348,12 @@ def main():
 		# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
 		ctf_info = jnp.array([wavelength, jctf.cs])
 
+	# Setting up symmetry
+	sym=parsesym("d2")
+	sym_orts = Orientations()
+	sym_orts.init_from_transforms(sym.get_syms())
+	symmx = sym_orts.to_mx3d()
+
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
 	gaus=Gaussians()
@@ -396,6 +402,7 @@ def main():
 				if options.ctf==0:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,stage[3],stage[7],frc_Z)
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
 					step0=jnp.nan_to_num(step0)
 					shift0=jnp.nan_to_num(shift0)
@@ -539,7 +546,9 @@ def main():
 			mx2d=orts.to_mx2d(swapxy=True)
 			gausary=gaus.jax
 			ny=ptclsfds.shape[1]
-			projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+			# projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+			projs=EMStack2D(gauss_project_simple_sym_fn(gausary, orts.jax, ny, tytx, symmx))
+			print("projs shape: ", projs.shape)
 			if options.ctf>0:
 				mx3d=orts.to_mx3d()
 				# ctfaryds=jax_downsample_2d(ctf_stack,ny)
@@ -619,9 +628,9 @@ def main():
 	elif options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
 	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
-	if options.sym not in ("c1","C1","I","i"):
-		if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
-		vol.process_inplace("xform.applysym",{"sym":options.sym})
+	# if options.sym not in ("c1","C1","I","i"):
+	# 	if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
+	# 	vol.process_inplace("xform.applysym",{"sym":options.sym})
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
@@ -677,6 +686,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 
 # @profile
 def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
+# def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -689,15 +699,29 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0
 	mx=orts.to_mx2d(swapxy=True)
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
+	ortary=orts.jax
 
+	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z) # From when I tried SNR weighting Gaussian gradient
 	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
-	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z)
+	# frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z)
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational (gauss) std
 	sca=grad[:,3].std()			# amplitude std
 
 	return (grad,float(qual),float(shift),float(sca))
+
+# @profile
+def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	ny=ptcls.shape[1]
+	prj=gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx)
+#	print(prj.shape,ptcls.shape,weight,frc_Z)
+#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+
+gradvalsfnl=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
 
 # @profile
 def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
