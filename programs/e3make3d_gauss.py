@@ -349,7 +349,7 @@ def main():
 		ctf_info = jnp.array([wavelength, jctf.cs])
 
 	# Setting up symmetry
-	sym=parsesym("d2")
+	sym=parsesym(options.sym)
 	sym_orts = Orientations()
 	sym_orts.init_from_transforms(sym.get_syms())
 	symmx = sym_orts.to_mx3d()
@@ -386,6 +386,7 @@ def main():
 #		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
 #		optim = optax.fromage(.01)		# tried, not as good
 		optim_state=optim.init(gaus._data)		# initialize with data
+		all_frcs = []
 		for i in range(stage[2]):		# training epochs
 			if rstep<.01: break		# don't continue if we've optimized well at this level
 			if nptcl>stage[0]*2: idx0=sn+i
@@ -401,8 +402,8 @@ def main():
 #				if not options.tomo or sn<2:
 				if options.ctf==0:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
-					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,stage[3],stage[7],frc_Z)
+					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,stage[3],stage[7],frc_Z,sn, i)
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
 					step0=jnp.nan_to_num(step0)
 					shift0=jnp.nan_to_num(shift0)
@@ -517,6 +518,7 @@ def main():
 				print(f"{dbfsc:0.5f}\t",end="")
 
 			print(f"{i}\t{qual:1.5f}\t{shift*1000:1.6f}\t\t{sca*1000:1.6f}\t{imshift*1000:1.6f}  # /1000")
+			all_frcs.append((i, qual))
 
 			if qual>0.99: break
 
@@ -540,6 +542,9 @@ def main():
 						vol.write_image(f"testing_combineiters_vol_{i}.hdf:12",-1)
 						os.system(f'e2proc3d.py testing_combineiters_vol_{i}.hdf testing_combineiters_vol_{i}_fsc.txt --calcfsc {options.fscdebug}')
 
+		# end of epoch, save FRC values
+		np.savetxt(f"epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.12f",delimiter="\t")
+
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
 			dsapix=apix*nxraw/ptclsfds.shape[1]
@@ -548,7 +553,6 @@ def main():
 			ny=ptclsfds.shape[1]
 			# projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
 			projs=EMStack2D(gauss_project_simple_sym_fn(gausary, orts.jax, ny, tytx, symmx))
-			print("projs shape: ", projs.shape)
 			if options.ctf>0:
 				mx3d=orts.to_mx3d()
 				# ctfaryds=jax_downsample_2d(ctf_stack,ny)
@@ -628,9 +632,9 @@ def main():
 	elif options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
 	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
-	# if options.sym not in ("c1","C1","I","i"):
-	# 	if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
-	# 	vol.process_inplace("xform.applysym",{"sym":options.sym})
+	if options.sym not in ("c1","C1","I","i"):
+		if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
+		vol.process_inplace("xform.applysym",{"sym":options.sym})
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
 	vol["apix_y"]=apix*nxraw/outsz
@@ -685,8 +689,8 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 #	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
 
 # @profile
-def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
-# def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc_Z=3.0):
+# def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
+def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc_Z=3.0, stage=0, epoch=0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -702,8 +706,25 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0
 	ortary=orts.jax
 
 	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z) # From when I tried SNR weighting Gaussian gradient
-	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
-	# frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z)
+	# if epoch < 4:
+	# if True:
+	if False:
+		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z) # No symmetry
+	else:
+		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z) # With symmetry\
+	# if stage == 4:
+	# 	no_sym_frcs, no_sym_grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z)
+	# 	sym_frcs,sym_grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z)
+	# 	print("FRC without symmetry: ", no_sym_frcs)
+	# 	print("FRC with symmetry: ", sym_frcs)
+	# 	jnp.save(f"no_sym_grad_{epoch}", no_sym_grad)
+	# 	jnp.save(f"sym_grad_{epoch}", sym_grad)
+	# 	prj=EMStack2D(gauss_project_simple_fn(gausary, jnp.array([[[0.],[1.],[0.]], [[1.],[0.],[0.]]]), 256, jnp.array([[0.,0.,0.]])))
+	# 	prj.write_images("no_sym_projection.hdf")
+	# 	sym_prj=EMStack2D(gauss_project_simple_sym_fn(gausary, jnp.array([[0.,0.,0.]]), 256, jnp.array([[0,0,0]]), symmx))
+	# 	sym_prj.write_images("symmetrical_projection.hdf")
+	# 	if epoch==5: quit()
+
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational (gauss) std
