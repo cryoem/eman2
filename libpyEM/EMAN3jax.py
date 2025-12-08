@@ -1314,14 +1314,14 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 
 gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
-def prj_single_sym(gausary, ortary, ny, tytx,symmx):
+def prj_single_simple_sym(gausary, ortary, ny, tytx,symmx):
 	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
 	mx3d=to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
-	return gauss_project_simple_fn(gausary,jnp.flipud(sym_mx3d),ny,tytx)
+	return gauss_project_simple_fn(gausary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
 
 def _gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx):
-	return jnp.mean(jax.vmap(prj_single_sym, in_axes=[None, None, None, None, 2])(gausary, ortary, ny, tytx, symmx), axis=0)
+	return jnp.mean(jax.vmap(prj_single_simple_sym, in_axes=[None, None, None, None, 2])(gausary, ortary, ny, tytx, symmx), axis=0)
 
 gauss_project_simple_sym_fn=jax.jit(_gauss_project_simple_sym_fn, static_argnames=["ny"])
 
