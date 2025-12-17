@@ -5,6 +5,7 @@ import numpy as np
 import scipy.spatial.distance as scipydist
 from scipy.optimize import minimize
 from multiprocessing import Pool
+from scipy.spatial import KDTree
 
 def read_2d(d):
 	hdrs=EMData.read_images(d, [],IMAGE_UNKNOWN,True)
@@ -17,6 +18,38 @@ def gather_metadata(options):
 	info2d=[]
 	data=load_lst_params(options.ptcls)
 	
+	if options.mindist>0:
+		print("exclude nearest neighbor <{}A".format(options.mindist))
+		e1=EMData(options.ptcls,0, True)
+		apix=e1["apix_x"]
+		data2=[]
+
+		fnames=np.unique([i["src"] for i in data])
+		fnames=[base_name(f) for f in fnames]
+
+		for fname in fnames:
+			i3d1=[i for i in data if base_name(i["src"])==fname]
+			n0=len(i3d1)
+			pos1=[EMData(i["src"], i["idx"], True) for i in i3d1]
+			pos1=np.array([p["ptcl_source_coord"] for p in pos1])
+
+			tree=KDTree(pos1)
+			tokeep=np.ones(len(pos1), dtype=bool)
+			dthr=options.mindist/apix
+
+			for i in range(len(pos1)):
+				if tokeep[i]:
+					k=tree.query_ball_point(pos1[i], dthr)
+					tokeep[k]=False
+					tokeep[i]=True
+
+			i3d1=[i3 for i,i3 in enumerate(i3d1) if tokeep[i]]
+			print("  excluding {} out of {} 3d particles.".format(n0-len(i3d1), n0))
+			data2.extend(i3d1)
+
+		print("total {} out of {} particles excluded".format(len(data)-len(data2), len(data)))
+		data=data2
+
 	if options.exclude:
 		data2=[]
 		print("exclude particles around {}".format(options.exclude))
@@ -46,8 +79,12 @@ def gather_metadata(options):
 			
 		print("total {} out of {} particles excluded".format(len(data)-len(data2), len(data)))
 		data=data2
+
 	print("Loading 3D particles")
-	imgs=EMData.read_images(options.ptcls,[],True)
+	tmpname="tmp_ptcls_{:d}.lst".format(np.random.randint(99999))
+	save_lst_params(data, tmpname)
+	imgs=EMData.read_images(tmpname,[],True)
+	os.remove(tmpname)
 	src2d=np.unique([m["class_ptcl_src"] for m in imgs])
 	print(f"\rLoading 3D particles - {len(imgs)} particles from {len(src2d)} tomograms")
 	
@@ -189,6 +226,7 @@ def main():
 	parser.add_argument("--userot", action="store_true", default=False, help="use rotational subtilt alignment as well. very slow and may not be as useful..")
 	parser.add_argument("--skipcheck", action="store_true", default=False, help="skip the sanity check...")
 	parser.add_argument("--keeptilt", type=int,help="keep the N center-most tilt per 3d particle", default=-1)
+	parser.add_argument("--mindist", type=float,help="remove particles within xA within a neighbor", default=-1)
 
 	(options, args) = parser.parse_args()
 	
@@ -331,6 +369,10 @@ def main():
 			dst=dst/np.sum(dst,axis=0)
 			v1=np.matmul(v0.T,dst).T
 			v1/=scale
+			#print(p0.shape, p1.shape, v0.shape, v1.shape)
+			if len(v1.shape)<2:
+				print("something wrong...")
+				continue
 			
 			scr=np.array([a["score"] for a in ad0])
 			scr=np.dot(scr, dst)
