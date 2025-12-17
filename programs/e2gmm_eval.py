@@ -44,6 +44,10 @@ def main():
 	logid=E2init(sys.argv)
 	
 	pts=np.loadtxt(options.pts)
+	if np.mean(abs(pts[:,0]-np.round(pts[:,0])))>1e-3:
+		print("Assign sequential particle ID")
+		pts=np.hstack([np.arange(len(pts))[:,None], pts])
+	print("Point cloud shape:", pts.shape)
 	
 	if options.umap:
 		

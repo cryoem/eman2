@@ -773,7 +773,7 @@ def main():
 	pts_sub=np.where(m2>0)[0]
 	
 	print("Starting full model refinement...")
-	niter=4000*niter[2]
+	niter=1*niter[2]
 	checkpoint=np.arange(100)*500#[0, 500, 2000, 8000]
 	c0=len(cost)+niter
 	for itr in range(niter):

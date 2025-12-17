@@ -26,6 +26,7 @@ def main():
 	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. ", default=25000)
 	parser.add_argument("--storexf", action="store_true", default=False ,help="store the transform after refinement and start from the transform in the last iteration each time.")
 	parser.add_argument("--parallel", type=str,help="parallel options for 3d reconstruction", default="thread:32")
+	parser.add_argument("--initpts", type=str,help="gmm input to replace model from initial folder", default=None)
 
 	# parser.add_argument("--recover",action="store_true", default=False ,help="continue previous crashed refinement")
 
@@ -54,8 +55,6 @@ def main():
 		for ieo, eo in enumerate(["even", "odd"]):
 			
 			it0=max(0, olditer-1)
-			pts=np.loadtxt(f"{oldpath}/model_{it0:02d}_{eo}.txt")
-			np.savetxt(f"{path}/model_00_{eo}.txt", pts)
 			
 			if os.path.isfile(f"{oldpath}/ptcls_{olditer:02d}_{eo}.lst"):
 				run(f"e2proclst.py {oldpath}/ptcls_{olditer:02d}_{eo}.lst --create {path}/ptcls_00_{eo}.lst")
@@ -67,6 +66,15 @@ def main():
 			
 			run(f"e2proc3d.py {oldpath}/threed_{olditer:02d}_{eo}.hdf {path}/threed_{iiter:02d}_{eo}.hdf")
 			run(f"e2proc3d.py {oldpath}/threed_raw_{eo}.hdf {path}/threed_{iiter:02d}_raw_{eo}.hdf")
+			
+			
+			if options.initpts==None:
+				pts=np.loadtxt(f"{oldpath}/model_{it0:02d}_{eo}.txt")
+				np.savetxt(f"{path}/model_00_{eo}.txt", pts)
+			else:
+				run(f"e2project3d.py {path}/threed_{iiter:02d}_{eo}.hdf --outfile {path}/tmp_projection.hdf --orientgen=eman:delta=4 --parallel={options.parallel}")
+				run(f"e2gmm_refine_new.py --ptclsin {path}/tmp_projection.hdf --model {options.initpts} --maxres {options.maxres} --minres {options.minres} --modelout {path}/model_00_{eo}.txt --niter 40 --trainmodel --learnrate 1e-5")
+			
 			
 			# run(f"e2spa_make3d.py --input {path}/ptcls_{iiter:02d}_{eo}.lst --output {path}/threed_{iiter:02d}_{eo}.hdf --parallel thread:{options.thread} --keep 1 --sym c1")
 			# e=EMData(f"{path}/threed_{iiter:02d}_{eo}.hdf")
