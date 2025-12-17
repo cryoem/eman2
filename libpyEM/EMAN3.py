@@ -98,6 +98,20 @@ bispec_invar_parm=(32,10)
 # These are processors which don't support in-place operation
 outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum","morph.blackhat.binary","morph.close.binary","morph.dilate.binary","morph.erode.binary","morph.ext_grad.binary","morph.gradient.binary","morph.grow","morph.int_grad.binary","morph.majority","morph.object.density","morph.object.label","morph.open.binary","morph.prune","morph.thin","morph.tophat.binary"]
 
+def cache_path():
+	"""Returns the path to where .lsx file caches should be placed. Uses, in order:
+	- EMAN3_CACHE_PATH env variable
+	- project .json file
+	- current folder
+"""
+	cp=os.getenv("EMAN3_CACHE_PATH")
+	if cp is None:
+		try:
+			js=js_open_dict("info/project.json",false)
+			cp=js["global.cache_path"]
+		except: cp="cache/"
+	return cp
+
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
 try:
@@ -2407,6 +2421,8 @@ if the lst file does not exist."""
 		if len(tupl)==3 : self.write(n,tupl[0],tupl[1],tupl[2])
 		else : self.write(n,tupl[0],tupl[1])
 
+	def __len__(self): return self.n
+
 	def close(self):
 		"""Once you call this, you should not try to access this object any more"""
 		if self.ptr!=None :
@@ -2478,7 +2494,13 @@ and translate them into a dictionary."""
 				elif ln[2][:9]=="Transform":
 					ln[2]={"xform.projection":eval(ln[2])}
 				else:
-					ln[2]={"lst_comment":ln[2]}
+					try:
+						dc=eval(ln[2])
+						try: score=dc.pop("score")
+						except: score=0.0
+						ln[2]={"xform.projection":Transform(dc),"score":score}
+					except: ln[2]={"lst_comment":ln[2]}
+
 		self.lock.release()
 		return ln
 
@@ -2556,10 +2578,13 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 		return ret
 
-	def cache_name(self): return f'cache/{os.path.basename(self.path).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
+
+	def cache_name(self):
+		ap=os.path.abspath(self.path)
+		return f'{cache_path()}/{ap.split("/")[-3]}_{ap.split("/")[-2]}_{os.path.basename(ap).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
 
 	def write_cache(self):
-		"""This will (re)create a multi-scale cache file for the entire .lst file"""
+		"""This will create a multi-scale cache file for the entire .lst file if necessary"""
 		import EMAN3jax
 		if not os.path.exists("cache"):
 			try: os.mkdir("cache")
@@ -2571,8 +2596,6 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			imgs=EMAN3jax.EMStack(self.read_images(range(i,min(i+chunk,self.n))))
 
 		#TODO - finish caching
-
-	def __len__(self): return self.n
 
 	def normalize(self):
 		"""This will read the entire file and insure that the line-length parameter is valid. If it is not,
@@ -2922,7 +2945,7 @@ def db_write_images(fsp,
                     header_only=False,
                     region=None,
                     filestoragetype=EM_FLOAT,
-                    use_host_endian=True):
+                    use_host_endian=True,compress_level=1):
 	"""fsp - output filename, accepts ":" syntax for compression
 imgs - list of EMData objects
 idx0 - index in the file of the first image, eg - 5 would write imgs[0] to position 5 in the file and imgs[1] to position 6
@@ -2963,7 +2986,7 @@ use_host_endian - rarely should be altered"""
 				continue
 
 			im["render_bits"]=bits
-			im["render_compress_level"]=1
+			im["render_compress_level"]=compress_level
 			# float compression, no range change
 			if bits==0 :
 				im.del_attr("render_min")

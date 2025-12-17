@@ -5692,9 +5692,18 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 			return new MeanZeroEdgeProcessor();
 		}
 
+		TypeDict get_param_types() const
+		{
+			TypeDict d;
+			d.put("mode", EMObject::STRING, "Edge fill mode: 'edgelinearzero' (default) or 'edgetapermean'.");
+			return d;
+		}
+
 		string get_desc() const
 		{
-			return "Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.";
+			return "Fill zero-valued edges by tapering from the nearest interior pixel.\
+			Modes: 'edgelinearzero' (default, linear to 0.0) or \
+			'edgetapermean' (legacy exponential taper to mean_nonzero).";
 		}
 
 		static const string NAME;

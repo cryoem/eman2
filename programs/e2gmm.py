@@ -384,8 +384,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wedres.setToolTip("Resolution for Gaussian generation and refinement FSC")
 		self.gblrun.addWidget(self.wedres,2,1)
 
-		self.wedgthr = QtWidgets.QLineEdit("0.3")
-		self.wedgthr.setToolTip("Threshold for gaussian generation, smaller => more gaussians (~0.1 - 0.8), start large and reduce")
+		self.wedgthr = QtWidgets.QLineEdit("0.3,0.6")
+		self.wedgthr.setToolTip("Threshold for gaussian generation, smaller => more gaussians (~0.1 - 0.8), optional second threshold for negative peaks, or filename")
 		self.gblrun.addWidget(self.wedgthr,3,1)
 
 		#self.wbutneutral=QtWidgets.QPushButton("Train Neutral Model")
@@ -417,7 +417,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gbll.addLayout(self.gflparm,2,0)
 
 		self.wedbatch = QtWidgets.QLineEdit("1")
-		self.wedbatch.setToolTip("Number of batches for network training (reduces memory requirements)")
+		self.wedbatch.setToolTip("batches for network training (less RAM), negative integer will use only a fraction of the particles for training")
 		self.gflparm.addRow("# Ptcl Batches:",self.wedbatch)
 
 		self.wedrres = QtWidgets.QLineEdit("25")
@@ -624,6 +624,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutsetsave=QtWidgets.QPushButton("Save Set")
 		self.gblpltctl.addWidget(self.wbutsetsave,3,7)
 
+		self.wbutmodelsave=QtWidgets.QPushButton("Save Model")
+		self.gblpltctl.addWidget(self.wbutmodelsave,4,7)
 
 
 		#### Widgets below 3D
@@ -742,6 +744,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutmapgauss.clicked[bool].connect(self.new_map_gauss)
 		self.wbutsetdel.clicked[bool].connect(self.set_del)
 		self.wbutsetsave.clicked[bool].connect(self.set_save)
+		self.wbutmodelsave.clicked[bool].connect(self.model_save)
 
 		self.wbutsetintsec.clicked[bool].connect(self.intsec_sets)
 		self.wbutsetunion.clicked[bool].connect(self.union_sets)
@@ -969,7 +972,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			self.maplist.setItem(i,5,twi)
 
 		self.maplist.resizeColumnsToContents()
-		self.curmaps_sel=[]
+		self.curmaps_sel={}
 		if not sel is None:
 			self.maplist.selectRow(sel)
 
@@ -1518,6 +1521,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			latent=np.mean(self.midresult.transpose()[ptdist,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
 			gauss=self.decoder(latent,0).numpy()[0].transpose()
 
+
 			gauss[:3]*=box
 			gauss[2]*=-1.0
 			gauss[1]*=-1.0
@@ -1619,7 +1623,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			print(f"{len(imgns)} selected particles saved to {outfsp} and {len(ptcl3d)} to {outfsp2}")
 
 		else:	# SPA particles not SPT partcles
-			outfsp=f"{self.gmm}/{self.currunkey}_set_{'-'.join(ks)}.lst"
+			outfsp=f"{self.gmm}/{self.currunkey}_set_{'_'.join(ks)}.lst"
 			try: os.unlink(outfsp)
 			except: pass
 			lsout=LSXFile(outfsp)
@@ -1628,6 +1632,52 @@ class EMGMM(QtWidgets.QMainWindow):
 				lsout[-1]=lsin[n]		# despite the odd notation, -1 does work this way
 
 			print(f"{len(imgns)} selected particles saved to {outfsp}")
+
+	def model_save(self,ign=None):
+		"""Save one or more sets to a new LST file for further processing"""
+		if len(self.maplist.selectedItems())==0:
+			showerror("One or more sets must be selected. Gaussians from selected sets will be merged with average with normal amplitudes and perturbed points present with small amplitude.")
+			return
+
+		dim=self.currun.get("dim",4)
+		if len(self.maplist.selectedItems())==1:
+			key=self.maplist.selectedItems()[0].text()
+			smap=self.curmaps[key]
+			ptdist=smap[5]
+			if len(ptdist)>1000: ptdist=ptdist[::len(ptdist)//1000]		# We don't really need every point to get a pretty good average position for the set
+			latent=np.mean(self.midresult.transpose()[ptdist,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
+			gauss=self.decoder(latent,0).numpy()[0].transpose()
+
+		else:
+			gausses=[]
+			for i,keyw in enumerate(self.maplist.selectedItems()):
+				key=str(keyw.text())
+				smap=self.curmaps[key]
+				ptdist=smap[5]
+				if len(ptdist)>1000: ptdist=ptdist[::len(ptdist)//1000]		# We don't really need every point to get a pretty good average position for the set
+				latent=np.mean(self.midresult.transpose()[ptdist,2:2+dim],0,keepdims=True)		# the mean latent vector over selected points
+				gausses.append(self.decoder(latent,0).numpy()[0].transpose())
+			gaussmean=sum(gausses)/len(gausses)	# we keep this as a list because we're going to filter it
+
+			gmxyz=gaussmean[:3]
+			bigg=[gaussmean]
+			for g in gausses:
+				gxyz=g[:3]
+				dst=np.sqrt(np.sum((gxyz-gmxyz)**2,axis=0))	# distance between each point and mean
+				bigg.append(g[:,dst>dst.mean()+dst.std()*2.0])	# gaussians with significant deviations from mean
+				bigg[-1][3,:]=0.01		# set all secondary gaussian amplitudes to a minimal positive value
+
+			#for g in bigg: print(g.shape)
+			gauss=np.concatenate(bigg,axis=1)
+
+		outfsp=f"{self.gmm}/{self.currunkey}_gauss_{'_'.join(self.curmaps_sel)}.txt"
+		try: os.unlink(outfsp)
+		except: pass
+
+		np.savetxt(outfsp,gauss.transpose(),delimiter="\t")
+
+		print(f"{gauss.shape} gaussians saved to {outfsp}")
+
 
 	def do_kmeans(self):
 		print("kmeans ...")
@@ -2053,6 +2103,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.lastres=res
 
 		map3d=EMData(f"{self.gmm}/input_map.hdf")
+		nx=map3d["nx"]
 
 		self.saveparm("neutral")  # updates self.currun with current user input
 
@@ -2065,80 +2116,103 @@ class EMGMM(QtWidgets.QMainWindow):
 			pass
 
 		thrt=self.wedgthr.text()
+		gauss=None
 		try: minpos,minneg=float(thrt.split(",")[0]),float(thrt.split(",")[1])
 		except:
 			try:
 				minpos=float(thrt)
 				minneg=minpos*1.25
 			except:
-				showerror("Invalid threshold, either POS or POS,NEG, typ: 0.3,0.4")
+				try:
+					gauss=np.loadtxt(thrt,delimiter="\t").transpose()
+					self.centers=gauss[:3]*nx
+					self.centers[1:3]*=-1
+					self.amps=gauss[3]
+				except:
+					traceback.print_exc()
+					showerror("Invalid threshold, either <POS> or <POS>,<NEG>, or <gauss file>  typ: 0.3,0.6")
+					return
+
+		# default mode based on fitting Gaussians (alternative is the file read in the nested try/except above)
+		if gauss is None:
+			opt={"minratio":minpos,"width":res,"skipseg":2}
+	#		if mask!=None: opt["mask"]=mask
+
+			try: sym=self.currun.setdefault("sym","c1")
+			except:
+				showerror("Unable to get symmetry. Have you created a run yet?")
 				return
-		opt={"minratio":minpos,"width":res,"skipseg":2}
-#		if mask!=None: opt["mask"]=mask
 
-		try: sym=self.currun.setdefault("sym","c1")
-		except:
-			showerror("Unable to get symmetry. Have you created a run yet?")
-			return
+			print(f"sym {sym}")
+			if sym.lower()!="c1" :
+				mask=map3d.process("mask.asymunit",{"au":0,"sym":sym})
+				map3d.mult(mask)
+				mask=None
 
-		print(f"sym {sym}")
-		if sym.lower()!="c1" :
-			mask=map3d.process("mask.asymunit",{"au":0,"sym":sym})
-			map3d.mult(mask)
-			mask=None
+			# Strong positive peaks
+			seg=map3d.process("segment.gauss",opt)
+			print("pos:",len(seg["segment_amps"]))
 
-		# Strong positive peaks
-		seg=map3d.process("segment.gauss",opt)
-		print("pos:",len(seg["segment_amps"]))
-		map3d2=map3d.process("normalize.edgemean")
-		map3d2.mult(-1.0)
+			# "shell" surrounding existing density
+			map3d2=seg.process("threshold.binary",{"value":minpos/3.0})
+			map3d2a=map3d2.process("filter.lowpass.gauss",{"cutoff_abs":0.1})
+			map3d2.mult(-1)
+			map3d2.add(1)
+			map3d2a.mult(map3d2)
+			opt["minratio"]=minneg
+			map3d2a.write_image("tst_3d2a.hdf:16",0)
+			segneg=map3d2a.process("segment.gauss",opt)
+			segneg.write_image("tst_segneg.hdf:16",0)
+			print("neg:",len(segneg["segment_amps"]))
 
-		# strong negative peaks
-		opt["minratio"]=minneg
-		segneg=map3d2.process("segment.gauss",opt)
-		print("neg:",len(segneg["segment_amps"]))
-#		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
-		if self.currun["pas"][1]=="0":
-			print("No amplitude modification, so 'negative' peaks set to small positive value")
-			amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))+.05)
-			centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
-		else:
-			print("negative peaks set to small negative value")
-			amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))-.05)
-			centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
-		try: amps/=max(amps)
-		except:
-			print("ERROR: no gaussians at specified threshold")
-			return
+	# 		# strong negative peaks
+			# map3d2=map3d.process("normalize.edgemean")
+			# map3d2.mult(-1.0)
+	# 		opt["minratio"]=minneg
+	# 		segneg=map3d2.process("segment.gauss",opt)
+	# 		print("neg:",len(segneg["segment_amps"]))
+	# #		amps=np.array(seg["segment_amps"]+segneg["segment_amps"])
 
-		if self.fmapdataitem==None:
-			self.fmapdataitem=EMDataItem3D(seg)
-			self.fmapiso=EMIsosurface(self.fmapdataitem)
-			self.wview3d.insertNewNode("Filt or Gauss Map",self.fmapdataitem,parentnode=self.wview3d)
-			self.wview3d.insertNewNode("Isosurface",self.fmapiso,parentnode=self.fmapdataitem)
-		else:
-			self.fmapdataitem.setData(seg)
+			if self.currun["pas"][1]=="0":
+				print("No amplitude modification, so 'negative' peaks set to small positive value as probes")
+				amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))+.05)
+				centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
+			else:
+				print("negative peaks set to small negative value")
+				amps=np.append(seg["segment_amps"],np.zeros(len(segneg["segment_amps"]))-.05)
+				centers=np.array(seg["segment_centers"]+segneg["segment_centers"]).reshape((len(amps),3)).transpose()
+			try: amps/=max(amps)
+			except:
+				print("ERROR: no gaussians at specified threshold")
+				return
 
-#		self.wedngauss.setText(str(len(amps)*4//3))
-		self.wedngauss.setText(f"{str(len(amps))} Gau")
+			if self.fmapdataitem==None:
+				self.fmapdataitem=EMDataItem3D(seg)
+				self.fmapiso=EMIsosurface(self.fmapdataitem)
+				self.wview3d.insertNewNode("Filt or Gauss Map",self.fmapdataitem,parentnode=self.wview3d)
+				self.wview3d.insertNewNode("Isosurface",self.fmapiso,parentnode=self.fmapdataitem)
+			else:
+				self.fmapdataitem.setData(seg)
 
-		print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
+	#		self.wedngauss.setText(str(len(amps)*4//3))
+			self.wedngauss.setText(f"{str(len(amps))} Gau")
 
-		nx=map3d["nx"]
-		centers[0]-=nx/2
-		centers[1]-=nx/2
-		centers[2]-=nx/2
-		self.centers=centers
-		self.amps=amps
+			print(f"Resolution={res} -> Ngauss={len(amps)}  ({self.currunkey})")
+
+			centers[0]-=nx/2
+			centers[1]-=nx/2
+			centers[2]-=nx/2
+			self.centers=centers
+			self.amps=amps
 
 		self.group_by_mask()
 
 		try:
-			if self.cengroups is None: self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
-			else: self.neutralplot.setData(np.concatenate((centers,[amps],[np.ones(len(amps))],[self.cengroups])),self.wvssphsz.value)
+			if self.cengroups is None: self.neutralplot.setData(np.concatenate((self.centers,[self.amps])),self.wvssphsz.value)
+			else: self.neutralplot.setData(np.concatenate((self.centers,[self.amps],[np.ones(len(self.amps))],[self.cengroups])),self.wvssphsz.value)
 		except:
 			self.cengroups=None
-			self.neutralplot.setData(np.concatenate((centers,[amps])),self.wvssphsz.value)
+			self.neutralplot.setData(np.concatenate((self.centers,[self.amps])),self.wvssphsz.value)
 		self.wview3d.update()
 
 		# write the new seg model to disk for use in subsequent runs
@@ -2434,17 +2508,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		print("Training network")
 		if int(self.currun['batches']) in (0,1) :
 			# We really do need to rerun this each time in case parameters have changed
-			print("Pregenerating per-particle Gaussian representation")
-			er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
+			print(f"Pregenerating per-particle Gaussian representation (using {modelseg})")
+			er=run(f"e2gmm_refine_point.py --model {modelseg} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
 			print("Training network (single batch)")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} --net_style {self.currun["net_style"]}")
 		elif int(self.currun['batches'])<0 :
 			# if batches is less than zero, then only one batch of the specified fractional size (eg -8 -> 1/8 data) will be used for training
 			# but the entire set will still be processed through the latent space.
-			print("Pregenerating per-particle Gaussian representation")
+			print(f"Pregenerating per-particle Gaussian representation (using {modelseg})")
 			nb=-int(self.currun['batches'])
 			for b in range(nb):
-				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
+				er=run(f"e2gmm_refine_point.py --model {modelseg} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
 
 			print("Training network (single fractional batch, first chunk only)")
 			er=run(f"e2gmm_refine_point.py --model {modelout} --decoderin {decoder} --decoderout {decoder} --encoderout {encoder} --ptclsin {self.gmm}/particles.lst --ptclrepin {ptrep} --heter {conv} --sym {sym} --maxboxsz {maxbox} --niter {self.currun['trainiter']} {mask} --nmid {self.currun['dim']} --midout {self.gmm}/{self.currunkey}_mid.txt --modelreg {self.currun['modelreg']} --perturb {self.currun['perturb']} --pas {self.currun['pas']} --ptclsclip {self.jsparm['boxsize']} --minressz {minboxp} --chunk 0,{nb} --net_style {self.currun["net_style"]}")
@@ -2455,9 +2529,9 @@ class EMGMM(QtWidgets.QMainWindow):
 			first=True
 			itsize=self.currun['trainiter']//3	# We run 1/3 of the iterations at at a time for all batches
 			# We really do need to rerun this each time in case parameters have changed
-			print("Pregenerating per-particle Gaussian representation")
+			print(f"Pregenerating per-particle Gaussian representation (using {modelseg})")
 			for b in range(nb):
-				er=run(f"e2gmm_refine_point.py --model {modelout} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
+				er=run(f"e2gmm_refine_point.py --model {modelseg} --ptclsin {self.gmm}/particles.lst --ptclrepout {ptrep} --maxboxsz {maxboxp} --minressz {minboxp} --chunk {b},{nb} --nmid {self.currun['dim']} --net_style {self.currun["net_style"]}")
 
 			print("Training in ",nb," batches")
 			for it in range(0,self.currun['trainiter'],itsize):

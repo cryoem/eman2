@@ -4498,7 +4498,192 @@ void BeamstopProcessor::process_inplace(EMData * image)
 }
 
 
+void MeanZeroEdgeProcessor::process_inplace(EMData * image)
+{
+	if (!image) { LOGWARN("NULL Image"); return; }
+	if (image->get_zsize() > 1) {
+		LOGERR("MeanZeroEdgeProcessor doesn't support 3D model");
+		throw ImageDimensionException("3D model not supported");
+	}
 
+	const int nx = image->get_xsize();
+	const int ny = image->get_ysize();
+
+	// Original code uses mean_nonzero; still needed for the legacy mode
+	Dict imgdict = image->get_attr_dict();
+	const float mean_nonzero = imgdict.get("mean_nonzero");
+
+	// NEW: read processor parameter "mode" with default = "edgelinearzero"
+	string mode = "edgelinearzero";
+	try {
+		// If your Processor base exposes params, this will pick up Dict set via set_params()
+		Dict p = get_params();
+		if (p.has_key("mode")) mode = (string)p["mode"];
+	} catch (...) {
+		// If get_params() isn't available, you can also read from image attr if you prefer:
+		// if (imgdict.has_key("meanzeroedge_mode")) mode = (string)imgdict["meanzeroedge_mode"];
+	}
+
+	float *d = image->get_data();
+	int i = 0;
+	int j = 0;
+
+	// =========================
+	// MODE: edgelinearzero (DEFAULT)
+	// =========================
+	if (mode == "edgelinearzero") {
+
+		// ---- Row-wise passes (left & right) ----
+		for (j = 0; j < ny; j++) {
+
+			// Left side: first non-zero from the left
+			for (i = 0; i < nx; i++) if (d[i + j * nx] != 0.0f) break;
+			if (i > 0 && i < nx) {
+				const int i_boundary = i;
+				const float v0 = d[i_boundary + j * nx];
+				const int m = i_boundary;                       // zeros at [0 .. i-1]
+				int ii = i_boundary - 1;                        // do NOT modify boundary pixel
+				while (ii >= 0) {
+					if (d[ii + j * nx] == 0.0f) {
+						const int dist = i_boundary - ii;       // 1..m
+						const float t = (float)dist / (float)m; // linear toward 0
+						d[ii + j * nx] = (1.0f - t) * v0 + t * 0.0f;
+					}
+					--ii;
+				}
+			}
+
+			// Right side: first non-zero from the right
+			for (i = nx - 1; i >= 0; i--) if (d[i + j * nx] != 0.0f) break;
+			if (i >= 0 && i < nx - 1) {
+				const int i_boundary = i;
+				const float v0 = d[i_boundary + j * nx];
+				const int m = (nx - 1) - i_boundary;           // zeros at [i+1 .. nx-1]
+				int ii = i_boundary + 1;                        // do NOT modify boundary pixel
+				while (ii < nx) {
+					if (d[ii + j * nx] == 0.0f) {
+						const int dist = ii - i_boundary;       // 1..m
+						const float t = (float)dist / (float)m; // linear toward 0
+						d[ii + j * nx] = (1.0f - t) * v0 + t * 0.0f;
+					}
+					++ii;
+				}
+			}
+		}
+
+		// ---- Column-wise passes (top & bottom) ----
+		for (i = 0; i < nx; i++) {
+
+			// Top side
+			for (j = 0; j < ny; j++) if (d[i + j * nx] != 0.0f) break;
+			if (j > 0 && j < ny) {
+				const int j_boundary = j;
+				const float v0 = d[i + j_boundary * nx];
+				const int m = j_boundary;                       // zeros at [0 .. j-1]
+				int jj = j_boundary - 1;                        // do NOT modify boundary pixel
+				while (jj >= 0) {
+					float &pix = d[i + jj * nx];
+					if (pix == 0.0f) {
+						const int dist = j_boundary - jj;       // 1..m
+						const float t = (float)dist / (float)m; // linear toward 0
+						pix = (1.0f - t) * v0 + t * 0.0f;
+					}
+					--jj;
+				}
+			}
+
+			// Bottom side
+			for (j = ny - 1; j >= 0; j--) if (d[i + j * nx] != 0.0f) break;
+			if (j >= 0 && j < ny - 1) {
+				const int j_boundary = j;
+				const float v0 = d[i + j_boundary * nx];
+				const int m = (ny - 1) - j_boundary;            // zeros at [j+1 .. ny-1]
+				int jj = j_boundary + 1;                        // do NOT modify boundary pixel
+				while (jj < ny) {
+					float &pix = d[i + jj * nx];
+					if (pix == 0.0f) {
+						const int dist = jj - j_boundary;       // 1..m
+						const float t = (float)dist / (float)m; // linear toward 0
+						pix = (1.0f - t) * v0 + t * 0.0f;
+					}
+					++jj;
+				}
+			}
+		}
+	}
+
+	// =========================
+	// MODE: edgetapermean (legacy behavior)
+	// =========================
+	else if (mode == "edgetapermean") {
+
+		// (This block is your original code verbatim.)
+		for (j = 0; j < ny; j++) {
+			for (i = 0; i < nx - 1; i++) {
+				if (d[i + j * nx] != 0) {
+					break;
+				}
+			}
+			if (i == nx - 1) {
+				i = -1;
+			}
+			float v = d[i + j * nx] - mean_nonzero;
+			while (i >= 0) {
+				v *= 0.9f;
+				d[i + j * nx] = v + mean_nonzero;
+				i--;
+			}
+
+			for (i = nx - 1; i > 0; i--) {
+				if (d[i + j * nx] != 0) {
+					break;
+				}
+			}
+			if (i == 0) {
+				i = nx;
+			}
+			v = d[i + j * nx] - mean_nonzero;
+			while (i < nx) {
+				v *= .9f;
+				d[i + j * nx] = v + mean_nonzero;
+				i++;
+			}
+		}
+
+		for (i = 0; i < nx; i++) {
+			for (j = 0; j < ny; j++) {
+				if (d[i + j * nx] != 0)
+					break;
+			}
+			float v = d[i + j * nx] - mean_nonzero;
+			while (j >= 0) {
+				v *= .9f;
+				d[i + j * nx] = v + mean_nonzero;
+				j--;
+			}
+			for (j = ny - 1; j > 0; j--) {
+				if (d[i + j * nx] != 0)
+					break;
+			}
+			v = d[i + j * nx] - mean_nonzero;
+			while (j < ny) {
+				v *= .9f;
+				d[i + j * nx] = v + mean_nonzero;
+				j++;
+			}
+		}
+	}
+
+	else {
+		LOGWARN("MeanZeroEdgeProcessor: unknown mode '%s'; using default 'edgelinearzero'", mode.c_str());
+		// fall through: do nothing special; or you could call the default branch again
+	}
+
+	image->update();
+}
+
+
+/**
 void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 {
 	if (!image) {
@@ -4589,7 +4774,7 @@ void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 
 	image->update();
 }
-
+**/
 
 
 void AverageXProcessor::process_inplace(EMData * image)

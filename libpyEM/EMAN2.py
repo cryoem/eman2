@@ -2638,7 +2638,13 @@ and translate them into a dictionary."""
 				elif ln[2][:9]=="Transform":
 					ln[2]={"xform.projection":eval(ln[2])}
 				else:
-					ln[2]={"lst_comment":ln[2]}
+					try:
+						dc=eval(ln[2])
+						try: score=dc.pop("score")
+						except: score=0.0
+						ln[2]={"xform.projection":Transform(dc),"score":score}
+					except: ln[2]={"lst_comment":ln[2]}
+
 		self.lock.release()
 		return ln
 

@@ -85,7 +85,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--keeptilt", type=int, default=-1, help="Keep X subtilt close to the center tilt. Require ptcl3d_id and tilt_id.")
 
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
-	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
+	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files), use 'none' to remove the type.")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 	parser.add_argument("--flip", action="store_true", default=False, help="flip xform.")
@@ -418,9 +418,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			print("ERROR: --minlosnr and --minhisnr not compatible with --retype")
 			sys.exit(1)
 
-		# if the user provided the leading __ for us, we strip it off and add it back later
-		if options.retype[:2]=="__" :
-			options.retype=options.retype[2:]
+		# Make sure we have an __ in the replacement unless blank
+		if len(options.retype)>2 and options.retype[:2]!="__" :
+			options.retype="__"+options.retype
+
+		if options.retype=="none" or len(options.retype.strip())==0 : options.retype=""
 
 		for f in args:
 			if options.verbose : print("Processing ",f)
@@ -432,13 +434,13 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 			if options.verbose>1 :
 				b=base_name(a[1])
-				print("{} -> {}".format(a[1],b+"__"+options.retype+".hdf"))
+				print("{} -> {}".format(a[1],b+options.retype+".hdf"))
 
 			# loop over the images in the lst file
 			for i in range(len(lst)):
 				im=lst.read(i)
-				if "3d" in a[1] : outname="particles3d/{}__{}.hdf".format(base_name(im[1]),options.retype)
-				else: outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
+				if "3d" in a[1] : outname="particles3d/{}{}.hdf".format(base_name(im[1]),options.retype)
+				else: outname="particles/{}{}.hdf".format(base_name(im[1]),options.retype)
 				lst.write(i,im[0],outname,im[2])
 
 			lst.normalize()			# clean up at the end
@@ -669,6 +671,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				for at in attr:
 					if e.has_attr(at):
 						l[at]=e[at]
+						# For CTF we don't want to save the background or SNR in the .lst file, even if present in the CTF.
+						# these are really no longer used for anything in the modern .lst strategies.
+						if at=="ctf" :
+							l[at].background=[]
+							l[at].snr=[]
 					else:
 						print("error: not all particles have the specified attribute")
 						print("       {}, {} does not have key {}".format(l["src"],l["idx"],at))
