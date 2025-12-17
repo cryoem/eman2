@@ -436,9 +436,11 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 
 			res=np.sqrt(np.sum((pts[:,:2]-np.array([x,y]))**2, axis=1))
 			res[ofpln]+=1e5
+			res[np.isnan(res)]=1e5
 			ii=np.argmin(res)
 
 			if event.modifiers()&Qt.ShiftModifier:
+				print("remove point",res[ii])
 				if res[ii]<20:
 					#### remove point
 					self.contour.points=[p for i,p in enumerate(self.contour.points) if i!=ii]

@@ -60,6 +60,7 @@ def main():
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--continuefrom",type=float,help="continue from an iteration number. continue from 1 will use threed_01 as reference. continue from 0.5 will make 3d from aliptcls2d_01.",default=-1)
+	parser.add_argument("--slow_iter",action="store_true", default=False ,help="move toward higher resolution at smaller steps each iteration")
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -339,8 +340,12 @@ def main():
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}  {m3dpar}")
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --align --sym {options.sym} {ppmask}")
-
-		r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+		
+		if options.slow_iter:
+			r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt", cutoff=.1, mult=1.)
+		else:
+			r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+			
 		res=min(r,res*1.1)		# resolution can't take too large a step in the wrong direction
 
 		# put the unmasked file back again once we finish the iteration
@@ -348,8 +353,11 @@ def main():
 			for eo in ("even","odd"):
 				tmp=f"{path}/tmpmsk_{eo}.hdf"
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
-				os.unlink(refeo)
-				os.rename(tmp,refeo)
+				try:
+					os.unlink(refeo)
+					os.rename(tmp,refeo)
+				except:
+					pass
 
 		elapsed=int(time.time()-starttime)
 		print(f"Iteration {ii} complete, {elapsed//3600:d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
@@ -491,18 +499,18 @@ def gather_metadata_singlethread(pfile, maxtilt=-1):
 	
 #### here we use 0.2 cutoff as the 0.143 one is sometimes hard to find.
 ##   return a slightly higher resolution to use as the maxres for the next iteration
-def calc_resolution(fscfile):
+def calc_resolution(fscfile, cutoff=0.2, mult=0.8):
 	fsc=np.loadtxt(fscfile)
 	
-	fi=fsc[:,1]<0.2
+	fi=fsc[:,1]<cutoff
 	if np.sum(fi)==0:
 		print(f"WARNING: something wrong with the FSC curve ({fscfile}). Cannot estimate resolution. Please check.")
 		rs=1./fsc[-2,0]
 	else:
 		rs=1./fsc[fi, 0][0]
-		print("Resolution (FSC<0.2) is ~{:.1f} A".format(rs))
+		print("Resolution (FSC<{:.2f}) is ~{:.1f} A".format(cutoff, rs))
 	
-	return rs*.8
+	return rs*mult
 	
 	
 if __name__ == '__main__':

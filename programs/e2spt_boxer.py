@@ -527,7 +527,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		z=[int(i) for i in cmd[1].split('-')]
 		fnames=[]
-		for i in range(z[0], z[1]):
+		for i in range(*z):
 			if win=="xy":
 				self.wdepth.setValue(i)
 			elif win=="xz":

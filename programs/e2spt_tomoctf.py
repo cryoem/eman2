@@ -187,6 +187,7 @@ def main():
 	parser.add_argument("--bgcurve", type=str, help="load a curve of background power spectrum to substract for ctf estimation.",default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--minres", type=int, help="Set what CTF zero to start the algo from, default is 1st zero",default=-1)
+	parser.add_argument("--skipexist", action="store_true",help="Skip existing tomograms when --alltiltseries is specified.", default=False)
 
 	(options, args) = parser.parse_args()
 	
@@ -196,6 +197,14 @@ def main():
 		fld="tiltseries/"
 		args=[fld+f for f in os.listdir(fld) if (
 			f.endswith(".hdf") or f.endswith(".mrc") or f.endswith(".mrcs") or f.endswith(".lst") or f.endswith(".st"))]
+		if options.skipexist:
+			args1=[]
+			for tfile in args:
+				js=js_open_dict(info_name(tfile))
+				if not js.has_key("defocus"):
+					args1.append(tfile)
+					
+			args=args1
 	
 	if len(args)==1:
 		print("Reading tilt series {}...".format(args[0]))
