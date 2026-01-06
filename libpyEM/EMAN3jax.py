@@ -1314,6 +1314,47 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 
 gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
+def prj_single_simple_sym(gausary, ortary, ny, tytx,symmx):
+	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+	mx3d=to_mx3d(ortary)
+	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
+	return gauss_project_simple_fn(gausary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
+
+def _gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx):
+	return jnp.mean(jax.vmap(prj_single_simple_sym, in_axes=[None, None, None, None, 2])(gausary, ortary, ny, tytx, symmx), axis=0)
+
+# gauss_project_simple_sym_fn=jax.jit(_gauss_project_simple_sym_fn, static_argnames=["ny"])
+gauss_project_simple_sym_fn=_gauss_project_simple_sym_fn
+
+#def gauss_project_ctf_fn(gausary,mx,ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
+#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+#
+#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+#	gausary - a Gaussians.jax array
+#	mx - an Orientations object converted to a stack of 2d matrices
+#	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
+#	dfmin - the min defocus value used in ctfary
+#	dfmax - the max defocus value used in ctfary
+#	dfstep - the defocus step between images in ctfary
+#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+#
+#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+#	used for comparisons should be resampled without any "clip" operations.
+#	"""
+#	proj2=[]
+#
+#	# iterate over projections
+#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
+#	# note that the mx dimensions have N as the 3rd not 1st component!
+#	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
+#	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
+#
+#	for j in range(mx.shape[2]):
+#		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
+#
+#	return jnp.stack(proj2)
+
 def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
 
@@ -1352,6 +1393,19 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
+# gauss_project_ctf_fn=jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0])
+
+def prj_single_ctf_sym(gausary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
+	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+	mx3d=to_mx3d(ortary)
+	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_ctf expect
+	return gauss_project_ctf_fn(gausary,jnp.flipud(sym_mx3d), ctf_info, dfstep, apix, boxsize, tytx, astig) # flipud accounts for the flipxy option in to_mx2d()
+
+def _gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
+	return jnp.mean(jax.vmap(prj_single_ctf_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(gausary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx), axis=0)
+
+gauss_project_ctf_sym_fn=jax.jit(_gauss_project_ctf_sym_fn, static_argnames=["boxsize"])
+# gauss_project_ctf_sym_fn= _gauss_project_ctf_sym_fn
 
 def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	shift10=jnp.array((1,0))
@@ -1391,6 +1445,17 @@ def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,
 	return jnp.sum(proj, axis=0)
 
 gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
+
+def prj_single_layered_sym(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+	mx3d=to_mx3d(ortary)
+	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)
+	return gauss_project_layered_ctf_fn(gausary,sym_mx3d, ctf_info, dfstep, apix, ny, tytx, astig)
+
+def _gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+	return jnp.mean(jax.vmap(prj_single_layered_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
+
+gauss_project_ctf_sym_fn=jax.jit(_gauss_project_ctf_sym_fn, static_argnames=["ny", "apix","dfstep"])
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
@@ -1469,6 +1534,33 @@ def jax_to_mx2d(ortary,swapxy=False):
 		mx=jnp.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
 		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
 	return jnp.array(mx)
+
+def to_mx3d(ortary):
+	"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
+	rotated 3-vectors. Can be used to symmetrize a set of 3-vectors
+
+	To apply to a set of vectors:
+	ort=Orientations("c4")
+	mx=self.to_mx3d()
+	vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2)),dtype=tf.float32)
+	vecs_c4_0=jnp.matmul(vecs,mx[:,:,0])    # this is all vectors rotated by the first C4 transformation
+	vecs_c4_1=jnp.matmul(vecs,mx[:,:,1])	# all vectors rotated by the second C4 transformation
+	"""
+	# Find the zero rotation values
+	l=jnp.linalg.norm(ortary, axis=1)
+	is_zero = l < 1e-12
+	# Filter them out so there won't be nans when I take the gradient
+	l = jnp.linalg.norm(jnp.where(is_zero[:,None], jnp.ones_like(ortary), ortary), axis=1)
+
+	w = jnp.where(is_zero, -pi*pi*(l**2)/2, jnp.cos(pi*l)) # cos "real" component of quaternion
+	s = jnp.where(is_zero, pi*pi*pi*(l**2)/6, jnp.sin(-pi*l)/l)
+	q=jnp.transpose(ortary)*s		# transpose makes the vectorized math below work properly
+
+	mx=jnp.array(((1-2*(q[1]*q[1]+q[2]*q[2]),2*q[0]*q[1]-2*q[2]*w,2*q[0]*q[2]+2*q[1]*w),
+	(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w),
+	(2*q[0]*q[2]-2*q[1]*w,2*q[1]*q[2]+2*q[0]*w,1-(2*q[0]*q[0]+2*q[1]*q[1]))))
+	return jnp.array(mx)
+
 
 JAXDEV=jax.devices()[0]
 def jax_set_device(dev=0,maxmem=4096):
