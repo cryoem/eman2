@@ -48,7 +48,7 @@ def safediv(a,b):
 def main():
 	global classmx,nptcl,cmxtx,cmxty,cmxalpha,cmxmirror,eulers,threed,ptclmask,rings,pf,cptcl
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] [refine_xx]
+	usage = """prog [options] [r3d_xx|r3dgauss_xx]
 	This program performs various assessments of e3refine_gauss (or similar) runs, and operates in one of several possible modes.
 	A r3d_xx folder name must always be provided:
 
@@ -116,8 +116,8 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 
-	parser.add_pos_argument(name="refine_xx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
-	parser.add_argument("--ptcltrace", default=False, action="store_true", help="Trace particle alignment parameters between 2 iterations ")
+#	parser.add_pos_argument(name="refine_xx",help="Name of a completed refine_xx folder.", default="", guitype='filebox', browser="EMRefine2dTable(withmodal=True,multiselect=False)",  filecheck=False, row=0, col=0,rowspan=1, colspan=2, mode='evalptcl')
+	parser.add_argument("--ptcltrace", default=False, action="store_true", help="Trace particle alignment parameters between 2 iterations. Specify the two .lst files as arguments rather than a folder name. ")
 	parser.add_argument("--timing", default=False, action="store_true", help="Report on the time required for each step of each refinement run")
 	parser.add_argument("--timingbypath", default=False, action="store_true", help="Report on the CPU time required in each refine_xx folder")
 	parser.add_argument("--resolution", default=False, action="store_true", help="generates a resolution and convergence plot for a single refinement run.")
@@ -154,6 +154,49 @@ def main():
 			warning("Warning: unknown matched file: ",x)
 			return -1
 
+
+
+	logid=E3init(sys.argv,options.ppid)
+
+	if options.ptcltrace :
+		try:
+			pt0=LSXFile(args[0],True)
+			pt1=LSXFile(args[1],True)
+		except:
+			error_exit("In --ptcltrace mode, provide the path to two .lst files as arguments instead of a folder name")
+
+
+		out=open(f"trace_{'_'.join(args[0].split('/')[-2:])}_{'_'.join(args[1].split('/')[-2:])}.txt".replace(".lst",""),"w")
+		out.write("#n; az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
+
+		n=len(pt0)
+		print(f"  with {n} particles")
+		for i in range(n):
+			extn0,extf0,dct0=pt0[i]
+			extn1,extf1,dct1=pt1[i]
+
+			xf0=dct0["xform.projection"]
+			xf1=dct1["xform.projection"]
+			em0=xf0.get_rotation("eman")
+			em1=xf1.get_rotation("eman")
+			dif=(xf0*xf1.inverse()).get_rotation("spin")["omega"]
+			tr0=xf0.get_trans_2D()
+			tr1=xf1.get_trans_2D()
+			try: sc0=dct0["score"]
+			except:
+				try: sc0=dct0["frc"]
+				except: sc0=2.0
+			try: sc1=dct1["score"]
+			except:
+				try: sc1=dct1["frc"]
+				except: sc1=2.0
+
+			out.write(f"{i}\t{em0["az"]}\t{em1["az"]}\t{em0["alt"]}\t{em1["alt"]}\t{em0["phi"]}\t{em1["phi"]}\t{tr0[0]}\t{tr1[0]}\t{tr0[1]}\t{tr1[1]}\t{dif}\t{hypot(tr0[0]-tr1[0],tr0[1]-tr1[1])}\t{sc0}\t{sc1}\n")
+		E3end(logid)
+		print("ptcltrace complete")
+		sys.exit(0)
+
+
 	if len(args)>0 and args[0][:3]=="r3d":
 		fls=os.listdir(args[0])
 		try:
@@ -183,47 +226,6 @@ def main():
 		print("Using --itr=",itr)
 	else:
 		error_exit("ERROR: please specify the name of the r3d_XX folder to operate on")
-
-
-	logid=E3init(sys.argv,options.ppid)
-
-	if options.ptcltrace :
-		# we might have numerical iterations or specified filenames
-		if refitr>=0: pt0=LSXFile(f"{args[0]}/ptcls_{refitr:02d}.lst",True)
-		else:
-			try: pt0=LSXFile(f"{args[0]}/{options.refitr}",True)
-			except: pt0=LSXFile(options.refitr,True)
-		if itr>=0: pt1=LSXFile(f"{args[0]}/ptcls_{itr:02d}.lst",True)
-		else:
-			try: pt1=LSXFile(f"{args[0]}/{options.itr}",True)
-			except: pt1=LSXFile(options.itr,True)
-
-		out=open(f"trace_{args[0]}_{refitr}_{itr}.txt","w")
-		out.write("#n; az0; az1; alt0; alt1; phi0; phi1; tx0; tx1; ty0; ty1; rot; shift; score0; score1\n")
-
-		n=len(pt0)
-		print(f"  with {n} particles")
-		for i in range(n):
-			extn0,extf0,dct0=pt0[i]
-			extn1,extf1,dct1=pt1[i]
-
-			xf0=dct0["xform.projection"]
-			xf1=dct1["xform.projection"]
-			em0=xf0.get_rotation("eman")
-			em1=xf1.get_rotation("eman")
-			dif=(xf0*xf1.inverse()).get_rotation("spin")["omega"]
-			tr0=xf0.get_trans_2D()
-			tr1=xf1.get_trans_2D()
-			try: sc0=dct0["score"]
-			except:
-				try: sc0=dct0["frc"]
-				except: sc0=2.0
-			try: sc1=dct1["score"]
-			except:
-				try: sc1=dct1["frc"]
-				except: sc1=2.0
-
-			out.write(f"{i}\t{em0["az"]}\t{em1["az"]}\t{em0["alt"]}\t{em1["alt"]}\t{em0["phi"]}\t{em1["phi"]}\t{tr0[0]}\t{tr1[0]}\t{tr0[1]}\t{tr1[1]}\t{dif}\t{hypot(tr0[0]-tr1[0],tr0[1]-tr1[1])}\t{sc0}\t{sc1}\n")
 
 	if options.anisotropy>=0 :
 		print("Anisotropy evaluation mode")
