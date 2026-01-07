@@ -20,9 +20,12 @@ def main():
 	usage="e2tomogram_refine.py <tilt series> "
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--res", type=float,help="target resolution. default is 50", default=50)
+	parser.add_argument("--refine_size", type=int,help="tomogram size used in refinement", default=320)
 	parser.add_argument("--niter", type=int,help="number of iteration", default=100)
 	parser.add_argument("--refinerot", action="store_true",help="refine tilt axis rotation", default=False)
-	parser.add_argument("--local_motion", type=float,help="local motion scaling muliplier", default=0.25)
+	parser.add_argument("--mlp_refine", action="store_true",help="refine with a small MLP.", default=False)
+	parser.add_argument("--local_motion", type=float,help="local motion scaling muliplier", default=0.5)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -41,28 +44,22 @@ def main():
 
 def refine_tomo_align(fname, options, maxtilt, init=False):
 	rng_key=jax.random.key(0)
-	rng_init, rng_drop = jax.random.split(key=rng_key, num=2)
-	rng_drop=jax.random.fold_in(rng_drop,0)
 	
 	info=dict(js_open_dict(info_name(fname)))
 	imgs_raw=EMData.read_images(fname)
 	loss=np.array(info["ali_loss"])
-	tltpms=np.array(info["tlt_params"])[:,:5]
+		
 	ikeep=np.where(loss<500)[0]
 	print(f"using {len(ikeep)} out of {len(imgs_raw)} tilts")
 	imgs_raw=[imgs_raw[i] for i in ikeep]
-	tltpm00=tltpms.copy()
-	tltpms=tltpms[ikeep]
 	
 	sz=min(imgs_raw[0]["nx"],imgs_raw[0]["ny"])
 	apix=imgs_raw[0]["apix_x"]
 	res=options.res
 	#xx=apix/res*sz*2
 	#xx=int((xx//40+1)*40)
-	xx=320
+	xx=options.refine_size
 	scale=sz/xx
-	print(f"tilt series pixel size {apix:.2f}, target resolution {res}")
-	print(f"Scale input by {scale:.2f}, image size {xx}")
 	
 	for m in imgs_raw:
 		m.process_inplace("math.fft.resample",{"n":scale})
@@ -72,7 +69,27 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 		m.process_inplace("mask.decayedge2d", {"width":8})
 		m.clip_inplace(Region((m["nx"]-xx)//2, (m["ny"]-xx)//2, xx,xx))
 		
+	apix_now=imgs_raw[0]["apix_x"]
+	
 	imgs=jnp.array([m.numpy().copy() for m in imgs_raw])
+	print(f"tilt series pixel size {apix:.2f}, target resolution {res}")
+	print(f"Scale input by {scale:.2f}, image size {xx}, apix {apix_now:.2f}")
+		
+	
+	tltpms=np.array(info["tlt_params"])	
+	has_coef=False
+	if tltpms.shape[1]>5:
+		print("Found existing local motion coeffient")
+		tpm_cf=tltpms[:, 5:].copy()
+		tltpms=tltpms[:,:5]
+		
+		tpm_cf=tpm_cf/scale
+		tpm_cf=tpm_cf.reshape((-1,2,2))[:,:,[1,0]]
+		has_coef=True
+		
+	tltpm00=tltpms.copy()
+	tltpms=tltpms[ikeep]
+	
 	#print(imgs.shape)
 	nimg=len(imgs)
 	global realbox, pad, rawbox, tomosize
@@ -134,34 +151,67 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	data_cpx, imgs_clip, trans_offset=get_clips(m0, xf, xy)
 	print(data_cpx.shape)
 	
+    
 	b=int(realbox*.4)
 	wid0=realbox//2-b//2
 	wid1=realbox//2+b//2
 	width_mask=np.zeros(realbox)
 	width_mask[wid0:wid1]=1
+	print(wid0, wid1)
 	
-	trans_coef=jnp.zeros((maxtilt, 3,2))
-	xy1=jnp.hstack([xy/tomosize, np.ones((len(xy),1))])
+	if "boxes_3d" in info and len(info["boxes_3d"])>0:
+		boxes=info["boxes_3d"]
+		boxz=np.array([b[2] for b in boxes])
+		boxz=boxz*info["apix_unbin"]/imgs_raw[0]["apix_x"]
+		print("Found particles in tomogram.")
+		wid0=int(np.min(boxz))-2+realbox//2
+		wid1=int(np.max(boxz))+2+realbox//2
+		width_mask=np.zeros(realbox)
+		width_mask[wid0:wid1]=1
+		print(wid0, wid1)
+	
+	if options.mlp_refine:
+		global tshape, mlp
+		tshape=(maxtilt, 3,2)
+		mlp = MLP()
+		x=jnp.ones((1,4))
+		mlp_var = mlp.init(rng_key, x)
+		tc = mlp.apply(mlp_var, x, training=True, rngs={"dropout": rng_key})
+		trans_coef=mlp_var
+		calc_loss_multi=calc_loss_multi_mlp
+		learnrate=1e-3
+		
+	else:
+		calc_loss_multi=calc_loss_multi_direct
+		trans_coef=np.zeros((maxtilt, 3,2))
+		if has_coef:
+			trans_coef[:nimg,:2]=tpm_cf.copy()
+			
+		learnrate=3e-2
+			
+	if options.local_motion>0:
+		xy1=jnp.hstack([xy/tomosize, np.ones((len(xy),1))])
+	else:
+		xy1=jnp.hstack([np.zeros_like(xy), np.ones((len(xy),1))])
 	
 	global grad_fn_multi
 	if init==False:    
 		print("Compiling GPU functions. It will take a while...")
-		loss=calc_loss_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
+		loss=calc_loss_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_key)
 		grad_fn_multi=jax.value_and_grad(calc_loss_multi)
-		loss, grads=grad_fn_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
+		loss, grads=grad_fn_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_key)
 		
-		#loss=calc_loss_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
-		#loss, grads=grad_fn_multi(trans2, allxf[:,:3]+angoffset, data_cpx, trans_offset, mask_tilt, width_mask)
 		
 	##################
-	optimizer = optax.adam(3e-2)
+	optimizer = optax.adam(learnrate)
 	opt_state = optimizer.init(trans_coef)
 	cost=[]
-	loss=calc_loss_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
+	loss=calc_loss_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_key)
 	print(f"initial loss: {loss:.4f}")
 	
 	for i in range(options.niter):
-		loss, grads=grad_fn_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_drop)
+		rng_key=jax.random.fold_in(rng_key,123)
+		loss, grads=grad_fn_multi(trans_coef, xy1, allxf[:,:3], data_cpx, trans_offset, mask_tilt, width_mask, rng_key)
 		updates, opt_state = optimizer.update(grads, opt_state)
 		trans_coef = optax.apply_updates(trans_coef, updates)
 		
@@ -169,6 +219,10 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 		cost.append(loss)
 
 	print(f"\nloss : {cost[0]:.3f} -> {cost[-1]:.3f}")
+	
+	if options.mlp_refine:
+		trans_coef = mlp.apply(trans_coef, x, training=False, rngs={"dropout": rng_key})
+		
 	##################
 	stds2=[]
 	for j in [0,1]:
@@ -184,16 +238,12 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 			xf=jnp.concatenate([allxf[:,:3], tt[ii]+trans_offset[ii]], axis=1)
 			volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 			vol_nrm=get_volume(volume, weight)
-			
-			#e=from_numpy(np.array(vol_nrm).T.copy())
-			#e.write_image(f"tmp_tomo_{j}.hdf", ii)
 
 			ss=jnp.std(vol_nrm, axis=(0,1))
 			stds.append(ss)
 		
 		stds=np.array(stds)
 		stds2.append(stds)
-
 
 	sdiff=[np.mean(s[:, wid0:wid1], axis=1) for s in stds2]
 	for i in range(len(data_cpx)):
@@ -212,23 +262,30 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	xf1[:,[1,0]]=trans2[:nimg]*scale
 	xf1[:,[4,3,2]]+=np.rad2deg(angoffset)
 	
-	tc=np.array(trans_coef[:nimg, :2]).copy()
-	tc=tc[:,:,[1,0]]
-	tc*=scale*options.local_motion
-	tc=tc.reshape((len(tc),-1))
+	if options.local_motion>0:
+		tc=np.array(trans_coef[:nimg, :2]).copy()
+		tc=tc[:,:,[1,0]]
+		tc*=scale*options.local_motion
+		tc=tc.reshape((len(tc),-1))
+		
+		xf2=np.zeros((len(tltpm00), 9))#tltpm00.copy()
+		#xf2[:,0]=np.arange(len(xf2))
+		xf2[ikeep,:5]=xf1
+		xf2[ikeep,5:]=tc
 	
-	xf2=np.zeros((len(tltpm00), 10))#tltpm00.copy()
-	xf2[:,0]=np.arange(len(xf2))
-	xf2[ikeep,1:6]=xf1
-	xf2[ikeep,6:]=tc
+	else:
+		xf2=np.zeros((len(tltpm00), 5))
+		#xf2[:,0]=np.arange(len(xf2))
+		xf2[ikeep]=xf1		
+		
+	#bm=base_name(fname)
+	#pmname=f"tmp_tltparams_{bm}.txt"
+	#np.savetxt(pmname, xf2)
+	js=js_open_dict(info_name(fname))
+	js["tlt_params"]=xf2#[:,1:]
+	js.close()	
 	
-	#xf2=np.hstack([np.arange(len(xf2))[:,None], xf2])
-	
-	bm=base_name(fname)
-	pmname=f"tmp_tltparams_{bm}.txt"
-	np.savetxt(pmname, xf2)
-	
-	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --loadfile {pmname} --filterres {res} --notmp")
+	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --load --filterres {res} --notmp")
 	return
 
 def refine_tlt_rot(imgs, tltpms, scale):
@@ -416,7 +473,7 @@ def get_clips(imgs, xf, xy):
 
     
 @jit
-def calc_loss_multi(tc, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rng):
+def calc_loss_multi_direct(tc, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rng):
 	score=[]
 	trans=jnp.dot(xy1, tc)
 	rnd=jax.random.bernoulli(rng, .95, shape=trans.shape).astype(float)
@@ -429,7 +486,7 @@ def calc_loss_multi(tc, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rn
 		volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 		vol_nrm=get_volume(volume, weight)
 		
-		std=jnp.std(vol_nrm, axis=(0,1))
+		std=jnp.std(vol_nrm**2, axis=(0,1))
 		std=jnp.sum(std*width)/jnp.sum(width)
 		score.append(std)
 
@@ -440,6 +497,44 @@ def calc_loss_multi(tc, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rn
 	
 	return loss
 
+class MLP(nn.Module):
+	@nn.compact
+	def __call__(self, x, training=False):
+		for i in range(3):
+			x = nn.Dense(64)(x)
+			x = nn.relu(x)
+			x = nn.Dropout(0.1, deterministic=not training)(x)
+			
+		x = nn.Dense(np.prod(tshape), kernel_init=nn.initializers.normal(stddev=1e-3))(x)
+		x = jnp.reshape(x, tshape)
+		return x  
+	
+@jit
+def calc_loss_multi_mlp(mlp_var, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rng):
+	score=[]
+	x=jnp.ones((1,4))
+	tc = mlp.apply(mlp_var, x, training=True, rngs={"dropout": rng})
+	trans=jnp.dot(xy1, tc)
+	rnd=jax.random.bernoulli(rng, .95, shape=trans.shape).astype(float)
+	trans=trans*rnd
+	for ii,data in enumerate(data_all):
+		volume=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.complex64)
+		weight=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.float32)
+	
+		xf=jnp.concatenate([xfrot, trans[ii]+trans_offset[ii]], axis=1)
+		volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
+		vol_nrm=get_volume(volume, weight)
+		
+		std=jnp.std(vol_nrm**2, axis=(0,1))
+		std=jnp.sum(std*width)/jnp.sum(width)
+		score.append(std)
+
+	score=jnp.array(score)
+	loss=jnp.sum(score)
+	loss-=jnp.min(score)
+	loss=-loss/(len(data_all)-1)
+	
+	return loss
 
 if __name__ == '__main__':
 	main()

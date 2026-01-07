@@ -663,11 +663,14 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			ty=m["ny"]//2 +pxf[1]
 			
 			if len(tpm)>5:
-				cf=tpm[5:].reshape((3,2))
-				a=np.array([pos[0], pos[1], 1])
+				cf=tpm[5:].reshape((2,2))
+				a=np.array([pos[0]/m["ny"], pos[1]/m["ny"]])
 				dt=np.dot(a, cf)/options.shrink
 				tx+=dt[0]
 				ty+=dt[1]
+				#print("############")
+				#print(cf)
+				#print(dt)
 				#print(cf.shape, dt)
 
 

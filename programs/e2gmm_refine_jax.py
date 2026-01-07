@@ -22,8 +22,6 @@ import flax.linen as nn
 import optax
 from jax import jit
 
-import umap
-
 #### Symmetrize the Gaussian coordinates. Only works for c/d sym right now
 ##   note this only keep the (x,y,z) columns even with c1 symmetry
 def get_sym_pts(sym, pts):
