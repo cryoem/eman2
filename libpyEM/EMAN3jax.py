@@ -772,7 +772,7 @@ class EMAN3Ctf():
 		if self.dfdiff == 0: return self.defocus
 		else: return self.defocus + (self.dfdiff/2)*cos(2*ang-(2*pi/180)*self.dfang)
 
-	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None, use_astig=True, ewald_sphere=False, beam_tilt=False):
+	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None, use_astig=True, ewald_sphere=False, beam_tilt=False, defocus_step=None):
 		"""Returns a stack of CTF images, with size ny, of type ctf_type. The stack will vary var_name in the range var_range.
 			Inputs:
 			ny--Size of images to make. Will assume it corresponds to the apix unless overriden
@@ -796,7 +796,8 @@ class EMAN3Ctf():
 			return
 
 		if var_name == "defocus":
-			step = self.defocus_step
+			if defocus_step is not None: step = self.defocus_step
+			else: step=defocus_step
 			defocus = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
 			dfdiff = self.get_dfdiff()
 			dfang = self.dfang
@@ -892,7 +893,7 @@ class Orientations():
 		self.coerce_numpy()
 		return self._data
 
-	def init_from_transforms(self,xformlist):
+	def p(self,xformlist):
 		"""Replaces current contents of Orientations object with orientations from a list of Transform objects,
 		returns tytx array with any translations (not stored within Orientations)"""
 		self._data=np.zeros((len(xformlist),3))
