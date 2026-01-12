@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from EMAN3 import *
 from EMAN3jax import *
 import gemmi
@@ -10,7 +11,6 @@ jax.config.update("jax_compilation_cache_dir", "./.jaxcache")
 jax.config.update("jax_persistent_cache_min_entry_size_bytes", -1)
 jax.config.update("jax_persistent_cache_min_compile_time_secs", 2)
 jax.config.update("jax_persistent_cache_enable_xla_caches", "xla_gpu_per_fusion_autotune_cache_dir")
-
 jax.config.update("jax_default_matmul_precision", "float32")
 
 def main():
@@ -30,13 +30,14 @@ def main():
 	parser.add_argument("--ctfamp", action="store_true",help="Multiply CTF amplitude (including phase flip)",default=False)
 	parser.add_argument("--ctfphaseflip", action="store_true",help="CTF phase flipping",default=None)
 	parser.add_argument("--lowpass", type=float, help="Apply a lowpass filter to the images before noise addition, Nyquist=0.5, default=0", default=0)
-	parser.add_argument("--ac", type=float, help="Fixed amplitude contrast to use in the CTF as a fractional value, default=0.1  (10%)", default=0.1)
+	parser.add_argument("--ac", type=float, help="Fixed amplitude contrast to use in the CTF as a fractional value, default=0.1", default=0.1)
 	parser.add_argument("--apix", type=float, help="A/pix override for output data. Assumes input data has correct A/pix when relevant.", default=None)
 	parser.add_argument("--boxsize",type=int,help="particle box size in pixels, default=auto", default=None)
-	parser.add_argument("--sym", dest = "sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. This does not enforce symmetry on the model/map, it only restricts orientation generation to a single asymmetric unit",default="c1")
+	parser.add_argument("--sym", help = "Specify symmetry - choices are: c<n>, d<n>, h<n>, tet, oct, icos. This does not enforce symmetry on the model/map, it only restricts orientation generation to a single asymmetric unit",default="c1")
+	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
+	parser.add_argument("--verbose", "-v", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
 	(options, args) = parser.parse_args()
 	jax_set_device(dev=0,maxmem=options.gpuram)
@@ -76,16 +77,22 @@ def main():
 		if inmodel is None: options.boxsize=inmap["nz"]
 		else: error_exit("--boxsize is required when the input is a model")
 
+	sym_object = parsesym(options.sym)
+
 	llo=E3init(sys.argv,options.ppid)
+	try: os.unlink(options.output)
+	except:pass
+	try: os.unlink(options.outlst)
+	except:pass
 
 	# Number of particles to generate at a time is memory constrained
 	step=max(min(1000000000//(options.boxsize**2),options.nptcl//10),2)	# ~4G of RAM
 	ngrp=((options.nptcl-1)//step)+1
 
 	# We make a set of CTF objects to use
-	ctf=EMAN3CTF(options.defocus[0],0,0,300,2.7,0.1,options.apix)
+	ctf=EMAN3Ctf(options.defocus[0],0,0,300,2.7,0.1,options.apix)
 	dfstep=(options.defocus[1]-options.defocus[0])/(ngrp-1)
-	ctfstack=ctf.compute_2d_stack_complex(options.boxsize, "amplitude" if options.ctfamp else "sign", options.defocus, "defocus", apix=options.apix, use_astig=False, ewald_sphere=False, beam_tilt=False, defocus_step=dfstep)
+	ctfstack=EMStack2D(ctf.compute_2d_stack_complex(options.boxsize, "amplitude" if options.ctfamp else "sign", options.defocus, "defocus", apix=options.apix, use_astig=False, ewald_sphere=False, beam_tilt=False, defocus_step=dfstep))
 
 	# if lowpass filter selected apply to CTF images
 	if options.lowpass>0:
@@ -95,9 +102,11 @@ def main():
 	lst=LSXFile(options.lstout)
 	for i in range(0,options.nptcl,step):
 		eulers = sym_object.gen_orientations("rand",{"n":step,"phitoo":1})
-		orts=Orientations.init_from_transforms(eulers)
+		orts=Orientations()
+		orts.init_from_transforms(eulers)
+		tytx=np.zeros((step,2))
 		if inmap is None:
-			projs=inmodel.project_simple(orts,options.boxsize)
+			projs=inmodel.project_simple(orts,options.boxsize,tytx)
 		else:
 			projs=EMStack2D([inmap.project("standard",{"transform":xform}) for xform in eulers])
 
@@ -109,7 +118,12 @@ def main():
 		projs.write_images(options.output,n0=i)
 		for j in range(i,min(options.nptcl,i+step)):
 			ctf.defocus=options.defocus[0]+dfstep*(j-i)
-			dct={"xform.projection":eulers[j-i],"ctf":ctf}
-			lst[j]=options.output,j,dct
+			if options.ctfamp or options.ctfphaseflip: dct={"xform.projection":eulers[j-i],"ctf":ctf}
+			else: dct={"xform.projection":eulers[j-i]}
+			lst[j]=j,options.output,dct
 
 	E3end(llo)
+
+if __name__ == "__main__":
+	main()
+

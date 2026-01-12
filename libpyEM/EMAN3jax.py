@@ -893,7 +893,7 @@ class Orientations():
 		self.coerce_numpy()
 		return self._data
 
-	def p(self,xformlist):
+	def init_from_transforms(self,xformlist):
 		"""Replaces current contents of Orientations object with orientations from a list of Transform objects,
 		returns tytx array with any translations (not stored within Orientations)"""
 		self._data=np.zeros((len(xformlist),3))
