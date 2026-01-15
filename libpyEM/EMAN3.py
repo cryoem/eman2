@@ -2439,16 +2439,16 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 
 		self.lock.acquire()
 		if jsondict==None : 
-			outln="{}\t{}".format(nextfile,extfile)
+			outln="{:d}\t{}".format(nextfile,extfile)
 		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
-			outln="{}\t{}\t{}".format(nextfile,extfile,jsondict)
+			outln="{:d}\t{}\t{}".format(nextfile,extfile,jsondict)
 		else:
 			if not isinstance(jsondict,dict) and jsondict!=None: 
 				jsondict={"__default__":jsondict}
 			if jsondict!=None:
 				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN3jsondb.obj_to_json)
-				outln="{}\t{}\t{}".format(nextfile,extfile,jss)
-			else: outln="{}\t{}".format(nextfile,extfile)
+				outln="{:d}\t{}\t{}".format(nextfile,extfile,jss)
+			else: outln="{:d}\t{}".format(nextfile,extfile)
 			
 		# We can't write in the middle of the file if the existing linelength is too short
 		if len(outln)+1>self.linelen : self.rewrite(len(outln)+5)	# +5 just reduces the chance of many rewrites at a small cost in file size
