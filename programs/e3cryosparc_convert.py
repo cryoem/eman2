@@ -164,8 +164,8 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 		nbx=good_size(int(options.clip*apix/1.8))
 	lastctf=[]
 	t0=time.time()
-#	for i in range(nptcl):
-	for i in range(50000):
+	for i in range(nptcl):
+#	for i in range(50000):
 		if options.verbose>0 and time.time()-t0>1.0:
 			print(f"  {i+1}/{nptcl}\r",end="")
 			t0=time.time()
