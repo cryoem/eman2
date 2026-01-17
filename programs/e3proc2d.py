@@ -94,7 +94,9 @@ def main():
 	progname = os.path.basename(sys.argv[0])
 	usage = progname + """ [options] <inputfile> ... <inputfile>
 
-	NOTE to EMAN2 users: Output must be specified explicitly with --output option. It is no longer the last argument.
+	NOTES to EMAN2 users:
+	* Output must be specified explicitly with --output option. It is no longer the last argument.
+	* Argument order no longer indicates operation sequence. For example, if specifying --clip and --fouriershrink, --fouriershrink always happens first
 
 	Generic 2-D image processing and file format conversion program. Acts on stacks of 2-D images
 	(multiple images in one file). All EMAN2 recognized file formats accepted (see Wiki for list).
@@ -123,6 +125,7 @@ def main():
 	parser.add_argument("--output", type=str, help="Output filename or pattern. Appends output images to existing image files. ",default=None)
 	parser.add_argument("--apix", type=float, help="Override A/pixel from header on all inputs",default=0)
 	parser.add_argument("--fouriershrink", metavar="n", type=float, help="Reduce an image size by an arbitrary scaling factor by clipping in Fourier space. eg - 2 will reduce image size to 1/2.")
+	parser.add_argument("--clip", metavar="boxsize", type=int, help="Specify the output (square) size in pixels, images can be made larger or smaller.")
 	parser.add_argument("--formula",type=str,help="Apply a mathematical formula to each image to produce the new image. See general help above for details.",default=None)
 	parser.add_argument("--outmode", type=str, default="float", help="All EMAN3 programs write images with 4-byte floating point values by default. This allows specifying an alternate format when supported (float, int8, int16, int32, uint8, uint16, uint32). Values are rescaled to fill MIN-MAX range. The ':bits' filename specification is the preferred approach for this.")
 	parser.add_argument("--createnew", type=str, default=None, help="<nx>,<ny>[,<nimg=1>[,<value=0>]]  If specified with no input filenames, will create nimg nx x ny images with constant value to use as input.")
@@ -133,7 +136,6 @@ def main():
 	# parser.add_argument("--averager",type=str,help="If --average is specified, this is the averager to use (e2help.py averager). Default=mean",default="mean")
 	# parser.add_argument("--calcsf", metavar="outputfile", type=str, help="calculate a radial structure factor for the image and write it to the output file, must specify apix. divide into <n> angular bins")
 	# parser.add_argument("--calccont", action="store_true", help="Compute the low resolution azimuthal contrast of each image and put it in the header as eval_contrast_lowres. Larger values imply more 'interesting' images.")
-	# parser.add_argument("--clip", metavar="xsize,ysize", type=str, action="append", help="Specify the output size in pixels xsize,ysize[,xcenter,ycenter], images can be made larger or smaller.")
 	# parser.add_argument("--exclude", metavar="exclude-list-file", type=str, help="Excludes image numbers, either a list of comma separated values, or a filename with one number per line, first image == 0")
 	# parser.add_argument("--fftavg", metavar="filename", type=str, help="Incoherent Fourier average of all images and write a single power spectrum image")
 	# parser.add_argument("--process", metavar="processor_name:param1=value1:param2=value2", type=str, action="append", help="apply a processor named 'processorname' with all its parameters/values.")
@@ -218,6 +220,7 @@ def main():
 	### Validation of input files, and collecting statistics
 	if options.output is None: error_exit("--output requred")
 
+	tlast=time.time()
 	nperfile=[]
 	dimperfile=[]
 	outperfile=[]
@@ -276,7 +279,6 @@ def main():
 				i=imgs
 				imgs=eval(options.formula)
 
-
 			if options.fouriershrink :
 				fac=imgs.shape[1]/good_size(imgs.shape[1]/options.fouriershrink)
 				imgs=imgs.downsample(good_size(imgs.shape[1]/options.fouriershrink)).do_ift()
@@ -284,10 +286,15 @@ def main():
 					hdr["apix_x"]*=fac
 					hdr["apix_y"]*=fac
 					hdr["apix_z"]*=fac
+					if "ctf" in hdr: hdr["ctf"].apix*=fac
 
 			if options.normalize is not None:
 				if options.normalize=="standard": imgs=imgs.normalize_standard()
 				elif options.normalize=="edgemean": imgs=imgs.normalize_edgemean()
+
+			if options.clip:
+				imgs=imgs.center_clip(options.clip)
+
 
 			for im,hd in zip(imgs.emdata,hdrs): im.set_attr_dict(hd)
 			EMData.write_images(FSPOUT,imgs.emdata,chunk)		# there may be a bit specification in OUTFSP, so we use emdata.write_images directly

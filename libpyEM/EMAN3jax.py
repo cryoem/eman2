@@ -533,6 +533,7 @@ class EMStack2D(EMStack):
 
 
 	def center_clip(self,size):
+		"""returns a new EMStack2D scaled to a new size (larger or smaller) about the center"""
 		try: size=np.array((int(size),int(size)))
 		except: size=(int(size[0]),int(size[1]))
 		if size[0]<1 or size[1]<1: raise Exception("center_clip(size) must be called with a positive integer")
@@ -541,7 +542,11 @@ class EMStack2D(EMStack):
 			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
 			return EMStack2D(newlst)
 		elif isinstance(self._data,np.ndarray) or isinstance(self._data,jax.Array):
-			newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
+			if (shp[0]<0 and shp[1]>0) or (shp[0]>0 and shp[1]<0): error_exit("center_clip must either make the image uniformly larger or uniformly smaller")
+			if shp[0]<0 :
+				newary=np.zeros((self.shape[0],size[0],size[1]))
+				newary[:,-shp[0]:-shp[0]+self.shape[1],-shp[1]:-shp[1]+self[shape[2]]]=self._data
+			else: newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
 			return EMStack2D(newary)
 
 	def do_fft(self,keep_type=False):
