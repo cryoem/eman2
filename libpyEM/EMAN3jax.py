@@ -1065,6 +1065,10 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		self.coerce_numpy()
 		return self._data
 
+	def save(self,outname):
+		"""Save the current gaussians as a 4 column text file"""
+		np.savetxt(outname,self.numpy,delimiter="\t")
+
 	def init_from_map(self,vol,res,minratio=0.1,apix=None):
 		"""Replace the current set of Gaussians with a set of Gaussians generated from a 3-D map by progressive Gaussian decomposition.
 		The map is filtered to res, then the highest amplitude peak is assigned to the first Gaussian. After subtracting that Gaussian from the

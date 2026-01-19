@@ -77,7 +77,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--maxdf", type=float, help="Maximum defocus",default=-1,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--maxscore", type=float, help="Per-particle score used to exclude particles above a specified value. Works only with --create, with .lst inputs. Some other options may also prevent it. ",default=1)
-	
+	parser.add_argument("--maxshift", type=float, help="If the shift in pixels (xform.projection) exceeds this amount, the particle will be excluded. This permits exclusion of poorly centered particles.",default=1)
+
 	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -397,6 +398,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 						ln = lstin.read(i)
 						try:
 							if ln[2]["score"]>options.maxscore: continue
+						except: pass
+
+						try:
+							shft=ln[2]["xform.projection"].get_trans_2d().length()
+							if shft>options.maxshift: continue
 						except: pass
 
 						if options.inplace:
