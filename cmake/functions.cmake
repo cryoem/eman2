@@ -16,13 +16,6 @@ function(set_cache_var_to_var var val)
 	endif()
 endfunction()
 
-function(EMAN_CHECK_FUNCTION FUNCTION VARIABLE)
-	CHECK_FUNCTION_EXISTS(${FUNCTION} ${VARIABLE})
-	IF(${VARIABLE})
-		ADD_DEFINITIONS(-D${VARIABLE})
-	ENDIF()
-endfunction()
-
 OPTION(DEBUG_CHECK_REQUIRED_LIB "enable debug output for function CHECK_REQUIRED_LIB" OFF)
 function(CHECK_REQUIRED_LIB upper lower header lower2 header2)
 	if(DEBUG_CHECK_REQUIRED_LIB)
