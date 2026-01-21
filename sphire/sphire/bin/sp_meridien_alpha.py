@@ -53,12 +53,14 @@ import numpy
 import operator
 import optparse
 import os
+import shutil
 import random
 from ..libpy import sp_alignment
 from ..libpy import sp_applications
 from ..libpy import sp_filter
 from ..libpy import sp_fundamentals
 from ..libpy.prior_calculation import sp_helix_fundamentals
+from ..libpy.prior_calculation import sp_helix_prior
 from ..libpy import sp_global_def
 from ..libpy.prior_calculation import sp_helix_sphire
 from ..libpy import sp_logger
@@ -165,9 +167,10 @@ fp1=fft(Util.mulnclreal(p2,mask))
 Util.innerproduct(p2,p2,m)/(nx*nx/2) = Util.innerproduct(fp1,fp1,None)
 """
 
-global Tracker, Blockdata
+global Tracker, Blockdata, RPW
 global target_theta, refang
 
+RPW = None
 mpi.mpi_init(0, [])
 Tracker = {}
 Blockdata = {}
@@ -212,6 +215,39 @@ Blockdata["main_shared_nodes"] = [
 # end of Blockdata
 sp_global_def.BATCH = True
 sp_global_def.MPI = True
+
+
+def fill_rpw(original_images):
+    if not Tracker['VPP']:
+        return
+
+    ntp = len(sp_fundamentals.rops_table(original_images[0]))
+    rpw = [0.0] * ntp
+    for q in original_images:
+        tpw = sp_fundamentals.rops_table(q)
+        for i in range(ntp):
+            rpw[i] += numpy.sqrt(tpw[i])
+    del tpw
+    rpw = mpi.mpi_reduce(
+        rpw, ntp, mpi.MPI_FLOAT, mpi.MPI_SUM, Blockdata["main_node"], mpi.MPI_COMM_WORLD
+    )
+    if Blockdata["myid"] == 0:
+        rpw = [float(old_div(Tracker["constants"]["total_stack"], q)) for q in rpw]
+        rpw[0] = 1.0
+        sp_utilities.write_text_file(
+            rpw, os.path.join(Tracker["constants"]["masterdir"], "rpw.txt")
+        )
+
+def filter_vpp(image):
+    global RPW
+
+    if not Tracker['VPP']:
+        return original_images
+
+    if RPW is None:
+        RPW = sp_utilities.read_text_file(os.path.join(Tracker["constants"]["masterdir"], "rpw.txt"))
+
+    return sp_filter.filt_table(image, RPW)
 
 
 def create_subgroup():
@@ -332,6 +368,10 @@ def AI(fff, anger, shifter, chout=False):
     else:
         if Tracker["mainiteration"] == 2:
             Tracker["state"] = "PRIMARY"
+        # Markus: Allowing EXHAUSTIVE destroys convergence
+        #if Tracker["mainiteration"] == 5 and Tracker["state"] != "RESTRICTED":
+        #    print("Iteration 5: Move to EXHAUSTIVE search")
+        #    Tracker["state"] = "EXHAUSTIVE"
         l05 = -1
         l01 = -1
         for i in range(len(fff)):
@@ -428,7 +468,7 @@ def AI(fff, anger, shifter, chout=False):
                 tmp,
             )
 
-        Tracker["nxinit"] = tmp
+        Tracker["nxinit"] = max(tmp, Tracker["nxinit"])
         Tracker["changed_delta"] = False
         #  decide angular step and translations
         if (
@@ -470,13 +510,16 @@ def AI(fff, anger, shifter, chout=False):
                     and Tracker["constants"]["do_exhaustive"]
                 ):
                     Tracker["state"] = "EXHAUSTIVE"
-                    Tracker["delta"] *= 2.0
+                    #Tracker["delta"] *= 2.0
                     Tracker["changed_delta"] = False
                 elif Tracker["delta"] <= old_div(3.75, 2.0):  # MOVE DOWN TO RESTRICTED
+                    Tracker["VPP"] = False
                     Tracker["an"] = 6 * Tracker["delta"]
                     Tracker["howmany"] = 4
                     Tracker["theta_min"] = -1
                     Tracker["theta_max"] = -1
+                    Tracker["ccfpercentage"] = 0.999
+                    Tracker["prior"]["force_outlier"] = False
                     if Tracker["delta"] <= numpy.degrees(
                         math.atan(old_div(0.25, Tracker["constants"]["radius"]))
                     ):
@@ -1663,26 +1706,30 @@ def get_refangs_and_shifts():
 
     """Multiline Comment8"""
 
-    k = int(numpy.ceil(old_div(Tracker["xr"], Tracker["ts"])))
-    radi = (Tracker["xr"] + Tracker["ts"]) ** 2
-    rshifts = []
-    for ix in range(-k, k, 1):
-        six = ix * Tracker["ts"] + old_div(Tracker["ts"], 2)
-        for iy in range(-k, k, 1):
-            siy = iy * Tracker["ts"] + old_div(Tracker["ts"], 2)
-            if six * six + siy * siy <= radi:
-                rshifts.append([six, siy])
+    if Tracker["xr"] == 0:
+        rshifts = [[0, 0]]
+        coarse_shifts = [[0, 0]]
+    else:
+        k = int(numpy.ceil(old_div(Tracker["xr"], Tracker["ts"])))
+        radi = (Tracker["xr"] + Tracker["ts"]) ** 2
+        rshifts = []
+        for ix in range(-k, k, 1):
+            six = ix * Tracker["ts"] + old_div(Tracker["ts"], 2)
+            for iy in range(-k, k, 1):
+                siy = iy * Tracker["ts"] + old_div(Tracker["ts"], 2)
+                if six * six + siy * siy <= radi:
+                    rshifts.append([six, siy])
 
-    ts_coarse = 2 * Tracker["ts"]
-    k = int(numpy.ceil(old_div(Tracker["xr"], ts_coarse)))
-    radi = Tracker["xr"] * Tracker["xr"]
-    coarse_shifts = []
-    for ix in range(-k, k + 1, 1):
-        six = ix * ts_coarse
-        for iy in range(-k, k + 1, 1):
-            siy = iy * ts_coarse
-            if six * six + siy * siy <= radi:
-                coarse_shifts.append([six, siy])
+        ts_coarse = 2 * Tracker["ts"]
+        k = int(numpy.ceil(old_div(Tracker["xr"], ts_coarse)))
+        radi = Tracker["xr"] * Tracker["xr"]
+        coarse_shifts = []
+        for ix in range(-k, k + 1, 1):
+            six = ix * ts_coarse
+            for iy in range(-k, k + 1, 1):
+                siy = iy * ts_coarse
+                if six * six + siy * siy <= radi:
+                    coarse_shifts.append([six, siy])
 
     return refang, rshifts, coarse, coarse_shifts
 
@@ -2102,6 +2149,11 @@ def calculate_2d_params_for_centering(kwargs):
         original_images = EMAN2_cppwrap.EMData.read_images(
             command_line_provided_stack_filename, list(range(image_start, image_end))
         )
+        #fill_rpw(original_images)
+        #mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
+        #for im in range(len(original_images)):
+        #    original_images[im] = filter_vpp(original_images[im])
+
         #  We assume the target radius will be 29, and xr = 1.
         shrink_ratio = old_div(float(target_radius), float(radi))
 
@@ -2137,6 +2189,10 @@ def calculate_2d_params_for_centering(kwargs):
 
         # section ali2d_base
 
+        filament_width = kwargs['filament_width']
+        if filament_width is not None:
+            filament_width *= shrink_ratio
+
         params2d = sp_applications.ali2d_base(
             original_images,
             init2dir,
@@ -2162,6 +2218,7 @@ def calculate_2d_params_for_centering(kwargs):
             Blockdata["main_node"],
             mpi_comm,
             write_headers=False,
+            filament_width=filament_width,
         )
 
         del original_images
@@ -2183,6 +2240,18 @@ def calculate_2d_params_for_centering(kwargs):
             params2d, Blockdata["main_node"], mpi.MPI_COMM_WORLD
         )
         if Blockdata["myid"] == Blockdata["main_node"]:
+            try:
+                segment_angles = EMAN2_cppwrap.EMUtil.get_all_attributes(Blockdata["stack"], "segment_angle")
+            except KeyError:
+                pass
+            else:
+                for idx, angle in enumerate(segment_angles):
+                    params2d[idx][1], params2d[idx][2] = reduce_shifts(
+                        params2d[idx][1],
+                        params2d[idx][2],
+                        angle,
+                        options.filament_width > 0,
+                    )
             sp_utilities.write_text_row(
                 params2d, os.path.join(init2dir, "initial2Dparams.txt")
             )
@@ -2323,7 +2392,7 @@ def ali3D_polar_ccc(
 
     ###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
 
-    disp_unit = sp_helix_sphire.np.dtype("f4").itemsize
+    disp_unit = numpy.dtype("f4").itemsize
 
     #  REFVOL
     if Blockdata["myid_on_node"] == 0:
@@ -2395,15 +2464,15 @@ def ali3D_polar_ccc(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # volbuf = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
     #     dtype="f4",
     # )
     ptr_n = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
     volbuf = numpy.frombuffer(ptr_n.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
-        sp_helix_sphire.np.copyto(volbuf, ndo)
+        numpy.copyto(volbuf, ndo)
         del odo, ndo
 
     # volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
@@ -2450,8 +2519,8 @@ def ali3D_polar_ccc(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # buffer = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
     #     dtype="f4",
     # )
     ptr_n = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
@@ -2542,8 +2611,8 @@ def ali3D_polar_ccc(
         Comments from Adnan:
         numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
         """
-        # volbufinit = sp_helix_sphire.np.frombuffer(
-        #     sp_helix_sphire.np.core.multiarray.int_asbuffer(
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(
         #         base_volinit, sizevol * disp_unit
         #     ),
         #     dtype="f4",
@@ -2552,7 +2621,7 @@ def ali3D_polar_ccc(
         volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
-            sp_helix_sphire.np.copyto(volbufinit, ndoinit)
+            numpy.copyto(volbufinit, ndoinit)
             del odo, ndoinit
 
         # volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
@@ -2589,6 +2658,7 @@ def ali3D_polar_ccc(
         temp = sp_projection.prgl(
             volprep, [coarse_angles[i][0], coarse_angles[i][1], 0.0, 0.0, 0.0], 1, True
         )
+        #temp = filter_vpp(temp)
         crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
         EMAN2_cppwrap.Util.Normalize_ring(crefim, numr, 0)
         EMAN2_cppwrap.Util.Frngs(crefim, numr)
@@ -2663,6 +2733,7 @@ def ali3D_polar_ccc(
         st = get_image_statistics(dataimage, mask2D, False)
         dataimage -= st[0]
         dataimage = old_div(dataimage, st[1])
+        #dataimage = filter_vpp(dataimage)
         ##if dataimage.get_attr_default("bckgnoise", None) :  dataimage.delete_attr("bckgnoise")
         #  Do bckgnoise if exists
         if apply_mask:
@@ -2760,7 +2831,7 @@ def ali3D_polar_ccc(
                 (n_coarse_ang * n_coarse_psi), 10
             )  # keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
-            xod2 = sp_helix_sphire.np.asarray(
+            xod2 = numpy.asarray(
                 EMAN2_cppwrap.Util.multiref_Crosrng_msg_stack_stepsi(
                     dataimage,
                     bigbuffer,
@@ -2775,49 +2846,58 @@ def ali3D_polar_ccc(
 
             assert len(xod2) == keepfirst
 
-            xod1 = sp_helix_sphire.np.ndarray((keepfirst), dtype="f4", order="C")
+            xod1 = numpy.ndarray((keepfirst), dtype="f4", order="C")
 
+
+            psi_list = []
             for iln in range(keepfirst):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # DO NOT order by angular directions to save time on reprojections.
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             pre_ipsiandiang = -1
             for iln in range(keepfirst):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
-                    )
-                    nrmref = numpy.sqrt(
-                        EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
-                    )
-                    # Util.mul_scalar(temp, 1.0/nrmref)
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        nrmref = numpy.sqrt(
+                            EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
+                        )
+                        # Util.mul_scalar(temp, 1.0/nrmref)
 
-                xod1[iln] = old_div(
-                    EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
-                )
+                    xod1[iln] = old_div(
+                        EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
+                    )
+                else:
+                    xod1[iln] = -numpy.inf
                 # peak
                 ##xod2[iln] = hashparams
 
-            z = sp_helix_sphire.np.max(xod1)
-            lina = sp_helix_sphire.np.argwhere(xod1 == z)[0]
+            z = numpy.max(xod1)
+            lina = numpy.argwhere(xod1 == z)[0]
             # if( Blockdata["myid"] == 0 ):
             # print("  STARTING ",Blockdata["myid"],z,lina)
             keepf = (
@@ -2846,7 +2926,7 @@ def ali3D_polar_ccc(
         else:
             # Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
 
-            xod2 = sp_helix_sphire.np.asarray(
+            xod2 = numpy.asarray(
                 EMAN2_cppwrap.Util.multiref_Crosrng_msg_stack_stepsi(
                     dataimage,
                     bigbuffer,
@@ -2859,52 +2939,61 @@ def ali3D_polar_ccc(
                 )
             )
 
-            xod1 = sp_helix_sphire.np.ndarray(
+            xod1 = numpy.ndarray(
                 (Tracker["keepfirst"]), dtype="f4", order="C"
             )
 
+            psi_list = []
             for iln in range(Tracker["keepfirst"]):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             # order by angular directions to save time on reprojections.
             ipsiandiang = old_div(xod2, 1000)
-            lina = sp_helix_sphire.np.argsort(ipsiandiang)
+            lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
+            psi_list = numpy.array(psi_list)[lina]
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        temp.set_attr("is_complex", 0)
+                        nrmref = numpy.sqrt(
+                            EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
+                        )
+                    peak = old_div(
+                        EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
                     )
-                    temp.set_attr("is_complex", 0)
-                    nrmref = numpy.sqrt(
-                        EMAN2_cppwrap.Util.innerproduct(temp, temp, None)
-                    )
-                peak = old_div(
-                    EMAN2_cppwrap.Util.innerproduct(data[ishift], temp, None), nrmref
-                )
-                xod1[iln] = peak
+                    xod1[iln] = peak
+                else:
+                    xod1[iln] = -numpy.inf
                 ##xod2[iln] = hashparams
 
-            lina = sp_helix_sphire.np.argsort(xod1)
+            lina = numpy.argsort(xod1)
             xod1 = xod1[lina[::-1]]  # This sorts in reverse order
             xod2 = xod2[lina[::-1]]  # This sorts in reverse order
             lit = Tracker["keepfirst"]
@@ -2920,7 +3009,7 @@ def ali3D_polar_ccc(
             hashparams = int(xod2[iln])
             ishift = hashparams % 1000
             ipsiandiang = old_div(hashparams, 1000)
-            # ipsi = ipsiandiang%100000
+            ipsi = ipsiandiang%100000
             iang = old_div(ipsiandiang, 100000)
             firstdirections[iln] = [coarse_angles[iang][0], coarse_angles[iang][1], 0.0]
             firstshifts[iln] = ishift
@@ -2957,7 +3046,7 @@ def ali3D_polar_ccc(
             for i2 in range(Tracker["howmany"]):
                 iang = ltabang[i1][i2]
                 for i3 in range(2):  # psi
-                    itpsi = int(
+                    itpsi_g = int(
                         old_div(
                             (
                                 coarse_angles[oldiang][2]
@@ -2968,7 +3057,7 @@ def ali3D_polar_ccc(
                             Tracker["delta"],
                         )
                     )
-                    itpsi = (itpsi + i3) % npsi
+                    itpsi = (itpsi_g + i3) % npsi
                     for i4 in range(len(tshifts)):
                         cod2.append(iang * 100000000 + itpsi * 1000 + tshifts[i4])
 
@@ -2981,11 +3070,11 @@ def ali3D_polar_ccc(
 
         lit = len(cod1)
 
-        cod2 = sp_helix_sphire.np.asarray([cod2[cod1[i][1]] for i in range(lit)])
+        cod2 = numpy.asarray([cod2[cod1[i][1]] for i in range(lit)])
 
-        cod1 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
-        # cod1.fill(np.finfo(dtype='f4').min)
-        # cod3 = np.ndarray(lit,dtype='f4',order="C")
+        cod1 = numpy.ndarray(lit, dtype="f4", order="C")
+        # cod1.fill(numpy.finfo(dtype='f4').min)
+        # cod3 = numpy.ndarray(lit,dtype='f4',order="C")
         # cod3.fill(0.0)  #  varadj
 
         # if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
@@ -3016,6 +3105,7 @@ def ali3D_polar_ccc(
                     1,
                     False,
                 )
+                #temp = filter_vpp(temp)
                 temp.set_attr("is_complex", 0)
                 nrmref = numpy.sqrt(EMAN2_cppwrap.Util.innerproduct(temp, temp, None))
                 johi += 1
@@ -3038,18 +3128,18 @@ def ali3D_polar_ccc(
         del data
         del dataml
 
-        lina = sp_helix_sphire.np.argsort(cod1)
+        lina = numpy.argsort(cod1)
         cod1 = cod1[lina[::-1]]  # This sorts in reverse order
         cod2 = cod2[lina[::-1]]  # This sorts in reverse order
         ##cod3 = cod3[lina[::-1]]  # This sorts in reverse order
         ##cod1 -= cod1[0]
-        ##lina = np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+        ##lina = numpy.argwhere(cod1 > Tracker["constants"]["expthreshold"])
         cod1 = cod1[0]
         cod2 = cod2[0]
         # = cod3[lina]
         """Multiline Comment19"""
         #  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
-        ###norm_per_particle[im] = np.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
+        ###norm_per_particle[im] = numpy.sum(cod1[:lit]*cod3[:lit]) + accumulatepw[im][reachpw]
 
         ###for iln in range(lit):
         newpar[im][2] = [[int(cod2), float(cod1)]]
@@ -3206,7 +3296,7 @@ def ali3D_primary_polar(
                     tcount[ir + 1] += frac
                     indx[ix - 1, iy - 1] = ir
 
-    disp_unit = sp_helix_sphire.np.dtype("f4").itemsize
+    disp_unit = numpy.dtype("f4").itemsize
 
     #  REFVOL
     if Blockdata["myid_on_node"] == 0:
@@ -3277,15 +3367,15 @@ def ali3D_primary_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # volbuf = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
     volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
-        sp_helix_sphire.np.copyto(volbuf, ndo)
+        numpy.copyto(volbuf, ndo)
         del odo, ndo
 
     # volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
@@ -3331,8 +3421,8 @@ def ali3D_primary_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # buffer = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
@@ -3422,8 +3512,8 @@ def ali3D_primary_polar(
         Comments from Adnan:
         numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
         """
-        # volbufinit = sp_helix_sphire.np.frombuffer(
-        #     sp_helix_sphire.np.core.multiarray.int_asbuffer(
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(
         #         base_volinit, sizevol * disp_unit
         #     ),
         #     dtype="f4",
@@ -3432,7 +3522,7 @@ def ali3D_primary_polar(
         volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
-            sp_helix_sphire.np.copyto(volbufinit, ndoinit)
+            numpy.copyto(volbufinit, ndoinit)
             del odo, ndoinit
 
         # volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
@@ -3467,6 +3557,7 @@ def ali3D_primary_polar(
         temp = sp_projection.prgl(
             volprep, [coarse_angles[i][0], coarse_angles[i][1], 0.0, 0.0, 0.0], 1, True
         )
+        #temp = filter_vpp(temp)
         crefim = EMAN2_cppwrap.Util.Polar2Dm(temp, cnx, cnx, numr, mode)
         EMAN2_cppwrap.Util.Frngs(crefim, numr)
         EMAN2_cppwrap.Util.Applyws(crefim, numr, wr)
@@ -3565,6 +3656,8 @@ def ali3D_primary_polar(
         st = get_image_statistics(dataimage, mask2D, False)
         dataimage -= st[0]
         dataimage = old_div(dataimage, st[1])
+
+        #dataimage = filter_vpp(dataimage)
         if dataimage.get_attr_default("bckgnoise", None):
             dataimage.delete_attr("bckgnoise")
         #  Do bckgnoise if exists
@@ -3678,7 +3771,7 @@ def ali3D_primary_polar(
                 (n_coarse_ang * n_coarse_psi), 10
             )  # keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
-            xod2 = sp_helix_sphire.np.asarray(
+            xod2 = numpy.asarray(
                 EMAN2_cppwrap.Util.multiref_Crosrng_msg_stack_stepsi(
                     dataimage,
                     bigbuffer,
@@ -3693,63 +3786,71 @@ def ali3D_primary_polar(
 
             assert len(xod2) == keepfirst
 
-            xod1 = sp_helix_sphire.np.ndarray((keepfirst), dtype="f4", order="C")
+            xod1 = numpy.ndarray((keepfirst), dtype="f4", order="C")
 
+            psi_list = []
             for iln in range(keepfirst):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # DO NOT order by angular directions to save time on reprojections.
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             pre_ipsiandiang = -1
             for iln in range(keepfirst):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
-                    )
-                    temp.set_attr("is_complex", 0)
-                xod1[iln] = -EMAN2_cppwrap.Util.sqed(
-                    data[ishift], temp, ctfa, bckgnoise
-                )  # peak
-                ##xod2[iln] = hashparams
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        temp.set_attr("is_complex", 0)
+                    xod1[iln] = -EMAN2_cppwrap.Util.sqed(
+                        data[ishift], temp, ctfa, bckgnoise
+                    )  # peak
+                    ##xod2[iln] = hashparams
+                else:
+                    xod1[iln] = -numpy.inf
 
-            xod1 -= sp_helix_sphire.np.max(xod1)
-            lina = sp_helix_sphire.np.argwhere(
+            xod1 -= numpy.max(xod1)
+            lina = numpy.argwhere(
                 xod1 > Tracker["constants"]["expthreshold"]
             )
-            # if( Blockdata["myid"] == 0 ):  sxprint("  STARTING ",np.max(xod1),np.min(xod1),len(lina),lina[-1])
+            # if( Blockdata["myid"] == 0 ):  sxprint("  STARTING ",numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
             lina = lina.reshape(lina.size)
             keepf = int(lina[-1]) + 1
 
             xod1 = xod1[lina]
             xod2 = xod2[lina]
 
-            lina = sp_helix_sphire.np.argsort(xod1)
+            lina = numpy.argsort(xod1)
             xod1 = xod1[lina[::-1]]  # This sorts in reverse order
             xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-            sp_helix_sphire.np.exp(xod1, out=xod1)
-            xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+            numpy.exp(xod1, out=xod1)
+            xod1 = old_div(xod1, numpy.sum(xod1))
             cumprob = 0.0
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
             # keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -3773,7 +3874,7 @@ def ali3D_primary_polar(
         else:
             # Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
 
-            xod2 = sp_helix_sphire.np.asarray(
+            xod2 = numpy.asarray(
                 EMAN2_cppwrap.Util.multiref_Crosrng_msg_stack_stepsi(
                     dataimage,
                     bigbuffer,
@@ -3786,64 +3887,73 @@ def ali3D_primary_polar(
                 )
             )
 
-            xod1 = sp_helix_sphire.np.ndarray(
+            xod1 = numpy.ndarray(
                 (Tracker["keepfirst"]), dtype="f4", order="C"
             )
 
+            psi_list = []
             for iln in range(Tracker["keepfirst"]):
                 m = xod2[iln]
                 j = m % n_coarse_psi
                 ic = (old_div(m, n_coarse_psi)) % n_coarse_ang
+                psi_list.append((coarse_angles[ic][2] + j * coarse_delta) % 360)
                 ib = old_div(m, (n_coarse_ang * n_coarse_psi))
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # order by angular directions to save time on reprojections.
+
+            median_psi = sp_helix_prior.rotate_angles_median(numpy.array(psi_list)-180)+180
             ipsiandiang = old_div(xod2, 1000)
-            lina = sp_helix_sphire.np.argsort(ipsiandiang)
+            lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
+            psi_list = numpy.array(psi_list)[lina]
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
                 hashparams = int(xod2[iln])
                 ishift = hashparams % 1000
                 ipsiandiang = old_div(hashparams, 1000)
-                if ipsiandiang != pre_ipsiandiang:
-                    pre_ipsiandiang = ipsiandiang
-                    ipsi = ipsiandiang % 100000
-                    iang = old_div(ipsiandiang, 100000)
-                    temp = sp_projection.prgl(
-                        volinit,
-                        [
-                            coarse_angles[iang][0],
-                            coarse_angles[iang][1],
-                            (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
-                            0.0,
-                            0.0,
-                        ],
-                        1,
-                        False,
-                    )
-                    temp.set_attr("is_complex", 0)
-                peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
-                xod1[iln] = peak
-                ##xod2[iln] = hashparams
+                if -90 < ((psi_list[iln] - median_psi - 180) % 360) - 180 < 90:
+                    if ipsiandiang != pre_ipsiandiang:
+                        pre_ipsiandiang = ipsiandiang
+                        ipsi = ipsiandiang % 100000
+                        iang = old_div(ipsiandiang, 100000)
+                        temp = sp_projection.prgl(
+                            volinit,
+                            [
+                                coarse_angles[iang][0],
+                                coarse_angles[iang][1],
+                                (coarse_angles[iang][2] + ipsi * coarse_delta) % 360.0,
+                                0.0,
+                                0.0,
+                            ],
+                            1,
+                            False,
+                        )
+                        #temp = filter_vpp(temp)
+                        temp.set_attr("is_complex", 0)
+                    peak = -EMAN2_cppwrap.Util.sqed(data[ishift], temp, ctfa, bckgnoise)
+                    xod1[iln] = peak
+                    ##xod2[iln] = hashparams
+                else:
+                    xod1[iln] = -numpy.inf
 
-            lina = sp_helix_sphire.np.argsort(xod1)
+            lina = numpy.argsort(xod1)
             xod1 = xod1[lina[::-1]]  # This sorts in reverse order
             xod2 = xod2[lina[::-1]]  # This sorts in reverse order
 
             xod1 -= xod1[0]
 
-            lina = sp_helix_sphire.np.argwhere(
+            lina = numpy.argwhere(
                 xod1 > Tracker["constants"]["expthreshold"]
             )
             xod1 = xod1[lina]
             xod2 = xod2[lina]
-            sp_helix_sphire.np.exp(xod1, out=xod1)
-            xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+            numpy.exp(xod1, out=xod1)
+            xod1 = old_div(xod1, numpy.sum(xod1))
             cumprob = 0.0
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
 
@@ -3912,11 +4022,11 @@ def ali3D_primary_polar(
 
         lit = len(cod1)
 
-        cod2 = sp_helix_sphire.np.asarray([cod2[cod1[i][1]] for i in range(lit)])
+        cod2 = numpy.asarray([cod2[cod1[i][1]] for i in range(lit)])
 
-        cod1 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
-        # cod1.fill(np.finfo(dtype='f4').min)
-        cod3 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
+        cod1 = numpy.ndarray(lit, dtype="f4", order="C")
+        # cod1.fill(numpy.finfo(dtype='f4').min)
+        cod3 = numpy.ndarray(lit, dtype="f4", order="C")
         # cod3.fill(0.0)  #  varadj
 
         # if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
@@ -3948,6 +4058,7 @@ def ali3D_primary_polar(
                     1,
                     False,
                 )
+                #temp = filter_vpp(temp)
                 temp.set_attr("is_complex", 0)
                 johi += 1
             while ipsiandiang == old_div(cod2[iln], 1000):
@@ -3973,31 +4084,31 @@ def ali3D_primary_polar(
         del data
         del dataml
 
-        lina = sp_helix_sphire.np.argsort(cod1)
+        lina = numpy.argsort(cod1)
         lina = lina[::-1]  # This sorts in reverse order
         cod1 = cod1[lina]
         cod2 = cod2[lina]
         cod3 = cod3[lina]
         cod1 -= cod1[0]
         tbckg = [tbckg[int(q)] for q in lina]
-        lina = sp_helix_sphire.np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+        lina = numpy.argwhere(cod1 > Tracker["constants"]["expthreshold"])
         cod1 = cod1[lina]
         cod2 = cod2[lina]
         cod3 = cod3[lina]
         tbckg = [tbckg[int(q)] for q in lina]
 
-        sp_helix_sphire.np.exp(cod1, out=cod1)
-        cod1 = old_div(cod1, sp_helix_sphire.np.sum(cod1))
+        numpy.exp(cod1, out=cod1)
+        cod1 = old_div(cod1, numpy.sum(cod1))
         cumprob = 0.0
         for j in range(len(cod1)):
             cumprob += cod1[j]
-            if cumprob > Tracker["constants"]["ccfpercentage"]:
+            if cumprob > Tracker["ccfpercentage"]:
                 lit = j + 1
                 break
 
         #  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
         norm_per_particle[im] = (
-            sp_helix_sphire.np.sum(cod1[:lit] * cod3[:lit]) + accumulatepw[im][reachpw]
+            numpy.sum(cod1[:lit] * cod3[:lit]) + accumulatepw[im][reachpw]
         )
         atbckg = [0.0] * len(tbckg[0])
         for iln in range(lit):
@@ -4245,7 +4356,7 @@ def ali3D_polar(
 
     ###if(Blockdata["myid"] == Blockdata["main_node"]): sxprint("   TRETR  ",Tracker["constants"]["nnxo"],Tracker["nxinit"],reachpw)
 
-    disp_unit = sp_helix_sphire.np.dtype("f4").itemsize
+    disp_unit = numpy.dtype("f4").itemsize
 
     #  REFVOL
     if Blockdata["myid_on_node"] == 0:
@@ -4316,15 +4427,15 @@ def ali3D_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # volbuf = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
     volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
-        sp_helix_sphire.np.copyto(volbuf, ndo)
+        numpy.copyto(volbuf, ndo)
         del odo, ndo
 
     # volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
@@ -4371,8 +4482,8 @@ def ali3D_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # buffer = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
@@ -4462,8 +4573,8 @@ def ali3D_polar(
         Comments from Adnan:
         numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
         """
-        # volbufinit = sp_helix_sphire.np.frombuffer(
-        #     sp_helix_sphire.np.core.multiarray.int_asbuffer(
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(
         #         base_volinit, sizevol * disp_unit
         #     ),
         #     dtype="f4",
@@ -4472,7 +4583,7 @@ def ali3D_polar(
         volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
-            sp_helix_sphire.np.copyto(volbufinit, ndoinit)
+            numpy.copyto(volbufinit, ndoinit)
             del odo, ndoinit
 
         # volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
@@ -4715,7 +4826,7 @@ def ali3D_polar(
                 (n_coarse_ang * n_coarse_psi), 10
             )  # keepfirst = (n_coarse_ang *  n_coarse_psi * n_coarse_shifts)/10
 
-            xod2 = sp_helix_sphire.np.asarray(
+            xod2 = numpy.asarray(
                 EMAN2_cppwrap.Util.multiref_Crosrng_msg_stack_stepsi(
                     dataimage,
                     bigbuffer,
@@ -4730,7 +4841,7 @@ def ali3D_polar(
 
             assert len(xod2) == keepfirst
 
-            xod1 = sp_helix_sphire.np.ndarray((keepfirst), dtype="f4", order="C")
+            xod1 = numpy.ndarray((keepfirst), dtype="f4", order="C")
 
             for iln in range(keepfirst):
                 m = xod2[iln]
@@ -4766,28 +4877,28 @@ def ali3D_polar(
                 )  # peak
                 ##xod2[iln] = hashparams
 
-            xod1 -= sp_helix_sphire.np.max(xod1)
-            lina = sp_helix_sphire.np.argwhere(
+            xod1 -= numpy.max(xod1)
+            lina = numpy.argwhere(
                 xod1 > Tracker["constants"]["expthreshold"]
             )
             # if( Blockdata["myid"] == 0 ):
-            # print("  STARTING ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+            # print("  STARTING ",Blockdata["myid"],numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
             lina = lina.reshape(lina.size)
             keepf = int(lina[-1]) + 1
 
             xod1 = xod1[lina]
             xod2 = xod2[lina]
 
-            lina = sp_helix_sphire.np.argsort(xod1)
+            lina = numpy.argsort(xod1)
             xod1 = xod1[lina[::-1]]  # This sorts in reverse order
             xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-            sp_helix_sphire.np.exp(xod1, out=xod1)
-            xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+            numpy.exp(xod1, out=xod1)
+            xod1 = old_div(xod1, numpy.sum(xod1))
             cumprob = 0.0
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
             # keepf = mpi_reduce(keepf, 1, MPI_INT, MPI_MAX, Blockdata["main_node"], MPI_COMM_WORLD)
@@ -4811,7 +4922,7 @@ def ali3D_polar(
         else:
             # Tracker["keepfirst"] = min(200,nang)#min(max(lxod1/25,200),lxod1)
 
-            xod2 = sp_helix_sphire.np.asarray(
+            xod2 = numpy.asarray(
                 EMAN2_cppwrap.Util.multiref_Crosrng_msg_stack_stepsi(
                     dataimage,
                     bigbuffer,
@@ -4824,7 +4935,7 @@ def ali3D_polar(
                 )
             )
 
-            xod1 = sp_helix_sphire.np.ndarray(
+            xod1 = numpy.ndarray(
                 (Tracker["keepfirst"]), dtype="f4", order="C"
             )
 
@@ -4836,7 +4947,7 @@ def ali3D_polar(
                 xod2[iln] = j * 1000 + ic * 100000000 + ib  # hashparams
             # order by angular directions to save time on reprojections.
             ipsiandiang = old_div(xod2, 1000)
-            lina = sp_helix_sphire.np.argsort(ipsiandiang)
+            lina = numpy.argsort(ipsiandiang)
             xod2 = xod2[lina]  # order does not matter
             pre_ipsiandiang = -1
             for iln in range(Tracker["keepfirst"]):
@@ -4864,24 +4975,24 @@ def ali3D_polar(
                 xod1[iln] = peak
                 ##xod2[iln] = hashparams
 
-            lina = sp_helix_sphire.np.argsort(xod1)
+            lina = numpy.argsort(xod1)
             xod1 = xod1[lina[::-1]]  # This sorts in reverse order
             xod2 = xod2[lina[::-1]]  # This sorts in reverse order
 
             xod1 -= xod1[0]
 
-            lina = sp_helix_sphire.np.argwhere(
+            lina = numpy.argwhere(
                 xod1 > Tracker["constants"]["expthreshold"]
             )
             xod1 = xod1[lina]
             xod2 = xod2[lina]
-            sp_helix_sphire.np.exp(xod1, out=xod1)
-            xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+            numpy.exp(xod1, out=xod1)
+            xod1 = old_div(xod1, numpy.sum(xod1))
             cumprob = 0.0
             lit = len(xod1)
             for j in range(len(xod1)):
                 cumprob += xod1[j]
-                if cumprob > Tracker["constants"]["ccfpercentage"]:
+                if cumprob > Tracker["ccfpercentage"]:
                     lit = j + 1
                     break
 
@@ -4956,11 +5067,11 @@ def ali3D_polar(
 
         lit = len(cod1)
 
-        cod2 = sp_helix_sphire.np.asarray([cod2[cod1[i][1]] for i in range(lit)])
+        cod2 = numpy.asarray([cod2[cod1[i][1]] for i in range(lit)])
 
-        cod1 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
-        # cod1.fill(np.finfo(dtype='f4').min)
-        cod3 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
+        cod1 = numpy.ndarray(lit, dtype="f4", order="C")
+        # cod1.fill(numpy.finfo(dtype='f4').min)
+        cod3 = numpy.ndarray(lit, dtype="f4", order="C")
         # cod3.fill(0.0)  #  varadj
 
         # if( Blockdata["myid"] == Blockdata["main_node"]): sxprint("  THIRD2   ",im,lit,cod2)
@@ -5014,28 +5125,28 @@ def ali3D_polar(
         del data
         del dataml
 
-        lina = sp_helix_sphire.np.argsort(cod1)
+        lina = numpy.argsort(cod1)
         cod1 = cod1[lina[::-1]]  # This sorts in reverse order
         cod2 = cod2[lina[::-1]]  # This sorts in reverse order
         cod3 = cod3[lina[::-1]]  # This sorts in reverse order
         cod1 -= cod1[0]
-        lina = sp_helix_sphire.np.argwhere(cod1 > Tracker["constants"]["expthreshold"])
+        lina = numpy.argwhere(cod1 > Tracker["constants"]["expthreshold"])
         cod1 = cod1[lina]
         cod2 = cod2[lina]
         cod3 = cod3[lina]
 
-        sp_helix_sphire.np.exp(cod1, out=cod1)
-        cod1 = old_div(cod1, sp_helix_sphire.np.sum(cod1))
+        numpy.exp(cod1, out=cod1)
+        cod1 = old_div(cod1, numpy.sum(cod1))
         cumprob = 0.0
         for j in range(len(cod1)):
             cumprob += cod1[j]
-            if cumprob > Tracker["constants"]["ccfpercentage"]:
+            if cumprob > Tracker["ccfpercentage"]:
                 lit = j + 1
                 break
 
         #  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
         norm_per_particle[im] = (
-            sp_helix_sphire.np.sum(cod1[:lit] * cod3[:lit]) + accumulatepw[im][reachpw]
+            numpy.sum(cod1[:lit] * cod3[:lit]) + accumulatepw[im][reachpw]
         )
 
         for iln in range(lit):
@@ -5277,7 +5388,7 @@ def ali3D_primary_local_polar(
                     tcount[ir + 1] += frac
                     indx[ix - 1, iy - 1] = ir
 
-    disp_unit = sp_helix_sphire.np.dtype("f4").itemsize
+    disp_unit = numpy.dtype("f4").itemsize
 
     #  REFVOL
     if Blockdata["myid_on_node"] == 0:
@@ -5348,15 +5459,15 @@ def ali3D_primary_local_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # volbuf = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
     volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
-        sp_helix_sphire.np.copyto(volbuf, ndo)
+        numpy.copyto(volbuf, ndo)
         del odo, ndo
 
     # volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
@@ -5450,8 +5561,8 @@ def ali3D_primary_local_polar(
         Comments from Adnan:
         numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
         """
-        # volbufinit = sp_helix_sphire.np.frombuffer(
-        #     sp_helix_sphire.np.core.multiarray.int_asbuffer(
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(
         #         base_volinit, sizevol * disp_unit
         #     ),
         #     dtype="f4",
@@ -5460,7 +5571,7 @@ def ali3D_primary_local_polar(
         volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
-            sp_helix_sphire.np.copyto(volbufinit, ndoinit)
+            numpy.copyto(volbufinit, ndoinit)
             del odo, ndoinit
 
         # volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
@@ -5703,8 +5814,8 @@ def ali3D_primary_local_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # buffer = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_ptr, ctypes.POINTER(ctypes.c_int * size))
@@ -6025,11 +6136,11 @@ def ali3D_primary_local_polar(
                         ##'''
                         assert old_div(len(lxod1), 3) == keepfirst
 
-                        xod1 = sp_helix_sphire.np.ndarray(
+                        xod1 = numpy.ndarray(
                             (keepfirst), dtype="f4", order="C"
                         )
                         # xod1.fill(1.0)
-                        xod2 = sp_helix_sphire.np.ndarray(
+                        xod2 = numpy.ndarray(
                             (keepfirst), dtype="int", order="C"
                         )
                         for iq in range(keepfirst):
@@ -6081,12 +6192,12 @@ def ali3D_primary_local_polar(
                             ##eat += time()-junk
                             ##xod2[iln] = hashparams
 
-                        xod1 -= sp_helix_sphire.np.max(xod1)
-                        lina = sp_helix_sphire.np.argwhere(
+                        xod1 -= numpy.max(xod1)
+                        lina = numpy.argwhere(
                             xod1 > Tracker["constants"]["expthreshold"]
                         )
                         # if( Blockdata["myid"] == 0 ):
-                        ###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+                        ###print("  STARTING1   ",Blockdata["myid"],numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
 
                         lina = lina.reshape(lina.size)
                         keepf = int(lina[-1]) + 1
@@ -6096,17 +6207,17 @@ def ali3D_primary_local_polar(
 
                         ###print("  STARTING2    ",Blockdata["myid"])
 
-                        lina = sp_helix_sphire.np.argsort(xod1)
+                        lina = numpy.argsort(xod1)
                         xod1 = xod1[lina[::-1]]  # This sorts in reverse order
                         xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-                        sp_helix_sphire.np.exp(xod1, out=xod1)
-                        xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+                        numpy.exp(xod1, out=xod1)
+                        xod1 = old_div(xod1, numpy.sum(xod1))
                         cumprob = 0.0
                         lit = len(xod1)
                         ###print("  STARTING3    ",Blockdata["myid"],lit)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -6168,11 +6279,11 @@ def ali3D_primary_local_polar(
                         # if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
                         ##'''
                         assert keepfirst == old_div(len(lxod1), 3)
-                        xod1 = sp_helix_sphire.np.ndarray(
+                        xod1 = numpy.ndarray(
                             (keepfirst), dtype="f4", order="C"
                         )
                         # xod1.fill(1.0)
-                        xod2 = sp_helix_sphire.np.ndarray(
+                        xod2 = numpy.ndarray(
                             (keepfirst), dtype="int", order="C"
                         )
                         for iq in range(keepfirst):
@@ -6192,7 +6303,7 @@ def ali3D_primary_local_polar(
 
                         # order by angular directions to save time on reprojections.
                         ipsiandiang = old_div(xod2, 1000)
-                        lina = sp_helix_sphire.np.argsort(ipsiandiang)
+                        lina = numpy.argsort(ipsiandiang)
                         xod2 = xod2[lina]  # order does not matter
 
                         pre_ipsiandiang = -1
@@ -6230,7 +6341,7 @@ def ali3D_primary_local_polar(
                             xod1[iln] = peak
                             ##xod2[iln] = hashparams
 
-                        lina = sp_helix_sphire.np.argsort(xod1)
+                        lina = numpy.argsort(xod1)
                         xod1 = xod1[lina[::-1]]  # This sorts in reverse order
                         xod2 = xod2[lina[::-1]]  # This sorts in reverse order
 
@@ -6240,18 +6351,18 @@ def ali3D_primary_local_polar(
                         # 	#print("  PROJECT   ",im,lit,johi)#,cod2)
                         # 	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
 
-                        lina = sp_helix_sphire.np.argwhere(
+                        lina = numpy.argwhere(
                             xod1 > Tracker["constants"]["expthreshold"]
                         )
                         xod1 = xod1[lina]
                         xod2 = xod2[lina]
-                        sp_helix_sphire.np.exp(xod1, out=xod1)
-                        xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+                        numpy.exp(xod1, out=xod1)
+                        xod1 = old_div(xod1, numpy.sum(xod1))
                         cumprob = 0.0
                         lit = len(xod1)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -6327,7 +6438,7 @@ def ali3D_primary_local_polar(
                     #      different shifts.  If so, we have to remove duplicates from the entire set.
                     lcod1 = lit * 4 * 2 * n_fine_shifts
 
-                    # cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
+                    # cod2 = numpy.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
                     # cod2.fill(-1)  #  hashparams
                     cod2 = []
                     # lol = 0
@@ -6370,13 +6481,13 @@ def ali3D_primary_local_polar(
 
                     lit = len(cod1)
 
-                    cod2 = sp_helix_sphire.np.asarray(
+                    cod2 = numpy.asarray(
                         [cod2[cod1[i][1]] for i in range(lit)]
                     )
 
-                    cod1 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
-                    # cod1.fill(np.finfo(dtype='f4').min)
-                    cod3 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
+                    cod1 = numpy.ndarray(lit, dtype="f4", order="C")
+                    # cod1.fill(numpy.finfo(dtype='f4').min)
+                    cod3 = numpy.ndarray(lit, dtype="f4", order="C")
                     # cod3.fill(0.0)  #  varadj
 
                     ###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
@@ -6445,13 +6556,13 @@ def ali3D_primary_local_polar(
                     del data
                     del dataml
 
-                    lina = sp_helix_sphire.np.argsort(cod1)
+                    lina = numpy.argsort(cod1)
                     cod1 = cod1[lina[::-1]]  # This sorts in reverse order
                     cod2 = cod2[lina[::-1]]  # This sorts in reverse order
                     cod3 = cod3[lina[::-1]]  # This sorts in reverse order
                     cod1 -= cod1[0]
                     tbckg = [tbckg[int(q)] for q in lina]
-                    lina = sp_helix_sphire.np.argwhere(
+                    lina = numpy.argwhere(
                         cod1 > Tracker["constants"]["expthreshold"]
                     )
                     cod1 = cod1[lina]
@@ -6464,18 +6575,18 @@ def ali3D_primary_local_polar(
                     ###	for iui in range(len(cod1)):
                     ###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
-                    sp_helix_sphire.np.exp(cod1, out=cod1)
-                    cod1 = old_div(cod1, sp_helix_sphire.np.sum(cod1))
+                    numpy.exp(cod1, out=cod1)
+                    cod1 = old_div(cod1, numpy.sum(cod1))
                     cumprob = 0.0
                     for j in range(len(cod1)):
                         cumprob += cod1[j]
-                        if cumprob > Tracker["constants"]["ccfpercentage"]:
+                        if cumprob > Tracker["ccfpercentage"]:
                             lit = j + 1
                             break
 
                     #  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
                     norm_per_particle[im] = (
-                        sp_helix_sphire.np.sum(cod1[:lit] * cod3[:lit])
+                        numpy.sum(cod1[:lit] * cod3[:lit])
                         + accumulatepw[im][reachpw]
                     )
                     atbckg = [0.0] * len(tbckg[0])
@@ -6763,7 +6874,7 @@ def ali3D_local_polar(
     # 	sxprint( original_data[0].get_attr("identifier") )
     # 	sxprint( original_data[1].get_attr("identifier") )
 
-    disp_unit = sp_helix_sphire.np.dtype("f4").itemsize
+    disp_unit = numpy.dtype("f4").itemsize
 
     #  REFVOL
     if Blockdata["myid_on_node"] == 0:
@@ -6834,15 +6945,15 @@ def ali3D_local_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # volbuf = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
+    # volbuf = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_vol, sizevol * disp_unit),
     #     dtype="f4",
     # )
     ptr = ctypes.cast(base_vol, ctypes.POINTER(ctypes.c_int * sizevol))
     volbuf = numpy.frombuffer(ptr.contents, dtype="f4")
     volbuf = volbuf.reshape(nzvol, nyvol, nxvol)
     if Blockdata["myid_on_node"] == 0:
-        sp_helix_sphire.np.copyto(volbuf, ndo)
+        numpy.copyto(volbuf, ndo)
         del odo, ndo
 
     # volprep = EMNumPy.assign_numpy_to_emdata(volbuf)
@@ -6936,8 +7047,8 @@ def ali3D_local_polar(
         Comments from Adnan:
         numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
         """
-        # volbufinit = sp_helix_sphire.np.frombuffer(
-        #     sp_helix_sphire.np.core.multiarray.int_asbuffer(
+        # volbufinit = numpy.frombuffer(
+        #     numpy.core.multiarray.int_asbuffer(
         #         base_volinit, sizevol * disp_unit
         #     ),
         #     dtype="f4",
@@ -6946,7 +7057,7 @@ def ali3D_local_polar(
         volbufinit = numpy.frombuffer(ptr.contents, dtype="f4")
         volbufinit = volbufinit.reshape(nzvol, nyvol, nxvol)
         if Blockdata["myid_on_node"] == 0:
-            sp_helix_sphire.np.copyto(volbufinit, ndoinit)
+            numpy.copyto(volbufinit, ndoinit)
             del odo, ndoinit
 
         # volinit = EMNumPy.assign_numpy_to_emdata(volbufinit)
@@ -7191,8 +7302,8 @@ def ali3D_local_polar(
     Comments from Adnan:
     numpy.core.mutliarray.int_asbuffer function is not available anymore . That is why a different alternative is tried here.
     """
-    # buffer = sp_helix_sphire.np.frombuffer(
-    #     sp_helix_sphire.np.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
+    # buffer = numpy.frombuffer(
+    #     numpy.core.multiarray.int_asbuffer(base_ptr, size * disp_unit),
     #     dtype="f4",
     # )
 
@@ -7512,11 +7623,11 @@ def ali3D_local_polar(
                         ##'''
                         assert old_div(len(lxod1), 3) == keepfirst
 
-                        xod1 = sp_helix_sphire.np.ndarray(
+                        xod1 = numpy.ndarray(
                             (keepfirst), dtype="f4", order="C"
                         )
                         # xod1.fill(1.0)
-                        xod2 = sp_helix_sphire.np.ndarray(
+                        xod2 = numpy.ndarray(
                             (keepfirst), dtype="int", order="C"
                         )
                         for iq in range(keepfirst):
@@ -7568,12 +7679,12 @@ def ali3D_local_polar(
                             ##eat += time()-junk
                             ##xod2[iln] = hashparams
 
-                        xod1 -= sp_helix_sphire.np.max(xod1)
-                        lina = sp_helix_sphire.np.argwhere(
+                        xod1 -= numpy.max(xod1)
+                        lina = numpy.argwhere(
                             xod1 > Tracker["constants"]["expthreshold"]
                         )
                         # if( Blockdata["myid"] == 0 ):
-                        ###print("  STARTING1   ",Blockdata["myid"],np.max(xod1),np.min(xod1),len(lina),lina[-1])
+                        ###print("  STARTING1   ",Blockdata["myid"],numpy.max(xod1),numpy.min(xod1),len(lina),lina[-1])
 
                         lina = lina.reshape(lina.size)
                         keepf = int(lina[-1]) + 1
@@ -7583,17 +7694,17 @@ def ali3D_local_polar(
 
                         ###print("  STARTING2    ",Blockdata["myid"])
 
-                        lina = sp_helix_sphire.np.argsort(xod1)
+                        lina = numpy.argsort(xod1)
                         xod1 = xod1[lina[::-1]]  # This sorts in reverse order
                         xod2 = xod2[lina[::-1]]  # This sorts in reverse order
-                        sp_helix_sphire.np.exp(xod1, out=xod1)
-                        xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+                        numpy.exp(xod1, out=xod1)
+                        xod1 = old_div(xod1, numpy.sum(xod1))
                         cumprob = 0.0
                         lit = len(xod1)
                         ###print("  STARTING3    ",Blockdata["myid"],lit)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -7653,11 +7764,11 @@ def ali3D_local_polar(
                         # if( Blockdata["myid"] == Blockdata["main_node"] ):  sxprint("  ")
                         ##'''
                         assert keepfirst == old_div(len(lxod1), 3)
-                        xod1 = sp_helix_sphire.np.ndarray(
+                        xod1 = numpy.ndarray(
                             (keepfirst), dtype="f4", order="C"
                         )
                         # xod1.fill(1.0)
-                        xod2 = sp_helix_sphire.np.ndarray(
+                        xod2 = numpy.ndarray(
                             (keepfirst), dtype="int", order="C"
                         )
                         for iq in range(keepfirst):
@@ -7677,7 +7788,7 @@ def ali3D_local_polar(
 
                         # order by angular directions to save time on reprojections.
                         ipsiandiang = old_div(xod2, 1000)
-                        lina = sp_helix_sphire.np.argsort(ipsiandiang)
+                        lina = numpy.argsort(ipsiandiang)
                         xod2 = xod2[lina]  # order does not matter
 
                         pre_ipsiandiang = -1
@@ -7715,7 +7826,7 @@ def ali3D_local_polar(
                             xod1[iln] = peak
                             ##xod2[iln] = hashparams
 
-                        lina = sp_helix_sphire.np.argsort(xod1)
+                        lina = numpy.argsort(xod1)
                         xod1 = xod1[lina[::-1]]  # This sorts in reverse order
                         xod2 = xod2[lina[::-1]]  # This sorts in reverse order
 
@@ -7725,18 +7836,18 @@ def ali3D_local_polar(
                         # 	#print("  PROJECT   ",im,lit,johi)#,cod2)
                         # 	for iln in range(len(xod1)):  sxprint("  ROPE   ",iln,xod1[iln],xod2[iln])
 
-                        lina = sp_helix_sphire.np.argwhere(
+                        lina = numpy.argwhere(
                             xod1 > Tracker["constants"]["expthreshold"]
                         )
                         xod1 = xod1[lina]
                         xod2 = xod2[lina]
-                        sp_helix_sphire.np.exp(xod1, out=xod1)
-                        xod1 = old_div(xod1, sp_helix_sphire.np.sum(xod1))
+                        numpy.exp(xod1, out=xod1)
+                        xod1 = old_div(xod1, numpy.sum(xod1))
                         cumprob = 0.0
                         lit = len(xod1)
                         for j in range(len(xod1)):
                             cumprob += xod1[j]
-                            if cumprob > Tracker["constants"]["ccfpercentage"]:
+                            if cumprob > Tracker["ccfpercentage"]:
                                 lit = j + 1
                                 break
 
@@ -7812,7 +7923,7 @@ def ali3D_local_polar(
                     #      different shifts.  If so, we have to remove duplicates from the entire set.
                     lcod1 = lit * 4 * 2 * n_fine_shifts
 
-                    # cod2 = np.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
+                    # cod2 = numpy.ndarray((lit,5,3,n_fine_shifts),dtype=int,order="C")
                     # cod2.fill(-1)  #  hashparams
                     cod2 = []
                     # lol = 0
@@ -7855,13 +7966,13 @@ def ali3D_local_polar(
 
                     lit = len(cod1)
 
-                    cod2 = sp_helix_sphire.np.asarray(
+                    cod2 = numpy.asarray(
                         [cod2[cod1[i][1]] for i in range(lit)]
                     )
 
-                    cod1 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
-                    # cod1.fill(np.finfo(dtype='f4').min)
-                    cod3 = sp_helix_sphire.np.ndarray(lit, dtype="f4", order="C")
+                    cod1 = numpy.ndarray(lit, dtype="f4", order="C")
+                    # cod1.fill(numpy.finfo(dtype='f4').min)
+                    cod3 = numpy.ndarray(lit, dtype="f4", order="C")
                     # cod3.fill(0.0)  #  varadj
 
                     ###if( Blockdata["myid"] == 18 and lima<5): sxprint("  THIRD   ",im,lit)#,cod2)
@@ -7928,12 +8039,12 @@ def ali3D_local_polar(
                     del data
                     del dataml
 
-                    lina = sp_helix_sphire.np.argsort(cod1)
+                    lina = numpy.argsort(cod1)
                     cod1 = cod1[lina[::-1]]  # This sorts in reverse order
                     cod2 = cod2[lina[::-1]]  # This sorts in reverse order
                     cod3 = cod3[lina[::-1]]  # This sorts in reverse order
                     cod1 -= cod1[0]
-                    lina = sp_helix_sphire.np.argwhere(
+                    lina = numpy.argwhere(
                         cod1 > Tracker["constants"]["expthreshold"]
                     )
                     cod1 = cod1[lina]
@@ -7945,18 +8056,18 @@ def ali3D_local_polar(
                     ###	for iui in range(len(cod1)):
                     ###		sxprint("  MLML  ",iui,cod1[iui],exp(cod1[iui]),cod2[iui],cod3[iui])
 
-                    sp_helix_sphire.np.exp(cod1, out=cod1)
-                    cod1 = old_div(cod1, sp_helix_sphire.np.sum(cod1))
+                    numpy.exp(cod1, out=cod1)
+                    cod1 = old_div(cod1, numpy.sum(cod1))
                     cumprob = 0.0
                     for j in range(len(cod1)):
                         cumprob += cod1[j]
-                        if cumprob > Tracker["constants"]["ccfpercentage"]:
+                        if cumprob > Tracker["ccfpercentage"]:
                             lit = j + 1
                             break
 
                     #  New norm is a sum of eq distances multiplied by their probabilities augmented by PW.
                     norm_per_particle[im] = (
-                        sp_helix_sphire.np.sum(cod1[:lit] * cod3[:lit])
+                        numpy.sum(cod1[:lit] * cod3[:lit])
                         + accumulatepw[im][reachpw]
                     )
                     ###print("   CNORMPERPARTICLE  ",Blockdata["myid"],im,norm_per_particle[im])
@@ -8553,7 +8664,7 @@ def do3d_final(
 
     # also copy params to masterdir as final params
     if Blockdata["myid"] == Blockdata["main_node"]:
-        sp_helix_sphire.shutil.copyfile(
+        shutil.copyfile(
             os.path.join(
                 Tracker["constants"]["masterdir"],
                 "main%03d" % Tracker["mainiteration"],
@@ -8564,7 +8675,7 @@ def do3d_final(
                 "final_params_%03d.txt" % Tracker["mainiteration"],
             ),
         )
-        sp_helix_sphire.shutil.rmtree(
+        shutil.rmtree(
             os.path.join(Tracker["constants"]["masterdir"], "tempdir")
         )
     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -9065,10 +9176,10 @@ def update_tracker(shell_line_command):
         Tracker["constants"]["mask3D"] = options_no_default_value.mask3D
         tempdict["mask3D"] = Tracker["constants"]["mask3D"]
     if options_no_default_value.ccfpercentage != None:
-        Tracker["constants"]["ccfpercentage"] = old_div(
+        Tracker["ccfpercentage"] = old_div(
             options_no_default_value.ccfpercentage, 100.0
         )
-        tempdict["ccfpercentage"] = Tracker["constants"]["ccfpercentage"]
+        tempdict["ccfpercentage"] = Tracker["ccfpercentage"]
     if options_no_default_value.nonorm != None:
         Tracker["constants"]["nonorm"] = options_no_default_value.nonorm
         tempdict["nonorm"] = Tracker["constants"]["nonorm"]
@@ -9397,7 +9508,7 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                     # --  memory_check(Blockdata["myid"],"second node, after 2 steptwo")
             #  Here end per node execution.
         if Blockdata["myid"] == Blockdata["nodes"][0]:
-            sp_helix_sphire.shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
+            shutil.rmtree(os.path.join(Tracker["directory"], "tempdir"))
         mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
     else:
         if Blockdata["no_of_groups"] == 1:
@@ -9485,14 +9596,14 @@ def rec3d_make_maps(compute_fsc=True, regularized=True):
                         tvol0.write_image(
                             os.path.join(
                                 Tracker["constants"]["masterdir"],
-                                "vol_%d_unfil_%03d.hdf" % (iproc, final_iter),
+                                "vol_%d_unfil_%03d.hdf" % (iproc, Tracker["mainiteration"]),
                             )
                         )
                     else:
                         tvol1.write_image(
                             os.path.join(
                                 Tracker["constants"]["masterdir"],
-                                "vol_%d_unfil_%03d.hdf" % (iproc, final_iter),
+                                "vol_%d_unfil_%03d.hdf" % (iproc, Tracker["mainiteration"]),
                             )
                         )
                 mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
@@ -9710,11 +9821,12 @@ def refinement_one_iteration(
         refang = Blockdata["symclass"].reduce_anglesets(
             sp_fundamentals.rotate_params(refang, [-rangle, -rangle, -rangle])
         )
-        coarse_angles = Blockdata["symclass"].reduce_anglesets(
-            sp_fundamentals.rotate_params(coarse_angles, [-rangle, -rangle, -rangle])
-        )
+        #coarse_angles = Blockdata["symclass"].reduce_anglesets(
+        #    sp_fundamentals.rotate_params(coarse_angles, [-rangle, -rangle, -rangle])
+        #)
+        if Tracker["xr"] != 0:
+            shakegrid(coarse_shifts, rshift)
         shakegrid(rshifts, rshift)
-        shakegrid(coarse_shifts, rshift)
 
         if Blockdata["myid"] == Blockdata["main_node"]:
             sp_utilities.write_text_row(
@@ -10187,21 +10299,21 @@ def refinement_one_iteration(
             sp_global_def.sxprint(
                 "Create angular distribution plot for chunk {0}".format(procid)
             )
-            delta = sp_helix_sphire.np.maximum(Tracker["delta"], 3.75)
+            delta = numpy.maximum(Tracker["delta"], 3.75)
             exclude = []
             exclude.append(
                 [
                     None,
-                    os.path.join(Tracker["directory"], "ang_dist_{0}".format(procid)),
+                    os.path.join(Tracker["directory"], "ang_dist_{0}_{1:03d}".format(procid, Tracker["mainiteration"])),
                     "",
                 ]
             )
-            if sp_helix_sphire.np.array(outlier_full).any():
+            if numpy.array(outlier_full).any():
                 exclude.append(
                     [
                         outlier_full,
                         os.path.join(
-                            Tracker["directory"], "ang_dist_{0}_outlier".format(procid)
+                            Tracker["directory"], "ang_dist_{0}_{1:03d}_outlier".format(procid, Tracker["mainiteration"])
                         ),
                         "_outlier",
                     ]
@@ -10413,32 +10525,34 @@ def refinement_one_iteration(
 #
 
 
-def reduce_shifts(sx, sy, img):
+def reduce_shifts(sx, sy, img, rise=None):
     def rot_matrix(angle):
-        angle = sp_helix_sphire.np.radians(angle)
-        matrix = sp_helix_sphire.np.array(
+        angle = numpy.radians(angle)
+        matrix = numpy.array(
             [
-                [sp_helix_sphire.np.cos(angle), -sp_helix_sphire.np.sin(angle)],
-                [sp_helix_sphire.np.sin(angle), sp_helix_sphire.np.cos(angle)],
+                [numpy.cos(angle), -numpy.sin(angle)],
+                [numpy.sin(angle), numpy.cos(angle)],
             ]
         )
         return matrix
+    if rise is None:
+        rise=Tracker["constants"]["helical_rise"]
 
-    if Tracker["constants"]["helical_rise"] is not None:
+    if rise is not None:
         try:
             rotation_angle = img.get_attr("segment_angle")
         except AttributeError:
             pass
         else:
             rise = old_div(
-                Tracker["constants"]["helical_rise"],
+                rise,
                 float(Tracker["constants"]["pixel_size"]),
             )
             rise_half = old_div(rise, 2.0)
-            point = sp_helix_sphire.np.array([sx, sy])
-            rot_point = sp_helix_sphire.np.dot(rot_matrix(rotation_angle), point.T)
+            point = numpy.array([sx, sy])
+            rot_point = numpy.dot(rot_matrix(rotation_angle), point.T)
             rot_point[0] = ((rot_point[0] + rise_half) % rise) - rise_half
-            sx, sy = sp_helix_sphire.np.dot(rot_matrix(rotation_angle).T, rot_point.T)
+            sx, sy = numpy.dot(rot_matrix(rotation_angle).T, rot_point.T)
 
     return int(round(sx)), int(round(sy))
 
@@ -10449,7 +10563,7 @@ def get_image_statistics(image, mask, invert):
     else:
         mask2d = sp_utilities.model_rotated_rectangle2D(
             radius_long=int(
-                old_div(sp_helix_sphire.np.sqrt(2 * image.get_xsize() ** 2), 2)
+                old_div(numpy.sqrt(2 * image.get_xsize() ** 2), 2)
             ),
             radius_short=old_div(
                 int(
@@ -10519,8 +10633,8 @@ def calculate_prior_values(
             )
         )
         if Tracker["prior"]["force_outlier"]:
-            sp_helix_sphire.shutil.copy(params_file, "{0}_old".format(params_file))
-            sp_helix_sphire.shutil.copy(new_params, params_file)
+            shutil.copy(params_file, "{0}_old".format(params_file))
+            shutil.copy(new_params, params_file)
 
         if Tracker["prior"]["apply_prior"]:
             outliers = outliers.tolist()
@@ -10544,7 +10658,7 @@ def calculate_prior_values(
             )
             outliers = [0] * len_data
 
-        sp_helix_sphire.np.savetxt(outlier_file, outliers)
+        numpy.savetxt(outlier_file, outliers)
     else:
         # Dummy variable
         outliers = 0
@@ -10568,7 +10682,7 @@ def load_tracker_from_json(file_name):
             tracker["constants"]["stack_prior_dtype"] = [
                 tuple(entry) for entry in tracker["constants"]["stack_prior_dtype"]
             ]
-            tracker["constants"]["stack_prior"] = sp_helix_sphire.np.genfromtxt(
+            tracker["constants"]["stack_prior"] = numpy.genfromtxt(
                 tracker["constants"]["stack_prior"],
                 dtype=tracker["constants"]["stack_prior_dtype"],
             )
@@ -10607,7 +10721,7 @@ def prior_stack_fmt(sphire_prior_stack):
         if isinstance(sphire_prior_stack[entry][0], (str, numpy.character)):
             fmt.append(
                 "% {0}s".format(
-                    sp_helix_sphire.np.max(
+                    numpy.max(
                         [len(str_entry) for str_entry in sphire_prior_stack[entry]]
                     )
                     + 3
@@ -10617,14 +10731,14 @@ def prior_stack_fmt(sphire_prior_stack):
         elif isinstance(sphire_prior_stack[entry][0], (int, numpy.integer)):
             fmt.append(
                 "% {0}d".format(
-                    len(str(sp_helix_sphire.np.max(sphire_prior_stack[entry]))) + 3
+                    len(str(numpy.max(sphire_prior_stack[entry]))) + 3
                 )
             )
 
         elif isinstance(sphire_prior_stack[entry][0], (float, numpy.floating)):
             fmt.append(
                 "% {0}.6f".format(
-                    len(str(sp_helix_sphire.np.max(sphire_prior_stack[entry]))) + 3
+                    len(str(numpy.max(sphire_prior_stack[entry]))) + 3
                 )
             )
         else:
@@ -10795,6 +10909,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
         )
 
         parser.add_option(
+            "--VPP",
+            action="store_true",
+            default=False,
+            help="Do VPP normalization. (default False)",
+        )
+        parser.add_option(
             "--plot_ang_dist",
             action="store_true",
             default=False,
@@ -10958,7 +11078,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Prior["tol_mean"] = 30
             Prior["outlier_method"] = "deg"
             Prior["prior_method"] = "running"
-            Prior["force_outlier"] = False
+            Prior["force_outlier"] = True
             Prior["remove_outlier"] = False
             Prior["apply_prior"] = False
             Prior["window_size"] = 3
@@ -10967,6 +11087,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             #  Constant settings of the project
             Constants = {}
             Constants["stack"] = args[0]
+            Constants["total_stack"] = 0
             Constants["rs"] = 1
             Constants["radius"] = options.radius
             Constants["an"] = "-1"
@@ -11001,7 +11122,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             ]  # will add two states, CONINUATION_INITIAL, CONINUATION_PRIMARY
             Constants["user_func"] = options.function
             Constants["hardmask"] = True  # options.hardmask
-            Constants["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Constants["expthreshold"] = -10
             Constants[
                 "number_of_groups"
@@ -11015,6 +11135,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["helical_rise"] = options.helical_rise
             Constants["filament_width"] = options.filament_width
             Constants["outlier_by"] = options.outlier_by
+            # Markus: Made it worse to put to True
             Constants["do_exhaustive"] = False
 
             if options.outlier_by is None:
@@ -11057,8 +11178,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Tracker = {}
             Tracker["constants"] = Constants
             Tracker["prior"] = Prior
+            Tracker["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Tracker["maxit"] = Tracker["constants"]["maxit"]
 
+            Tracker["VPP"] = options.VPP
             Tracker["xr"] = options.xr
             Tracker[
                 "yr"
@@ -11178,7 +11301,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                     "mask3D file does  not exists ", "meridien", 1, Blockdata["myid"]
                 )
 
-            if old_div(options.xr, options.ts) < 1.0:
+            if options.xr == 0:
+                pass
+
+            elif old_div(options.xr, options.ts) < 1.0:
                 sp_global_def.ERROR(
                     "Incorrect translational searching settings, search range cannot be smaller than translation step ",
                     "meridien",
@@ -11248,10 +11374,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 masterdir = string.join(masterdir, "")
 
             Tracker["constants"]["masterdir"] = masterdir
-            if Blockdata["myid"] == Blockdata["main_node"]:
-                print_dict(Tracker["constants"], "Permanent settings of meridien")
-                print_dict(Blockdata, "MPI settings of meridien")
-
             # Initialization of orgstack
             Tracker["constants"]["stack"] = orgstack
             if Blockdata["myid"] == Blockdata["main_node"]:
@@ -11263,6 +11385,12 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             total_stack = sp_utilities.bcast_number_to_all(
                 total_stack, source_node=Blockdata["main_node"]
             )
+            Tracker["constants"]["total_stack"] = total_stack
+
+            if Blockdata["myid"] == Blockdata["main_node"]:
+                print_dict(Tracker["constants"], "Permanent settings of meridien")
+                print_dict(Blockdata, "MPI settings of meridien")
+
             # ------------------------------------------------------------------------------------
             #  	Fresh start INITIALIZATION
             initdir = os.path.join(Tracker["constants"]["masterdir"], "main000")
@@ -11314,6 +11442,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             # kwargs["masterdir"] = masterdir
 
             kwargs["options_skip_prealignment"] = options.skip_prealignment
+            kwargs["filament_width"] = options.filament_width
             kwargs["options_CTF"] = True
 
             kwargs["mpi_comm"] = mpi.MPI_COMM_WORLD
@@ -11516,7 +11645,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 if doit2:
                     doit = True
                     if Blockdata["myid"] == Blockdata["main_node"]:
-                        sp_helix_sphire.shutil.rmtree(Tracker["directory"])
+                        shutil.rmtree(Tracker["directory"])
                     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
             if doit:
                 if Blockdata["myid"] == Blockdata["main_node"]:
@@ -11952,7 +12081,6 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             Constants["states"] = ["PRIMARY", "RESTRICTED", "FINAL"]
             Constants["user_func"] = options.function
             Constants["hardmask"] = True  # options.hardmask
-            Constants["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Constants["expthreshold"] = -10
             Constants[
                 "number_of_groups"
@@ -11972,6 +12100,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             # Initialize Tracker Dictionary with input options
             Tracker = {}
             Tracker["constants"] = Constants
+            Tracker["ccfpercentage"] = old_div(options.ccfpercentage, 100.0)
             Tracker["maxit"] = Tracker["constants"]["maxit"]
 
             Tracker["xr"] = options.xr
@@ -12088,7 +12217,10 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                     "mask3D file does  not exists ", "meridien", 1, Blockdata["myid"]
                 )
 
-            if old_div(options.xr, options.ts) < 1.0:
+            if options.xr == 0:
+                pass
+
+            elif old_div(options.xr, options.ts) < 1.0:
                 sp_global_def.ERROR(
                     "Incorrect translational searching settings, search range cannot be smaller than translation step ",
                     "meridien",
@@ -12166,7 +12298,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
             initdir = os.path.join(Tracker["constants"]["masterdir"], "main000")
             if Blockdata["myid"] == Blockdata["main_node"]:
                 if os.path.exists(initdir):
-                    sp_helix_sphire.shutil.rmtree(initdir)
+                    shutil.rmtree(initdir)
                 os.makedirs(initdir)
 
             if Blockdata["myid"] == Blockdata["main_node"]:
@@ -12324,7 +12456,7 @@ mpirun -np 64 --hostfile four_nodes.txt  sxmeridien.py --local_refinement  vton3
                 if doit2:
                     doit = True
                     if Blockdata["myid"] == Blockdata["main_node"]:
-                        sp_helix_sphire.shutil.rmtree(Tracker["directory"])
+                        shutil.rmtree(Tracker["directory"])
                     mpi.mpi_barrier(mpi.MPI_COMM_WORLD)
             if doit:
                 if Blockdata["myid"] == Blockdata["main_node"]:
