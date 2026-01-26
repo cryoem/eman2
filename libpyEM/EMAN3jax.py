@@ -533,6 +533,7 @@ class EMStack2D(EMStack):
 
 
 	def center_clip(self,size):
+		"""returns a new EMStack2D scaled to a new size (larger or smaller) about the center"""
 		try: size=np.array((int(size),int(size)))
 		except: size=(int(size[0]),int(size[1]))
 		if size[0]<1 or size[1]<1: raise Exception("center_clip(size) must be called with a positive integer")
@@ -541,7 +542,11 @@ class EMStack2D(EMStack):
 			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
 			return EMStack2D(newlst)
 		elif isinstance(self._data,np.ndarray) or isinstance(self._data,jax.Array):
-			newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
+			if (shp[0]<0 and shp[1]>0) or (shp[0]>0 and shp[1]<0): error_exit("center_clip must either make the image uniformly larger or uniformly smaller")
+			if shp[0]<0 :
+				newary=np.zeros((self.shape[0],size[0],size[1]))
+				newary[:,-shp[0]:-shp[0]+self.shape[1],-shp[1]:-shp[1]+self[shape[2]]]=self._data
+			else: newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
 			return EMStack2D(newary)
 
 	def do_fft(self,keep_type=False):
@@ -772,7 +777,7 @@ class EMAN3Ctf():
 		if self.dfdiff == 0: return self.defocus
 		else: return self.defocus + (self.dfdiff/2)*cos(2*ang-(2*pi/180)*self.dfang)
 
-	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None, use_astig=True, ewald_sphere=False, beam_tilt=False):
+	def compute_2d_stack_complex(self, ny, ctf_type, var_range, var_name, apix=None, use_astig=True, ewald_sphere=False, beam_tilt=False, defocus_step=None):
 		"""Returns a stack of CTF images, with size ny, of type ctf_type. The stack will vary var_name in the range var_range.
 			Inputs:
 			ny--Size of images to make. Will assume it corresponds to the apix unless overriden
@@ -796,7 +801,8 @@ class EMAN3Ctf():
 			return
 
 		if var_name == "defocus":
-			step = self.defocus_step
+			if defocus_step is not None: step = self.defocus_step
+			else: step=defocus_step
 			defocus = jnp.arange(var_range[0], var_range[1], step, jnp.complex64)
 			dfdiff = self.get_dfdiff()
 			dfang = self.dfang
@@ -1058,6 +1064,10 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 	def numpy(self):
 		self.coerce_numpy()
 		return self._data
+
+	def save(self,outname):
+		"""Save the current gaussians as a 4 column text file"""
+		np.savetxt(outname,self.numpy,delimiter="\t")
 
 	def init_from_map(self,vol,res,minratio=0.1,apix=None):
 		"""Replace the current set of Gaussians with a set of Gaussians generated from a 3-D map by progressive Gaussian decomposition.

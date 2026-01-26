@@ -69,7 +69,6 @@ from .emshape import *
 import weakref
 from pickle import dumps,loads
 import struct, math
-from numpy import *
 from .valslider import *
 from io import StringIO
 import re
@@ -159,7 +158,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.render()
 
 	def resizeGL(self, width, height):
-		side = min(width, height)
+#		side = min(width, height)
 		GL.glViewport(0,0,self.width(),self.height())
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -237,7 +236,7 @@ class EMHistogramWidget(EMGLWidget):
 			self.data[key]= data
 			self.visibility.setdefault(key,True)
 		else:
-			self.data[key]=[array(i) for i in data]
+			self.data[key]=[np.array(i) for i in data]
 			self.visibility.setdefault(key,True)
 		try:
 			if len(data)>1 :

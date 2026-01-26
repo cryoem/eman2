@@ -40,7 +40,7 @@ from EMAN3jax import *
 
 def main():
 	progname = os.path.basename(sys.argv[0])
-	usage = """prog [options] <particle .lst file, 2-D> <gaussian .txt> <mask>
+	usage = """prog [options] <particle .lst file, 2-D> <gaussian .txt> <binary mask>
 
 The goal of this program is to extract one region, defined by a 3-D mask, from each 2-D particle so additionl refinement can be performed on just
 the isolated region. This idea dates back to EMAN2 in the mid-2000s, and was later adopted by Relion, etc. It is not a perfect solution, as, if
@@ -86,11 +86,11 @@ The program proceeds in several steps:
 	# The Gaussian model from a file
 	gauss=Gaussians(args[1])
 	if options.sym!="c1": gauss.replicate_sym(options.sym)
-	maskincl=to_jax(EMData(args[2]))
+	maskincl=to_jax(EMData(args[2]).process("threshold.binary",{"value":0.2}))	# "soft" masks cause problems
 	maskexcl=1.0-maskincl
 	gaussincl=gauss.mask(maskincl)		# Gaussians for portion we want to keep
 	gaussexcl=gauss.mask(maskexcl)		# Gaussians for portion we want to eliminate
-	print (f"{len(gauss)} gaussians -> {len(gaussincl)},{len(gaussexcl)}")
+	if options.verbose: print (f"{len(gauss)} gaussians -> {len(gaussincl)},{len(gaussexcl)}")
 
 	# Open the particle .lst file and get some basic info
 	lsxin=LSXFile(args[0])
@@ -101,11 +101,13 @@ The program proceeds in several steps:
 	N=len(lsxin)
 #	N=100
 
-	lpfilt=jax_gaussfilt_2d(nx,0.125)	# modest lowpass filter to smooth out Gaussians for mask generation
+	lpfilt=jax_gaussfilt_2d(nx,0.03)	# lowpass filter to smooth out Gaussians for mask generation
 
 	nblk=int(1.0e9/(nx*nx*4))	# target 1G of ram at a time for the particles
-
 	sym=Symmetries.get(options.sym)
+	if options.verbose:
+		print(f"Working with chunks of {nblk} particles")
+		if sym.get_nsym()>1: print(f"{sym.get_nsym()} symmetric dupicates")
 	tlast=0
 	for sn in range(sym.get_nsym()):
 		sxf=sym.get_sym(sn)
@@ -114,13 +116,15 @@ The program proceeds in several steps:
 			ptcl=EMStack2D(EMData.read_images(args[0],range(i,min(i+nblk,N))))
 			orts=ptcl.orientations_withxf(sxf)
 			ortsxf=orts[0].transforms(orts[1])
+			if options.verbose>1 : print(f"ptcl: {ptcl.shape}    ortsxf: {len(orts[0])}\nMaking Projections:")
+
 #			proj=gauss.project_simple(orts[0],nx,orts[1]/nx)
 			projincl=gaussincl.project_simple(orts[0],nx,orts[1]/nx)
 			projexcl=gaussexcl.project_simple(orts[0],nx,orts[1]/nx)
 			proj=EMStack2D(projincl.jax+projexcl.jax)
 
-			projfullmask=(jax_ift2d(proj.do_fft().jax*lpfilt)>0.1).astype(float)
-			projinclmask=(jax_ift2d(jax_fft2d(projincl.jax)*lpfilt)>0.1).astype(float)
+			projfullmask=(jax_ift2d(proj.do_fft().jax*lpfilt)>0.03).astype(float)
+			projinclmask=(jax_ift2d(jax_fft2d(projincl.jax)*lpfilt)>0.03).astype(float)
 
 			ptcl.set_data(ptcl.jax*projfullmask)	# mask out periphery using projection of full mask to make subtraction more accurate
 
@@ -135,12 +139,24 @@ The program proceeds in several steps:
 
 			out=EMStack2D(out)
 
+			# DEBUG - writes pretty much everything so we can double-check
+			# projincl.write_images("db_projincl.hdf",8,0)
+			# projexcl.write_images("db_projexcl.hdf",8,0)
+			# proj.write_images("db_proj.hdf",8,0)
+			# out.write_images("db_sub.hdf",8,0)
+			# ptcl.write_images("db_ptcl.hdf",8,0)
+			# gaussincl.save("db_gausincl.txt")
+			# gaussexcl.save("db_gausexcl.txt")
+			# print("DB DONE")
+
 			# Mathematically, this is kind of a stupid and inefficient way to perform recentering
 			out.set_data(out.jax*projinclmask)			# apply projection of individual subunit mask after subtraction
 			for im,pr in zip(out.emdata,projincl.emdata):
 				pr.process_inplace("xform.centerofmass",{"int_shift_only":1})	# we compute the center of mass from the gaussian projection which shouldn't be noisy
-				x,y=pr["xform.align2d"].get_trans_2d()
-				im.translate(x,y,0)							# then apply it to the image
+				try:
+					x,y=pr["xform.align2d"].get_trans_2d()
+					im.translate(x,y,0)							# then apply it to the image
+				except: print(f"Error centering {out.emdata.index(im)}: {pr.get_attr_dict()}")
 
 			if options.newbox>0: out=out.center_clip(options.newbox)
 

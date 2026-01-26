@@ -164,8 +164,8 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 		nbx=good_size(int(options.clip*apix/1.8))
 	lastctf=[]
 	t0=time.time()
-#	for i in range(nptcl):
-	for i in range(50000):
+	for i in range(nptcl):
+#	for i in range(50000):
 		if options.verbose>0 and time.time()-t0>1.0:
 			print(f"  {i+1}/{nptcl}\r",end="")
 			t0=time.time()
@@ -212,10 +212,18 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 			jdb["ctf_frame"]=[1024,ctf,(256,256),tuple(),5,1]
 
 		imfsp=csfile["blob/path"][i].decode('UTF-8')[1:] # blob/path is numpy.bytes and has a leading > to be removed
-		imfsp=re.sub(r'/\d+_', '/', imfsp) #They also have the micrograph uid added to the filepath at the start of the filename, after the relative path
+		if not os.path.isfile(imfsp):
+			if os.path.isfile("../"+imfsp): imfsp="../"+imfsp
+			else:
+				imfsp=re.sub(r'/\d+_', '/', imfsp) #They also have the micrograph uid added to the filepath at the start of the filename, after the relative path, which may or may not need to be stripped
+				if not os.path.isfile(imfsp):
+					if os.path.isfile("../"+imfsp): imfsp="../"+imfsp
+					else:
+						error_exit(f'Unable to find referenced file: {csfile["blob/path"][i].decode('UTF-8')[1:]}  or variants. You may need to reposition your .cs file or double check exported data.')
+
 		imn=csfile["blob/idx"][i]
 
-		img=EMData("../"+imfsp,imn) # CryoSparc and Eman start with 0
+		img=EMData(imfsp,imn)
 		img["apix_x"]=apix
 		img["apix_y"]=apix
 		img["apix_z"]=apix
