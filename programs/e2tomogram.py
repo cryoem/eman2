@@ -55,6 +55,7 @@ def main():
 	parser.add_argument("--load", action="store_true",help="load existing tilt parameters.", default=False,guitype='boolbox',row=10, col=0, rowspan=1, colspan=1,mode="easy")
 	
 	parser.add_argument("--loadfile", type=str, help="Load from text file", default=None)
+	parser.add_argument("--loadaretomo", type=str, help="Load from .aln file from aretomo, or a folder containing them. ", default=None)
 	parser.add_argument("--notmp", action="store_true",help="Do not write temporary files.", default=False, mode="easy[True]", guitype="boolbox", row=10,col=1, rowspan=1, colspan=1)
 
 	parser.add_argument("--pkkeep", type=float,help="Fraction of landmarks to keep in the tracking.", default=.9,guitype='floatbox',row=11, col=1, rowspan=1, colspan=1,mode="easy")
@@ -322,6 +323,49 @@ def main():
 		badi=options.badi=np.where(loss0>500)[0]
 		#print(badi)
 		options.zeroid=zeroid=np.argmin(abs(tlts))
+		
+	elif options.loadaretomo!=None:
+		aln=""
+		if os.path.isfile(options.loadaretomo):
+			aln=options.loadaretomo
+		elif os.path.isdir(options.loadaretomo):
+			aln="{}/{}.aln".format(options.loadaretomo, options.inputname.split('/')[-1][:-4])
+			
+		if os.path.isfile(aln):
+			print(f"Loading from {aln}...")
+		else:
+			print(f"{aln} does not exist!")
+			exit()
+		
+		atm0=open(aln).readlines()
+		atm=[]
+		for a in atm0:
+			if a.startswith('#'):
+				if len(atm)>0:
+					break
+			else:
+				atm.append(a.split())
+		
+		atm=np.array(atm).astype(float)
+		
+		tpm_convert=np.zeros((len(imgs),5))
+		ii=atm[:,0].astype(int)-1
+		tpm_convert[ii]=atm[:, [3,4,1,9,0]]
+		tpm_convert[:,2]*=-1
+		tpm_convert[:,-1]=0
+		
+		loss0=np.zeros(len(imgs))+1000
+		loss0[ii]=abs(tpm_convert[ii,3])*0.1
+
+		f=interp1d(ii, tpm_convert[ii],axis=0,fill_value='extrapolate', kind='linear')
+		tlt_interp=f(np.arange(len(imgs)))
+		ik=loss0==1000
+		tpm_convert[ik]=tlt_interp[ik]
+		
+		ttparams=tpm_convert.copy()
+		tlts=ttparams[:,3].copy()
+		badi=options.badi=np.where(loss0>500)[0]
+		options.zeroid=zeroid=np.argmin(abs(tlts))
 			
 	else:
 		#### determine alignment parameters from scratch
@@ -501,8 +545,16 @@ def main():
 			tpm=ttparams.copy()
 			tpm=np.hstack([np.arange(len(tpm))[:,None], tpm])
 			np.savetxt(os.path.join(path,"tltparams_patchtrack.txt"), tpm, fmt="%.3f")
-			
-			
+	
+	if options.patchtrack<=0 and options.niter=='0' and options.correctrot:
+		ikeep=[i for i in np.arange(len(imgs_500)) if i not in options.badi]
+		imgs_pt=[imgs_500[i] for i in ikeep]
+		options.num=len(imgs_pt)
+		tpm01, l0= do_patch_tracking(imgs_pt, ttparams[ikeep], options, 2,1)
+		ttparams[ikeep]=tpm01
+		loss0=np.zeros(len(imgs_500))+1000
+		loss0[ikeep]=l0
+		
 	pks=np.zeros((options.npk, 3))
 	#### pack parameters together so it is easier to pass around
 	allparams=np.hstack([ttparams.flatten(), pks.flatten()])
@@ -698,7 +750,7 @@ def main():
 	E2end(logid)
 
 
-def do_patch_tracking(imgs, ttparams, options, niter=4):
+def do_patch_tracking(imgs, ttparams, options, niter=4, startiter=0):
 	
 	#if imgs0[0]["nx"]==imgs0[0]["ny"]:
 		#imgs=imgs0
@@ -727,12 +779,12 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 	pks=np.hstack([pks, np.zeros((len(pks),1))])
 	dx=(ny*.45-sz//2)/np.max(pks)
 	pks=np.round(pks*dx*scale)
-	
+	loss=np.zeros(len(imgs))
 	options.npk=len(pks)
 	maskc=make_mask(sz)
 	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
 	
-	for itr in range(niter):
+	for itr in range(startiter, niter):
 
 		allparams=np.hstack([tpm.flatten(), pks.flatten()])
 		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
@@ -839,7 +891,8 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 				xf=Transform({"type":"xyz","ytilt":tp[3],"xtilt":tp[4], "ztilt":tp[2]})
 				xf=xf*t.inverse()
 				x=xf.get_params("xyz")
-				#tpm1[i][2]=x["ztilt"]
+				if niter==2: tpm1[i][2]=x["ztilt"]
+				
 				tpm1[i][3]=x["ytilt"]
 				tpm1[i][4]=x["xtilt"]
 				
@@ -847,7 +900,6 @@ def do_patch_tracking(imgs, ttparams, options, niter=4):
 			dxy=np.array([get_xf_pos(t, [0,0,-dz]) for t in tpm])
 			tpm1[:,:2]=dxy
 			tpm=tpm1.copy()
-			#pks[:,2]-=dz
 		
 		else:
 

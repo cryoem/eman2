@@ -32,6 +32,8 @@ def main():
 	
 	init=False
 	ntilt=[EMUtil.get_image_count(f) for f in args]
+	if np.max(ntilt)==1:
+		ntilt=[EMData(f,0,True)["nz"] for f in args]
 	maxtilt=int(np.max(ntilt))
 	print(f"{len(args)} tilt series. max {maxtilt} tilt images")
 	for fname in args:
@@ -46,7 +48,14 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	rng_key=jax.random.key(0)
 	
 	info=dict(js_open_dict(info_name(fname)))
-	imgs_raw=EMData.read_images(fname)
+	
+	img=EMData(fname,0)
+	if img["nz"]>1:
+		imgs_raw=[img.get_clip(Region(0, 0, i, img["nx"], img["ny"], 1)).copy() for i in range(img["nz"])]
+	else:
+		imgs_raw=EMData.read_images(fname)
+		
+	#imgs_raw=EMData.read_images(fname)
 	loss=np.array(info["ali_loss"])
 		
 	ikeep=np.where(loss<500)[0]

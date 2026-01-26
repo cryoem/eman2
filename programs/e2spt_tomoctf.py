@@ -245,6 +245,7 @@ def main():
 	try:
 		js=js_open_dict(info_name(tfile))
 		tltparams=np.array(js["tlt_params"])
+		tltloss=np.array(js["ali_loss"])
 		js=None
 	except:
 		print("Cannot find alignment parameters. Please make sure tomogram reconstruction is done for selected tilt series")
