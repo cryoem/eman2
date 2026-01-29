@@ -402,15 +402,24 @@ def main():
 #				if not options.tomo or sn<2:
 
 				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
+				# only using a single batch for this right now. May be sufficient
 				if i in (0,8) and j==0:
 					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
 					#print("FRCS ",frcs.shape)
 					frchist.append((np.array(np.mean(frcs,0)),np.array(np.std(frcs,0))))
+					try:
+						weight=1.0/np.array(np.std(frcs,0))		# this should make all of the standard deviations the same
+						weight[0]=0				# low frequency cutoff
+						weight[1]=0
+						weight/=np.sum(weight)	# normalize to 1
+					except:
+						print(f"Weighting failed {sn},{i},{j}")
+						weight=np.ones((len(frcs.shape[1])))
 
 				if options.ctf==0:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,stage[7])
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
 					step0=jnp.nan_to_num(step0)
 					shift0=jnp.nan_to_num(shift0)
@@ -702,7 +711,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 
 # @profile
 # def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc_Z=3.0):
+def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -722,7 +731,7 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc
 	if False:
 		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z) # No symmetry
 	else:
-		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z) # With symmetry
+		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight) # With symmetry
 
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
@@ -732,14 +741,14 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc
 	return (grad,float(qual),float(shift),float(sca))
 
 # @profile
-def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z):
+def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx)
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
 #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight)
 
 gradvalsfnl=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
 

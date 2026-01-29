@@ -1859,6 +1859,46 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
+def __jax_frc_jit_new(ima,imb,weight):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!
+
+	In thisa new version, weight MUST be passed with an array with exactly nr elements. It will be multiplied by the average FRC """
+	global FRC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+#	nr=int(ny*0.70711)+1	# max radius we consider
+	nr=weight.shape[0]
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	return (frc.mean(axis=0)*weight).mean()		# FRC weighted by passed weight array
+
+jax_frc_jit_new=jax.jit(__jax_frc_jit_new)
+
+
 def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
