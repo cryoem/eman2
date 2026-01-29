@@ -402,10 +402,10 @@ def main():
 #				if not options.tomo or sn<2:
 
 				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
-				if i==0 and j==0:
+				if i in (0,8) and j==0:
 					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
-					print("FRCS ",frcs.shape)
-					frchist.append((np.mean(frcs,1),np.std(frcs,1)))
+					#print("FRCS ",frcs.shape)
+					frchist.append((np.array(np.mean(frcs,0)),np.array(np.std(frcs,0))))
 
 				if options.ctf==0:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
@@ -654,8 +654,9 @@ def main():
 	for i in range(len(frchist[-1][0])):
 		outf.write(f"{i}")
 		for j in range(len(frchist)):
-			try: outf.write(f"\t{frchist[j][0][i]:1.4g}\t{frchist[j][1][i]:1.4g}")
-			except: outf.write("\t0.0\t0.0")
+			try: outf.write(f"\t{frchist[j][0][i]:1.4f}\t{frchist[j][1][i]:1.4f}")
+			except:
+				outf.write("\t0.0\t0.0")
 		outf.write("\n")
 
 	# this is just to save some extra processing steps

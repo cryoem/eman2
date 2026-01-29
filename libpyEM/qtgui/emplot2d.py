@@ -87,7 +87,7 @@ from matplotlib.backends.backend_pdf import FigureCanvasPdf
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
-from numpy import ndarray,array
+from numpy import ndarray,array,arange
 
 from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
@@ -987,7 +987,7 @@ lc is the cursor selection point in plot coords"""
 
 		x2,y2=self.plot2scr(x,y)
 
-		r=hypot(x2-evc[0],y2-evc[1])		# distance from cursor
+		r=np.hypot(x2-evc[0],y2-evc[1])		# distance from cursor
 
 		# if the closest point is more than 5 pixels away, nothing is selected
 		if min(r)>5 :
@@ -995,7 +995,7 @@ lc is the cursor selection point in plot coords"""
 			self.del_shapes(("selp0","selp1","selp2","selp3","selp4","selpc"))
 			return
 
-		srt=argsort(r)					# indices which would produce sorted array
+		srt=np.argsort(r)					# indices which would produce sorted array
 
 		# We select one point if it's within 5 pixels, then up to 4 more points within 3 pixels
 		self.selected=[srt[0]]
@@ -3251,7 +3251,8 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.ctrlvls.setValue(pp[9])
 
 		self.hsttog.setChecked(pp[10])
-		self.hststeps.setValue(pp[11])
+		try: self.hststeps.setValue(pp[11])
+		except: pass
 		self.quiet=0
 
 	def newCols(self,val):
@@ -3260,7 +3261,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 			names = [str(item.text()) for item in self.setlist.selectedItems()]
 			for name in names:
 				self.target().setAxes(name,self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value(),True)
-			print(self.target())
+			#print(self.target())
 			self.target().needupd=1
 			self.target().updateGL()
 
