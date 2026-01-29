@@ -347,7 +347,7 @@ def main():
 
 	# I always need ctf_info defined for SNR weighting
 	try:
-		ctf=EMData(args[0],0,True)["ctf"] # Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
+		ctf=EMData(args[0],0,True)["ctf"]	# Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
 	except:
 		print("Warning: Did not find CTF info in header of input. Checking for micrograph level CTF info")
 		js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement which we have to go back to the per micrograph I think
@@ -409,6 +409,10 @@ def main():
 					if len(orts)<5 :
 						print("Abort tiny batch: ",len(nliststg),j,batchsize)
 						continue
+
+					# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
+					if i==0 and j==0:
+
 					# standard mode, optimize gaussian parms only
 					if options.ctf==0:
 						step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3])
@@ -806,6 +810,14 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight):
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last arg is frc_z which we are trying to remove
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
+
+def prj_frc(gausary,mx2d,tytx,ptcls):
+	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
+	a loss function, this returns the individual FRC curves for statistical analysis"""
+	ny=ptcls.shape[1]
+	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+
+
 
 def align_2d(gaus,orts,tytx,ptclsfds):
 	ny=ptclsfds.shape[1]

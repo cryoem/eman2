@@ -75,7 +75,6 @@ from .emshape import *
 import weakref
 from pickle import dumps,loads
 import struct, math
-from numpy import *
 from .valslider import *
 from io import StringIO
 import re
@@ -88,6 +87,7 @@ from matplotlib.backends.backend_pdf import FigureCanvasPdf
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
+from numpy import ndarray,array
 
 from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
@@ -171,6 +171,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.particle_viewers = []
 
 		self.alpha = 0.5
+		self.scrlim=None		# detect that plot hasn't been displayed yet
 
 	def initializeGL(self):
 		GL.glClearColor(0,0,0,0)
@@ -547,7 +548,7 @@ class EMPlot2DWidget(EMGLWidget):
 	is_file_readable = staticmethod(is_file_readable)
 
 	def render(self):
-#		print(self.width(),self.height(),self.devicePixelRatio(),self.qt_parent.__dict__)
+#		print(self.width(),self.height(),self.devicePixelRatio(),self.needupd,self.qt_parent.__dict__)
 		try:
 			if self.data==None or len(self.data)==0 : return
 			if self.xlimits==None or self.ylimits==None or self.climits==None or self.slimits==None : return
@@ -732,6 +733,7 @@ class EMPlot2DWidget(EMGLWidget):
 				GL.glDrawPixels(self.width(),self.height(),GL.GL_RGBA,GL.GL_UNSIGNED_BYTE,self.plotimg)
 
 			glEndList()
+#			print("rendered")
 
 		else:
 			# can't draw plot coord shapes until limits updated
@@ -751,7 +753,9 @@ class EMPlot2DWidget(EMGLWidget):
 #			glScale(dpr,dpr,dpr)
 			glCallList(self.main_display_list)
 #			GL.glPopMatrix()
-		except: pass
+		except:
+#			print("call failure")
+			pass
 
 #			projm = glGetFloatv(GL_PROJECTION_MATRIX);					# // Grab the projection matrix
 #			modelm = glGetFloatv(GL_MODELVIEW_MATRIX);				# // Grab the modelview matrix
@@ -1045,6 +1049,7 @@ lc is the cursor selection point in plot coords"""
 		self.mouseemit=value
 
 	def mousePressEvent(self, event):
+		if self.scrlim is None: return
 		lc=self.scr2plot(event.x(),event.y())
 		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
@@ -3255,6 +3260,8 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 			names = [str(item.text()) for item in self.setlist.selectedItems()]
 			for name in names:
 				self.target().setAxes(name,self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value(),True)
+			print(self.target())
+			self.target().needupd=1
 			self.target().updateGL()
 
 #			self.target().setAxes(str(self.setlist.currentItem().text()),self.slidex.value(),self.slidey.value(),self.slidec.value(),self.slides.value())

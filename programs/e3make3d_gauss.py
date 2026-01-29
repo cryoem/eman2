@@ -368,6 +368,7 @@ def main():
 	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
+	frchist=[]
 	times.append(time.time())
 	ptcls=[]
 	for sn,stage in enumerate(stages):
@@ -399,6 +400,13 @@ def main():
 					continue
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
+
+				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
+				if i==0 and j==0:
+					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+					print("FRCS ",frcs.shape)
+					frchist.append((np.mean(frcs,1),np.std(frcs,1)))
+
 				if options.ctf==0:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
@@ -642,6 +650,14 @@ def main():
 	times.append(time.time())
 	vol.write_image(options.volout,-1)
 
+	outf=open("frcstats.txt","w")
+	for i in range(len(frchist[-1][0])):
+		outf.write(f"{i}")
+		for j in range(len(frchist)):
+			try: outf.write(f"\t{frchist[j][0][i]:1.4g}\t{frchist[j][1][i]:1.4g}")
+			except: outf.write("\t0.0\t0.0")
+		outf.write("\n")
+
 	# this is just to save some extra processing steps
 	if options.fscdebug is not None: 
 		os.system(f'e2proc3d.py {options.volout.split(":")[0]} {options.volout.rsplit(".",1)[0]}_fsc.txt --calcfsc {options.fscdebug}')
@@ -751,6 +767,15 @@ def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn=jax.value_and_grad(prj_frc)
+
+def prj_frcs(gausary,orts,tytx,ptcls):
+	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
+	a loss function, this returns the individual FRC curves for statistical analysis"""
+	mx2d=orts.to_mx2d(swapxy=True)
+	ny=ptcls.shape[1]
+	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+	return jax_frcs_jit(jax_fft2d(prj),ptcls.jax)
+
 
 def align_2d(gaus,orts,tytx,ptclsfds):
 	ny=ptclsfds.shape[1]
