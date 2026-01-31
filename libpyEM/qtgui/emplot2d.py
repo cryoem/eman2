@@ -87,7 +87,7 @@ from matplotlib.backends.backend_pdf import FigureCanvasPdf
 from matplotlib.figure import Figure
 #matplotlib.use('Agg')
 import numpy as np
-from numpy import ndarray,array,arange
+from numpy import ndarray,array,arange,diff
 
 from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools

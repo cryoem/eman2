@@ -1859,7 +1859,7 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
-def __jax_frc_jit_new(ima,imb,weight):
+def __jax_frc_jit_new(ima,imb,weight,thresh):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!
 
@@ -1894,7 +1894,7 @@ def __jax_frc_jit_new(ima,imb,weight):
 		frc.append(cross/jnp.sqrt(aprd*bprd))
 
 	frc=jnp.stack(frc)
-	return (frc.mean(axis=0)*weight).mean()		# FRC weighted by passed weight array
+	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight).mean()		# FRC weighted by passed weight array
 
 jax_frc_jit_new=jax.jit(__jax_frc_jit_new)
 
