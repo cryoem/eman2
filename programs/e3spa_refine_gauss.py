@@ -388,8 +388,6 @@ def main():
 #		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
 		if stage[7]==0: # Refining Gaussians
 			if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]} to refine Gaussians\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
-		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
-			# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
 			if stage[1]==stages[-1][1]:
 				learn_rate = 0.001
 			else:
@@ -411,20 +409,20 @@ def main():
 						print("Abort tiny batch: ",len(nliststg),j,batchsize)
 						continue
 
-					# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
-					# only using a single batch for this right now. May be sufficient
-					if i in (0,8) and j==0:
-						frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
-						#print("FRCS ",frcs.shape)
-						frchist.append((np.array(np.mean(frcs,0)),np.array(np.std(frcs,0))))
-						try:
-							weight=1.0/np.array(np.std(frcs,0))		# this should make all of the standard deviations the same
-							weight[0]=0				# low frequency cutoff
-							weight[1]=0
-							weight/=np.sum(weight)	# normalize to 1
-						except:
-							print(f"Weighting failed {sn},{i},{j}")
-							weight=np.ones((len(frcs.shape[1])))
+				if i in (0,8) and j==0:
+					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+					#print("FRCS ",frcs.shape)
+					try:
+						thresh=np.std(frcs,0)/sqrt(batchsize)
+						weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
+						weight[0:2]=0			# low frequency cutoff
+						weight[ptclsfds.shape[1]//2:]=0
+						weight/=np.sum(weight)	# normalize to 1
+						weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
+					except:
+						print(f"Weighting failed {sn},{i},{j}")
+						weight=np.ones((len(frcs.shape[1])))
+					frchist.append((np.array(np.mean(frcs,0)),thresh,weight))
 
 					# standard mode, optimize gaussian parms only
 					if options.ctf==0:
@@ -779,6 +777,19 @@ def main():
 	times.append(time.time())
 	vol.write_image(f"{options.path}/threed_{sn:02d}.hdf:12",-1)
 
+	outf=open("frcstats.txt","w")
+	for i in range(len(frchist[-1][0])):
+		outf.write(f"{i}")
+		for j in range(len(frchist)):
+			try: outf.write(f"\t{frchist[j][0][i]:1.6f}\t{frchist[j][1][i]:1.6f}\t{frchist[j][2][i]:1.6f}")
+			except:
+				outf.write("\t0.0\t0.0\t0.0")
+		outf.write("\n")
+
+	# this is just to save some extra processing steps
+	if options.fscdebug is not None:
+		os.system(f'e2proc3d.py {options.volout.split(":")[0]} {options.volout.rsplit(".",1)[0]}_fsc.txt --calcfsc {options.fscdebug}')
+
 	times=np.array(times)
 	#times-=times[0]
 	times=times[1:]-times[:-1]
@@ -787,7 +798,7 @@ def main():
 	E3end(llo)
 
 # @profile
-def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight):
+def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight,thresh):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -801,7 +812,7 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight):
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight)
+	frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,thresh)
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational (gauss) std
@@ -810,7 +821,7 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight):
 	return (grad,float(qual),float(shift),float(sca))
 
 # @profile
-def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight):
+def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 
@@ -820,7 +831,7 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight):
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
 #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight) # last arg is frc_z which we are trying to remove
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh) # last arg is frc_z which we are trying to remove
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 

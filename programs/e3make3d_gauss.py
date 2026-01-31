@@ -272,7 +272,7 @@ def main():
 		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
 	if options.spt: batchsize=320
-	else: batchsize=192
+	else: batchsize=512
 
 	if options.combineiters>0:
 		refineiters=5
