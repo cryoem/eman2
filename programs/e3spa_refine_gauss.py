@@ -591,7 +591,7 @@ def main():
 					ptclsfds,orts,tytx,astig=ccache.read(range(j, min(j+batchsize, nptcl)))
 					dsapix = apix*nxraw/ptclsfds.shape[1]
 					if options.ctf ==0:
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,stage[3])
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight,thresh)
 					elif options.ctf ==1:
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 					elif options.ctf == 2:
