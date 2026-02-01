@@ -1619,6 +1619,11 @@ def jax_fft2d(imgs):
 
 	return jnp.fft.rfft2(imgs)
 
+def __jax_fft2d_jit(imgs):
+	return jnp.fft.rfft2(imgs)
+
+jax_fft2d_jit=jax.jit(__jax_fft2d_jit)
+
 def jax_fft3d(imgs):
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
 

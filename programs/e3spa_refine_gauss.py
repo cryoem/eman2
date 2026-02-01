@@ -281,7 +281,16 @@ def main():
 	for i in range(len(stages)):
 		stages[i][1]=min(stages[i][1],nxrawm2)
 
-	batchsize=192
+	# prior to jax 0.7.x there was a sharding problem in JAX causing a crash related to
+	# each image in the batch getting turned into a separate argument when JIT compiling
+	# in 0.7.x, larger batches can be used and have some advantages
+	if int(jax.__version__.split(".")[1])>6 :
+#		if options.spt: batchsize=640
+		batchsize=512
+	else:
+#		if options.spt: batchsize=320
+		batchsize=192
+
 	ctf_refine=40 # Set larger than stages so will never trigger defocus refinement because it is causing NANs somewhere I haven't found yet'
 	times=[time.time()]
 
@@ -409,28 +418,28 @@ def main():
 						print("Abort tiny batch: ",len(nliststg),j,batchsize)
 						continue
 
-				if i in (0,8) and j==0:
-					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
-					#print("FRCS ",frcs.shape)
-					try:
-						thresh=np.std(frcs,0)/sqrt(batchsize)
-						weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
-						weight[0:2]=0			# low frequency cutoff
-						weight[ptclsfds.shape[1]//2:]=0
-						weight/=np.sum(weight)	# normalize to 1
-						weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
-					except:
-						print(f"Weighting failed {sn},{i},{j}")
-						weight=np.ones((len(frcs.shape[1])))
-					frchist.append((np.array(np.mean(frcs,0)),thresh,weight))
+					if i in (0,8) and j==0:
+						frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+						#print("FRCS ",frcs.shape)
+						try:
+							thresh=np.std(frcs,0)/sqrt(batchsize)
+							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
+							weight[0:2]=0			# low frequency cutoff
+							weight[ptclsfds.shape[1]//2:]=0
+							weight/=np.sum(weight)	# normalize to 1
+							weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
+						except:
+							print(f"Weighting failed {sn},{i},{j}")
+							weight=np.ones((len(frcs.shape[1])))
+						frchist.append((np.array(np.mean(frcs,0)),thresh,weight))
 
 					# standard mode, optimize gaussian parms only
 					if options.ctf==0:
-						step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,weight)
+						step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,weight,thresh)
 						# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
-						step0=jnp.nan_to_num(step0)
-						shift0=jnp.nan_to_num(shift0)
-						sca0=jnp.nan_to_num(sca0)
+						# step0=jnp.nan_to_num(step0)
+						# shift0=jnp.nan_to_num(shift0)
+						# sca0=jnp.nan_to_num(sca0)
 						if j==0:
 							step,qual,shift,sca=step0,-qual0,shift0,sca0
 						else:
@@ -831,7 +840,7 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,thresh):
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
 #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh) # last arg is frc_z which we are trying to remove
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
@@ -925,7 +934,7 @@ def prj_frc_layered_ctf_loss(gausary,mx3d,ctf_info,dfstep,apix,tytx,astig,ptcls,
 gradvalfnl_layered_ctf=jax.jit(jax.value_and_grad(prj_frc_layered_ctf_loss), static_argnames=["dfstep","apix"])
 
 # def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,weight=1.0):
-def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight=1.0):
+def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight,thresh):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
 	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
 	unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -940,7 +949,7 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight
 	ortary=orts.jax
 	ptcls=ptclsfds.jax
 
-	frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,ctf_info,dsapix,tytx,astig,ptcls,weight)
+	frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,ctf_info,dsapix,tytx,astig,ptcls,weight,thresh)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
@@ -948,13 +957,19 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,weight
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
 
-def prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,ptcls,weight):
+def prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,ptcls,weight,thresh):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
 	mx2d=jax_to_mx2d(ortary, swapxy=True)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
+
+	# Steve added 1/31/26. Yes, this does ignore all of the CTF weighting in favor of the simpler scheme
+	# used with phase-flipped data, not clear how much advantage explicit SNR weighting will provide,
+	# so experimenting with this approach. Not messing with ctf=1 or ctf=2 for the moment
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh) # last arg is frc_z which we are trying to remove
+
+#	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
 
 gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,4)))
 

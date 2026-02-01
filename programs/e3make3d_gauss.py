@@ -271,8 +271,15 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
-	if options.spt: batchsize=320
-	else: batchsize=512
+	# prior to jax 0.7.x there was a sharding problem in JAX causing a crash related to
+	# each image in the batch getting turned into a separate argument when JIT compiling
+	# in 0.7.x, larger batches can be used and have some advantages
+	if int(jax.__version__.split(".")[1])>6 :
+		if options.spt: batchsize=640
+		else: batchsize=512
+	else:
+		if options.spt: batchsize=320
+		else: batchsize=192
 
 	if options.combineiters>0:
 		refineiters=5
@@ -380,8 +387,6 @@ def main():
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		lqual=-1.0
 		rstep=1.0
-		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
-		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
 		optim = optax.adam(.003)		# parm is learning rate
 #		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
 #		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
@@ -407,7 +412,7 @@ def main():
 					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
 					#print("FRCS ",frcs.shape)
 					try:
-						thresh=np.std(frcs,0)/sqrt(batchsize)
+						thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
 						weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
 						weight[0:2]=0			# low frequency cutoff
 						weight[ptclsfds.shape[1]//2:]=0
@@ -785,8 +790,10 @@ def prj_frcs(gausary,orts,tytx,ptcls):
 	a loss function, this returns the individual FRC curves for statistical analysis"""
 	mx2d=orts.to_mx2d(swapxy=True)
 	ny=ptcls.shape[1]
-	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	return jax_frcs_jit(jax_fft2d(prj),ptcls.jax)
+	prjf=jax_fft2d_jit(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+#	print(prjf.shape,ptcls.jax.shape)
+
+	return jax_frcs_jit(prjf,ptcls.jax)
 
 
 def align_2d(gaus,orts,tytx,ptclsfds):
