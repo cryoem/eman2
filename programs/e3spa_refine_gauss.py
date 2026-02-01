@@ -795,10 +795,6 @@ def main():
 				outf.write("\t0.0\t0.0\t0.0")
 		outf.write("\n")
 
-	# this is just to save some extra processing steps
-	if options.fscdebug is not None:
-		os.system(f'e2proc3d.py {options.volout.split(":")[0]} {options.volout.rsplit(".",1)[0]}_fsc.txt --calcfsc {options.fscdebug}')
-
 	times=np.array(times)
 	#times-=times[0]
 	times=times[1:]-times[:-1]
