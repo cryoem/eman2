@@ -57,7 +57,7 @@ def main():
 	# PDB or MMCIF
 	elif args[0].endswith(".pdb") or args[0].endswith(".ent") or args[0].endswith(".cif"):
 		struc=gemmi.read_structure(args[0])
-		inmodel=np.array([[i.atom.pos.x, i.atom.pos.y, i.atom.pos.z, i.atom.element.atomic_number ] for i in struc[0].all()])
+		inmodel=Gaussians(np.array([[i.atom.pos.x, i.atom.pos.y, i.atom.pos.z, i.atom.element.atomic_number ] for i in struc[0].all()]))
 		if options.apix is None or options.boxsize is None: error_exit("--apix and --boxsize required with PDB/MMCIF inputs")
 		modsca=1.0/(options.apix*options.boxsize)
 		inmodel[:][:3]*=modsca
