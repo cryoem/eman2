@@ -271,12 +271,19 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
+	# Setting up symmetry
+	sym=parsesym(options.sym)
+	sym_orts = Orientations()
+	sym_orts.init_from_transforms(sym.get_syms())
+	symmx = sym_orts.to_mx3d()
+
+
 	# prior to jax 0.7.x there was a sharding problem in JAX causing a crash related to
 	# each image in the batch getting turned into a separate argument when JIT compiling
 	# in 0.7.x, larger batches can be used and have some advantages
 	if int(jax.__version__.split(".")[1])>6 :
 		if options.spt: batchsize=640
-		else: batchsize=512
+		else: batchsize=1024//len(sym_orts)
 	else:
 		if options.spt: batchsize=320
 		else: batchsize=192
@@ -354,12 +361,6 @@ def main():
 		# # Create the ctf stack
 		# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
 		ctf_info = jnp.array([wavelength, jctf.cs])
-
-	# Setting up symmetry
-	sym=parsesym(options.sym)
-	sym_orts = Orientations()
-	sym_orts.init_from_transforms(sym.get_syms())
-	symmx = sym_orts.to_mx3d()
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
