@@ -708,7 +708,9 @@ class EMAN3Ctf():
 		if apix!=None: self.apix=apix
 		if defocus!=None: self.defocus=defocus
 		if dfdiff!=None: self.dfdiff=dfdiff
+		else: self.dfdiff=0
 		if dfang!=None: self.dfang=dfang
+		else: self.dfang=0
 
 	@property
 	def wavelength(self):
@@ -1126,6 +1128,27 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
 
+	def replicate_rand(self, ngaus, tomo=False):
+		"""Adds randomly placed Gaussians to try and place Gaussians in places there are density but no Gaussians. ngaus specifies the total number of
+	desired Gaussians after replication. Note that amplitudes are also randomized"""
+		if len(self)==ngaus: return
+		if len(self)>ngaus:
+			print("Warning: replicate targeted fewer Gaussians than currently exist! Unchanged")
+			return
+		rng=np.random.default_rng()
+		self.coerce_jax()
+		rand_num=ngaus-len(self)
+		neg_num=rand_num//10
+		rnd=rng.uniform(0.0,1.0,(rand_num-neg_num,4))		# start with completely random Gaussian parameters
+		neg = rng.uniform(0.0, 1.0, (neg_num, 4))		# 10% of gaussians are negative WRT the background (zero)
+		rnd+=(-.5,-.5,-.5,2.0)
+		neg+=(-.5,-.5,-.5,-3.0)
+		rnd = np.concatenate((rnd, neg))
+		if tomo:
+			rnd=rnd/(.9,.9,0.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+		else: rnd=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+		self._data=jnp.concatenate((self._data, rnd))
+
 	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
 		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box.
@@ -1400,6 +1423,7 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")
+	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
@@ -1508,7 +1532,7 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
-	ctfary = jax_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
+	ctfary = jit_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
 
 
