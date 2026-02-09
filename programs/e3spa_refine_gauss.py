@@ -355,25 +355,26 @@ def main():
 		caches[down].tytx=caches[downs[0]].tytx
 
 	# I always need ctf_info defined for SNR weighting
-	try:
-		ctf=EMData(args[0],0,True)["ctf"]	# Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
-	except:
-		print("Warning: Did not find CTF info in header of input. Checking for micrograph level CTF info")
+	if options.ctf>0:
 		try:
-			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement which we have to go back to the per micrograph I think
-			ctf=js["ctf"][0]
-			js.close()
+			ctf=EMData(args[0],0,True)["ctf"]	# Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
 		except:
-				try:
-					js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
-					ctf=js["ctf_frame"][1]
-					js.close()
-				except:
-					print("Could not find ctf info") # TODO: This will actually crash because "ctf" doesn't get defined'
-					options.ctf=0
-	jctf = EMAN3Ctf(ctf=ctf)
-	dfstep = jctf.defocus_step
-	ctf_info = jnp.array([jctf.wavelength, jctf.cs])
+			print("Warning: Did not find CTF info in header of input. Checking for micrograph level CTF info")
+			try:
+				js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement which we have to go back to the per micrograph I think
+				ctf=js["ctf"][0]
+				js.close()
+			except:
+					try:
+						js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
+						ctf=js["ctf_frame"][1]
+						js.close()
+					except:
+						print("Could not find ctf info") # TODO: This will actually crash because "ctf" doesn't get defined'
+						options.ctf=0
+		jctf = EMAN3Ctf(ctf=ctf)
+		dfstep = jctf.defocus_step
+		ctf_info = jnp.array([jctf.wavelength, jctf.cs])
 
 	if options.fromscratch:
 		# Reseed orientations for global search at low resolution
@@ -607,7 +608,7 @@ def main():
 					ptclsfds,orts,tytx,astig=ccache.read(range(j, min(j+batchsize, nptcl)))
 					dsapix = apix*nxraw/ptclsfds.shape[1]
 					if options.ctf ==0:
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,symmx,weight,thresh)
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,dsapix,symmx,weight,thresh)
 					elif options.ctf ==1:
 						# ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,stage[3])
@@ -926,7 +927,8 @@ def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,
 	ny=ptcls.shape[1]
 	prj=gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
 #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,3)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last two are minfreq and frc_Z which we are trying to get rid of
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last two are minfreq and frc_Z which we are trying to get rid of
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 # gradvalsfnl_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf)) # Crashes when I try to jit compile here with a ValueError: Non-hashable static arguments are not supported
 gradvalsfnl_ctf=jax.value_and_grad(sym_prj_frc_loss_ctf)
@@ -939,7 +941,8 @@ def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight):
 	ny=ptcls.shape[1]
 	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)  # last arg is frc_z which we are trying to remove
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)  # last arg is frc_z which we are trying to remove
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 # gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfmin","dfstep"])
 gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfstep"])
@@ -981,7 +984,7 @@ def prj_frc_layered_ctf_loss(gausary,mx3d,ctf_info,dfstep,apix,tytx,astig,ptcls,
 # gradvalfnl_layered_ctf=jax.jit(jax.value_and_grad(prj_frc_layered_ctf_loss), static_argnames=["dfmin","dfstep","apix"])
 gradvalfnl_layered_ctf=jax.jit(jax.value_and_grad(prj_frc_layered_ctf_loss), static_argnames=["dfstep","apix"])
 
-def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,symmx,weight,thresh):
+def gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,dsapix,symmx,weight,thresh):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
 	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
 	unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -997,9 +1000,9 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,symmx,
 	ptcls=ptclsfds.jax
 
 	if False: # No symmetry
-		frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,ctf_info,dsapix,tytx,astig,ptcls,weight,thresh)
+		frcs, [gradort, gradtytx] = gradval_ol(gausary,ortary,dsapix,tytx,ptcls,weight,thresh)
 	else:
-		frcs, [gradort, gradtytx] = gradval_osfnl(gausary,ortary,ctf_info,dsapix,tytx,astig,symmx,ptcls,weight,thresh)
+		frcs, [gradort, gradtytx] = gradval_osfnl(gausary,ortary,dsapix,tytx,symmx,ptcls,weight,thresh)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
@@ -1007,10 +1010,7 @@ def gradient_step_ort_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dsapix,symmx,
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
 
-<<<<<<< HEAD
-def prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,ptcls,weight,thresh):
-=======
-def sym_prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,symmx,ptcls,weight,thresh):
+def sym_prj_frc_ort_loss(gausary,ortary,apix,tytx,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
@@ -1022,8 +1022,7 @@ def sym_prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,symmx,ptcls,wei
 
 gradval_osfnl=jax.jit(jax.value_and_grad(sym_prj_frc_ort_loss, argnums=(1,4)))
 
-def prj_frc_ort_loss(gausary,ortary,ctf_info,apix,tytx,astig,ptcls,weight,thresh):
->>>>>>> symmetry
+def prj_frc_ort_loss(gausary,ortary,apix,tytx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
@@ -1072,7 +1071,8 @@ def sym_prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,symm
 	prj=gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx)
 	#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,3)
 	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last two are minfreq and frc_Z which we are trying to get rid of
-	return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3)
+	# return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 # gradval_osfnlc=jax.jit(jax.value_and_grad(sym_prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])  # Grashes with ValueError: non-hashable static argument not supported. an error occured while trying to hash an object of type <class 'jax._src.interpreters.partial_eval.DynamicJaxprTracer'>, Traced<ShapedArray(float32[])>with<DynamicJaxprTrace>. The error was unhashable type: 'DynamicJaxprTracer'
 gradval_osfnlc=jax.value_and_grad(sym_prj_frc_ort_ctf_loss, argnums=(1,5))
@@ -1083,7 +1083,8 @@ def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,we
 	ny=ptcls.shape[1]
 	mx2d=jax_to_mx2d(ortary, swapxy=True)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
+	# return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])
 
