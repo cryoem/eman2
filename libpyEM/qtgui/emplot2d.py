@@ -425,7 +425,7 @@ class EMPlot2DWidget(EMGLWidget):
 				fin=open(filename,"r")
 
 				# the one line multicolumn file parser!
-				rdata=[[float(i) for i in re.split(r"[\s,;]+",line.split("#")[0]) if len(i)>0] for line in fin if line[0]!="#"]
+				rdata=[[float(i) for i in re.split(r"[\s,;]+",line.split("#")[0]) if len(i)>0] for line in fin if len(line)>1 and line[0]!="#"]
 				rdata=np.array(rdata).transpose()
 
 				fin.seek(0)

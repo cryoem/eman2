@@ -438,7 +438,7 @@ def main():
 						frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
 						#print("FRCS ",frcs.shape)
 						try:
-							thresh=np.std(frcs,0)/sqrt(batchsize)
+							thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
 							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
 							weight[0:2]=0			# low frequency cutoff
 							weight[ptclsfds.shape[1]//2:]=0

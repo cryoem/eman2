@@ -112,11 +112,15 @@ The program proceeds in several steps:
 		print(f"Working with chunks of {nblk} particles")
 		if sym.get_nsym()>1: print(f"{sym.get_nsym()} symmetric dupicates")
 	tlast=0
+	# Could be more efficient with symmetry inside, but this is working reliably, so I don't want to mess with it for now
 	for sn in range(sym.get_nsym()):
 		sxf=sym.get_sym(sn)
 		for i in range(0,N,nblk):
 			tlast=print_progress(tlast,f"{i}({sn})",sn*N+i,sym.get_nsym()*N)
-			ptcl=EMStack2D(EMData.read_images(args[0],range(i,min(i+nblk,N))))
+			imgs=EMData.read_images(args[0],range(i,min(i+nblk,N)))
+			ctfs=[img["ctf"] for img in imgs]
+			ptcl=EMStack2D(imgs)
+			imgs=None
 			orts=ptcl.orientations_withxf(sxf)
 			ortsxf=orts[0].transforms(orts[1])
 			if options.verbose>1 : print(f"ptcl: {ptcl.shape}    ortsxf: {len(orts[0])}\nMaking Projections:")
@@ -174,6 +178,7 @@ The program proceeds in several steps:
 				newort=ortsxf[j-i]*sxf.inverse()
 				newort.set_trans(0,0,0)		# because we center above
 				dct["xform.projection"]=newort
+				dct["ctf"]=ctfs[j-i]
 #				dct["xform.projection"]=sxf*dct["xform.projection"]
 				lsxout[j+sn*N]=j,output,dct
 

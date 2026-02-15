@@ -1927,6 +1927,44 @@ def __jax_frc_jit_new(ima,imb,weight,thresh):
 
 jax_frc_jit_new=jax.jit(__jax_frc_jit_new)
 
+def __jax_frcs_jit_new(ima,imb,weight,thresh):
+	"""This is identical to jax_frc_jit_new, but returns a list of per-particle FRCs. This won't work with gradient calculations which
+must return a single value, but is necessary for per-particle quality estimates, so 2 versions... """
+	global FRC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+#	nr=int(ny*0.70711)+1	# max radius we consider
+	nr=weight.shape[0]
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	return jnp.mean(jnp.clip(frc,thresh,1.0)*weight,axis=1)		# note that thresholding on a single curve is far less useful than thresholding on a mean like jax_frc_jit_new
+#	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight)		# FRC weighted by passed weight array
+
+jax_frcs_jit_new=jax.jit(__jax_frcs_jit_new)
+
 
 def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
