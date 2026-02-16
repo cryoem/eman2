@@ -96,14 +96,26 @@ def main():
 	pts=tf.constant(pts)
 	print("model shape",pts.shape)
 	
-	imsk=make_mask_gmm(options.mask, pts.numpy())
-	print("masking {} out of {} points".format(np.sum(imsk), len(imsk)))
+	maskfile=options.mask.split(',')
+	imsk=[ make_mask_gmm(m, pts.numpy()) for m in maskfile]
+	npatch=len(imsk)
+	
+	m=np.sum(imsk, axis=0)
+	m0=1-m
+	m0[m0<0]=0
+	m+=m0
+	m[m==0]=1.
+	for i in range(npatch):
+		imsk[i]/=m
+		
+	#imsk=make_mask_gmm(options.mask, pts.numpy())
+	#print("masking {} out of {} points".format(np.sum(imsk), len(imsk)))
 	
 	if options.xfin==None:
-		xfin=np.zeros((len(p3did), 6), dtype=floattype)
+		xfin=np.zeros((len(p3did),npatch, 6), dtype=floattype)
 		res_rng=[2,1]
 	else:
-		xfin=np.loadtxt(options.xfin).astype(floattype)
+		xfin=np.loadtxt(options.xfin).astype(floattype).reshape((-1,npatch, 6))
 		xfin=xfin[options.xfin_starti:, 1:]
 		res_rng=[1]
 
@@ -122,30 +134,31 @@ def main():
 		for ia, starta in enumerate(angrng):
 			opt=tf.keras.optimizers.Adam(learning_rate=options.learnrate) 
 			# xv=np.zeros((1,6), dtype=floattype)
-			xv=xfin[iip][None, :].copy()
-			# print(xv, xv.shape)
-			xv[0,0]+=starta
-			xfvar=tf.Variable(xv)
+			xv=xfin[iip:iip+1].copy()
 			
-			for div in res_rng:
-				cost=[]
-				for it in range(options.niter):
-					with tf.GradientTape() as gt:
-						
-						p1=rotpts_mult(pts[None, :,:3], xfvar[:,None,:], [imsk])
-						p1=tf.concat((p1, pts[None,:,3:]), axis=2)
-						proj_cpx=pts2img(p1, xf)
-						
-						fval=calc_frc(proj_cpx, ptcl_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx//div)
-						loss=-tf.reduce_mean(fval)
-
-					if it>5 and loss>cost[-1]: break
-					grad=gt.gradient(loss, xfvar)
-					opt.apply_gradients([(grad, xfvar)])
-					cost.append(loss)
+			#xv[0,0]+=starta
+			xfvar=tf.Variable(xv)
+			p0=tf.constant(tf.zeros((xf.shape[0],pts.shape[0], 5))+pts)
+			#for div in res_rng:
+			cost=[]
+			
+			for it in range(options.niter):
+				with tf.GradientTape() as gt:
+					#print(p0.shape, xv.shape, imsk[0].shape)
+					p1=rotpts_mult(p0[:,:,:3], xfvar, imsk)
+					p1=tf.concat((p1, p0[:,:,:3]), axis=2)
+					proj_cpx=pts2img(p1, xf)
 					
-				sys.stdout.write(f"\r batch {len(allxfs)}/{len(p3did)}, angle {ia}/{len(angrng)}, {xv[0,0]:.3f} -> {xfvar[0,0]:.3f} loss {cost[0]:.4f} -> {loss:.4f} ")
-				sys.stdout.flush()
+					fval=calc_frc(proj_cpx, ptcl_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+					loss=-tf.reduce_mean(fval)
+
+				if it>5 and loss>cost[-1]: break
+				grad=gt.gradient(loss, xfvar)
+				opt.apply_gradients([(grad, xfvar)])
+				cost.append(loss)
+				
+			sys.stdout.write(f"\r batch {len(allxfs)}/{len(p3did)}, angle {ia}/{len(angrng)}, {xv[0,0,0]:.3f} -> {xfvar[0,0,0]:.3f} loss {cost[0]:.4f} -> {loss:.4f} ")
+			sys.stdout.flush()
 			
 			ang_xfv.append(xfvar.numpy().copy())
 			ang_loss.append(loss)

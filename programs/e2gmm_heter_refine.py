@@ -14,8 +14,10 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--path", type=str,help="path for refinement. default is the next gmm_xx", default=None)
 	parser.add_argument("--mask", type=str,help="mask that defines the region of focusing.", default=None)
+	parser.add_argument("--model", type=str,help="replace model with given text file. only work in --nogoldstandard.", default=None)
 	parser.add_argument("--ngauss", type=int,help="number of gauss used in initial heterogeneity analysis.", default=8000)
 	parser.add_argument("--niter", type=int,help="iterations of focused alignment afterwards.", default=5)
+	parser.add_argument("--n_anchor", type=int,help="number of anchor points.", default=32)
 	parser.add_argument("--batchsz", type=int,help="batch size.", default=16)
 	parser.add_argument("--expandsym", type=str,help="symmetry. the program does not apply symmetry so always specify symmetry here and the final structure will be in c1", default=None)
 	parser.add_argument("--pas", type=str,help="allow position, amplitude and sigma or gaussian to change.", default="100")
@@ -59,7 +61,10 @@ def main():
 			
 			if options.nogoldstandard:
 				run(f"e2proclst.py {oldpath}/ptcls_{itr:02d}_even.lst {oldpath}/ptcls_{itr:02d}_odd.lst --create {path}/ptcls_00.lst --mergeeo")
-				pts=np.loadtxt(f"{oldpath}/model_{it0:02d}_even.txt")
+				if options.model:
+					pts=np.loadtxt(options.model)
+				else:
+					pts=np.loadtxt(f"{oldpath}/model_{it0:02d}_even.txt")
 				
 			else:
 				run(f"e2proclst.py {oldpath}/ptcls_{itr:02d}{eo}.lst --create {path}/ptcls_00{eo}.lst")
@@ -97,7 +102,7 @@ def main():
 		np.savetxt(f"{path}/model_{it0:02d}{eo}.txt", pts)
 		run(f"e2gmm_refine_new.py --ptclsin {path}/projections{eo}.hdf --model {path}/model_{it0:02d}{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
 		
-		pn=16
+		pn=options.n_anchor//2
 		km=KMeans(pn,max_iter=30)
 		km.fit(pts[:,:3])
 		pc=km.cluster_centers_
@@ -128,7 +133,7 @@ def main():
 			mode="--rigidbody"
 		else:
 			pm=pts[imsk>.1]
-			pn=16
+			pn=options.n_anchor//2
 			km=KMeans(pn,max_iter=30)
 			km.fit(pm[:,:3])
 			pc2=km.cluster_centers_

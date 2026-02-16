@@ -257,6 +257,7 @@ def main():
 			else: m.write_compressed(inppath, i, options.compressbits, nooutliers=True)
 	
 	options.trans_coef=[]
+	from_load=True
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -287,22 +288,6 @@ def main():
 		badi=options.badi=np.where(loss0>500)[0]
 		
 		options.zeroid=zeroid=np.argmin(abs(tlts))
-		if options.flip:
-			print("Flipping tilt axis...")
-			ttparams[:,2]=(ttparams[:,2]+180)%360
-			
-			if "boxes_3d" in js:
-				boxes3d=js["boxes_3d"]
-				for b in boxes3d:
-					for k in range(3):
-						b[k]*=-1
-
-		if options.shiftz!=0:
-			
-			dz=float(options.shiftz)
-			print("  shift z by {}".format(dz))
-			dxy=np.array([get_xf_pos(t, [0,0,dz]) for t in ttparams])
-			ttparams[:,:2]=dxy
 		
 	elif options.loadfile!=None:
 		tpm=np.loadtxt(options.loadfile)[:,1:]
@@ -368,6 +353,7 @@ def main():
 		options.zeroid=zeroid=np.argmin(abs(tlts))
 			
 	else:
+		from_load=False
 		#### determine alignment parameters from scratch
 		if (options.rawtlt!=None and len(options.rawtlt)>0) :
 			
@@ -507,6 +493,25 @@ def main():
 		if len(badi)>0:
 			loss0[badi]=1000
 		
+	if from_load:
+		if options.flip:
+			print("Flipping tilt axis...")
+			ttparams[:,2]=(ttparams[:,2]+180)%360
+			jsname=info_name(options.inputname)
+			js=dict(js_open_dict(jsname)).copy()
+			if "boxes_3d" in js:
+				boxes3d=js["boxes_3d"]
+				for b in boxes3d:
+					for k in range(3):
+						b[k]*=-1
+
+		if options.shiftz!=0:
+			
+			dz=float(options.shiftz)
+			print("  shift z by {}".format(dz))
+			dxy=np.array([get_xf_pos(t, [0,0,dz]) for t in ttparams])
+			ttparams[:,:2]=dxy
+			
 	if options.writetmp:
 		#### dump options to file
 		options.cmd=' '.join(sys.argv)

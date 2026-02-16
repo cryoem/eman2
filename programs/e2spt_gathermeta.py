@@ -32,8 +32,7 @@ def gather_metadata(options):
 			n0=len(i3d1)
 			pos1=[EMData(i["src"], i["idx"], True) for i in i3d1]
 			pos1=np.array([p["ptcl_source_coord"] for p in pos1])
-
-			tree=KDTree(pos1)
+			tree=KDTree(pos1+np.random.randn(*pos1.shape)*0.01)
 			tokeep=np.ones(len(pos1), dtype=bool)
 			dthr=options.mindist/apix
 
@@ -227,6 +226,7 @@ def main():
 	parser.add_argument("--skipcheck", action="store_true", default=False, help="skip the sanity check...")
 	parser.add_argument("--keeptilt", type=int,help="keep the N center-most tilt per 3d particle", default=-1)
 	parser.add_argument("--mindist", type=float,help="remove particles within xA within a neighbor", default=-1)
+	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 
 	(options, args) = parser.parse_args()
 	

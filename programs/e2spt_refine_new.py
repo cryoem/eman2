@@ -61,6 +61,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--continuefrom",type=float,help="continue from an iteration number. continue from 1 will use threed_01 as reference. continue from 0.5 will make 3d from aliptcls2d_01.",default=-1)
 	parser.add_argument("--slow_iter",action="store_true", default=False ,help="move toward higher resolution at smaller steps each iteration")
+	parser.add_argument("--ext_g", type=str,help="extra command for g iterations.", default=None)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
@@ -119,7 +120,7 @@ def main():
 		else:
 			iters.append(i)
 			
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop",'g':"per-micrograph subtilt refinement"}
 	
 	last2d00=None
 	if options.continuefrom>0:
@@ -308,7 +309,14 @@ def main():
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
-				
+		
+		if itype=='g':
+			cmd=f"e2spt_subtlt_global.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --aliptcls3d {last3d}  --order=2 "
+			if options.ext_g:
+				cmd+=options.ext_g
+			run(cmd)
+			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
+		
 		#### defocus refinement. not too useful but working...
 		if itype=='d':
 			if last2d==None or last3d==None:
@@ -435,6 +443,13 @@ def gather_metadata(pfile, maxtilt=-1):
 		keys=["xform.align3d", "class"]
 		for k in keys:
 			if k in pm: dc[k]=pm[k]
+			
+		if "class" in pm:
+			dc["class"]=pm["class"]
+		elif img.has_attr("orig_class"):
+			dc["class"]=img["orig_class"]%2			
+		else:
+			dc["class"]=ii%2
 		#if len(pm)>2:
 			#dc["xform.align3d"]=pm[2]
 		
@@ -450,20 +465,20 @@ def gather_metadata_singlethread(pfile, maxtilt=-1):
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):
-		lst=load_lst_params(pfile)
-		if "xform.align3d" in lst[0]:
-			params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
-		else:
-			params=[[l["src"], l["idx"]] for l in lst]
+		params=load_lst_params(pfile)
+		#if "xform.align3d" in lst[0]:
+			#params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
+		#else:
+			#params=[[l["src"], l["idx"]] for l in lst]
 		
 	else:
 		nptcl=EMUtil.get_image_count(pfile)
-		params=[[pfile, i] for i in range(nptcl)]
+		params=[{"src":pfile, "idx":i} for i in range(nptcl)]
 	
 	info3d=[]
 	info2d=[]
 	for ii,pm in enumerate(params):
-		img=EMData(pm[0], pm[1], True)
+		img=EMData(pm["src"], pm["idx"], True)
 		imgsrc=img["class_ptcl_src"]
 		imgidx=img["class_ptcl_idxs"]
 		if img.has_attr("ptcl_source_coord"):
@@ -491,9 +506,15 @@ def gather_metadata_singlethread(pfile, maxtilt=-1):
 			idx2d.append(len(info2d))
 			info2d.append(dc)
 		
-		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
-		if len(pm)>2:
-			dc["xform.align3d"]=pm[2]
+		dc={"src":pm["src"], "idx":pm["idx"], "coord":coord, "idx2d":idx2d}
+		if "xform.align3d" in pm:
+			dc["xform.align3d"]=pm["xform.align3d"]
+		if "class" in pm:
+			dc["class"]=pm["class"]
+		elif img.has_attr("orig_class"):
+			dc["class"]=img["orig_class"]%2			
+		else:
+			dc["class"]=ii%2
 		
 		info3d.append(dc)
 

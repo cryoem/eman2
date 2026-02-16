@@ -104,7 +104,7 @@ def main():
 		it0=itr-1
 		
 		for ieo, eo in enumerate(["even", "odd"]):
-
+			os.remove(f"{path}/projections_{eo}.hdf")
 			run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
 			
 
