@@ -76,6 +76,7 @@ def main():
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--combineiters", type=int, help="Specify an additional number of iterations to add to the end of refinement, volume will use all Gaussian positions during these iterations", default=-1)
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
+	parser.add_argument("--tomo_rotate", action="store_true",help="in tomogram mode, reorients the reconstruction based on zero tilt to put 'particles' back in the x-y plane")
 	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")
 	parser.add_argument("--cttomo", action="store_true",help="Continous tilt tomogram mode, changes optimization steps")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
@@ -92,6 +93,7 @@ def main():
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--profile", action="store_true",help="Used for code development only, not routine use")
 	parser.add_argument("--cachepath",type=str,help="path for storing the cached images, ideally on a high speed drive. Default='.'",default=".")
+	parser.add_argument("--score",type=str,help="If set, will generate the specified .lst file with score set and plottable scores.txt",default=None)
 #	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
@@ -161,7 +163,6 @@ def main():
 	if options.quick : selimg=selimg[:8192+4096]
 	nptcl=len(selimg)
 	if options.verbose>0: print(f"{nptcl}/{len(lsx)} 2-D images selected")
-	lsx=None
 
 	if options.profile:
 		selimg=tuple(range(0,min(2050,nptcl)))
@@ -209,12 +210,12 @@ def main():
 			[256,32,  32,1.8, -5,4,.05, 1.0],
 			[256,64,  48,1.5, -5,4,.04,1.0],
 			[256,64,  48,1.5, -5,16,.02,0.5],
-			[256,128, 32,1.2, -5,16,.01,2.0],
+			[256,128, 48,1.2, -5,16,.01,2.0],
 #			[256,256, 32,1.2, -5,64,.01,3.0],
 #			[256,512, 48,1.2, -5,128,.01,3.0],
-			[256,256, 32,1.2, -5,64,.006,3.0],
-			[256,512, 48,1.2, -5,128,.003,3.0],
-			[256,1024,48,1.2, -5,0,.004,5.0]
+			[256,256, 48,1.2, -5,64,.006,3.0],
+			[256,512, 64,1.2, -5,128,.003,3.0],
+			[256,1024,64,1.2, -5,0,.004,5.0]
 		]
 	elif options.cttomo:
 		stages=[
@@ -271,8 +272,22 @@ def main():
 		stages[i][1]=min(stages[i][1],nxrawm2)
 		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
-	if options.spt: batchsize=320
-	else: batchsize=192
+	# Setting up symmetry
+	sym=parsesym(options.sym)
+	sym_orts = Orientations()
+	sym_orts.init_from_transforms(sym.get_syms())
+	symmx = sym_orts.to_mx3d()
+
+
+	# prior to jax 0.7.x there was a sharding problem in JAX causing a crash related to
+	# each image in the batch getting turned into a separate argument when JIT compiling
+	# in 0.7.x, larger batches can be used and have some advantages
+	if int(jax.__version__.split(".")[1])>6 :
+		if options.spt: batchsize=640
+		else: batchsize=1024//len(sym_orts)
+	else:
+		if options.spt: batchsize=320
+		else: batchsize=192
 
 	if options.combineiters>0:
 		refineiters=5
@@ -301,6 +316,11 @@ def main():
 		if options.tomo and options.tomo_seqali!=0 :
 			stk.center_align_seq(options.tomo_seqali)
 			if options.verbose>3: stk.write_images("dbg_ali.hdf")
+		# rotate the set of transforms based on ostensibly the zero tilt image
+		if options.tomo_rotate:
+			xfs=stk._xforms
+			stk._xforms=[xfs[i]*(xfs[len(xfs)//2].inverse()) for i in range(len(xfs))]
+
 		orts,tytx=stk.orientations
 		astig=stk.astigmatism
 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
@@ -348,12 +368,6 @@ def main():
 		# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
 		ctf_info = jnp.array([wavelength, jctf.cs])
 
-	# Setting up symmetry
-	sym=parsesym(options.sym)
-	sym_orts = Orientations()
-	sym_orts.init_from_transforms(sym.get_syms())
-	symmx = sym_orts.to_mx3d()
-
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
 	gaus=Gaussians()
@@ -368,8 +382,12 @@ def main():
 	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
+	frchist=[]
 	times.append(time.time())
 	ptcls=[]
+	qualities=np.zeros((nptcl,len(stages)))			# only used with --score
+	weights=[None for i in range(len(stages))]		# saved, but not used at present
+	thresholds=[None for i in range(len(stages))]	# saved, but not used at present
 	for sn,stage in enumerate(stages):
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 		if options.profile and sn==2 : jax.profiler.start_trace("jax_trace")
@@ -379,8 +397,6 @@ def main():
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		lqual=-1.0
 		rstep=1.0
-		# TODO: Ok, this should really use one of the proper optimization algorithms available from the deep learning toolkits
-		# this basic conjugate gradient gets the job done, but not very efficiently I suspect...
 		optim = optax.adam(.003)		# parm is learning rate
 #		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
 #		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
@@ -399,10 +415,31 @@ def main():
 					continue
 				# standard mode, optimize gaussian parms only
 #				if not options.tomo or sn<2:
+
+				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
+				# only using a single batch for this right now. May be sufficient
+				if i in (0,8) and j==0:
+					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+					#print("FRCS ",frcs.shape)
+					try:
+						thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
+						weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
+						weight[0:2]=0			# low frequency cutoff
+						weight[ptclsfds.shape[1]//2:]=0
+						weight/=np.sum(weight)	# normalize to 1
+						weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
+					except:
+						print(f"Weighting failed {sn},{i},{j}")
+						weight=np.ones((len(frcs.shape[1])))
+					thresholds[sn]=thresh
+					weights[sn]=weight
+					frchist.append((np.array(np.mean(frcs,0)),thresh,weight))
+
+
 				if options.ctf==0:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,stage[7])
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
 					step0=jnp.nan_to_num(step0)
 					shift0=jnp.nan_to_num(shift0)
@@ -461,6 +498,7 @@ def main():
 						shift+=shift0
 						sca+=sca0
 						imshift+=imshift0
+
 			norm=len(nliststg)//batchsize+1
 			qual/=norm
 			# # if the quality got worse, we take smaller steps, starting by stepping back almost to the last good step
@@ -539,6 +577,32 @@ def main():
 						vol.process_inplace("normalize.edgemean")
 						vol.write_image(f"testing_combineiters_vol_{i}.hdf:12",-1)
 						os.system(f'e2proc3d.py testing_combineiters_vol_{i}.hdf testing_combineiters_vol_{i}_fsc.txt --calcfsc {options.fscdebug}')
+
+			# Particle quality assessment
+			if options.score is not None and i==stage[2]-1:
+				if options.verbose: print("Compute quality")
+				for j in range(0,nptcl,batchsize):
+#					ptclsfds,orts,tytx,astig=caches[stage[1]].read(range(j,min(j+batchsize,nptcl)))	# quality using the current stage scale
+					ptclsfds,orts,tytx,astig=caches[stages[4][1]].read(range(j,min(j+batchsize,nptcl)))		# quality measurement at fixed scale for all stages, 3 is resolution stage to assess at
+					# need to recompute this here since we may not have hit this stage yet
+					if j==0:
+						frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+						try:
+							thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
+							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
+							weight[0:2]=0			# low frequency cutoff
+							weight[ptclsfds.shape[1]//2:]=0
+							weight/=np.sum(weight)	# normalize to 1
+							weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
+						except:
+							print(f"Weighting failed {sn},{i},{j}")
+							weight=np.ones((len(frcs.shape[1])))
+
+					# we measure per particle quality and save it
+					quality=jnp.nan_to_num(sym_prj_frcs_loss(gaus.jax,orts.jax,tytx,symmx,ptclsfds.jax,weight,thresh), nan=2.0)
+
+					#print(quality.shape,quality)
+					for ii,q in enumerate(np.array(quality)): qualities[ii+j][sn]=q
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -620,6 +684,18 @@ def main():
 	if options.profile : jax.profiler.stop_trace()
 
 	times.append(time.time())
+
+	if options.score is not None:
+		np.savetxt(options.score.replace(".lst","_score.txt"),qualities,fmt="%.6f")
+		np.savetxt("scores_t.txt",qualities.transpose(),fmt="%.6f")
+
+		lsxout=LSXFile(options.score)
+		for i in range(nptcl):
+			n,f,d=lsx[selimg[i]]
+			d["score"]=qualities[i][-1]
+			lsxout[i]=n,f,d
+
+
 	if options.combineiters>0:
 		if options.verbose>5:np.savetxt("testing_combine_iters.txt", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
 		if options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
@@ -641,6 +717,15 @@ def main():
 	vol.process_inplace("normalize.edgemean")
 	times.append(time.time())
 	vol.write_image(options.volout,-1)
+
+	outf=open("frcstats.txt","w")
+	for i in range(len(frchist[-1][0])):
+		outf.write(f"{i}")
+		for j in range(len(frchist)):
+			try: outf.write(f"\t{frchist[j][0][i]:1.6f}\t{frchist[j][1][i]:1.6f}\t{frchist[j][2][i]:1.6f}")
+			except:
+				outf.write("\t0.0\t0.0\t0.0")
+		outf.write("\n")
 
 	# this is just to save some extra processing steps
 	if options.fscdebug is not None: 
@@ -685,7 +770,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 
 # @profile
 # def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc_Z=3.0):
+def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -705,7 +790,7 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc
 	if False:
 		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z) # No symmetry
 	else:
-		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z) # With symmetry
+		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,thresh) # With symmetry
 
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
@@ -715,14 +800,14 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight=1.0,relstep=1.0,frc
 	return (grad,float(qual),float(shift),float(sca))
 
 # @profile
-def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight,frc_Z):
+def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx)
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
 #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 gradvalsfnl=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
 
@@ -739,6 +824,16 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
+def __sym_prj_frcs_loss(gausary,ortary,tytx,symmx,ptcls,weight,thresh):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	ny=ptcls.shape[1]
+	prj=gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx)
+#	print(prj.shape,ptcls.shape,weight,frc_Z)
+#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+	return -jax_frcs_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+
+sym_prj_frcs_loss=jax.jit(__sym_prj_frcs_loss)
 
 def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
@@ -751,6 +846,17 @@ def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 gradvalfn=jax.value_and_grad(prj_frc)
+
+def prj_frcs(gausary,orts,tytx,ptcls):
+	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
+	a loss function, this returns the individual FRC curves for statistical analysis"""
+	mx2d=orts.to_mx2d(swapxy=True)
+	ny=ptcls.shape[1]
+	prjf=jax_fft2d_jit(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+#	print(prjf.shape,ptcls.jax.shape)
+
+	return jax_frcs_jit(prjf,ptcls.jax)
+
 
 def align_2d(gaus,orts,tytx,ptclsfds):
 	ny=ptclsfds.shape[1]

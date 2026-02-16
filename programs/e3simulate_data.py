@@ -59,8 +59,15 @@ def main():
 		struc=gemmi.read_structure(args[0])
 		inmodel=np.array([[i.atom.pos.x, i.atom.pos.y, i.atom.pos.z, i.atom.element.atomic_number ] for i in struc[0].all()])
 		if options.apix is None or options.boxsize is None: error_exit("--apix and --boxsize required with PDB/MMCIF inputs")
+		if options.verbose: 
+			inm=inmodel
+			print(f"{inm.shape}, ({min(inm[:,0])},{min(inm[:,1])},{min(inm[:,2])} - ({max(inm[:,0])},{max(inm[:,1])},{max(inm[:,2])})")
 		modsca=1.0/(options.apix*options.boxsize)
-		inmodel[:][:3]*=modsca
+		inmodel[:,:3]*=modsca
+		if options.verbose: 
+			inm=inmodel
+			print(f"{inm.shape}, ({min(inm[:,0])},{min(inm[:,1])},{min(inm[:,2])} - ({max(inm[:,0])},{max(inm[:,1])},{max(inm[:,2])})")
+		inmodel=Gaussians(inmodel)
 		inmap=None
 	# assume some sort of volume
 	else:
@@ -120,7 +127,7 @@ def main():
 			ctf.defocus=options.defocus[0]+dfstep*(j-i)
 			if options.ctfamp or options.ctfphaseflip: dct={"xform.projection":eulers[j-i],"ctf":ctf}
 			else: dct={"xform.projection":eulers[j-i]}
-			lst[j]=j,options.output,dct
+			lst[j]=j,options.output.split(":")[0],dct
 
 	E3end(llo)
 

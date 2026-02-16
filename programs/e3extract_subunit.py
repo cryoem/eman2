@@ -85,7 +85,9 @@ The program proceeds in several steps:
 
 	# The Gaussian model from a file
 	gauss=Gaussians(args[1])
-	if options.sym!="c1": gauss.replicate_sym(options.sym)
+	# This seems like a good idea, but with, for example icosahedral symmetry, this can generate an unsustainable number of gaussians
+	# this should be done in preprocessing instead
+#	if options.sym!="c1": gauss.replicate_sym(options.sym)
 	maskincl=to_jax(EMData(args[2]).process("threshold.binary",{"value":0.2}))	# "soft" masks cause problems
 	maskexcl=1.0-maskincl
 	gaussincl=gauss.mask(maskincl)		# Gaussians for portion we want to keep
@@ -95,9 +97,10 @@ The program proceeds in several steps:
 	# Open the particle .lst file and get some basic info
 	lsxin=LSXFile(args[0])
 	lsxout=LSXFile(output.replace(".hdf",".lst"))
-	hdr=lsxin.read_image(0,True)
+	hdr=lsxin.read_image(0)
 	nx=hdr["nx"]
 	apix=hdr["apix_x"]
+	print(f"Particles at {apix:1.4f}A/pix. If incorrect, kill the job and investigate")
 	N=len(lsxin)
 #	N=100
 
@@ -109,11 +112,15 @@ The program proceeds in several steps:
 		print(f"Working with chunks of {nblk} particles")
 		if sym.get_nsym()>1: print(f"{sym.get_nsym()} symmetric dupicates")
 	tlast=0
+	# Could be more efficient with symmetry inside, but this is working reliably, so I don't want to mess with it for now
 	for sn in range(sym.get_nsym()):
 		sxf=sym.get_sym(sn)
 		for i in range(0,N,nblk):
 			tlast=print_progress(tlast,f"{i}({sn})",sn*N+i,sym.get_nsym()*N)
-			ptcl=EMStack2D(EMData.read_images(args[0],range(i,min(i+nblk,N))))
+			imgs=EMData.read_images(args[0],range(i,min(i+nblk,N)))
+			ctfs=[img["ctf"] for img in imgs]
+			ptcl=EMStack2D(imgs)
+			imgs=None
 			orts=ptcl.orientations_withxf(sxf)
 			ortsxf=orts[0].transforms(orts[1])
 			if options.verbose>1 : print(f"ptcl: {ptcl.shape}    ortsxf: {len(orts[0])}\nMaking Projections:")
@@ -132,7 +139,6 @@ The program proceeds in several steps:
 			for im,pr,prexcl in zip(ptcl.emdata,proj.emdata,projexcl.emdata):
 				#out.append(im)
 				out.append(im.process("math.sub.optimal",{"ref":pr,"actual":prexcl,"return_fft":0}))
-				out[-1]["apix_x"]=out[-1]["apix_y"]=out[-1]["apix_z"]=apix
 				# im.write_image("dbg_im.hdf:6",-1)
 				# pr.write_image("dbg_pr.hdf:6",-1)
 				# prm.write_image("dbg_prm.hdf:6",-1)
@@ -160,6 +166,10 @@ The program proceeds in several steps:
 
 			if options.newbox>0: out=out.center_clip(options.newbox)
 
+			for im in out.emdata:
+				im["apix_x"]=im["apix_y"]=im["apix_z"]=apix
+				try: im["ctf_phase_flipped"]=hdr["ctf_phase_flipped"]
+				except: pass
 			out.write_images(output,outbits,i+sn*N)
 
 			# new lst entries with correct metadata
@@ -167,8 +177,8 @@ The program proceeds in several steps:
 				nxt,xt,dct=lsxin[j]
 				newort=ortsxf[j-i]*sxf.inverse()
 				newort.set_trans(0,0,0)		# because we center above
-				dct["xform.projection"]
-
+				dct["xform.projection"]=newort
+				dct["ctf"]=ctfs[j-i]
 #				dct["xform.projection"]=sxf*dct["xform.projection"]
 				lsxout[j+sn*N]=j,output,dct
 

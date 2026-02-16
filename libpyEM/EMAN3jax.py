@@ -708,7 +708,9 @@ class EMAN3Ctf():
 		if apix!=None: self.apix=apix
 		if defocus!=None: self.defocus=defocus
 		if dfdiff!=None: self.dfdiff=dfdiff
+		else: self.dfdiff=0
 		if dfang!=None: self.dfang=dfang
+		else: self.dfang=0
 
 	@property
 	def wavelength(self):
@@ -1126,6 +1128,27 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
 
+	def replicate_rand(self, ngaus, tomo=False):
+		"""Adds randomly placed Gaussians to try and place Gaussians in places there are density but no Gaussians. ngaus specifies the total number of
+	desired Gaussians after replication. Note that amplitudes are also randomized"""
+		if len(self)==ngaus: return
+		if len(self)>ngaus:
+			print("Warning: replicate targeted fewer Gaussians than currently exist! Unchanged")
+			return
+		rng=np.random.default_rng()
+		self.coerce_jax()
+		rand_num=ngaus-len(self)
+		neg_num=rand_num//10
+		rnd=rng.uniform(0.0,1.0,(rand_num-neg_num,4))		# start with completely random Gaussian parameters
+		neg = rng.uniform(0.0, 1.0, (neg_num, 4))		# 10% of gaussians are negative WRT the background (zero)
+		rnd+=(-.5,-.5,-.5,2.0)
+		neg+=(-.5,-.5,-.5,-3.0)
+		rnd = np.concatenate((rnd, neg))
+		if tomo:
+			rnd=rnd/(.9,.9,0.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+		else: rnd=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+		self._data=jnp.concatenate((self._data, rnd))
+
 	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
 		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box.
@@ -1400,6 +1423,7 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")
+	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
@@ -1508,7 +1532,7 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
-	ctfary = jax_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
+	ctfary = jit_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
 
 
@@ -1618,6 +1642,11 @@ def jax_fft2d(imgs):
 	if imgs.dtype==jnp.complex64: raise Exception("Data type must be real")
 
 	return jnp.fft.rfft2(imgs)
+
+def __jax_fft2d_jit(imgs):
+	return jnp.fft.rfft2(imgs)
+
+jax_fft2d_jit=jax.jit(__jax_fft2d_jit)
 
 def jax_fft3d(imgs):
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
@@ -1859,6 +1888,84 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
+def __jax_frc_jit_new(ima,imb,weight,thresh):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!
+
+	In thisa new version, weight MUST be passed with an array with exactly nr elements. It will be multiplied by the average FRC """
+	global FRC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+#	nr=int(ny*0.70711)+1	# max radius we consider
+	nr=weight.shape[0]
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight).mean()		# FRC weighted by passed weight array
+
+jax_frc_jit_new=jax.jit(__jax_frc_jit_new)
+
+def __jax_frcs_jit_new(ima,imb,weight,thresh):
+	"""This is identical to jax_frc_jit_new, but returns a list of per-particle FRCs. This won't work with gradient calculations which
+must return a single value, but is necessary for per-particle quality estimates, so 2 versions... """
+	global FRC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+#	nr=int(ny*0.70711)+1	# max radius we consider
+	nr=weight.shape[0]
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	return jnp.mean(jnp.clip(frc,thresh,1.0)*weight,axis=1)		# note that thresholding on a single curve is far less useful than thresholding on a mean like jax_frc_jit_new
+#	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight)		# FRC weighted by passed weight array
+
+jax_frcs_jit_new=jax.jit(__jax_frcs_jit_new)
+
+
 def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
@@ -1900,6 +2007,41 @@ def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
 
 jax_frc_jit=jax.jit(__jax_frc_jit, static_argnames="minfreq")
 
+def __jax_frcs_jit(ima,imb):
+	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
+	be called with the appropriate size prior to using this function!"""
+	global FRC_RADS
+
+	ny=ima.shape[1]
+	nimg=ima.shape[0]
+	nr=int(ny*0.70711)+1	# max radius we consider
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	frc=[]
+	zero=jnp.zeros([nr])
+	for i in range(nimg):
+		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
+		aprd=zero.at[rad_img].add(imar[i]+imai[i])
+		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
+		frc.append(cross/jnp.sqrt(aprd*bprd))
+
+	frc=jnp.stack(frc)
+	return frc
+
+jax_frcs_jit=jax.jit(__jax_frcs_jit)
 
 
 def __jax_frc_maxfreq_jit(ima,imb,maxfreq,weight=1.0,minfreq=0):
