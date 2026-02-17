@@ -183,7 +183,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.cbtargfn.addItem("modsin2")
 		self.cbtargfn.addItem("modsin3")	#10
 		self.cbtargfn.addItem("sin low")
-		self.cbtargfn.addItem("doubledelta")
+		self.cbtargfn.addItem("tripledelta")
 		self.cbtargfn.addItem("sin bad f")
 		self.cbtargfn.addItem("sin bad f2")
 		self.cbtargfn.addItem("0 phase")	#15
@@ -445,9 +445,10 @@ class GUIFourierSynth(QtWidgets.QWidget):
 			elif index==11 : # sin low
 				y=np.sin(x*4.0*pi)
 
-			elif index==12 : # double delta
+			elif index==12 : # triple delta
 				y[:]=0
-				y[16]=5.0
+				y[8]=5.0
+				y[32]=5.0
 				y[48]=5.0
 
 			elif index==13 : # sin bad f
