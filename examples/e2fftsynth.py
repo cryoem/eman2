@@ -65,7 +65,7 @@ def fixang(x):
 def initsound():
 	global soundout
 	global soundin
-	if soundout!=None: return
+	if soundout is not None: return
 
 	try:
 		import sounddevice
@@ -477,7 +477,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 
 
 	def nsinchange(self,value=None):
-		if value==None : value=int(self.vnsin.getValue())
+		if value is None : value=int(self.vnsin.getValue())
 
 		for i in range(65):
 			if i>value:
@@ -487,7 +487,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 				self.wamp[i].show()
 				self.wpha[i].show()
 
-		if self.targfn!=None :
+		if self.targfn is not None :
 			self.target2sliders()
 
 		self.recompute()
