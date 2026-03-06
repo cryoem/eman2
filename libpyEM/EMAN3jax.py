@@ -1423,8 +1423,8 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")
-	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
 # gauss_project_ctf_fn=jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0])
