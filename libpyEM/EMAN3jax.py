@@ -1491,6 +1491,88 @@ def _gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, ny, tytx,
 
 gauss_project_ctf_sym_fn=jax.jit(_gauss_project_ctf_sym_fn, static_argnames=["ny", "apix","dfstep"])
 
+def gauss_project_single_fn_Gaussian(gausary,mx,boxsize,tytx):
+	"""Trying to see if bilinear interpolation is reason for CTF mismatch"""
+	sigma=0.5 #Pixel unit width
+	patch_radius=2
+	# Rotate/translate
+	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	amps=gausary[:,3]
+
+	# integer center
+	xfcenter=jnp.floor(xfgauss).astype(jnp.int32)		# integer index
+
+	# proj image
+	proj = jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
+
+	# precompute static offset meshgrid
+	offsets=jnp.arange(-patch_radius, patch_radius+1)
+	dX, dY = jnp.meshgrid(offsets, offsets, indexing="ij")
+
+	# Per Gaussian splat
+	def splat_one(i, proj):
+		cx=xfcenter[i,0]
+		cy=xfcenter[i,1]
+
+		X=cx+dX
+		Y=cy+dY
+
+		dx=X-xfgauss[i,0]
+		dy=Y-xfgauss[i,1]
+		r2=dx**2+dy**2
+
+		patch=amps[i]*jnp.exp(-0.5*r2/(sigma**2))
+		return proj.at[X,Y].add(patch, mode="drop")
+
+	proj=jax.lax.fori_loop(0,gausary.shape[0],splat_one, proj)
+
+	return proj
+
+gauss_project_Gaussian=jax.jit(jax.vmap(gauss_project_single_fn_Gaussian, in_axes=[None, 2, None, 0]) ,static_argnames=["boxsize"])
+
+def gauss_project_ctf_single_fn_Gaussian(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
+	"""Trying to see if bilinear interpolation is reason for CTF mismatch"""
+	sigma=0.5 #Pixel unit width
+	patch_radius=2
+	# Rotate/translate
+	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	amps=gausary[:,3]
+
+	# integer center
+	xfcenter=jnp.floor(xfgauss).astype(jnp.int32)		# integer index
+
+	# proj image
+	proj = jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
+
+	# precompute static offset meshgrid
+	offsets=jnp.arange(-patch_radius, patch_radius+1)
+	dX, dY = jnp.meshgrid(offsets, offsets, indexing="ij")
+
+	# Per Gaussian splat
+	def splat_one(i, proj):
+		cx=xfcenter[i,0]
+		cy=xfcenter[i,1]
+
+		X=cx+dX
+		Y=cy+dY
+
+		dx=X-xfgauss[i,0]
+		dy=Y-xfgauss[i,1]
+		r2=dx**2+dy**2
+
+		patch=amps[i]*jnp.exp(-0.5*r2/(sigma**2))
+		return proj.at[X,Y].add(patch, mode="drop")
+
+	proj=jax.lax.fori_loop(0,gausary.shape[0],splat_one, proj)
+
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0)
+
+gauss_project_ctf_Gaussian=jax.jit(jax.vmap(gauss_project_ctf_single_fn_Gaussian, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
+
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
 

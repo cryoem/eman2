@@ -786,9 +786,11 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,relstep=1.0)
 	ortary=orts.jax
 
 	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z) # From when I tried SNR weighting Gaussian gradient
-	# if True:
-	if False:
+	if True:
+	# if False:
+		frc_Z=3
 		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z) # No symmetry
+
 	else:
 		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,thresh) # With symmetry
 
@@ -819,7 +821,8 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	ny=ptcls.shape[1]
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
-	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+	# prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
+	prj=gauss_project_Gaussian(gausary,mx2d,ny,tytx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
@@ -991,7 +994,8 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
 
-	if False:
+	# if False:
+	if True:
 		frcs,grad=gradvalfnl_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,frc_Z) # No symmetry
 	else:
 		frcs,grad=gradvalsfnl_ctf(gausary,orts.jax,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,frc_Z) # Symmetry
@@ -1020,7 +1024,8 @@ def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,f
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
-	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
+	# prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
+	prj=gauss_project_ctf_Gaussian(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 # gradvalfnl_ctf=jax.value_and_grad(prj_frc_loss_ctf)
