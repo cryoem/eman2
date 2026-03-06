@@ -822,7 +822,8 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
 	# prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	prj=gauss_project_Gaussian(gausary,mx2d,ny,tytx)
+	# prj=gauss_project_Gaussian(gausary,mx2d,ny,tytx)
+	prj=gauss_project_simple_padded_fn(gausary,mx2d,ny,tytx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
@@ -1025,7 +1026,8 @@ def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,f
 
 	ny=ptcls.shape[1]
 	# prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	prj=gauss_project_ctf_Gaussian(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
+	# prj=gauss_project_ctf_Gaussian(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
+	prj=gauss_project_ctf_padded_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 
 # gradvalfnl_ctf=jax.value_and_grad(prj_frc_loss_ctf)
