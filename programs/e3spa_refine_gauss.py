@@ -354,7 +354,6 @@ def main():
 		caches[down].orts=caches[downs[0]].orts
 		caches[down].tytx=caches[downs[0]].tytx
 
-	# I always need ctf_info defined for SNR weighting
 	if options.ctf>0:
 		try:
 			ctf=EMData(args[0],0,True)["ctf"]	# Some .lst files have ctf info in header (the ones that have been phase flipped--if the input does not it currently will not get the defocuses corrct)
@@ -488,7 +487,7 @@ def main():
 					elif options.ctf==1:
 						dsapix=apix*nxraw/ptclsfds.shape[1]
 						# step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-						step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,stage[3])
+						step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh)
 						step0=jnp.nan_to_num(step0)
 						if j==0:
 							step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -607,11 +606,27 @@ def main():
 				for j in range(0,nptcl,batchsize):
 					ptclsfds,orts,tytx,astig=ccache.read(range(j, min(j+batchsize, nptcl)))
 					dsapix = apix*nxraw/ptclsfds.shape[1]
+
+					if i in (0,8) and j==0:
+						frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+						#print("FRCS ",frcs.shape)
+						try:
+							thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
+							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
+							weight[0:2]=0			# low frequency cutoff
+							weight[ptclsfds.shape[1]//2:]=0
+							weight/=np.sum(weight)	# normalize to 1
+							weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
+						except:
+							print(f"Weighting failed {sn},{i},{j}")
+							weight=np.ones((len(frcs.shape[1])))
+						frchist.append((np.array(np.mean(frcs,0)),thresh,weight))
+
 					if options.ctf ==0:
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0 = gradient_step_ort_optax(gaus,ptclsfds,orts,tytx,dsapix,symmx,weight,thresh)
 					elif options.ctf ==1:
 						# ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3])
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,stage[3])
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0=gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh)
 					elif options.ctf == 2:
 						print("Layered ctf not currently supported for orientation refinement. Proceeding with single ctf")
 						dsapix = apix*nxraw/ptclsfds.shape[1]
@@ -894,7 +909,7 @@ def align_2d(gaus,orts,tytx,ptclsfds):
 	return ptclsfds.align_translate(prj)/ny			# ccf between each particle and its projection
 
 # def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0):
-def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight=1.0):
+def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -910,9 +925,9 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix
 
 	if False:
 	# if True:
-		frcs,grad=gradvalfnl_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight) # No symmetry
+		frcs,grad=gradvalfnl_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,thresh) # No symmetry
 	else:
-		frcs,grad=gradvalsfnl_ctf(gausary,orts.jax,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight) # Symmetry
+		frcs,grad=gradvalsfnl_ctf(gausary,orts.jax,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh) # Symmetry
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
@@ -921,7 +936,7 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight):
+def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
@@ -934,7 +949,7 @@ def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,
 gradvalsfnl_ctf=jax.value_and_grad(sym_prj_frc_loss_ctf)
 
 # def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight):
-def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight):
+def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
@@ -1020,7 +1035,7 @@ def sym_prj_frc_ort_loss(gausary,ortary,apix,tytx,symmx,ptcls,weight,thresh):
 	# return  -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3)
 	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
-gradval_osfnl=jax.jit(jax.value_and_grad(sym_prj_frc_ort_loss, argnums=(1,4)))
+gradval_osfnl=jax.jit(jax.value_and_grad(sym_prj_frc_ort_loss, argnums=(1,3)))
 
 def prj_frc_ort_loss(gausary,ortary,apix,tytx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
@@ -1039,7 +1054,7 @@ def prj_frc_ort_loss(gausary,ortary,apix,tytx,ptcls,weight,thresh):
 gradval_ol=jax.jit(jax.value_and_grad(prj_frc_ort_loss, argnums=(1,4)))
 
 # def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0):
-def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight=1.0):
+def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
 	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
 	unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -1056,7 +1071,7 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 	max_freq = int(dsapix*ny/8)
 
 	# frcs, [gradort, gradtytx] = gradval_olc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,max_freq)
-	frcs, [gradort, gradtytx] = gradval_osfnlc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,max_freq)
+	frcs, [gradort, gradtytx] = gradval_osfnlc(gausary,ortary,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
@@ -1064,7 +1079,7 @@ def gradient_step_ort_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,ds
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
 
-def sym_prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,symmx,ptcls,weight,max_freq):
+def sym_prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
@@ -1077,7 +1092,7 @@ def sym_prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,symm
 # gradval_osfnlc=jax.jit(jax.value_and_grad(sym_prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])  # Grashes with ValueError: non-hashable static argument not supported. an error occured while trying to hash an object of type <class 'jax._src.interpreters.partial_eval.DynamicJaxprTracer'>, Traced<ShapedArray(float32[])>with<DynamicJaxprTrace>. The error was unhashable type: 'DynamicJaxprTracer'
 gradval_osfnlc=jax.value_and_grad(sym_prj_frc_ort_ctf_loss, argnums=(1,5))
 
-def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,max_freq):
+def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,thresh):
 	"""Aggregates the functions we need to take the gradient through. Computes the frc array resulting from the comparison
 	of the Gaussians in gaus to particles in their current orientation"""
 	ny=ptcls.shape[1]
@@ -1086,7 +1101,7 @@ def prj_frc_ort_ctf_loss(gausary,ortary,ctf_info,dfstep,apix,tytx,astig,ptcls,we
 	# return -jax_frc_snr_jit(jax_fft2d(prj),ptcls,ctf_info,tytx[:,2],astig[:,2],apix,3) #minfreq, (bfactor--not currently given)
 	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
-gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep", "max_freq"])
+gradval_olc=jax.jit(jax.value_and_grad(prj_frc_ort_ctf_loss, argnums=(1,5)), static_argnames=["dfstep"])
 
 def ccf_step_align(gaus,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""
