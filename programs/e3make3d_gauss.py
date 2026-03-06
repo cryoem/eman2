@@ -1002,7 +1002,6 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
 #	print(grad[:,3])
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
 
