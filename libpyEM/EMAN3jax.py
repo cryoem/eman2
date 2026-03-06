@@ -1317,6 +1317,7 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 	used for comparisons should be resampled without any "clip" operations.
 	"""
+	os_bs=boxsize*2
 
 	proj2=[]
 	shift10=jnp.array((1,0))
@@ -1326,7 +1327,7 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	xfgauss=(xfgauss+0.5)*os_bs			# shift and scale both x and y the same
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
@@ -1341,9 +1342,12 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
-	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")		# projection
-	return proj
+	proj=jnp.zeros((1,os_bs,os_bs),dtype=jnp.float32)
+	proj=proj.at[0,bposall[0],bposall[1]].add(bampall, mode="drop")		# projection
+	# Clip extra size in fourier space
+	fproj=jnp.fft.rfft2(proj)
+	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
+	return jnp.squeeze(jnp.fft.irfft2(fproj[:,:,:boxsize//2+1]),0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
@@ -1400,13 +1404,15 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 	used for comparisons should be resampled without any "clip" operations.
 	"""
+	os_bs=boxsize*2
+
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
 	shift11=jnp.array((1,1))
 
 	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
+	xfgauss=(xfgauss+0.5)*os_bs			# shift and scale both x and y the same
 
 	xfgaussf=jnp.floor(xfgauss)
 	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
@@ -1421,10 +1427,14 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
-	proj=jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-	proj=proj.at[bposall[0],bposall[1]].add(bampall, mode="drop")
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	proj=jnp.zeros((1,os_bs,os_bs),dtype=jnp.float32)
+	proj=proj.at[0,bposall[0],bposall[1]].add(bampall, mode="drop")
+
+	fproj=jnp.fft.rfft2(proj)
+	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
+	proj=jnp.fft.irfft2(fproj[:,:,:boxsize//2+1])
+	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
 # gauss_project_ctf_fn=jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0])
@@ -1490,180 +1500,6 @@ def _gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, ny, tytx,
 	return jnp.mean(jax.vmap(prj_single_layered_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
 
 gauss_project_ctf_sym_fn=jax.jit(_gauss_project_ctf_sym_fn, static_argnames=["ny", "apix","dfstep"])
-
-def gauss_project_single_fn_Gaussian(gausary,mx,boxsize,tytx):
-	"""Trying to see if bilinear interpolation is reason for CTF mismatch"""
-	sigma=0.5 #Pixel unit width
-	patch_radius=2
-	# Rotate/translate
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	amps=gausary[:,3]
-
-	# integer center
-	xfcenter=jnp.floor(xfgauss).astype(jnp.int32)		# integer index
-
-	# proj image
-	proj = jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-
-	# precompute static offset meshgrid
-	offsets=jnp.arange(-patch_radius, patch_radius+1)
-	dX, dY = jnp.meshgrid(offsets, offsets, indexing="ij")
-
-	# Per Gaussian splat
-	def splat_one(i, proj):
-		cx=xfcenter[i,0]
-		cy=xfcenter[i,1]
-
-		X=cx+dX
-		Y=cy+dY
-
-		dx=X-xfgauss[i,0]
-		dy=Y-xfgauss[i,1]
-		r2=dx**2+dy**2
-
-		patch=amps[i]*jnp.exp(-0.5*r2/(sigma**2))
-		return proj.at[X,Y].add(patch, mode="drop")
-
-	proj=jax.lax.fori_loop(0,gausary.shape[0],splat_one, proj)
-
-	return proj
-
-gauss_project_Gaussian=jax.jit(jax.vmap(gauss_project_single_fn_Gaussian, in_axes=[None, 2, None, 0]) ,static_argnames=["boxsize"])
-
-def gauss_project_ctf_single_fn_Gaussian(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
-	"""Trying to see if bilinear interpolation is reason for CTF mismatch"""
-	sigma=0.5 #Pixel unit width
-	patch_radius=2
-	# Rotate/translate
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	amps=gausary[:,3]
-
-	# integer center
-	xfcenter=jnp.floor(xfgauss).astype(jnp.int32)		# integer index
-
-	# proj image
-	proj = jnp.zeros((boxsize,boxsize),dtype=jnp.float32)
-
-	# precompute static offset meshgrid
-	offsets=jnp.arange(-patch_radius, patch_radius+1)
-	dX, dY = jnp.meshgrid(offsets, offsets, indexing="ij")
-
-	# Per Gaussian splat
-	def splat_one(i, proj):
-		cx=xfcenter[i,0]
-		cy=xfcenter[i,1]
-
-		X=cx+dX
-		Y=cy+dY
-
-		dx=X-xfgauss[i,0]
-		dy=Y-xfgauss[i,1]
-		r2=dx**2+dy**2
-
-		patch=amps[i]*jnp.exp(-0.5*r2/(sigma**2))
-		return proj.at[X,Y].add(patch, mode="drop")
-
-	proj=jax.lax.fori_loop(0,gausary.shape[0],splat_one, proj)
-
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0)
-
-gauss_project_ctf_Gaussian=jax.jit(jax.vmap(gauss_project_ctf_single_fn_Gaussian, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
-
-def gauss_project_single_padded_fn(gausary,mx,boxsize,tytx):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
-
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
-	mx - an Orientations object converted to a stack of 2d matrices
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-	used for comparisons should be resampled without any "clip" operations.
-	"""
-	os_bs=boxsize*2
-
-	proj2=[]
-	shift10=jnp.array((1,0))
-	shift01=jnp.array((0,1))
-	shift11=jnp.array((1,1))
-#	print("t1")
-
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*os_bs			# shift and scale both x and y the same
-
-	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
-	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-
-		# messy tensor math here to implement bilinear interpolation
-	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])		#1,1
-	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
-	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
-	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
-
-		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
-	proj=jnp.zeros((1,os_bs,os_bs),dtype=jnp.float32)
-	proj=proj.at[0,bposall[0],bposall[1]].add(bampall, mode="drop")		# projection
-	# Clip extra size in fourier space
-	fproj=jnp.fft.rfft2(proj)
-	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
-	return jnp.squeeze(jnp.fft.irfft2(fproj[:,:,:boxsize//2+1]),0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-
-gauss_project_simple_padded_fn=jax.jit(jax.vmap(gauss_project_single_padded_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
-
-def gauss_project_ctf_single_padded_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
-
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
-	mx - an Orientations object converted to a stack of 2d matrices
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-	used for comparisons should be resampled without any "clip" operations.
-	"""
-	os_bs=boxsize*2
-
-	shift10=jnp.array((1,0))
-	shift01=jnp.array((0,1))
-	shift11=jnp.array((1,1))
-
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*os_bs			# shift and scale both x and y the same
-
-	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
-	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-
-	# messy tensor math here to implement bilinear interpolation
-	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
-	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
-	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
-
-	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
-	proj=jnp.zeros((1,os_bs,os_bs),dtype=jnp.float32)
-	proj=proj.at[0,bposall[0],bposall[1]].add(bampall, mode="drop")
-
-	fproj=jnp.fft.rfft2(proj)
-	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
-	proj=jnp.fft.irfft2(fproj[:,:,:boxsize//2+1])
-	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-
-gauss_project_ctf_padded_fn=jax.jit(jax.vmap(gauss_project_ctf_single_padded_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
 
 def gauss_volume_fn(gausary,boxsize,zsize):
 	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
