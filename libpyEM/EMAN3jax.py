@@ -64,94 +64,143 @@ from jax import grad, jit
 from jax import lax
 from jax import random
 import jaxlib
+import os
 
-# TODO
 class StackCache():
-	"""This object serves as a cache of EMStack objects which can be conveniently read back in. This provides
-	methods for easy/efficient sampling of subsets of data sets which may be too large for RAM. Caches are not persistent across sessions
-	Writing images to the cache will coerce them to tensorflow representation."""
+	"""This object serves as a cache for a single .lst file, effectively containing EMStack objects representing the images at different levels of downsampling in Fourier
+	space, which can be very quickly read in. The cache should be stored on the highest performance storage available, which need not be the same as the project location.
+	selected metadata from the header are also cached in a float array directly from the .lst file each time the cache is opened. Metadata is formated just like EMStack2D
+	0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
+	Metadata will be read from the .LST file when it is cached, then reread with override from the .LST file each time the cache is re-opened
 
-	def __init__(self,filename,n):
-		"""Specify filename and number of images to be cached."""
+	StackCache(lst_filename) - open the cache and make sure it's up to date. Note that it does not check the contents of the image files referenced by the .lst file for changes
+	."""
+
+	def __init__(self,filename):
+		"""Specify the path to the .lst file to be cached"""
 		print("cache: ",filename)
-		self.filename=filename
+		hdr=EMData(filename,0,True).get_attr_dict()		# header of the first image so we can compute downsampling
+		if hdr["nx"]<32 : raise Exception("StackCache: Cannot cache files smaller than 32x32 pixels")
+		if hdr["nx"]!=hdr["ny"] or (hdr["nx"]!=hdr["nz"] and hdr["nz"]!=1) : raise Exception("StackCache: Cannot cache non-square/cube images")
+		if not filename.endswith(".lst"): raise Exception("StackCache: Can only cache .lst files")
 
-		self.fp=open(filename,"wb+")		# erase file!
-		self.locs=np.zeros(n+1,dtype=np.int64)			# list of seek locations in the binary file for each image
-		self.orts=np.zeros((n,3),dtype=np.float32)		# orientations in spinvec format
-		self.tytx=np.zeros((n,3),dtype=np.float32)		# image shifts in absolute [-0.5,0.5] format, third column used for per particle defocus
-		self.astig=np.zeros((n,3), dtype=np.float32)
-		self.frcs=np.zeros((n),dtype=np.float32)+2.0	# FRCs from previous round, initialize to 2.0 (> 1.0 normal max)
-		self.cloc=0
-		self.locked=False
+		# overall metadata, not stored per-particle
+		self.ctf_phase_flipped=False
+		try:
+			if hdr["ctf_phase_flipped"]: self.ctf_phase_flipped=True
+		except: pass
 
-	def __del__(self):
-		"""free all resources if possible"""
-		self.fp=None
-		os.unlink(self.filename)
-		self.locs=None
+		self.sizeorig=hdr["ny"]
+		self.apix=hdr["apix_x"]
+		self.voltage=None
+		self.cs=None
+		if "ctf" in hdr:
+			self.apix=hdr["ctf"].apix
+			self.voltage=hdr["ctf"].voltage
+			self.cs=hdr["ctf"].cs
 
-	def write(self,stack,n0,ortss=None,tytxs=None, astigs=None):
-		"""writes stack of images starting at n0 to cache"""
-		while self.locked: time.sleep(0.1)
-		self.locked=True
-		stack.coerce_numpy()
-		if ortss is not None:
-			try: self.orts[n0:n0+len(stack)]=ortss
-			except: self.orts[n0:n0+len(stack)]=np.array(ortss)
-		if tytxs is not None:
-			try: self.tytx[n0:n0+len(stack)]=tytxs
-			except:
-#				print(tytxs,tytxs.shape)
-				self.tytx[n0:n0+len(stack)]=np.array(tytxs)
-		if astigs is not None:
-			try: self.astig[n0:n0+len(stack)]=astigs
-			except: self.astig[n0:n0+len(stack)]=np.array(astigs)
+		# The LSX header may indicate that his file contains the same image data as a "parent" file, with only the metadata differing
+		lsx=LSXFile(filename)
+		# self.datasource is the "parent" file defining the name of the cache, which should have identical image data to filename
+		if lsx.parent is not None: self.datasource=lsx.parent
+		else: self.datasource=filename
+		self.source=filename			# self.source is the file containing the metadata
 
-		# we go through the images one at a time, serialze, and write to a file with a directory
-		self.fp.seek(self.cloc)
-		for i in range(len(stack)):
-			im=stack[i]
-			self.locs[n0+i]=self.cloc
-			np.save(self.fp,im)
-			# self.fp.write(tf.io.serialize_tensor(im).numpy())	#TODO
-			self.cloc=self.fp.tell()
-#			self.locs[n0+i+1]=self.cloc		# not sure why this existed...
+		# filename for the cache file. Different sized arrays are stored sequentially from smallest to largest
+		self.cachefname=f"{cache_path()}/{os.path.abspath(self.datasource).replace("/","_").replace("\\","_").replace(".lst",".bin")}"
 
-		self.locked=False
+		# levels of downsampling, all powers of 2 from 32 thru 1024, and the original size
+		sizes=[i for i in [32,64,128,256,512,1024] if i<hdr["nx"]]
+		sizes.append(hdr["nx"])
 
-	def add_orts(self,nlist,dorts=None,dtytxs=None):
+		# an array of offsets indicating the start of each shared memory region
+		io=0
+		offsets=[]
+		for i,nx in enumerate(sizes):
+			offsets.append(io)
+			if hdr["nz"]==1: io+=(nx//2+1)*nx*8*len(lsx)		# fourier space so X axis is one complex larger. Always 64 bit complex.
+			else: io+=(nx//2+1)*nx*nx*8*len(lsx)
+
+		# exists but out of date, so recreate
+		if (os.path.exists(self.cachefname) and os.stat(self.cachefname).st_ctime < os.stat(self.source).st_ctime) or not os.path.exists(self.cachefname) :
+			mode="w+"
+			needswrite=True
+		else:
+			mode="r+"
+			needswrite=False
+
+		if hdr["nz"]==1: self._images={sizes[i]:np.memmap(self.cachefname,mode=mode,dtype=np.complex64,offset=offsets[i],shape=(len(lsx),sizes[i],sizes[i]//2+1)) for i in range(len(sizes))}
+		else: self._images={sizes[i]:np.memmap(self.cachefname,mode=mode,dtype=np.complex64,offset=offsets[i],shape=(len(lsx),sizes[i],sizes[i],sizes[i]//2+1)) for i in range(len(sizes))}
+		self._meta=np.memmap(self.cachefname,mode=mode,dtype=np.float32,offset=io,shape=(len(lsx),11))		# note that this is replaced with a copy later
+
+		# actual caching. This may take some time
+		if needswrite:
+			chunk=1000000000//(hdr["nx"]*hdr["ny"]*hdr["nz"]*4)		# read data in 1GB chunks
+			tlast=0
+			for i in range(0,len(lsx),chunk):
+				tlast=print_progress(tlast,"caching: ",i,len(lsx))
+				end=min(i+chunk,len(lsx))
+				if hdr["nz"]==1: stk=EMStack2D(EMData.read_images(filename,range(i,end)))
+				else: stk=EMStack3D(EMData.read_images(filename,range(i,end)))
+
+				self._meta[i:end]=stk.metadata
+
+				stkf=stk.do_fft()
+				for size in sizes:
+					stkfds=stkf.downsample(size).numpy
+					self._images[size][i:end,:,:]=stkfds
+
+		# read selected metadata at init. Not stored in the cache
+		self._meta=self._meta.copy()	# we copy the memory mapped file to RAM, then overwrite specific values
+		for i in range(len(lsx)):
+			lsthdr=lsx[i][2]
+			try: self._meta[i,9]=lsthdr["score"]
+			except: pass
+			try:
+				r=lsthdr["xform.projection"].get_params("spinvec")
+				self._meta[i,0:5]=(r["ty"]/hdr["ny"],r["tx"]/hdr["ny"],r["v1"],r["v2"],r["v3"])
+			except: pass
+			try:
+				ctf=lsthdr["ctf"]
+				self._meta[i,5:9]=(ctf.defocus,ctf.get_phase(),ctf.dfdiff,ctf.dfang)
+			except: pass
+
+
+	# def __del__(self):
+	# 	"""free all resources if possible"""
+	# 	self.fp=None
+	# 	os.unlink(self.filename)
+	# 	self.locs=None
+
+	def __len__(self): return(self._images[32].shape[0])
+
+	@property
+	def sizes(self): return sorted(list(self._images.keys()))
+
+	def add_orts(self,nlist,dorts=None,dtytxs=None,ddefocus=None):
 		"""adds dorts and dtytxs to existing arrays at locations described by nlist, used to take a gradient step
 		on a subset of the data."""
-		if dorts is not None: self.orts[nlist]+=dorts
-		if dtytxs is not None:
-			try: self.tytx[nlist]+=dtytxs
-			except: self.tytx[nlist,:2]+=dtytxs
+		if dorts is not None: self._meta[nlist,2:5]+=dorts
+		if dtytxs is not None: self._meta[nlist,0:2]+=dtytxs
+		if ddefocus is not None: self._meta[nlist,5]+=ddefocus
 
-	def set_frcs(self,nlist,frcs):
-		self.frcs[nlist]=frcs
+	def set_score(self,nlist,scores):
+		self._meta[nlist,0]=scores
 
+	def read(self,size,nlist):
+		"""Reads a list of images and corresponding metadata. Returns a copy of the image data, but the metadata
+		will be a view of the actual cached array. ie - metadata updates will persist for the current session, but
+		will not be automatically stored to disk."""
 
-	def read(self,nlist):
-		while self.locked: time.sleep(0.1)
+		if self._images[size].ndim==3:
+			data=EMStack2D(self._images[size][nlist,:,:].copy())
+			meta=self._meta[nlist,:]
+		else:
+			data=EMStack3d(self._images[size][nlist,:,:,:].copy())
+			meta=self._meta[nlist,:]
 
-		self.locked=True
-
-		stack=[]
-		for i in nlist:
-			try:
-				self.fp.seek(self.locs[i])
-				stack.append(np.load(self.fp))
-#				stack.append(tf.io.parse_tensor(self.fp.read(self.locs[i+1]-self.locs[i]),out_type=tf.complex64))  # TODO
-			except:
-				raise Exception(f"Error reading cache {self.filename}: {i} -> {self.locs[i]} ({nlist})\n{os.stat(self.filename)}\n{[(j,self.locs[j]) for j in range(i-3,i+4)]}")
-
-		self.locked=False
-		ret=EMStack2D(jnp.stack(stack))
-		orts=Orientations(self.orts[nlist])
-		tytx=np.array(self.tytx[nlist])
-		astig=np.array(self.astig[nlist])
-		return ret,orts,tytx,astig
+		data.set_cache(meta,self.apix*self.sizeorig/size,self.voltage,self.cs)
+		return data
 
 class EMStack():
 	"""This class represents a stack of images in either an EMData, NumPy or Tensorflow representation, with easy interconversion
@@ -165,7 +214,7 @@ class EMStack():
 	Individual images in the stack may be accessed using [n]
 	"""
 
-	def __init__(self,imgs=None):
+	def __init__(self,imgs=None,parent=None):
 		"""	imgs - one of:
 		None
 		filename, with optional ":" range specifier (see https://eman2.org/ImageFormats)
@@ -175,12 +224,23 @@ class EMStack():
 		Tensor, with first axis being image number {N,Z,Y,X} ...
 		"""
 		self._data=None	# representation in whatever the current format is
+		self._meta=None # (N,11) NumPy array of metadata. Specific meaning different for 2-D and 3-D
 		self._npy_list=None # list of NumPy arrays sharing memory with EMData objects. RISKY - never copy this list, only use in place!
-		self.set_data(imgs)
 		self.apix=None
+		self.voltage=None
+		self.cs=None
+
+		self.set_data(imgs,parent)
 
 	def set_data(self,imgs):
 		raise Exception("EMStack should not be used directly, please use EMStack3D, EMStack2D or EMStack1d")
+
+	def set_cache(self,meta,apix,voltage,cs):
+		"""Used by the cache class to set internals directly. Not recommended for other use."""
+		self._meta=meta		# note that this is not a copy, but the object itself
+		self.apix=apix
+		self.voltage=voltage
+		self.cs=cs
 
 	def __len__(self): return len(self._data)
 
@@ -225,6 +285,11 @@ class EMStack():
 		self.coerce_emdata()
 		if self._npy_list is not None: return
 		self._npy_list=[i.numpy() for i in self._data]
+
+	@property
+	def metadata(self):
+		"""returns the "live" metadata numpy array. That is, this array can be modified in-place and the EMStack2D will see the modifications"""
+		return self._meta
 
 	def coerce_emdata(self):
 		"""Forces the current representation to EMData/NumPy"""
@@ -294,6 +359,7 @@ class EMStack3D(EMStack):
 	- Coerce routines will insure that the required representation exists, but others will be lost to insure self-consistency.
 	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
 	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
+	- essential metadata is stored internally upon read: 0:tz/ny,1:ty/ny,2:tx/ny,3:ortx,4:orty,5:ortz,6:score,7:class,8-10 future expansion
 
 	Individual images in the stack may be accessed using emdata[n], tensor[n], numpy[n]
 	"""
@@ -307,6 +373,23 @@ class EMStack3D(EMStack):
 			if imgs.get_ndim()!=3: raise Exception("EMStack3D only supports 3-D data")
 			self._data=[imgs]
 			self._npy_list=None
+			self._meta=np.zeros((1,11),dtype=np.float32)	# single image
+			try:
+				r=imgs["xform.align3d"].get_params("spinvec")
+				self._meta[0,0:6]=(r["tz"]/imgs["ny"],r["ty"]/imgs["ny"],r["tx"]/imgs["ny"],r["v1"],r["v2"],r["v3"])
+			except: pass
+
+			try: self._meta[0,6]=imgs["score"]
+			except: pass
+
+			try: self._meta[0,7]=imgs["class"]
+			except: pass
+
+			self._npy_list=None
+			self.apix=imgs["apix_x"]
+			try: self.is_phase_flipped=imgs["is_ctf_phase_flipped"]
+			except: self.is_phase_flipped=False
+
 			self.apix=imgs["apix_x"]
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)==3:
@@ -405,92 +488,130 @@ class EMStack2D(EMStack):
 	- Coerce routines will insure that the required representation exists, but others will be lost to insure self-consistency.
 	- The convenience method numpy_list() will return a python list of N {Z,X,Y} NumPy arrays sharing memory with the EMData objects in the EMDataStack,
 	  but beware, as coercing the EMDataStack to a differnt type will invalidate these NumPy arrays, and could create a crash!
+	- essential metadata is stored internally upon read: 0:ty/ny,1:tx/ny,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
 
 	Note that EMData headers are lost if converted to jax or numpy!
 
 	Individual images in the stack may be accessed using emdata[n], jax[n], numpy[n]
 	"""
 
-	def set_data(self,imgs):
-		""" """
-		self._xforms=None
-		self._df=None
-		self._astig=None
+	def set_data(self,imgs,parent=None):
+		"""imgs can be a single EMData instance, a list of EMData instances, an image filename or a np or jnp array.
+If initialized with an array, the optional parent argument is only used when imgs is a numpy/jax array to set the corresponding
+metadata in the new object."""
+		self._meta=None
+
 		if imgs is None:
 			self._data=None
 			self._npy_list=None
+		## imgs is a filename
 		elif isinstance(imgs,EMData):
 			if imgs.get_ndim()!=2: raise Exception("EMStack2D only supports 2-D data")
 			self._data=[imgs]
-			try: self._xforms=[imgs["xform.projection"]]
+
+			self._meta=np.zeros((1,11),dtype=np.float32)	# single image
+			try:
+				r=imgs["xform.projection"].get_params("spinvec")
+				self._meta[0,0:5]=(r["ty"]/imgs["ny"],r["tx"]/imgs["ny"],r["v1"],r["v2"],r["v3"])
 			except: pass
+
 			try:
 				ctf = imgs["ctf"]
-				self._df=np.array([ctf.defocus])
-				self._astig=np.array([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
+				self._meta[0,5:9]=(ctf.defocus,ctf.get_phase(),ctf.dfdiff,ctf.dfang)
 			except:
 				try:
 					js=js_open_dict(info_name(imgs["ptcl_source_image"]))
 					ctf = js["ctf"][0]
-					self._df=np.array([ctf.defocus])
-					self._astig=np.array([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
+					self._meta[0,5:9]=(ctf.defocus,ctf.get_phase(),ctf.dfdiff,ctf.dfang)
 					js.close()
 				except: pass
+
+			try: self._meta[0,9]=imgs["score"]
+			except: pass
+
+			try: self._meta[0,10]=imgs["class"]
+			except: pass
+
 			self._npy_list=None
 			self.apix=imgs["apix_x"]
+			try: self.is_phase_flipped=imgs["is_ctf_phase_flipped"]
+			except: self.is_phase_flipped=False
+		## imgs is a numpy or jax array
 		elif isinstance(imgs,jax.Array) or isinstance(imgs,np.ndarray):
 			if len(imgs.shape)!=3: raise Exception(f"EMStack2D only supports stacks of 2-D data, the provided images were {len(imgs.shape)}-D")
 			self._data=imgs
+			if parent is not None:
+				if parent.metadata.shape==(imgs.shape[0],11): self._meta=parent._meta.copy()
+				else: raise Exception(f"EMStack2D(imgs,meta) has {imgs.shape[0]} images but metadata shape is {meta.shape}")
+				self.apix,self.is_phase_flipped,self.voltage,self.cs=parent.apix,parent.is_phase_flipped,parent.voltage,parent.cs
+
 			self._npy_list=None
+		## imgs is a filename
 		elif isinstance(imgs,str):
 			self._data=EMData.read_images(imgs)
-			self.apix=self._data[0]["apix_x"]
-			try: self._xforms=[im["xform.projection"] for im in self._data]
-			except: pass
-			try:
-				self._df=np.array([im["ctf"].defocus for im in self._data])
-				self._astig=np.array([[im["ctf"].dfdiff, im["ctf"].dfang, np.pi/2 - im["ctf"].get_phase()] for im in self._data])
-			except:
-				try:
-					df=[]
-					astig=[]
-					for im in self._data:
-						js=js_open_dict(info_name(im["ptcl_source_image"]))
-						ctf=js["ctf"][0]
-						df.append(ctf.defocus)
-						astig.append([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
-						js.close()
-					self._df=np.array(df)
-					self._astig=np.array(astig)
-				except: pass
 			if self._data[0].get_ndim()!=2:
 				if len(self._data)!=1 : raise Exception(f"EMStack2D only supports stacks of 2-D data or a single volume. {imgs} is a stack of {self._data[0].get_ndim()}-D")
-				self._data=to_jax(self._data[0])
+			self.apix=self._data[0]["apix_x"]
+			try: self.is_phase_flipped=self._data[0]["is_ctf_phase_flipped"]
+			except: self.is_phase_flipped=False
+			self._meta=np.zeros((len(self._data),11),dtype=np.float32)	# single image
+			for i,im in enumerate(self._data):
+				try:
+					r=im["xform.projection"].get_params("spinvec")
+					self._meta[i,0:5]=(r["ty"]/im["ny"],r["tx"]/im["ny"],r["v1"],r["v2"],r["v3"])
+				except: pass
+
+				try:
+					ctf = im["ctf"]
+					self._meta[i,5:9]=(ctf.defocus,ctf.get_phase(),ctf.dfdiff,ctf.dfang)
+				except: pass
+
+				try: self._meta[i,9]=im["score"]
+				except: pass
+
+				try: self._meta[i,10]=im["class"]
+				except: pass
+
 			self._npy_list=None
+		## imgs is a list of EMData objects
 		else:
-			try:
+			# try:
 				if not isinstance(imgs[0],EMData): raise Exception(f"EMDataStack cannot be initialized with a list of {type(imgs[0])}")
 				self._data=list(imgs)		# copy the list, not the elements of the list
-				try: self._xforms=[im["xform.projection"] for im in self._data]
-				except: pass
-				try:
-					self._df=np.array([im["ctf"].defocus for im in self._data])
-					self._astig=np.array([[im["ctf"].dfdiff, im["ctf"].dfang, np.pi/2 - im["ctf"].get_phase()] for im in self._data])
-				except:
+
+				self.apix=self._data[0]["apix_x"]
+				try: self.is_phase_flipped=self._data[0]["is_ctf_phase_flipped"]
+				except: self.is_phase_flipped=False
+				self._meta=np.zeros((len(self._data),11),dtype=np.float32)	# single image
+				for i,im in enumerate(self._data):
 					try:
-						df=[]
-						astig=[]
-						for im in self._data:
-							js=js_open_dict(info_name(im["ptcl_source_image"]))
-							ctf=js["ctf"][0]
-							df.append(ctf.defocus)
-							astig.append([ctf.dfdiff, ctf.dfang, np.pi/2 - ctf.get_phase()])
-							js.close()
-						self._df=np.array(df)
-						self._astig=np.array(astig)
+						r=im["xform.projection"].get_params("spinvec")
+						self._meta[i,0:5]=(r["ty"]/im["ny"],r["tx"]/im["ny"],r["v1"],r["v2"],r["v3"])
+					except: pass
+
+					try:
+						ctf = im["ctf"]
+						self._meta[i,5:9]=(ctf.defocus,ctf.get_phase(),ctf.dfdiff,ctf.dfang)
+					except: pass
+
+					try: self._meta[i,9]=im["score"]
+					except: pass
+
+					try: self._meta[i,10]=im["class"]
 					except: pass
 				self._npy_list=None
-			except: raise Exception("EMStack2D may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Y,X}")
+			# except:
+			# 	traceback.print_exc()
+			# 	raise Exception("EMStack2D may be initialized with None, a filename, an EMData object, a list/tuple of EMData objects, a NumPy array or a Tensor {N,Y,X}")
+
+		# if we got at least one CTF object somewhere it should still exist
+		try:
+			self.voltage=ctf.voltage
+			self.cs=ctf.cs
+			self.apix=ctf.apix			# if it exists, it should agree with the ctf fitting
+		except:
+			self.voltage=None
+			self.cs=None
 
 	def __len__(self): return len(self._data)
 
@@ -502,35 +623,27 @@ class EMStack2D(EMStack):
 
 	@property
 	def orientations(self):
-		"""returns an Orientations object and tytx array for the current images if available or None if not. If postxf is a Transform
+		"""returns an Orientations object and (normalized by ny) tytx array for the current images if available or None if not. If postxf is a Transform
 		object, it will be applied to each Transform before generating the Orientations object"""
-		if self._xforms is None: return None,None
-		orts=Orientations()
-		tytx=orts.init_from_transforms(self._xforms)
-		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
-		else: tytx = jnp.stack([tytx[:,0],tytx[:,1], jnp.zeros(tytx.shape[0])], axis=-1)
-		return orts,tytx
+		orts=Orientations(self._meta[:,2:5])
+		return orts,self._meta[:,0:1].copy()
 
 	@property
-	def astigmatism(self):
-		"""Returns the nx2 astigmatism parameter array [dfdiff, dfang] for the current images if available or None if not."""
-		if self._astig is None: return None
-		else: return jnp.array(self._astig)
+	def ctf(self):
+		"""returns an Nx4 array containing (defocus, phase, dfdiff, astigangle) for each image"""
+		if self._meta is not None: return self._meta[:,5:9].copy()
 
 	def orientations_withxf(self,prexf=None):
 		"""Will apply prexf rotatation to each orientation before returning. Typically used to modify orientations for
 		symmetry. eg = s=Symmetries.get("c4"), orientations_withxf(s.get_sym(1)) will return projections oriented to
 		the first (non identity) symmetric orientation"""
-		if self._xforms is None: return None,None
 		if prexf is None: return self.orientations
 
-		xfc=[xf*prexf for xf in self._xforms]
-		orts=Orientations()
-		tytx=orts.init_from_transforms(xfc)
-		if self._df is not None: tytx=jnp.stack([tytx[:,0],tytx[:,1], self._df], axis=-1)
-		else: tytx = jnp.stack([tytx[:,0],tytx[:,1], jnp.zeros(tytx.shape[0])], axis=-1)
-		return orts,tytx
+		orts,tytx=self.orientations
+		xfc=[xf*prexf for xf in orts.transforms(tytx,self.shape[1])]
+		ret=Orientations(xfc)
 
+		return ret,tytx
 
 	def center_clip(self,size):
 		"""returns a new EMStack2D scaled to a new size (larger or smaller) about the center"""
@@ -540,28 +653,30 @@ class EMStack2D(EMStack):
 		shp=(self.shape[1:]-size)//2
 		if isinstance(self._data,list):
 			newlst=[im.get_clip(Region(int(shp[0]),int(shp[1]),int(size[0]),int(size[1]))) for im in self._data]
-			return EMStack2D(newlst)
+			return EMStack2D(newlst,self)
 		elif isinstance(self._data,np.ndarray) or isinstance(self._data,jax.Array):
 			if (shp[0]<0 and shp[1]>0) or (shp[0]>0 and shp[1]<0): error_exit("center_clip must either make the image uniformly larger or uniformly smaller")
 			if shp[0]<0 :
 				newary=np.zeros((self.shape[0],size[0],size[1]))
 				newary[:,-shp[0]:-shp[0]+self.shape[1],-shp[1]:-shp[1]+self[shape[2]]]=self._data
 			else: newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
-			return EMStack2D(newary)
+			return EMStack2D(newary,self)
+
+
 
 	def do_fft(self,keep_type=False):
 		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
 		self.coerce_jax()
 
-		return EMStack2D(jax_fft2d(self._data))
+		return EMStack2D(jax_fft2d(self._data),self)
 
 	def do_ift(self,keep_type=False):
 		"""Computes the IFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing."""
 		if keep_type: raise Exception("do_ift: keep_type not functional yet")
 		self.coerce_jax()
 
-		return EMStack2D(jax_ift2d(self._data))
+		return EMStack2D(jax_ift2d(self._data),self)
 
 	def calc_ccf(self,target,center=True,offset=0):
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size.
@@ -600,11 +715,17 @@ class EMStack2D(EMStack):
 		not be used on rectangular images/volumes."""
 
 		if newsize==self.shape[1]: return EMStack2D(self.jax) # this won't copy, but since the tensor is constant should be ok?
-		return EMStack2D(jax_downsample_2d(self.jax,newsize))	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+		ret=EMStack2D(jax_downsample_2d(self.jax,newsize),self)	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
+
+		try: ret.apix=self.apix*self.shape[1]/newsize
+		except:
+			traceback.print_exc()
+			print(self.__dict__)
+		return ret
 
 	def normalize_standard(self):
 		"""linear transform of values such that the mean of each image is 0 and the standard deviation is 1"""
-		return EMStack2D((self.jax-jnp.mean(self.jax,axis=(1,2)))[:,jnp.newaxis,jnp.newaxis]/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis])
+		return EMStack2D((self.jax-jnp.mean(self.jax,axis=(1,2)))[:,jnp.newaxis,jnp.newaxis]/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis],self)
 
 	def normalize_edgemean(self):
 		"""linear transform of values such that the mean of each image over a 3-pixel wide border around the edge
@@ -615,7 +736,7 @@ class EMStack2D(EMStack):
 			jnp.mean(self.jax[:,3:ny,nx-3:nx],axis=(1,2))+
 			jnp.mean(self.jax[:,0:3,3:nx],axis=(1,2)))/4.0
 
-		return EMStack2D((self.jax-edgemean[:,jnp.newaxis,jnp.newaxis])/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis])
+		return EMStack2D((self.jax-edgemean[:,jnp.newaxis,jnp.newaxis])/jnp.std(self.jax,axis=(1,2))[:,jnp.newaxis,jnp.newaxis],self)
 
 	def center_align_seq(self,region_size=-1):
 		"""Aligns a stack of (real space) images using the middle 1/2 (in x/y) of each image, and the middle image as a starting point.
@@ -860,14 +981,20 @@ class Orientations():
 		NOTE: unlike some other objects, the Nx3 array is XYZ order, NOT ZYX order! This matches the vector ordering of Gaussians
 	"""
 
-	def __init__(self,xyzs=None):
-		"""Initialize with the number of orientations, a N x 3 matrix or a symmetry"""
-		if isinstance(xyzs,int):
-			if xyzs<=0: self._data=None
-			else: self._data=np.zeros((xyzs,3),np.float32)
-		elif isinstance(xyzs,str): self.init_symmetry(xyzs)
+	def __init__(self,data=None):
+		"""Initialize with:
+	- the number of orientations
+	- a N x 3 matrix
+	- a symmetry name, eg "c4"
+	- a list of Transforms"""
+		if isinstance(data,int):
+			if data<=0: self._data=None
+			else: self._data=np.zeros((data,3),np.float32)
+		elif isinstance(data,str): self.init_symmetry(data)
+		elif (isinstance(data,list) or isinstance(data,tuple)) and isinstance(data[0],Transform):
+			self.initfromtransforms(data)
 		else:
-			try: self._data=np.array(xyzs,np.float32)
+			try: self._data=np.array(data,np.float32)
 			except: raise Exception("Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array")
 
 
@@ -894,21 +1021,21 @@ class Orientations():
 	def jax(self):
 		self.coerce_jax()
 		return self._data
-
 	@property
 	def numpy(self):
 		self.coerce_numpy()
 		return self._data
 
-	def init_from_transforms(self,xformlist):
+	def init_from_transforms(self,xformlist,boxsize=1.0):
 		"""Replaces current contents of Orientations object with orientations from a list of Transform objects,
-		returns tytx array with any translations (not stored within Orientations)"""
+		returns tytx array with any translations (not stored within Orientations).
+		boxsize should be set to "ny" of the particles so tytx is scaled in the standard way"""
 		self._data=np.zeros((len(xformlist),3))
 		tytx=[]
 		for i,x in enumerate(xformlist):
 			r=x.get_rotation("spinvec")
 			self._data[i]=(r["v1"],r["v2"],r["v3"])
-			tytx.append((x.get_trans_2d()[1],x.get_trans_2d()[0]))
+			tytx.append((x.get_trans_2d()[1]/boxsize,x.get_trans_2d()[0]/boxsize))
 
 		return(np.array(tytx))
 
@@ -923,10 +1050,12 @@ class Orientations():
 
 		return
 
-	def transforms(self,tytx=None):
-		"""converts the current orientations to a list of Transform objects"""
+	def transforms(self,tytx=None,boxsize=1):
+		"""converts the current orientations to a list of Transform objects.
+	tytx is an array of translations divided by ny.
+	boxsize must be provided to return translations in pixels as expected in Transform objects"""
 		if tytx is not None:
-			return [Transform({"type":"spinvec","v1":float(self._data[i][0]),"v2":float(self._data[i][1]),"v3":float(self._data[i][2]),"tx":float(tytx[i][1]),"ty":float(tytx[i][0])}) for i in range(len(self._data))]
+			return [Transform({"type":"spinvec","v1":float(self._data[i][0]),"v2":float(self._data[i][1]),"v3":float(self._data[i][2]),"tx":float(tytx[i][1])*boxsize,"ty":float(tytx[i][0])*boxsize}) for i in range(len(self._data))]
 
 		return [Transform({"type":"spinvec","v1":self._data[i][0],"v2":self._data[i][1],"v3":self._data[i][2]}) for i in range(len(self._data))]
 
@@ -1584,8 +1713,7 @@ def to_mx3d(ortary):
 	rotated 3-vectors. Can be used to symmetrize a set of 3-vectors
 
 	To apply to a set of vectors:
-	ort=Orientations("c4")
-	mx=self.to_mx3d()
+	ort=Orientations("c4")(ty,tx,ortx,orty,ortz,defocus,phase,dfdiff,astigangle,score)
 	vecs=tf.constant(((1,0,0),(0,1,0),(0,0,1),(2,2,2)),dtype=tf.float32)
 	vecs_c4_0=jnp.matmul(vecs,mx[:,:,0])    # this is all vectors rotated by the first C4 transformation
 	vecs_c4_1=jnp.matmul(vecs,mx[:,:,1])	# all vectors rotated by the second C4 transformation
