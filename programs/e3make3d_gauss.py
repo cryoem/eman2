@@ -65,19 +65,19 @@ def main():
 	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
 	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
 	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
-	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
+#	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
 	parser.add_argument("--frc_weight", type=float, help="Testing only at present", default=-1)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
-	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)
+#	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)  # not supported by new caching mechanism
 	parser.add_argument("--postclip",type=int,help="Trim the output volumes to the specified (square) box size in pixels (no impact on A/pix)", default=-1)
 	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
 	parser.add_argument("--combineiters", type=int, help="Specify an additional number of iterations to add to the end of refinement, volume will use all Gaussian positions during these iterations", default=-1)
 	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
-	parser.add_argument("--tomo_rotate", action="store_true",help="in tomogram mode, reorients the reconstruction based on zero tilt to put 'particles' back in the x-y plane")
-	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")
+#	parser.add_argument("--tomo_rotate", action="store_true",help="in tomogram mode, reorients the reconstruction based on zero tilt to put 'particles' back in the x-y plane")    # this should be handled outside this program
+#	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")  # this should be handled before running this program
 	parser.add_argument("--cttomo", action="store_true",help="Continous tilt tomogram mode, changes optimization steps")
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
@@ -92,7 +92,7 @@ def main():
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--profile", action="store_true",help="Used for code development only, not routine use")
-	parser.add_argument("--cachepath",type=str,help="path for storing the cached images, ideally on a high speed drive. Default='.'",default=".")
+	parser.add_argument("--cachepath",type=str,help="folder for storing the cached images, should be on a high speed drive, M.2 if possible. Default='./cache/'",default=".")
 	parser.add_argument("--score",type=str,help="If set, will generate the specified .lst file with score set and plottable scores.txt",default=None)
 #	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -102,6 +102,7 @@ def main():
 	jax_set_device(dev=0,maxmem=options.gpuram)
 	llo=E3init(sys.argv,options.ppid)
 
+	os.putenv("EMAN3_CACHE_PATH",options.cachepath)
 	options.keep=[float(k) for k in options.keep.split(',')]
 	if len(options.keep)<3: options.keep=[options.keep[0]]*3
 
@@ -158,21 +159,21 @@ def main():
 		selcls=set([i for i in range(len(lsx)) if lsx[i][2]["class"]==options.classid])
 		selimg=selimg.intersection(selcls)
 
-	selimg=list(selimg)
+	selimg=np.array(list(selimg))   # need to convert set to list before going to array or we wind up with an array with a set in it
 	selimg.sort()
 	if options.quick : selimg=selimg[:8192+4096]
 	nptcl=len(selimg)
 	if options.verbose>0: print(f"{nptcl}/{len(lsx)} 2-D images selected")
 
 	if options.profile:
-		selimg=tuple(range(0,min(2050,nptcl)))
+		selimg=np.array(range(0,min(2050,nptcl)))
 		nptcl=len(selimg)
 		print("WARNING: profiling mode enabled. Actual gaussian map results will not be useful, used for development only!")
 
 	nxraw=EMData(args[0],0,True)["nx"]
-	if options.preclip>0: nxraw=options.preclip
+#	if options.preclip>0: nxraw=options.preclip
 	nxrawm2=good_size_small(nxraw-2)
-	frc_Z=options.frc_z
+#	frc_Z=options.frc_z
 	if options.apix>0: apix=options.apix
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
@@ -269,7 +270,7 @@ def main():
 	# limit sampling to (at most) the box size of the raw data
 	# we do this by altering stages to help with jit compilation
 	for i in range(len(stages)):
-		stages[i][1]=min(stages[i][1],nxrawm2)
+		stages[i][1]=min(stages[i][1],nxraw)
 		if options.frc_weight>0: stages[i][3]=options.frc_weight
 
 	# Setting up symmetry
@@ -306,70 +307,75 @@ def main():
 		if options.ctf>0:
 			rad2_img(d)
 
-	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-	for i in range(0,nptcl,1000):
-		if options.verbose>1:
-			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
-			sys.stdout.flush()
-		stk=EMStack2D(EMData.read_images(args[0],selimg[i:min(i+1000,nptcl)]))
-		if options.preclip>0 : stk=stk.center_clip(options.preclip)
-		if options.tomo and options.tomo_seqali!=0 :
-			stk.center_align_seq(options.tomo_seqali)
-			if options.verbose>3: stk.write_images("dbg_ali.hdf")
-		# rotate the set of transforms based on ostensibly the zero tilt image
-		if options.tomo_rotate:
-			xfs=stk._xforms
-			stk._xforms=[xfs[i]*(xfs[len(xfs)//2].inverse()) for i in range(len(xfs))]
+	### Note that StackCache stores the entire .lst file. selimg must be handled when reading from the cache
+	cache=StackCache(args[0])
 
-		orts,tytx=stk.orientations
-		astig=stk.astigmatism
-		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
-		for im in stk.emdata: im.process_inplace("normalize.edgemean")
-		if options.verbose>3: stk.write_images("dbg_m3dg.hdf:12")
-		stkf=stk.do_fft()
-#		print(stkf.shape)
-		for down in downs:
-			stkfds=stkf.downsample(down)
-			caches[down].write(stkfds,i,orts,tytx,astig)
-
-
-	# Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
-	for down in downs[1:]:
-		caches[down].orts=caches[downs[0]].orts
-		caches[down].tytx=caches[downs[0]].tytx
-
-	if options.ctf>0:
-		if options.tomo:
-			ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
-		else:
-			try:
-				js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-				ctf=js["ctf"][0]
-				js.close()
-			except:
-				try: ctf = EMData(args[0],0,True)["ctf"]
-				except:
-					try:
-						js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
-						ctf=js["ctf_frame"][1]
-						js.close()
-					except:
-						print("Could not find ctf info--Proceeding with no ctf applied") # TODO: This will actually crash because "ctf" doesn't get defined'
-						options.ctf=0
-		jctf = EMAN3Ctf(ctf=ctf)
-		dfstep = jctf.defocus_step
-		wavelength = jctf.wavelength
-		# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
-		# df_buffer = (boxlen/20000) + dfstep
-		# dfrange=(mindf - df_buffer, maxdf + df_buffer)
-		# if options.dfmin > 0 and options.dfmax > 0:
-		# 	dfrange=(options.dfmin, options.dfmax)
-		# # Create the ctf stack
-		# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
-		ctf_info = jnp.array([wavelength, jctf.cs])
+### TODO: remove this, leaving it temporarily for reference
+# 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
+# 	for i in range(0,nptcl,1000):
+# 		if options.verbose>1:
+# 			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
+# 			sys.stdout.flush()
+# 		stk=EMStack2D(EMData.read_images(args[0],selimg[i:min(i+1000,nptcl)]))
+# 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
+# 		if options.tomo and options.tomo_seqali!=0 :
+# 			stk.center_align_seq(options.tomo_seqali)
+# 			if options.verbose>3: stk.write_images("dbg_ali.hdf")
+# 		# rotate the set of transforms based on ostensibly the zero tilt image
+# 		if options.tomo_rotate:
+# 			xfs=stk._xforms
+# 			stk._xforms=[xfs[i]*(xfs[len(xfs)//2].inverse()) for i in range(len(xfs))]
+#
+# 		orts,tytx=stk.orientations
+# 		astig=stk.astigmatism
+# 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
+# 		for im in stk.emdata: im.process_inplace("normalize.edgemean")
+# 		if options.verbose>3: stk.write_images("dbg_m3dg.hdf:12")
+# 		stkf=stk.do_fft()
+# #		print(stkf.shape)
+# 		for down in downs:
+# 			stkfds=stkf.downsample(down)
+# 			caches[down].write(stkfds,i,orts,tytx,astig)
+ #
+ #
+	# # Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
+	# for down in downs[1:]:
+	# 	caches[down].orts=caches[downs[0]].orts
+	# 	caches[down].tytx=caches[downs[0]].tytx
+ #
+	# if options.ctf>0:
+	# 	if options.tomo:
+	# 		ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
+	# 	else:
+	# 		try:
+	# 			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
+	# 			ctf=js["ctf"][0]
+	# 			js.close()
+	# 		except:
+	# 			try: ctf = EMData(args[0],0,True)["ctf"]
+	# 			except:
+	# 				try:
+	# 					js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
+	# 					ctf=js["ctf_frame"][1]
+	# 					js.close()
+	# 				except:
+	# 					print("Could not find ctf info--Proceeding with no ctf applied") # TODO: This will actually crash because "ctf" doesn't get defined'
+	# 					options.ctf=0
+	# 	jctf = EMAN3Ctf(ctf=ctf)
+	# 	dfstep = jctf.defocus_step
+	# 	wavelength = jctf.wavelength
+	# 	# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
+	# 	# df_buffer = (boxlen/20000) + dfstep
+	# 	# dfrange=(mindf - df_buffer, maxdf + df_buffer)
+	# 	# if options.dfmin > 0 and options.dfmax > 0:
+	# 	# 	dfrange=(options.dfmin, options.dfmax)
+	# 	# # Create the ctf stack
+	# 	# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
+	# 	ctf_info = jnp.array([wavelength, jctf.cs])
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
+	# Initialize Gaussians
 	gaus=Gaussians()
 	#Initialize Gaussians to random values with amplitudes over a narrow range
 	rng = np.random.default_rng()
@@ -406,11 +412,15 @@ def main():
 			if rstep<.01: break		# don't continue if we've optimized well at this level
 			if nptcl>stage[0]*2: idx0=sn+i
 			else: idx0=0
-			nliststg=range(idx0,nptcl,max(1,nptcl//stage[0]+1))		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
+			nliststg=selimg[range(idx0,nptcl,max(1,nptcl//stage[0]+1))]		# all of the particles to use in the current epoch in the current stage, sn+i provides stochasticity
 			imshift=0.0
 			for j in range(0,len(nliststg)-10,batchsize):	# compute the gradient step piecewise due to memory limitations, batchsize particles at a time. The "-10" prevents very small residual batches from being computed
-				ptclsfds,orts,tytx,astig=caches[stage[1]].read(nliststg[j:j+batchsize])
-				if len(orts)<5 :
+				ptclsfds=cache.read(stage[1],nliststg[j:j+batchsize])	# metadata stored in ptclsfds, which is a EMStack2D
+				# Since we aren't modifying the metadata in this program, just make a JAX copy at the get-go
+				meta=jnp.array(ptclsfds.metadata)		# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
+
+#				ptclsfds,orts,tytx,astig=caches[stage[1]].read(nliststg[j:j+batchsize])
+				if len(ptclsfds)<5 :
 					print("Abort tiny batch: ",len(nliststg),j,batchsize)
 					continue
 				# standard mode, optimize gaussian parms only
@@ -418,8 +428,9 @@ def main():
 
 				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
 				# only using a single batch for this right now. May be sufficient
+				# TODO - Do we need to do this differently with other CTF modes? Variance estimate might not be impacted by the phase flipping...
 				if i in (0,8) and j==0:
-					frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+					frcs=prj_frcs(gaus.jax,ptclsfds,meta)
 					#print("FRCS ",frcs.shape)
 					try:
 						thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
@@ -437,13 +448,13 @@ def main():
 
 
 				if options.ctf==0:
-					dsapix=apix*nxraw/ptclsfds.shape[1]
+					dsapix=ptclsfds.apix		# this is automatically adjusted for downsampling
 					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,stage[7])
+					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,meta,symmx,weight,thresh,stage[7])
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
-					step0=jnp.nan_to_num(step0)
-					shift0=jnp.nan_to_num(shift0)
-					sca0=jnp.nan_to_num(sca0)
+					# step0=jnp.nan_to_num(step0)
+					# shift0=jnp.nan_to_num(shift0)
+					# sca0=jnp.nan_to_num(sca0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
 					else:
@@ -463,6 +474,7 @@ def main():
 					# 	for ii,fsc in enumerate(np.array(fscs0)): out.write(f"{nliststg[j+ii]:d}\t{fsc:0.5f}\n")
 					# 	out.close()
 				elif options.ctf==2:
+					### TODO new caching mechanism not implemented yet. See the definition of meta on line 419 for CTF parameters
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3],stage[7],frc_Z)
 					step0=jnp.nan_to_num(step0)
@@ -474,6 +486,7 @@ def main():
 						shift+=shift0
 						sca+=sca0
 				elif options.ctf==1:
+					### TODO new caching mechanism not implemented yet. See the definition of meta on line 419 for CTF parameters
 					dsapix=apix*nxraw/ptclsfds.shape[1]
 					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh)
 					step0=jnp.nan_to_num(step0)
@@ -485,6 +498,7 @@ def main():
 						shift+=shift0
 						sca+=sca0
 				# optimize gaussians and image shifts
+				### TODO - What is this?  Shouldn't CTF always be 0,1,2 ?
 				else:
 					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
 					step0=jnp.nan_to_num(step0)
@@ -582,11 +596,12 @@ def main():
 			if options.score is not None and i==stage[2]-1:
 				if options.verbose: print("Compute quality")
 				for j in range(0,nptcl,batchsize):
-#					ptclsfds,orts,tytx,astig=caches[stage[1]].read(range(j,min(j+batchsize,nptcl)))	# quality using the current stage scale
-					ptclsfds,orts,tytx,astig=caches[stages[4][1]].read(range(j,min(j+batchsize,nptcl)))		# quality measurement at fixed scale for all stages, 3 is resolution stage to assess at
+					ptclsfds=cache.read(stage[1],nliststg[j:j+batchsize])	# metadata stored in ptclsfds, which is a EMStack2D
+					meta=jnp.array(ptclsfds.metadata)		# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
+
 					# need to recompute this here since we may not have hit this stage yet
 					if j==0:
-						frcs=prj_frcs(gaus.jax,orts,tytx,ptclsfds)
+						frcs=prj_frcs(gaus.jax,ptclsfds,meta)
 						try:
 							thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
 							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
@@ -599,7 +614,7 @@ def main():
 							weight=np.ones((len(frcs.shape[1])))
 
 					# we measure per particle quality and save it
-					quality=jnp.nan_to_num(sym_prj_frcs_loss(gaus.jax,orts.jax,tytx,symmx,ptclsfds.jax,weight,thresh), nan=2.0)
+					quality=jnp.nan_to_num(sym_prj_frcs_loss(gaus.jax,symmx,ptclsfds.jax,meta,weight,thresh), nan=2.0)
 
 					#print(quality.shape,quality)
 					for ii,q in enumerate(np.array(quality)): qualities[ii+j][sn]=q
@@ -770,7 +785,7 @@ def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
 
 # @profile
 # def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,relstep=1.0):
+def gradient_step_optax(gaus,ptclsfds,meta,symmx,weight,thresh,relstep=1.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -780,17 +795,13 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,relstep=1.0)
 	shift - std of xyz shift gradient
 	scale - std of amplitude gradient"""
 	ny=ptclsfds.shape[1]
-	mx=orts.to_mx2d(swapxy=True)
+	#mx=Orientations(ptclsfds.metadata[:,2:5]).to_mx2d(swapxy=True)
 	gausary=gaus.jax
 	ptcls=ptclsfds.jax
-	ortary=orts.jax
 
 	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z) # From when I tried SNR weighting Gaussian gradient
 	# if True:
-	if False:
-		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,thresh) # No symmetry
-	else:
-		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,thresh) # With symmetry
+	frcs,grad=gradvalsfnl(gausary,meta[:,2:5],meta[:,0:2],symmx,ptcls,weight,thresh) # With symmetry
 
 
 	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
@@ -825,11 +836,11 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,thresh):
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
-def __sym_prj_frcs_loss(gausary,ortary,tytx,symmx,ptcls,weight,thresh):
+def __sym_prj_frcs_loss(gausary,symmx,ptcls,meta,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
-	prj=gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx)
+	prj=gauss_project_simple_sym_fn(gausary, meta[:,2:5], ny, meta[:,0:2], symmx)
 #	print(prj.shape,ptcls.shape,weight,frc_Z)
 #	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
 	return -jax_frcs_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
@@ -848,12 +859,12 @@ def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 
 gradvalfn=jax.value_and_grad(prj_frc)
 
-def prj_frcs(gausary,orts,tytx,ptcls):
+def prj_frcs(gausary,ptcls,meta):
 	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
 	a loss function, this returns the individual FRC curves for statistical analysis"""
-	mx2d=orts.to_mx2d(swapxy=True)
+	mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
 	ny=ptcls.shape[1]
-	prjf=jax_fft2d_jit(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
+	prjf=jax_fft2d_jit(gauss_project_simple_fn(gausary,mx2d,ny,meta[:,0:2]))
 #	print(prjf.shape,ptcls.jax.shape)
 
 	return jax_frcs_jit(prjf,ptcls.jax)

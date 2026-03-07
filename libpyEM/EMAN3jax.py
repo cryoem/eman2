@@ -110,7 +110,7 @@ class StackCache():
 		self.cachefname=f"{cache_path()}/{os.path.abspath(self.datasource).replace("/","_").replace("\\","_").replace(".lst",".bin")}"
 
 		# levels of downsampling, all powers of 2 from 32 thru 1024, and the original size
-		sizes=[i for i in [32,64,128,256,512,1024] if i<hdr["nx"]]
+		sizes=[i for i in [16,32,64,128,256,512,1024] if i<hdr["nx"]]
 		sizes.append(hdr["nx"])
 
 		# an array of offsets indicating the start of each shared memory region
@@ -364,7 +364,7 @@ class EMStack3D(EMStack):
 	Individual images in the stack may be accessed using emdata[n], tensor[n], numpy[n]
 	"""
 
-	def set_data(self,imgs):
+	def set_data(self,imgs,parent=None):
 		""" """
 		if imgs is None:
 			self._data=None
@@ -395,6 +395,10 @@ class EMStack3D(EMStack):
 			if len(imgs.shape)==3:
 				imgs=jnp.expand_dims(imgs,0)
 			elif len(imgs.shape)!=4: raise Exception(f"EMStack3D only supports stacks of 3-D data, the provided images were {len(imgs.shape)}-D")
+			if parent is not None:
+				if parent.metadata.shape==(imgs.shape[0],11): self._meta=parent._meta.copy()
+				else: raise Exception(f"EMStack2D(imgs,meta) has {imgs.shape[0]} images but metadata shape is {meta.shape}")
+				self.apix,self.is_phase_flipped,self.voltage,self.cs=parent.apix,parent.is_phase_flipped,parent.voltage,parent.cs
 			self._data=imgs
 			self._npy_list=None
 		elif isinstance(imgs,str):
