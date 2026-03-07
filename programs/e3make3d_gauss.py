@@ -475,7 +475,7 @@ def main():
 						sca+=sca0
 				elif options.ctf==1:
 					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,stage[3],stage[7],frc_Z)
+					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -788,7 +788,7 @@ def gradient_step_optax(gaus,ptclsfds,orts,tytx,symmx,weight,thresh,relstep=1.0)
 	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z) # From when I tried SNR weighting Gaussian gradient
 	# if True:
 	if False:
-		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,frc_Z) # No symmetry
+		frcs,grad=gradvalfnl(gausary,mx,tytx,ptcls,weight,thresh) # No symmetry
 	else:
 		frcs,grad=gradvalsfnl(gausary,ortary,tytx,symmx,ptcls,weight,thresh) # With symmetry
 
@@ -812,7 +812,7 @@ def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight,thresh):
 gradvalsfnl=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
 
 # @profile
-def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
+def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 
@@ -820,7 +820,8 @@ def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,frc_Z):
 	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
 	#prj=pfn(gausary,mx2d,ny,tytx)
 	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
 
@@ -977,7 +978,7 @@ gradvalfn_ctf=jax.value_and_grad(prj_frc_ctf)
 
 
 # def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight=1.0,relstep=1.0,frc_Z=3.0):
+def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
 	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
 	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
@@ -992,39 +993,43 @@ def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix
 	ptcls=ptclsfds.jax
 
 	if False:
-		frcs,grad=gradvalfnl_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,frc_Z) # No symmetry
+	# if True:
+		frcs,grad=gradvalfnl_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,thresh) # No symmetry
 	else:
-		frcs,grad=gradvalsfnl_ctf(gausary,orts.jax,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,frc_Z) # Symmetry
+		frcs,grad=gradvalsfnl_ctf(gausary,orts.jax,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh) # Symmetry
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
 	sca=grad[:,3].std()			# amplitude std
 #	print(grad[:,3])
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,frc_Z):
+def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
-#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
+#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,3)
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last two are minfreq and frc_Z which we are trying to get rid of
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
 # gradvalsfnl_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf)) # Crashes when I try to jit compile here with a ValueError: Non-hashable static arguments are not supported
 gradvalsfnl_ctf=jax.value_and_grad(sym_prj_frc_loss_ctf)
 
-def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,frc_Z):
+# def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight):
+def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations."""
 
 	ny=ptcls.shape[1]
+	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
 	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
+	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)  # last arg is frc_z which we are trying to remove
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
 
-# gradvalfnl_ctf=jax.value_and_grad(prj_frc_loss_ctf)
-gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf))
+# gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfmin","dfstep"])
+gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfstep"])
 
 def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,

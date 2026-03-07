@@ -1,0 +1,9 @@
+build/
+builde3/
+doc/
+*.pdf
+*.log
+.git/
+sparx/
+sphire/
+broken/
