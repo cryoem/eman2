@@ -43,6 +43,7 @@ def main():
 	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. Default is 20000.", default=20000)
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
+	parser.add_argument("--jax", action="store_true", default=False ,help="use jax backend")
 
 	(options, args) = parser.parse_args()
 	
@@ -104,11 +105,9 @@ def main():
 		it0=itr-1
 		
 		for ieo, eo in enumerate(["even", "odd"]):
-			os.remove(f"{path}/projections_{eo}.hdf")
-			run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:12")
+			run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:24")
 			
 
-			#else:
 			if itr==options.startiter:
 				
 				if options.initpts:
@@ -160,8 +159,11 @@ def main():
 				etcali+=f" --clip {clip}"
 				etcm3d+=f" --outsize {clip}"
 
+			if options.jax:
+				run(f'e2gmm_batch.py "e2gmm_refine_jax.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
 			
-			run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
+			else:
+				run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
 			
 			pfile=f"{path}/ptcls_{itr:02d}_{eo}.lst"
 			if options.breaksym:
@@ -181,6 +183,9 @@ def main():
 			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
 			
 			#run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_{itr:02d}_{eo}.hdf --multfile mask_foc0_soft.hdf")
+			
+			if os.path.isfile(f"{path}/projections_{eo}.hdf"): 
+				os.remove(f"{path}/projections_{eo}.hdf")
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf --res {res} --tophat {options.tophat} --sym {options.sym} --thread 32 --setsf sf.txt --align  {etcpp}")
 		

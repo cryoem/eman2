@@ -439,6 +439,9 @@ as well as alignment parameters, so use of tomograms from other software is not 
 			output=os.path.join("particles3d", outname)
 			if not os.path.isfile(output):
 				skip=False
+			output=os.path.join("particles", outname)
+			if not os.path.isfile(output):
+				skip=False
 		if skip:
 			print("all particles in {} exist. skip tilt series...".format(tfile))
 			
@@ -485,7 +488,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		options.pad=pad=good_size(boxsz*2*options.padtwod)
 		
 		if options.norewrite:
-			if os.path.isfile(options.output):
+			if os.path.isfile(options.output) and os.path.isfile(options.output2d):
 				print("File {} already exist. skipping...".format(options.output))
 				continue
 				

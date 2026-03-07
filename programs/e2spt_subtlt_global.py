@@ -25,6 +25,7 @@ def main():
 	parser.add_argument("--aliptcls3d",type=str,help="optional aliptcls input.",default="")
 
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use", default="thread:4")
+	parser.add_argument("--keepxf",action="store_true",help="start from the 2d alignment from the past iterations.",default=False)
 	parser.add_argument("--flatten",action="store_true",help="flatten power spetrum before alignment.",default=False)
 	parser.add_argument("--debug",action="store_true",help="for testing.",default=False)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
@@ -189,6 +190,13 @@ class SptAlignTask(JSTask):
 				
 			if options.debug:  print("projecting references...")
 			xfs=[m["xform.projection"]*x for m,x in zip(imgs, xf3d)]
+			if options.keepxf:
+				f="{}/aliptcls2d_{:02d}.lst".format(options.path, options.iter-1)
+				if os.path.isfile(f):
+					if options.debug: print(f"using xform from {f}")
+					ali2d=load_lst_params(f, di)
+					xfs=[m["xform.projection"] for m in ali2d]
+					
 			cls=[l["class"] for l in info3d]
 			pjs=[refs[c].project('gauss_fft',{"transform":x, "returnfft":1}) for x,c in zip (xfs, cls)]
 			#print(xfs[0])

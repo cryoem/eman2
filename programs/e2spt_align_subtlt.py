@@ -34,12 +34,15 @@ def main():
 	parser.add_argument("--debug",action="store_true",help="Debug mode. Will run a small number of particles directly without parallelism with lots of print out. ",default=False)
 	parser.add_argument("--plst",type=str,default=None,help="list of 2d particle with alignment parameters. The program will reconstruct before alignment so it can be slower.")
 	
+	parser.add_argument("--ntilt", type=int, help="only consider the best N tilt",default=-1)
+	
 	parser.add_argument("--maxshift", type=int, help="Maximum shift from the center of the box or the previous alignment. default box size//6",default=-1)
 	parser.add_argument("--maxang", type=int, help="Maximum angle difference from starting point. Ignored when --fromscratch is on.",default=30)
 	
 	parser.add_argument("--curve",action="store_true",help="Mode for filament structure refinement. Still under testing. Ignored when --fromscratch is on.",default=False)
 	parser.add_argument("--vector",action="store_true",help="similar to --curve but keep vector direction as well.",default=False)
 	parser.add_argument("--membrane",action="store_true",help="Mode for membrane proteins.",default=False)
+	parser.add_argument("--powell",action="store_true",help="use powell optimizer.",default=False)
 	
 	parser.add_argument("--skipali",action="store_true",help="Skip alignment and only calculate the score. Incompatible with --fromscratch, but --breaksym will still be considered.",default=False)
 	parser.add_argument("--breaksym",type=str,default=None,help="Specify symmetry to break. Ignored when --fromscratch is on.")
@@ -193,6 +196,8 @@ class SptAlignTask(JSTask):
 			if return_2d:
 				return scr
 			else:
+				if options.ntilt>0:
+					scr=np.sort(scr)[:options.ntilt]
 				return np.mean(scr)
 		
 		callback(0)
@@ -462,7 +467,10 @@ class SptAlignTask(JSTask):
 							simplex=np.vstack([[0,0,0,0,0,0], np.eye(6)])
 							simplex[4:]*=astep
 							
-							res=minimize(testxf, x0,  method='Nelder-Mead', options={'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
+							if options.powell:
+								res=minimize(testxf,x0,method='Powell',options={'ftol': 1e-4, 'disp': False, "maxiter":10})
+							else:
+								res=minimize(testxf, x0,  method='Nelder-Mead', options={'disp': False, "maxiter":50,"initial_simplex":simplex+x0})
 							
 							x=res.x
 							s=float(res.fun)

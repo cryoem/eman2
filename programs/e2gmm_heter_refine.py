@@ -25,6 +25,9 @@ def main():
 	parser.add_argument("--minres", type=float,help="min resolution for the heterogeneity analysis.", default=50)	
 	parser.add_argument("--rigidbody", action="store_true", default=False ,help="rigid body movement mode. still testing")
 	parser.add_argument("--nogoldstandard", action="store_true", default=False ,help="merge even/odd for heterogeneity analysis")
+	parser.add_argument("--jax", action="store_true", default=False ,help="use the newer jax version")	
+	parser.add_argument("--pointtransformer", action="store_true", default=False ,help="use a point transformer model. only available with --jax")
+
 	parser.add_argument("--remodel", action="store_true", default=False ,help="rebuild model after heterogeneity analysis for later focused refinement")
 	parser.add_argument("--parallel", type=str,help="parallel options for 3d reconstruction", default="thread:32")
 
@@ -77,7 +80,7 @@ def main():
 			
 			np.savetxt(f"{path}/model_00{eo}.txt", pts)
 			
-			run(f"e2project3d.py {path}/threed_00{eo}.hdf --outfile {path}/projections{eo}.hdf --orientgen=eman:delta=4 --parallel={options.parallel}")
+			
 				
 	if options.mask==None:
 		options.mask=f"{oldpath}/mask.hdf"
@@ -87,6 +90,11 @@ def main():
 	js=js_open_dict(fm)
 	js.update(vars(options))
 	js.close()	
+	
+	if options.jax:
+		prog="e2gmm_refine_jax.py"
+	else:
+		prog="e2gmm_refine_new.py"
 	
 	it0=0
 	path=options.path
@@ -99,13 +107,13 @@ def main():
 		if npt>0:
 			np.random.shuffle(pts)
 			pts=pts[:npt]
-		np.savetxt(f"{path}/model_{it0:02d}{eo}.txt", pts)
-		run(f"e2gmm_refine_new.py --ptclsin {path}/projections{eo}.hdf --model {path}/model_{it0:02d}{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
+			np.savetxt(f"{path}/model_{it0:02d}{eo}.txt", pts)
 		
-		pn=options.n_anchor//2
-		km=KMeans(pn,max_iter=30)
-		km.fit(pts[:,:3])
-		pc=km.cluster_centers_
+		if options.model==None:
+			run(f"e2project3d.py {path}/threed_00{eo}.hdf --outfile {path}/projections{eo}.hdf --orientgen=eman:delta=4 --parallel={options.parallel}")
+			
+			run(f"e2gmm_refine_new.py --ptclsin {path}/projections{eo}.hdf --model {path}/model_{it0:02d}{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}{eo}.txt --niter 40 --trainmodel --learnrate 1e-6")
+		
 		
 		emmask=True
 		try:
@@ -129,19 +137,37 @@ def main():
 			imsk=np.zeros(len(pts), dtype=float)
 			imsk[i]=1
 		
+		mode=""
+		
 		if options.rigidbody:
-			mode="--rigidbody"
+			mode=" --rigidbody"
+		
+		elif options.jax and options.pointtransformer:
+			mode=" --pointtransformer"
 		else:
-			pm=pts[imsk>.1]
-			pn=options.n_anchor//2
-			km=KMeans(pn,max_iter=30)
-			km.fit(pm[:,:3])
-			pc2=km.cluster_centers_
+			if emmask:
+				pn=options.n_anchor//2
+				km=KMeans(pn,max_iter=30)
+				km.fit(pts[:,:3])
+				pc=km.cluster_centers_
 			
-			pcx=np.vstack([pc, pc2])
+				pm=pts[imsk>.1]
+				pn=options.n_anchor//2
+				km=KMeans(pn,max_iter=30)
+				km.fit(pm[:,:3])
+				pc2=km.cluster_centers_
+				
+				pcx=np.vstack([pc, pc2])
+			else:
+				
+				pn=options.n_anchor
+				km=KMeans(pn,max_iter=30)
+				km.fit(pts[:,:3])
+				pcx=km.cluster_centers_
+				
 			pp=np.hstack([pcx, np.zeros((len(pcx),1))+np.mean(pts[:,3]), np.zeros((len(pcx),1))+np.mean(pts[:,4])])
 			np.savetxt(f"{path}/model_{it0:02d}{eo}_anchor.txt", pp)
-			mode=f"--anchor {path}/model_{it0:02d}{eo}_anchor.txt"
+			mode=f" --anchor {path}/model_{it0:02d}{eo}_anchor.txt"
 		
 		
 		lst=load_lst_params(f"{path}/ptcls_{it0:02d}{eo}.lst")
@@ -155,14 +181,14 @@ def main():
 		
 		## pretrain from lower res to ensure convergence
 		res0=max(res,7)
-		run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt {mode} --conv --midout {path}/mid_00{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas {options.pas} {etc} --maxgradres {res}")
+		run(f"{prog} --model {path}/model_{it0:02d}{eo}.txt {mode} --midout {path}/mid_00{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas {options.pas} {etc} --maxgradres {res}")
 		# run(f"e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt --rigidbody --midout {path}/mid_00{eo}.txt --maxres {res0} --minres {options.minres} --learnrate 1e-5 --niter 20 --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas 100 {etc} --maxgradres {res}")
 		
 		run(f"e2gmm_eval.py --pts {path}/mid_00{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}{eo}_sample.lst --ptclsout {path}/ptcls{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 8000 --axis 0 --parallel={options.parallel}")
 		
 		run(f"e2proc3d.py {path}/ptcls{eo}_cls_00.hdf {path}/ptcls{eo}_cls_00.hdf --process filter.lowpass.gauss:cutoff_freq={1./res} --process normalize.edgemean")
 		
-		run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}{eo}.txt --midout {path}/midall_00{eo}.txt {mode} --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 10 --ptclsin {path}/ptcls_{it0:02d}{eo}.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas {options.pas} {etc}" --load --niter 1 --batch 20000')
+		run(f'e2gmm_batch.py "{prog} --model {path}/model_{it0:02d}{eo}.txt --midout {path}/midall_00{eo}.txt {mode} --maxres {res} --minres {options.minres} --learnrate 1e-5 --niter 10 --ptclsin {path}/ptcls_{it0:02d}{eo}.lst --heter --encoderout {path}/enc{eo}.h5 --decoderout {path}/dec{eo}.h5 --pas {options.pas} {etc}" --load --niter 1 --batch 20000')
 		
 		run(f"e2gmm_eval.py --pts {path}/midall_00{eo}.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/ptcls_{it0:02d}{eo}.lst --ptclsout {path}/ptcls{eo}_cls_00.lst --mode regress --ncls 4 --nptcl 5000 --axis 0 --parallel={options.parallel}")
 		

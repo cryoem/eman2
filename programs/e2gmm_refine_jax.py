@@ -10,6 +10,7 @@ from sklearn.cluster import KMeans
 import scipy.spatial.distance as scipydist
 from flax.serialization import to_state_dict, from_state_dict
 import pickle
+from EMAN2_utils import pdb2numpy
 
 if "CUDA_VISIBLE_DEVICES" not in os.environ:
 	# so we can decide which gpu to use with environmental variable
@@ -82,10 +83,16 @@ def xf2pts(pts, ang):
 	pts_rot=jnp.matmul(pts[:,:3], matrix)
 
 	#### finally do the translation
-	pts_rot_trans=jnp.stack([(pts_rot[:,0]+ang[3]), (-pts_rot[:,1])+ang[4]], 1)
+	pts_rot_trans=jnp.stack([pts_rot[:,0]+ang[3], 
+							-pts_rot[:,1]+ang[4], 
+							pts_rot[:,2]-ang[5], 
+							pts[:,3], pts[:,4]
+							], 1)
+	#pts_rot_trans=jnp.stack([(pts_rot[:,0]+ang[3]), (-pts_rot[:,1])+ang[4]], 1)
 
 	return pts_rot_trans
 
+xf2pts_multi=jax.vmap(xf2pts, in_axes=(0,0))
 
 def pts2img_one_sig(pts, ang):
 	# pts, ang = args
@@ -155,7 +162,7 @@ def load_particles(options):
 	projs=[]
 	hdrs=[]
 	e=EMData(fname, 0, True)
-	rawbox=e["nx"]
+	options.rawbox=rawbox=e["nx"]
 	print("Loading {} particles of box size {}. shrink to {}".format(nptcl, rawbox, boxsz))
 	for j in range(0,nptcl,1000):
 		print(f"\r {j}/{nptcl} ",end="")
@@ -174,27 +181,25 @@ def load_particles(options):
 	
 	data_cpx=np.fft.rfft2(np.fft.fftshift(projs*1e-3, axes=(1,2))).astype(np.complex64)
 
-	xflst=False
 	if fname.endswith(".lst"):
 		info=load_lst_params(fname)
-		if "xform.projection" in info[0]:
-			xflst=True
-			xfs=[p["xform.projection"].get_params("eman") for p in info]
+		xfs=[p["xform.projection"] for p in info]
 			
-	if xflst==False and ("xform.projection" in hdrs[0]):
-		xflst=True
-		xfs=[p["xform.projection"].get_params("eman") for p in hdrs]
+	elif "xform.projection" in hdrs[0]:
+		xfs=[p["xform.projection"] for p in hdrs]
+		info=[{"src":fname, "idx":i, "xform.projection":x} for i,x in enumerate(xfs)]
 		
-	if xflst==False:
-		xfs=[Transform().get_params("eman") for p in hdrs]
-		print("No existing transform from particles...")
+	else:
+		print("Error. No existing transform from particles...")
+		exit()
 		
-	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"]] for x in xfs])
+	xfpm=[x.get_params("eman") for x in xfs]
+	xfsnp=np.array([[x["az"],x["alt"],x["phi"], x["tx"], x["ty"], 0] for x in xfpm])
 	xfsnp[:,:3]=xfsnp[:,:3]*np.pi/180.
 	xfsnp[:,3:]/=float(rawbox)
 	
 	print("Data read complete")
-	return data_cpx,xfsnp
+	return data_cpx, xfsnp, info
 	
 
 #### compute fourier indices for image generation, clipping, and frc
@@ -560,6 +565,7 @@ def train_heterg(data_cpx, data_xf, allgrds, variables, encode_model, decode_mod
 		p0=jnp.zeros((xf.shape[0], len(pts), 5))+pts
 
 		pout=pout*pas
+		pout=pout*options.mask[None,:,None]
 		pout+=p0
 				
 		imgs_cpx=pts2img(pout, xf)
@@ -612,49 +618,289 @@ def train_heterg(data_cpx, data_xf, allgrds, variables, encode_model, decode_mod
 	
 	return variables
 
+def align_particles(data_cpx, data_xf, params, pts, lst_raw, options):
+	#### simple optimization of projection angle
+	#def calc_loss_3d_raw(xf_rot, xf_proj, dcpx, return_all=False):
+		
+		#xr=xf_rot[:,0]*np.array([1,1,1,1,1,0])
+		
+		#ptsx=jnp.repeat(pts[None,...], dcpx.shape[0], axis=0)
+		#pts1=xf2pts_multi(ptsx, xr)*np.array([1,-1,1,1,1])
+		
+		#imgs_cpx=pts2img(pts1, xf_proj)
+		#fval=calc_frc(dcpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+		#if return_all: return fval
+		#loss=-jnp.mean(fval)
+		#return loss
+		
+	#### rigid body version
+	def calc_loss_3d_raw(xf_rot, xf_proj, dcpx, l2wd=0, return_all=False):
+		if options.focus:
+			xf_rot=xf_rot*np.array([1,1])[None,:,None]
+		xr=xf_rot.reshape((-1,6))
+		ptsx=jnp.repeat(pts[None,...], dcpx.shape[0]*nmask, axis=0)
+		
+		pts1=xf2pts_multi(ptsx, xr)*np.array([1,-1,1,1,1])
+		pts1=pts1.reshape((dcpx.shape[0], nmask, len(pts), 5))
+		pts1=pts1*imasks[None,:,:,None]
+		pts1=jnp.sum(pts1, axis=1)
+		
+		imgs_cpx=pts2img(pts1, xf_proj)
+		fval=calc_frc(dcpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+		
+		if return_all: return fval
+	
+		l2=jnp.sum((xf_rot-xf_rot00)**2)
+		loss=-jnp.mean(fval)+l2*l2wd
+		return loss
+	
+	#### dealing with masks
+	options.focus=False
+	if options.mask==None:
+		nmask=1
+		imasks=jnp.ones((nmask, pts.shape[0]))
+		
+	else:
+		masks=EMData.read_images(options.mask)		
+		imasks=np.array([make_mask_gmm(m, pts) for m in masks])
+		
+		if len(imasks)==1:
+			nmask=2
+			print(f"Focused refinement with mask size", int(np.sum(imasks[0])))
+			imx=imasks[0]>.5
+			imasks=np.zeros((2, len(pts)), dtype=float)
+			imasks[0]=1-imx
+			imasks[1]=imx
+			options.focus=True
+			
+		else:
+			nmask=len(imasks)
+			imx=np.argmax(imasks, axis=0)
+			imasks*=0
+			imasks[imx, np.arange(imasks.shape[1])]=1.
+		
+			print(f"Using {nmask} masks. Sizes:", *np.sum(imasks, axis=1).astype(int))
+		
+	calc_loss_3d=jit(calc_loss_3d_raw)
+	grad_fn_3d=jax.value_and_grad(calc_loss_3d)
+	bsz=options.batchsz
+	
+	readxf=False
+	if options.mask:
+		n=nmask
+		if options.focus: n-=1
+		
+		try:
+			xfs=[Transform(lst_raw[0][f"xform.projection_{i:02d}"]) for i in range(n)]
+			readxf=True
+		except: 
+			pass
+		
+		if readxf:
+			print("Read transform per mask from lst file. xform for the first particle:")
+			for x in xfs:
+				print(x)
+				
+			xf_last=np.zeros((len(data_cpx), nmask, 6))
+			for il,l in enumerate(lst_raw):
+				xf0=l["xform.projection"]
+				for i in range(n):
+					xf1=l[f"xform.projection_{i:02d}"]
+					dxf=xf0.inverse()*xf1
+					
+					x=dxf.get_params("eman")
+					xnp=np.array([x["az"],x["alt"],x["phi"], x["tx"], x["ty"], x["tz"]])
+					xnp[:3]=xnp[:3]*np.pi/180.
+					xnp[3:]/=float(options.rawbox)
+					if options.focus:
+						im=i+1
+					else:
+						im=i
+					xf_last[il, im]=xnp
+			xf_last=jnp.array(xf_last)		
+	
+	if readxf==False:
+		xf_last=jnp.zeros((len(data_cpx), nmask, 6))
+		
+	xf_new=[]
+	score=[]
+	
+	###########	
+	dcpx=data_cpx[:bsz]
+	xf=data_xf[:bsz]
+	xf_rot=xf_last[:bsz]
+	
+	l2wd=0
+	if options.mask: 
+		optimizer = optax.adam(options.learnrate)
+		opt_state = optimizer.init(xf_rot)
+		xf_rot00=xf_rot.copy()
+		cost=[]
+		for itr in range(options.niter):
+			
+			loss, grads=grad_fn_3d(xf_rot, xf, dcpx, l2wd)
+			updates, opt_state = optimizer.update(grads, opt_state)
+			xf_rot=optax.apply_updates(xf_rot, updates)
+			
+			cost.append(loss)
+		l2=jnp.sum((xf_rot-xf_rot00)**2)
+		l2wd=float((cost[0]-cost[-1])/l2)*options.l2_weight
+		print("Refine without L2:")
+		print("  loss change {:.3f}, L2 change {:.3f}, use weight decay factor {:.3f}".format(float((cost[0]-cost[-1])), float(l2), l2wd))
+		
+	###########
+	for ib in range(0, len(data_cpx), bsz):
+		dcpx=data_cpx[ib:ib+bsz]
+		xf=data_xf[ib:ib+bsz]
+		xf_rot=xf_last[ib:ib+bsz]
+		xf_rot00=xf_rot.copy()
+		
+		optimizer = optax.adam(options.learnrate)
+		opt_state = optimizer.init(xf_rot)
+		cost=[]
+		for itr in range(options.niter):
+			
+			loss, grads=grad_fn_3d(xf_rot, xf, dcpx, l2wd)
+			updates, opt_state = optimizer.update(grads, opt_state)			
+			xf_rot=optax.apply_updates(xf_rot, updates)
+			
+			cost.append(loss)
+		
+		xf_new.append(xf_rot)
+		
+		scr=calc_loss_3d_raw(xf_rot, xf, dcpx, 0, True)
+		score.append(scr)
+		
+		sys.stdout.write("\r {:>8}/{}\t{:.3f} -> {:.3f}         ".format(ib, len(data_cpx), cost[0], cost[-1]))
+		sys.stdout.flush()
+
+	xf_new=jnp.vstack(xf_new)
+	score=np.concatenate(score)
+	return xf_new, score
+
+def train_model(data_cpx, data_xf, params, pts, rng, options):
+	
+	#######################
+	def calc_loss_raw(variables, dcpx, xf, rng):
+		
+		p0=jnp.zeros((xf.shape[0], len(pts), 5))+pts
+		x=jnp.ones((xf.shape[0], options.nmid))
+		
+		pout = model.apply(variables, x, training=False, rngs={"dropout": rng})
+		pout+=p0
+				
+		imgs_cpx=pts2img(pout, xf)
+		fval=calc_frc(dcpx, imgs_cpx, params["rings"], minpx=options.minpx, maxpx=options.maxpx)
+				
+		loss=-jnp.mean(fval)
+			
+		return loss
+
+	model, variables=build_decoder(pts, rng, options)
+	
+	bsz=options.batchsz
+	dcpx=data_cpx[:bsz]
+	xf=data_xf[:bsz]
+	calc_loss=jit(calc_loss_raw)
+	grad_fn=jax.value_and_grad(calc_loss)
+	loss, grads=grad_fn(variables, dcpx, xf, rng)
+	print("Initial loss:", loss)	
+	
+	#######################
+	print("Now training...")
+	allcost=[]
+	optimizer = optax.adam(options.learnrate)
+	opt_state = optimizer.init(variables)
+	for itr in range(options.niter):
+		cost=[]
+		
+		for ib in range(0, len(data_cpx), bsz):
+
+			dcpx=data_cpx[ib:ib+bsz]
+			xf=data_xf[ib:ib+bsz]
+			
+			rng=jax.random.fold_in(rng,123)    
+			
+			loss, grads=grad_fn(variables, dcpx, xf, rng)
+			updates, opt_state = optimizer.update(grads, opt_state)
+			variables = optax.apply_updates(variables, updates)
+			cost.append(loss)            
+
+			if (ib//bsz)%10==0: 
+				sys.stdout.write("\r {}/{}       {:.4f}      ".format(ib, len(data_cpx), loss))
+				sys.stdout.flush()
+
+		sys.stdout.write("\r")
+		ac=np.mean(cost)
+		allcost.append(ac)
+		print("iter {},  loss : {:.4f}".format(itr, ac))
+	
+	
+	x=jnp.ones((xf.shape[0], options.nmid))	
+	pout = model.apply(variables, x, training=False, rngs={"dropout": rng})
+	pout = pout[0]+pts
+	return pout
+
 def save_network(variables, options):
-	f=open(options.nnet_out, "wb")
+	f=open(options.decoderout, "wb")
 	variables00 = to_state_dict(variables)
 	pickle.dump(variables00, f)
 	f.close()
-	print("Trained networks saved to:",options.nnet_out)
+	print("Trained networks saved to:",options.decoderout)
+
+def make_mask_gmm(mask, pts):
+	
+	m=mask.numpy().copy()
+	p=pts[:,:3].copy()
+	p=p[:,::-1]
+	p[:,:2]*=-1
+	p=(p+.5)*mask["nx"]
+
+	o=np.round(p).astype(int)
+	v=m[o[:,0], o[:,1], o[:,2]]
+	imsk=jnp.array(v)
+	
+	return imsk
 
 ###############################
 ###############################
 def main():
 	
-	usage="""Single particle alignment, reconstruction and heterogeneity analysis with Gaussian model and neural networks. 
+	usage="""
+	Single particle alignment, reconstruction and heterogeneity analysis with Gaussian model and neural networks. 
 	
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--model", type=str,help="load from an existing model file", default="")
 	parser.add_argument("--modelout", type=str,help="output trained model file. only used when --projs is provided", default="")
 	
-	parser.add_argument("--nnet_in", type=str,help="Rather than initializing neural network model, read an existing trained one", default="")
-	parser.add_argument("--nnet_out", type=str,help="Save the trained model", default=None)
+	parser.add_argument("--decoderin", type=str,help="Rather than initializing neural network model, read an existing trained one", default=None)
+	parser.add_argument("--decoderout", type=str,help="Save the trained model", default=None)
 	
-	parser.add_argument("--evalmodel", type=str,help="generate model projection images to the given file name", default="")
-	
+	parser.add_argument("--encoderin", type=str,help="does nothing.", default=None)
+	parser.add_argument("--encoderout", type=str,help="does nothing..", default=None)
+		
 	parser.add_argument("--ptclsin", type=str,help="particles input for alignment", default="")
 	parser.add_argument("--ptclsout", type=str,help="aligned particle output", default="")
 	
-	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-5. ", default=1e-5)	
-	parser.add_argument("--niter", type=int,help="number of iterations", default=20)
+	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. ", default=-1)	
+	parser.add_argument("--niter", type=int,help="number of iterations", default=-1)
 	parser.add_argument("--batchsz", type=int,help="batch size", default=32)
-	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
+
 	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
-	parser.add_argument("--maxgradres", type=float,help="maximum resolution for gradient. ", default=-1)
 	parser.add_argument("--minres", type=float,help="minimum resolution. ", default=500)
 	
 	parser.add_argument("--trainmodel", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
+	parser.add_argument("--mask", type=str,help="Single mask for heterogeneity analysis or stack of masks for multi-body alignment. ", default=None)
 
 	parser.add_argument("--midout", type=str,help="middle layer output", default="")
 	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 111", default="111")
 	
 	parser.add_argument("--nmid", type=int,help="size of the middle layer", default=3)
 	parser.add_argument("--ndense", type=int,help="size of the layers between the middle and in/out, variable if -1. Default 512", default=512)
+	parser.add_argument("--l2_weight", type=float, help="weighting factor for L2. default is 1",default=1.)
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	
@@ -665,11 +911,22 @@ def main():
 	logid=E2init(sys.argv,options.ppid)
 	
 	gen_model=None
-	maxboxsz=options.maxboxsz
 	
 	## load GMM from text file
 	if options.model:
-		pts=np.loadtxt(options.model).astype(np.float32)
+		if options.model.endswith(".pdb"):
+			print("Generating Gaussian model from pdb...")
+			p=pdb2numpy(options.model, allatom=True)			
+			pts=np.zeros((len(p),5), dtype=np.float32)
+			e=EMData(options.ptclsin, 0, True)
+			p=p/e["ny"]/e["apix_x"]-0.5
+			p[:,1:]*=-1
+			pts[:,:3]=p
+			pts[:,3]=.5
+			pts[:,4]=1
+		else:
+			pts=np.loadtxt(options.model).astype(np.float32)
+			
 		options.npt=npt=len(pts)
 		print("{} Gaussian loaded from {}".format(len(pts), options.model))
 		
@@ -682,12 +939,15 @@ def main():
 		maxboxsz=options.maxboxsz=ceil(raw_boxsz*raw_apix*2/options.maxres)//2*2
 		print("using box size {}, max resolution {:.1f}".format(maxboxsz, options.maxres))
 
+	else:
+		maxboxsz=options.maxboxsz=raw_boxsz
+		
 	options.maxpx=options.maxboxsz//2
 	options.minpx=ceil(raw_boxsz*raw_apix*2/options.minres)//2
 	options.minpx=max(1, options.minpx)
 	print("FRC compares from {} to {} Fourier pixels".format(options.minpx, options.maxpx))
 	
-	data_cpx, data_xf = load_particles(options)
+	data_cpx, data_xf, lst_raw = load_particles(options)
 	options.apix=apix=raw_apix*raw_boxsz/maxboxsz
 	params=set_indices_boxsz(maxboxsz)
 	
@@ -697,15 +957,48 @@ def main():
 	#### Decoder training from generated projections of a 3-D map or particles
 	#### Note that train_decoder takes options.decoderentropy into account internally
 	if options.trainmodel:
+		print("training GMM...")
+		if options.niter<0: options.niter=40
+		if options.learnrate<0: options.learnrate=1e-5
+		pts_new=train_model(data_cpx, data_xf, params, pts, rng, options)
+		np.savetxt(options.modelout, pts_new)
 		pass
 		
 		
 	#### Align particles using GMM
 	if options.align:
-		pass
+		if options.niter<0: options.niter=100
+		if options.learnrate<0: options.learnrate=2e-3
+		
+		xf_new, score=align_particles(data_cpx, data_xf, params, pts, lst_raw, options)
+		if options.focus:
+			xf_new=xf_new[:,1:]
+			
+		xf_raw=[Transform(x["xform.projection"]) for x in lst_raw]
+		for ix in range(xf_new.shape[1]):
+			xx=np.array(xf_new[:,ix].copy())
+			xx[:,:3]=xx[:,:3]*180./np.pi
+			xx[:,3:]*=options.rawbox
+			xf2=[Transform({"type":"eman", "az":x[0], "alt":x[1], 
+					"phi":x[2], "tx":x[3], "ty":x[4], "tz":x[5]}) for x in xx.tolist()]
+			
+			xf_combine=[y*x for x,y in zip(xf2, xf_raw)]
+			for i,l in enumerate(lst_raw):
+				if options.mask==None:
+					l[f"xform.projection"]=xf_combine[i]
+				else:
+					l[f"xform.projection_{ix:02d}"]=xf_combine[i]
+				l["score"]=-score[i]
+				
+		save_lst_params(lst_raw, options.ptclsout)
+		print("\nDone. Output written to", options.ptclsout)
+
 		
 	#### Heterogeneity analysis from particles	
 	if options.heter:
+		if options.niter<0: options.niter=20
+		if options.learnrate<0: options.learnrate=1e-5
+		
 		allgrds=calc_gradient(data_cpx, data_xf, pts, params, options)
 		encode_model, enc_var=build_encoder(pts, allgrds, rng, options)
 		if options.pointtransformer:
@@ -713,16 +1006,29 @@ def main():
 		else:
 			decode_model, dec_var=build_decoder(pts, rng, options)
 		
+		if options.decoderin:
+			f=open(options.decoderin, "rb")
+			variables=pickle.load(f)
+			f.close()
+			variables = from_state_dict([enc_var, dec_var], variables)
+			enc_var, dec_var=variables
+
 		variables=[enc_var, dec_var]
 		nvar=sum(x.size for x in jax.tree.leaves(enc_var["params"]))
 		print("number of encoder weights:", nvar)
 		nvar=sum(x.size for x in jax.tree.leaves(dec_var["params"]))
 		print("number of encoder weights:", nvar)
 		
+		if options.mask:
+		
+			msk=EMData(options.mask)
+			options.mask=make_mask_gmm(msk, pts)
+			print("masking {} out of {} points".format(np.sum(options.mask), len(options.mask)))
+		
 		variables=train_heterg(data_cpx, data_xf, allgrds, variables, encode_model, decode_model, params, pts, rng, options)
 		
 		enc_var, dec_var=variables
-		if options.nnet_out: save_network(variables, options)		
+		if options.decoderout: save_network(variables, options)		
 		mid=calc_conf(encode_model, enc_var, allgrds, rng)
 		if options.midout: np.savetxt(options.midout, mid)
 		

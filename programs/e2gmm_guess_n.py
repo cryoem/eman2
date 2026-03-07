@@ -19,6 +19,7 @@ def main():
 	parser.add_argument("--startn", type=int,help="", default=1000)
 	parser.add_argument("--maxn", type=int,help="", default=20000)
 	parser.add_argument("--evenodd", action="store_true", default=False ,help="segment on combined map and refine on even/odd")
+	parser.add_argument("--nopdb", action="store_true", default=False ,help="save initial gmm as txt instead of pdb")
 
 	(options, args) = parser.parse_args()
 	
@@ -56,8 +57,10 @@ def main():
 	
 	options.maxn=min(options.maxn, len(pts))
 	nrng=np.arange(options.startn, options.maxn+1, 1000)
-	
-	pdbname=fname[:-4]+"_seg.pdb"
+	if options.nopdb:
+		pdbname=fname[:-4]+"_seg.txt"
+	else:
+		pdbname=fname[:-4]+"_seg.pdb"
 	gmmname=fname[:-4]+"_gmm.txt"
 	fscname=fname[:-4]+"_fsc.txt"
 	avgname=fname[:-4]+"_gmm.hdf"
@@ -77,7 +80,18 @@ def main():
 		dm=np.sort(d)[len(d)//3]
 		#print(np.sort(d))
 		print("{:<5} {:.4f}".format(n, dm))
-		numpy2pdb(p, pdbname)
+		if options.nopdb:
+			p0=p.copy()
+			p1=np.zeros((len(p0),5), dtype=np.float32)
+			e=EMData(fname, 0, True)
+			p0=p0/e["ny"]/e["apix_x"]-0.5
+			p0[:,1:]*=-1
+			p1[:,:3]=p0
+			p1[:,3]=.5
+			p1[:,4]=1
+			np.savetxt(pdbname, p1)
+		else:
+			numpy2pdb(p, pdbname)
 		if dm<res:
 			print(f"stop. using N={n}")
 			break

@@ -61,6 +61,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--continuefrom",type=float,help="continue from an iteration number. continue from 1 will use threed_01 as reference. continue from 0.5 will make 3d from aliptcls2d_01.",default=-1)
 	parser.add_argument("--slow_iter",action="store_true", default=False ,help="move toward higher resolution at smaller steps each iteration")
+	parser.add_argument("--ext_p", type=str,help="extra command for p iterations.", default=None)
 	parser.add_argument("--ext_g", type=str,help="extra command for g iterations.", default=None)
 
 	(options, args) = parser.parse_args()
@@ -275,7 +276,10 @@ def main():
 			#if options.maxtilt>0:
 				#opt+=f" --maxtilt={options.maxtilt}"
 				
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt}"
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt} "
+			
+			if options.ext_p:
+				cmd+=options.ext_p
 			run(cmd)
 			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
