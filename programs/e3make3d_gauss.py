@@ -310,69 +310,6 @@ def main():
 	### Note that StackCache stores the entire .lst file. selimg must be handled when reading from the cache
 	cache=StackCache(args[0])
 
-### TODO: remove this, leaving it temporarily for reference
-# 	caches={down:StackCache(f"{options.cachepath}/tmp_{os.getpid()}_{down}.cache",nptcl) for down in downs} 	# dictionary keyed by box size
-# 	for i in range(0,nptcl,1000):
-# 		if options.verbose>1:
-# 			print(f" Caching {i}/{nptcl}",end="\r",flush=True)
-# 			sys.stdout.flush()
-# 		stk=EMStack2D(EMData.read_images(args[0],selimg[i:min(i+1000,nptcl)]))
-# 		if options.preclip>0 : stk=stk.center_clip(options.preclip)
-# 		if options.tomo and options.tomo_seqali!=0 :
-# 			stk.center_align_seq(options.tomo_seqali)
-# 			if options.verbose>3: stk.write_images("dbg_ali.hdf")
-# 		# rotate the set of transforms based on ostensibly the zero tilt image
-# 		if options.tomo_rotate:
-# 			xfs=stk._xforms
-# 			stk._xforms=[xfs[i]*(xfs[len(xfs)//2].inverse()) for i in range(len(xfs))]
-#
-# 		orts,tytx=stk.orientations
-# 		astig=stk.astigmatism
-# 		tytx/=jnp.array((nxraw,nxraw,1)) # Don't divide the defocus
-# 		for im in stk.emdata: im.process_inplace("normalize.edgemean")
-# 		if options.verbose>3: stk.write_images("dbg_m3dg.hdf:12")
-# 		stkf=stk.do_fft()
-# #		print(stkf.shape)
-# 		for down in downs:
-# 			stkfds=stkf.downsample(down)
-# 			caches[down].write(stkfds,i,orts,tytx,astig)
- #
- #
-	# # Forces all of the caches to share the same orientation information so we can update them simultaneously below (FRCs not jointly cached!)
-	# for down in downs[1:]:
-	# 	caches[down].orts=caches[downs[0]].orts
-	# 	caches[down].tytx=caches[downs[0]].tytx
- #
-	# if options.ctf>0:
-	# 	if options.tomo:
-	# 		ctf=EMData(args[0],0,True)["ctf"] # Assuming tomo uses the file from particles, created by extract particles
-	# 	else:
-	# 		try:
-	# 			js=js_open_dict(info_name(EMData(args[0],0,True)["ptcl_source_image"])) # Assuming SPR uses lst file ptcls_XX.lst created by spt refinement
-	# 			ctf=js["ctf"][0]
-	# 			js.close()
-	# 		except:
-	# 			try: ctf = EMData(args[0],0,True)["ctf"]
-	# 			except:
-	# 				try:
-	# 					js=js_open_dict(info_name(EMData(args[0],0,True)["source_path"]))
-	# 					ctf=js["ctf_frame"][1]
-	# 					js.close()
-	# 				except:
-	# 					print("Could not find ctf info--Proceeding with no ctf applied") # TODO: This will actually crash because "ctf" doesn't get defined'
-	# 					options.ctf=0
-	# 	jctf = EMAN3Ctf(ctf=ctf)
-	# 	dfstep = jctf.defocus_step
-	# 	wavelength = jctf.wavelength
-	# 	# boxlen = apix*stages[-1][1]*sqrt(3) # stages[-1][1] is the largest downsampling for the particle
-	# 	# df_buffer = (boxlen/20000) + dfstep
-	# 	# dfrange=(mindf - df_buffer, maxdf + df_buffer)
-	# 	# if options.dfmin > 0 and options.dfmax > 0:
-	# 	# 	dfrange=(options.dfmin, options.dfmax)
-	# 	# # Create the ctf stack
-	# 	# ctf_stack,dfstep = jctf.compute_2d_stack_complex(nxraw, "amplitude", dfrange, "defocus")
-	# 	ctf_info = jnp.array([wavelength, jctf.cs])
-
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
 	# Initialize Gaussians
@@ -428,7 +365,7 @@ def main():
 
 				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
 				# only using a single batch for this right now. May be sufficient
-				# TODO - Do we need to do this differently with other CTF modes? Variance estimate might not be impacted by the phase flipping...
+				# TODO - Do we need to do this differently with other CTF modes? Variance estimate might not be impacted by the phase flipping, so may be ok...
 				if i in (0,8) and j==0:
 					frcs=prj_frcs(gaus.jax,ptclsfds,meta)
 					#print("FRCS ",frcs.shape)
@@ -451,10 +388,11 @@ def main():
 					dsapix=ptclsfds.apix		# this is automatically adjusted for downsampling
 					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
 					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,meta,symmx,weight,thresh,stage[7])
-					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans
-					# step0=jnp.nan_to_num(step0)
-					# shift0=jnp.nan_to_num(shift0)
-					# sca0=jnp.nan_to_num(sca0)
+					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans. Could be there is an implicit sqrt somewhere we're taking the gradient of, or a roundoff error?
+					step0=jnp.nan_to_num(step0)
+					qual0=jnp.nan_to_num(qual0)
+					shift0=jnp.nan_to_num(shift0)
+					sca0=jnp.nan_to_num(sca0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
 					else:
@@ -514,20 +452,8 @@ def main():
 						imshift+=imshift0
 
 			norm=len(nliststg)//batchsize+1
+			if norm==0: raise Exception("ERROR: norm zero. This shouldn't happen")
 			qual/=norm
-			# # if the quality got worse, we take smaller steps, starting by stepping back almost to the last good step
-			# if qual<lqual:
-			# 	rstep/=2.0			# if we start falling or oscillating we reduce the step within the epoch
-			# 	step=-lstep*.95		# new gradient doesn't matter, first we want to mostly undo the previous step
-			# 	lstep*=.05
-			# 	gaus.add_array(step)
-			# 	if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
-			# 	print(f"{i}: {qual:1.5f}\t     \t\t     \t     \t{rstep:1.5f} reverse")
-			# 	continue
-			# step*=rstep/norm
-			# lstep=step
-			# gaus.add_array(step)
-			# lqual=qual
 			shift/=norm
 			sca/=norm
 			imshift/=norm

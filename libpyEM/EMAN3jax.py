@@ -229,6 +229,7 @@ class EMStack():
 		self.apix=None
 		self.voltage=None
 		self.cs=None
+		self.is_phase_flipped=None
 
 		self.set_data(imgs,parent)
 
