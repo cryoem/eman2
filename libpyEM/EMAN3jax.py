@@ -1000,7 +1000,7 @@ class Orientations():
 			self.initfromtransforms(data)
 		else:
 			try: self._data=np.array(data,np.float32)
-			except: raise Exception("Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array")
+			except: raise Exception(f"Orientations must be initialized with an integer (number of orientations) or a N x 3 numpy array. Got {type(data)}:  {data}")
 
 
 	def __len__(self): return len(self._data)
