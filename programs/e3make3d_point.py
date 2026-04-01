@@ -470,9 +470,8 @@ def main():
 				dsapix=ptclsfds.apix
 				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 				dfstep=2*apix*apix/(wavelength*10000)
-				mx3d=orts.to_mx3d()
-				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, meta[:,2:5], jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, meta[:,:2], meta[:,5:9], symmx)
-				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,meta[:,2:5],jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,meta[:,:2],meta[:,5:9]))
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, meta[:,2:5], jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, meta[:,:2], meta[:,5:9], symmx))
+				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,meta[:,2:5],jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,meta[:,:2],meta[:,5:9], symmx))
 			ptclds=ptclsfds.do_ift()
 			for i in range(len(projs)):
 				tf=Transform({"type":"spinvec","v1":float(meta[i][2]),"v2":float(meta[i][3]),"v3":float(meta[i][4]),"tx":float(meta[i][1]*nxraw),"ty":float(meta[i][0]*nxraw)})

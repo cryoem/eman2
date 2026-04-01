@@ -65,6 +65,7 @@ from jax import lax
 from jax import random
 import jaxlib
 import os
+from functools import partial
 
 class StackCache():
 	"""This object serves as a cache for a single .lst file, effectively containing EMStack objects representing the images at different levels of downsampling in Fourier
@@ -1197,16 +1198,6 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		amps/=max(amps)
 		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps))))).transpose()
 
-	def replicate(self,n=2,dev=0.01):
-		"""Makes n copies of the current Points shifted by a small random amount to improve the level of detail without
-significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
-stddev=0.01"""
-		if n<=1 : return
-		rng=np.random.default_rng()
-		self.coerce_jax()
-		dups=[self._data+rng.normal(0,dev,self._data.shape) for i in range(n)]
-		self._data=jnp.concat(dups,axis=0)
-
 	def replicate_abs(self,npoint,dev=0.01):
 		"""Makes copies of the current Points shifted by a small random amount to improve the level of detail without
 significantly altering the spatial distribution. npoint specifies the total number of desired points after replication. Note that amplitudes are also perturbed by the same distribution. Default stddev=0.01"""
@@ -1221,34 +1212,6 @@ significantly altering the spatial distribution. npoint specifies the total numb
 		tail=npoint%len(self)
 		if tail>0: dups.append((self._data+rng.normal(0,dev,self._data.shape))[:tail])
 		self._data=jnp.concat(dups,axis=0)
-
-	def replicate_sym(self,sym="c1"):
-		"""Makes symmertry related copies of each Point so the full Points object matches the specified symmetry."""
-		symorts=Orientations(sym)
-		mx=np.moveaxis(symorts.to_mx3da(),2,0)	# gets matrix as Nsym x 4 x 4
-
-		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
-
-	def replicate_rand(self, npoint, tomo=False):
-		"""Adds randomly placed Points to try and place Points in places there are density but no Points. npoint specifies the total number of
-	desired Points after replication. Note that amplitudes are also randomized"""
-		if len(self)==npoint: return
-		if len(self)>npoint:
-			print("Warning: replicate targeted fewer Points than currently exist! Unchanged")
-			return
-		rng=np.random.default_rng()
-		self.coerce_jax()
-		rand_num=npoint-len(self)
-		neg_num=rand_num//10
-		rnd=rng.uniform(0.0,1.0,(rand_num-neg_num,4))		# start with completely random Point parameters
-		neg = rng.uniform(0.0, 1.0, (neg_num, 4))		# 10% of points are negative WRT the background (zero)
-		rnd+=(-.5,-.5,-.5,2.0)
-		neg+=(-.5,-.5,-.5,-3.0)
-		rnd = np.concatenate((rnd, neg))
-		if tomo:
-			rnd=rnd/(.9,.9,0.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
-		else: rnd=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
-		self._data=jnp.concatenate((self._data, rnd))
 
 	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
@@ -1406,6 +1369,9 @@ significantly altering the spatial distribution. npoint specifies the total numb
 
 		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
 
+
+
+
 def point_project_single_fn(pointary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
 
@@ -1452,46 +1418,15 @@ def point_project_single_fn(pointary,mx,boxsize,tytx):
 
 point_project_simple_fn=jax.jit(jax.vmap(point_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
-def prj_single_simple_sym(pointary, ortary, ny, tytx,symmx):
+def prj_simple_single_sym(pointary, ortary, ny, tytx,symmx):
 	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
-	mx3d=to_mx3d(ortary)
+	mx3d=jax_to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
 	return point_project_simple_fn(pointary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
 
-def _point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
-	return jnp.mean(jax.vmap(prj_single_simple_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
-
-# point_project_simple_sym_fn=jax.jit(_point_project_simple_sym_fn, static_argnames=["ny"])
-point_project_simple_sym_fn=_point_project_simple_sym_fn
-
-#def point_project_ctf_fn(pointary,mx,ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
-#	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
-#
-#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
-#	pointary - a Points.jax array
-#	mx - an Orientations object converted to a stack of 2d matrices
-#	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
-#	dfmin - the min defocus value used in ctfary
-#	dfmax - the max defocus value used in ctfary
-#	dfstep - the defocus step between images in ctfary
-#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
-#	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
-#
-#	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
-#	used for comparisons should be resampled without any "clip" operations.
-#	"""
-#	proj2=[]
-#
-#	# iterate over projections
-#	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
-#	# note that the mx dimensions have N as the 3rd not 1st component!
-#	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
-#	gpcsf=jax.jit(point_project_ctf_single_fn,static_argnames=["boxsize"])
-#
-#	for j in range(mx.shape[2]):
-#		proj2.append(gpcsf(pointary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
-#
-#	return jnp.stack(proj2)
+@partial(jax.jit, static_argnames=["ny"])
+def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
+	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
 def point_project_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
@@ -1534,23 +1469,19 @@ def point_project_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,as
 	fproj=jnp.fft.rfft2(proj)
 	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
 	proj=jnp.fft.irfft2(fproj[:,:,:boxsize//2+1])
-	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(astig[0], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
 point_project_ctf_fn=jax.jit(jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
-# point_project_ctf_fn=jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0])
 
-def prj_single_ctf_sym(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
+def prj_ctf_single_sym(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
 	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
-	mx3d=to_mx3d(ortary)
+	mx3d=jax_to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_ctf expect
 	return point_project_ctf_fn(pointary,jnp.flipud(sym_mx3d), ctf_info, dfstep, apix, boxsize, tytx, astig) # flipud accounts for the flipxy option in to_mx2d()
 
-def _point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
-	return jnp.mean(jax.vmap(prj_single_ctf_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx), axis=0)
-
-point_project_ctf_sym_fn=jax.jit(_point_project_ctf_sym_fn, static_argnames=["boxsize"])
-# point_project_ctf_sym_fn= _point_project_ctf_sym_fn
+@partial(jax.jit, static_argnames=["boxsize"])
+def point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
+	return jnp.mean(jax.vmap(prj_ctf_single_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx), axis=0)
 
 def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	shift10=jnp.array((1,0))
@@ -1558,17 +1489,14 @@ def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize
 	shift11=jnp.array((1,1))
 
 	boxstep=dfstep*10000.0/apix
-#	offset=ceil((boxsize*jnp.sqrt(3)-boxstep)/(2*boxstep))
 	offset = ceil((boxsize*1.733-boxstep)/(2*boxstep))
 
-	#TODO: make sure einsum is doing what I want given ordering changes from 2d -> 3d mx. In tf I specified axes=[-1]
 	xfpoint=jnp.fliplr(jnp.einsum("ij,kj->ki",mx,pointary[:,:3]))	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfpointz = xfpoint[:,0]
 	xfpoint = xfpoint[:,1:]+tytx	# translation
 	xfpoint=(xfpoint+0.5)*boxsize			# shift and scale both x and y the same
 	xfpointz *= boxsize
 	xfpointz = jnp.round(xfpointz/boxstep).astype(jnp.int32)
-#	xfpointz = jnp.clip(xfpointz, 0, 2*offset) # Clip z such that if any Points are outside the expected range but in the box they will be in the outermost sections
 
 	xfpointf=jnp.floor(xfpoint)
 	xfpointi=xfpointf.astype(jnp.int32)		# integer index
@@ -1585,23 +1513,21 @@ def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[jnp.tile(xfpointz,4),bposall[0],bposall[1]].add(bampall, mode="drop")
-	# proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]-offset*dfstep, tytx[2]+offset*dfstep, 2*offset+1), astig, dfstep, apix, False)
+	# proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]-offset*dfstep, astig[0]+offset*dfstep, 2*offset+1), astig, dfstep, apix, False)
 	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]+offset*dfstep, astig[0]-offset*dfstep, 2*offset+1), astig, dfstep, apix, False) # linspace start/end flipped
 	return jnp.sum(proj, axis=0)
 
 point_project_layered_ctf_fn=jax.jit(jax.vmap(point_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
 
-def prj_single_layered_sym(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+def prj_layered_single_sym(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
 	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
-	mx3d=to_mx3d(ortary)
+	mx3d=jax_to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)
 	return point_project_layered_ctf_fn(pointary,sym_mx3d, ctf_info, dfstep, apix, ny, tytx, astig)
 
-def _point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
-	return jnp.mean(jax.vmap(prj_single_layered_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
-
-point_project_layered_ctf_sym_fn=jax.jit(_point_project_layered_ctf_sym_fn, static_argnames=["ny", "apix","dfstep"])
-
+@partial(jax.jit, static_argnames=["ny", "apix", "dfstep"])
+def point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+	return jnp.mean(jax.vmap(prj_layered_single_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
 
 
 def point_volume_fn(pointary,boxsize,zsize):
@@ -1648,36 +1574,22 @@ def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
 	ctfary = jit_compute_2d_ctf(ctf_info[0], ctf_info[1], jnp.pi/2-astig[1], apix, proj.shape[1], dfary, astig[2], astig[3], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
 
-def jax_df_img(ny, defocus, dfdiff, dfang):
+def single_defocus_img(ny, defocus, dfdiff, dfang):
 	return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2(y,x)-(2.0*jnp.pi/180)*dfang) , (ny//2, ny//2+1)),
 														jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2((y-ny//2),x)-(2.0*jnp.pi/180)*dfang), (ny//2, ny//2+1)))))
 
-jax_df_defocus_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, 0, None, None)), static_argnames=["ny"])
+defocus_img = jax.jit(jax.vmap(single_defocus_img, in_axes=(None, 0, None, None)), static_argnames=["ny"])
 
-def jax_compute_2d_ctf_stack_defocus(wavelength, cs, phase, apix, ny, dfmin, dfmax, num_df, dfdiff, dfang, sign_only):
-	defocus = jnp.linspace(dfmin, dfmax, num_df)
+@partial(jax.jit, static_argnames=["ny", "sign_only"])
+def jit_compute_2d_ctf(wavelength, cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only):
 	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
 	g2=jnp.pi*wavelength*10000.0
 	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
+	df_img = defocus_img(ny, defocus, dfdiff, dfang)
 	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
 	if sign_only:
 		ctf = jnp.sign(ctf)
 	return ctf
-
-jit_compute_2d_ctf_stack_defocus = jax.jit(jax_compute_2d_ctf_stack_defocus, static_argnames=["ny", "num_df", "sign_only"])
-
-def jax_compute_2d_ctf(wavelength, cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only):
-	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
-	g2=jnp.pi*wavelength*10000.0
-	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
-	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
-	if sign_only:
-		ctf = jnp.sign(ctf)
-	return ctf
-
-jit_compute_2d_ctf= jax.jit(jax_compute_2d_ctf, static_argnames=["ny", "sign_only"])
 
 def jax_to_mx2d(ortary,swapxy=False):
 	"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
@@ -1712,7 +1624,7 @@ def jax_to_mx2d(ortary,swapxy=False):
 		(2*q[0]*q[1]+2*q[2]*w,1-(2*q[0]*q[0]+2*q[2]*q[2]),2*q[1]*q[2]-2*q[0]*w)))
 	return jnp.array(mx)
 
-def to_mx3d(ortary):
+def jax_to_mx3d(ortary):
 	"""Returns the current set of orientations as a 3 x 3 x N matrix which will transform a set of 3-vectors to a set of
 	rotated 3-vectors. Can be used to symmetrize a set of 3-vectors
 
@@ -1785,10 +1697,9 @@ def jax_fft2d(imgs):
 
 	return jnp.fft.rfft2(imgs)
 
-def __jax_fft2d_jit(imgs):
+@jax.jit
+def jax_fft2d_jit(imgs):
 	return jnp.fft.rfft2(imgs)
-
-jax_fft2d_jit=jax.jit(__jax_fft2d_jit)
 
 def jax_fft3d(imgs):
 	if isinstance(imgs,EMData) or ((isinstance(imgs,list) or isinstance(imgs,tuple)) and isinstance(imgs[0],EMData)): imgs=to_jax(imgs)
@@ -1926,7 +1837,6 @@ def rad_vol_int(ny):
 		FSC_RADS[ny]=rad_img
 		return rad_img
 
-#FRC_NORM={}		# dictionary (cache) of constant tensors of size ny/2*1.414 (we don't actually need this for anything)
 #TODO iterating over the images is handled with a python for loop. This may not be taking great advantage of the GPU (just don't know)
 # two possible approaches would be to add an extra dimension to rad_img to cover image number, and handle the scatter_nd as a single operation
 # or to try making use of DataSet. I started a DataSet implementation, but decided it added too much design complexity
@@ -2030,7 +1940,8 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
-def __jax_frc_jit_new(ima,imb,weight,thresh):
+@jax.jit
+def jax_frc_jit(ima,imb,weight,thresh):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!
 
@@ -2067,10 +1978,9 @@ def __jax_frc_jit_new(ima,imb,weight,thresh):
 	frc=jnp.stack(frc)
 	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight).mean()		# FRC weighted by passed weight array
 
-jax_frc_jit_new=jax.jit(__jax_frc_jit_new)
-
-def __jax_frcs_jit_new(ima,imb,weight,thresh):
-	"""This is identical to jax_frc_jit_new, but returns a list of per-particle FRCs. This won't work with gradient calculations which
+@jax.jit
+def jax_frcs_jit(ima,imb,weight,thresh):
+	"""This is identical to jax_frc_jit, but returns a list of per-particle FRCs. This won't work with gradient calculations which
 must return a single value, but is necessary for per-particle quality estimates, so 2 versions... """
 	global FRC_RADS
 
@@ -2102,54 +2012,13 @@ must return a single value, but is necessary for per-particle quality estimates,
 		frc.append(cross/jnp.sqrt(aprd*bprd))
 
 	frc=jnp.stack(frc)
-	return jnp.mean(jnp.clip(frc,thresh,1.0)*weight,axis=1)		# note that thresholding on a single curve is far less useful than thresholding on a mean like jax_frc_jit_new
+	return jnp.mean(jnp.clip(frc,thresh,1.0)*weight,axis=1)		# note that thresholding on a single curve is far less useful than thresholding on a mean like jax_frc_jit
 #	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight)		# FRC weighted by passed weight array
 
-jax_frcs_jit_new=jax.jit(__jax_frcs_jit_new)
 
 
-def __jax_frc_jit(ima,imb,weight=1.0,minfreq=0,frc_Z=-3):
-	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
-	be called with the appropriate size prior to using this function!"""
-	global FRC_RADS
-
-	ny=ima.shape[1]
-	nimg=ima.shape[0]
-	nr=int(ny*0.70711)+1	# max radius we consider
-	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
-
-	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
-	imai=jnp.imag(ima)
-	imbr=jnp.real(imb)
-	imbi=jnp.imag(imb)
-
-	imabr=imar*imbr		# compute these before squaring for normalization
-	imabi=imai*imbi
-
-	imar=imar*imar		# just need the squared versions, not the originals now
-	imai=imai*imai
-	imbr=imbr*imbr
-	imbi=imbi*imbi
-
-	frc=[]
-	zero=jnp.zeros([nr])
-	for i in range(nimg):
-		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
-		aprd=zero.at[rad_img].add(imar[i]+imai[i])
-		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
-
-	frc=jnp.stack(frc)
-	w=jnp.linspace(weight,2.0-weight,nr)
-#	frc=frc*w
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)).mean(axis=1) # average over frequencies # TODO: This has shape ny//2 not stop at ny//2. Same as nimg but that seems fine
-	return jnp.clip(ret,ret.mean()-ret.std()*frc_Z,1.0).mean()
-#	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
-#	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
-
-jax_frc_jit=jax.jit(__jax_frc_jit, static_argnames="minfreq")
-
-def __jax_frcs_jit(ima,imb):
+@jax.jit
+def jax_unweighted_frcs_jit(ima,imb):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
 	global FRC_RADS
@@ -2183,101 +2052,11 @@ def __jax_frcs_jit(ima,imb):
 	frc=jnp.stack(frc)
 	return frc
 
-jax_frcs_jit=jax.jit(__jax_frcs_jit)
-
-
-def __jax_frc_maxfreq_jit(ima,imb,maxfreq,weight=1.0,minfreq=0):
-	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
-	be called with the appropriate size prior to using this function!"""
-	global FRC_RADS
-
-	ny=ima.shape[1]
-	nimg=ima.shape[0]
-	nr=int(ny*0.70711)+1	# max radius we consider
-	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
-
-	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
-	imai=jnp.imag(ima)
-	imbr=jnp.real(imb)
-	imbi=jnp.imag(imb)
-
-	imabr=imar*imbr		# compute these before squaring for normalization
-	imabi=imai*imbi
-
-	imar=imar*imar		# just need the squared versions, not the originals now
-	imai=imai*imai
-	imbr=imbr*imbr
-	imbi=imbi*imbi
-
-	frc=[]
-	zero=jnp.zeros([nr])
-	for i in range(nimg):
-		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
-		aprd=zero.at[rad_img].add(imar[i]+imai[i])
-		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
-
-	frc=jnp.stack(frc)
-#	frc=frc*w
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,np.min((ny//2-minfreq-1, maxfreq-minfreq)))).mean(axis=1) # average over frequencies # TODO: This has shape ny//2 not stop at ny//2. Same as nimg but that seems fine
-	return jnp.clip(ret, 0.0, 1.0).mean()
-#	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
-#	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
-
-jax_frc_maxfreq_jit=jax.jit(__jax_frc_maxfreq_jit, static_argnames=["maxfreq","minfreq"])
-
-
-def __jax_frc_snr_jit(ima,imb,ctf_info,dfary,phase,apix,minfreq=0,bfactor=10):
-	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
-	be called with the appropriate size prior to using this function!"""
-	global FRC_RADS
-
-	ny=ima.shape[1]
-	nimg=ima.shape[0]
-	nr=int(ny*0.70711)+1	# max radius we consider
-	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
-
-	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
-	imai=jnp.imag(ima)
-	imbr=jnp.real(imb)
-	imbi=jnp.imag(imb)
-
-	imabr=imar*imbr		# compute these before squaring for normalization
-	imabi=imai*imbi
-
-	imar=imar*imar		# just need the squared versions, not the originals now
-	imai=imai*imai
-	imbr=imbr*imbr
-	imbi=imbi*imbi
-
-	frc=[]
-	snr=[]
-	zero=jnp.zeros([nr])
-	for i in range(nimg):
-		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
-		aprd=zero.at[rad_img].add(imar[i]+imai[i])
-		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
-
-		# snr.append(jnp.square(jnp.squeeze(jnp.real(jit_compute_2d_ctf(ctf_info[0], ctf_info[1], phase[i], apix, ny, jnp.reshape(dfary[i], (1,)), 0, 0, False)))[0])) # For not using bfactor
-		ctf=jnp.real(jnp.squeeze(jit_compute_2d_ctf(ctf_info[0],ctf_info[1],phase[i],apix,ny,jnp.reshape(dfary[i], (1,)),0,0,False)) * jnp.exp(-(bfactor/4)*rad2_img(ny)/(apix*apix*ny*ny))) # For CTF with bfactor
-		snr.append(jnp.square(ctf[0]))
-		# snr.append(jnp.abs(ctf[0])) # For using absolute value of CTF instead of intensity
-
-	snr_weight=jnp.stack(snr)
-	frc=jnp.stack(frc)
-	# ret = jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) / jax.lax.dynamic_slice(jnp.bincount(rad_img.flatten(), length=nr), (minfreq, ), (ny//2-minfreq-1, )) # Adding radius weighting: additional divide by radius. change to * for multiply (worse)
-	ret=jax.lax.dynamic_slice(frc, (0,minfreq), (nimg,ny//2-minfreq-1)) * jax.lax.dynamic_slice(snr_weight, (0,minfreq), (nimg,ny//2-minfreq-1)) # average over frequencies # comment out if using radius weighting
-
-	return  jnp.clip(ret, 0.0, 1.0).mean()
-#	return jnp.square(jnp.clip(ret,0.0,1.0)).mean()   # Experimental to bias gradients towards better FRCs
-#	return jnp.pow(jnp.clip(ret,0.0,1.0),1.5).mean()   # Experimental to bias gradients towards better FRCs
-
-jax_frc_snr_jit=jax.jit(__jax_frc_snr_jit, static_argnames="minfreq")
-
 
 FSC_REFS={}
-def __jax_fsc_jit(ima,imb):
+
+@jax.jit
+def jax_fsc_jit(ima,imb):
 	"""Computes the FSC between a stack of complex volumes and a single reference volume. Returns a stack of 1D FSC curves. Note that rad_vol_int(ny) MUST be called prior to using this function"""
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
 
@@ -2311,7 +2090,6 @@ def __jax_fsc_jit(ima,imb):
 
 	return jnp.stack(fsc)
 
-jax_fsc_jit=jax.jit(__jax_fsc_jit)
 
 
 #################################################### LOSS FUNCTIONS #################################################
@@ -2366,7 +2144,7 @@ def sym_prj_frc_loss(pointary,ortary,tytx,symmx,ptcls,weight,thresh):
 	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
 
 point_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
 ort_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss, argnums=(1,2)))
@@ -2378,7 +2156,7 @@ def sym_prj_frcs_loss(pointary,symmx,ptcls,meta,weight,thresh):
 	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=point_project_simple_sym_fn(pointary, meta[:,2:5], ny, meta[:,0:2], symmx)
-	return -jax_frcs_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+	return -jax_frcs_jit(jax_fft2d(prj),ptcls,weight,thresh)
 
 def prj_frcs(pointary,ptcls,meta):
 	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
@@ -2387,7 +2165,7 @@ def prj_frcs(pointary,ptcls,meta):
 	ny=ptcls.shape[1]
 	prjf=jax_fft2d_jit(point_project_simple_fn(pointary,mx2d,ny,meta[:,0:2]))
 
-	return jax_frcs_jit(prjf,ptcls.jax)
+	return jax_unweighted_frcs_jit(prjf,ptcls.jax)
 
 
 def point_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
@@ -2438,7 +2216,7 @@ def sym_prj_frc_loss_ctf(pointary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx
 	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
 
 point_sym_prj_frc_loss_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf))
 ort_sym_prj_frc_loss_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf, argnums=(1, 5)))
@@ -2492,7 +2270,7 @@ def sym_prj_frc_loss_layered_ctf(pointary,ortary,ctf_info,dfstep,dsapix,tytx,ast
 	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 	ny=ptcls.shape[1]
 	prj=point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
 
 point_sym_prj_frc_loss_layered_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_layered_ctf), static_argnames=["dfstep","dsapix"])
 ort_sym_prj_frc_loss_layered_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_layered_ctf, argnums=(1,5)), static_argnames=["dfstep","dsapix"])
