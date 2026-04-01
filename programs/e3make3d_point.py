@@ -56,45 +56,36 @@ jax.config.update("jax_default_matmul_precision", "float32")
 #@profile
 def main():
 
-	usage="""e3make3d_gauss.py <projections>
+	usage="""e3make3d_point.py <projections>
 
 
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--volout", type=str,help="Volume output file. Note that volumes will be appended to an existing file", default="threed.hdf")
-	parser.add_argument("--gaussout", type=str,help="Gaussian list output file",default=None)
-	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=40", default=40)
-	parser.add_argument("--volfilthp", type=float, help="Highpass filter to apply to output volume in A, 0 disables, default=2500", default=2500)
-#	parser.add_argument("--frc_z", type=float, help="FRC Z threshold (mean-sigma*Z)", default=3.0)
+	parser.add_argument("--pointout", type=str,help="Point list output file",default=None)
+	parser.add_argument("--volfiltlp", type=float, help="Lowpass filter to apply to output volume in A, 0 disables, default=5", default=5)
 	parser.add_argument("--frc_weight", type=float, help="Testing only at present", default=-1)
 	parser.add_argument("--apix", type=float, help="A/pix override for raw data", default=-1)
 	parser.add_argument("--thickness", type=float, help="For tomographic data specify the Z thickness in A to limit the reconstruction domain", default=-1)
 	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
 #	parser.add_argument("--preclip",type=int,help="Trim the input images to the specified (square) box size in pixels", default=-1)  # not supported by new caching mechanism
 	parser.add_argument("--postclip",type=int,help="Trim the output volumes to the specified (square) box size in pixels (no impact on A/pix)", default=-1)
-	parser.add_argument("--initgauss",type=int,help="Gaussians in the first pass, scaled with stage, default=500", default=500)
-	parser.add_argument("--savesteps", action="store_true",help="Save the gaussian parameters for each refinement step, for debugging and demos")
-	parser.add_argument("--combineiters", type=int, help="Specify an additional number of iterations to add to the end of refinement, volume will use all Gaussian positions during these iterations", default=-1)
-	parser.add_argument("--tomo", action="store_true",help="tomogram mode, changes optimization steps")
-#	parser.add_argument("--tomo_rotate", action="store_true",help="in tomogram mode, reorients the reconstruction based on zero tilt to put 'particles' back in the x-y plane")    # this should be handled outside this program
-#	parser.add_argument("--tomo_seqali", type=int,default=0,help="align each image in the tilt series to the adjacent image, starting with the center image and working outward. Specify region size in pixels in image center for alignment.")  # this should be handled before running this program
-	parser.add_argument("--cttomo", action="store_true",help="Continous tilt tomogram mode, changes optimization steps")
+	parser.add_argument("--initpoint",type=int,help="Points in the first pass, scaled with stage, default=500", default=500)
+	parser.add_argument("--savesteps", action="store_true",help="Save the point parameters for each refinement step, for debugging and demos")
+	parser.add_argument("--combineiters", type=int, help="Specify an additional number of iterations to add to the end of refinement, volume will use all Point positions during these iterations", default=-1)
 	parser.add_argument("--spt", action="store_true",help="subtomogram averaging mode, changes optimization steps")
 	parser.add_argument("--quick", action="store_true",help="single particle mode with less thorough refinement, but faster results")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--keep", type=str, help="The fraction of images to use, based on quality scores (1.0 = use all). Optionally 3 values for SPT only: 3d qual, 2d qual, other",default="1.0")
 	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use : for range with excluded upper limit)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
-	parser.add_argument("--dfmin", type=float, help="Minimum defocus override, for use with --ctf",default=-1)
-	parser.add_argument("--dfmax", type=float, help="Maximum defocus override, for use with --ctf",default=-1)
-	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
+	parser.add_argument("--sym", type=str,help="symmetry if no value is given then the model is assumed to have no symmetry.\nChoices are: i, c, d, tet, icos, or oct", default="c1")
 	parser.add_argument("--fscdebug", type=str,help="Compute the FSC of the final map with a reference volume for debugging",default=None)
 	parser.add_argument("--gpudev",type=int,help="GPU Device, default 0", default=0)
 	parser.add_argument("--gpuram",type=int,help="Maximum GPU ram to allocate in MB, default=4096", default=4096)
 	parser.add_argument("--profile", action="store_true",help="Used for code development only, not routine use")
 	parser.add_argument("--cachepath",type=str,help="folder for storing the cached images, should be on a high speed drive, M.2 if possible. Default='./cache/'",default=".")
 	parser.add_argument("--score",type=str,help="If set, will generate the specified .lst file with score set and plottable scores.txt",default=None)
-#	parser.add_argument("--precache",type=str,help="Rather than perform a reconstruction, only perform caching on the input file for later use. String is the folder to put the cache files in.")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verbosity")
 
@@ -114,7 +105,7 @@ def main():
 	if min(options.keep)==1.0 and options.ptcl3d_id is None: selimg=set(range(nptcl))
 	else:
 		# in spt mode we consider all 3 keep values, looking at scores on 3-D and 2-D particles, The third value was used for something else in the original program. Here we just combine with the second
-		if options.spt or options.tomo :
+		if options.spt :
 			p3d=defaultdict(list)		# construct dictionary keyed by 3d particle, with scores and image numbers in value
 			p2ds=[]						# construct list of (score,#,ptcl3d_id) for 2-D particles at the same time
 			for i,l in enumerate(lsx):
@@ -168,12 +159,10 @@ def main():
 	if options.profile:
 		selimg=np.array(range(0,min(2050,nptcl)))
 		nptcl=len(selimg)
-		print("WARNING: profiling mode enabled. Actual gaussian map results will not be useful, used for development only!")
+		print("WARNING: profiling mode enabled. Actual point map results will not be useful, used for development only!")
 
 	nxraw=EMData(args[0],0,True)["nx"]
 #	if options.preclip>0: nxraw=options.preclip
-	nxrawm2=good_size_small(nxraw-2)
-#	frc_Z=options.frc_z
 	if options.apix>0: apix=options.apix
 	else: apix=EMData(args[0],0,True)["apix_x"]
 	if options.thickness>0: zmax=options.thickness/(apix*nxraw*2.0)		# instead of +- 0.5 Z range, +- zmax range
@@ -181,7 +170,7 @@ def main():
 	if options.outbox>0: outsz=options.outbox
 	else: outsz=min(1024,nxraw)
 
-	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxrawm2}. Thickness limit +-{zmax}. {nptcl} input images")
+	if options.verbose: print(f"Input data box size {nxraw}x{nxraw} at {apix} A/pix. Maximum downsampled size for refinement {nxraw}. Thickness limit +-{zmax}. {nptcl} input images")
 
 	if options.savesteps: 
 		try: os.unlink("steps.hdf")
@@ -195,41 +184,9 @@ def main():
 	if options.verbose: print(f"{nptcl} particles at {nxraw}^3")
 
 	# definition of downsampling sequence for stages of refinement
-	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 7) step coef
+	# 0) #ptcl, 1) downsample, 2) iter, 3) frc weight, 4) amp threshold, 5) replicate, 6) repl. spread, 7) step coef (no longer used)
 	# replication skipped in final stage
-	if options.tomo:
-		stages=[
-#			[256,32,  32,1.8, -1,1,.05, 3.0],
-#			[256,32,  32,1.8, -1,4,.05, 1.0],
-#			[256,64,  48,1.5, -2,4,.04,1.0],
-#			[256,64,  48,1.5, -2,16,.02,0.5],
-#			[256,128, 32,1.2, -3,16,.01,2.0],
-#			[256,256, 32,1.2, -2,64,.01,3.0],
-#			[256,512, 48,1.2, -2,128,.01,3.0],
-#			[256,1024,48,1.2, -3,0,.004,5.0]
-			[256,32,  32,1.8, -5,1,.05, 3.0],
-			[256,32,  32,1.8, -5,4,.05, 1.0],
-			[256,64,  48,1.5, -5,4,.04,1.0],
-			[256,64,  48,1.5, -5,16,.02,0.5],
-			[256,128, 48,1.2, -5,16,.01,2.0],
-#			[256,256, 32,1.2, -5,64,.01,3.0],
-#			[256,512, 48,1.2, -5,128,.01,3.0],
-			[256,256, 48,1.2, -5,64,.006,3.0],
-			[256,512, 64,1.2, -5,128,.003,3.0],
-			[256,1024,64,1.2, -5,0,.004,5.0]
-		]
-	elif options.cttomo:
-		stages=[
-			[4096,32,  32,1.8, -1,1,.05, 3.0],
-			[4096,32,  32,1.8, -1,4,.05, 1.0],
-			[4096,64,  48,1.5, -2,4,.04,1.0],
-			[4096,64,  48,1.5, -2,16,.02,0.5],
-			[4096,128, 32,1.2, -3,16,.01,2.0],
-			[4096,256, 32,1.2, -2,64,.01,3.0],
-			[4096,512, 48,1.2, -2,128,.01,3.0],
-			[4096,1024,48,1.2, -3,0,.004,5.0]
-		]
-	elif options.spt:
+	if  options.spt:
 		stages=[
 			[2**12,32,  32,1.8, -1,1,.05, 3.0],
 			[2**12,32,  32,1.8, -1,2,.05, 1.0],
@@ -238,17 +195,8 @@ def main():
 			[2**15,128, 32,1.2, -3,16,.01,2],
 			[2**17,256, 16,1.2, -2,32,.01,3],
 			[2**18,512, 8,1.2, -2,0,.01,3]
-#			[2**20,1024,48,1.2, -3,,.004,5]
 		]
-	elif options.profile:
-		stages=[
-			[512,   16,16,1.8,-3  ,1,.01, 2.0],
-			[1024,  32,16,1.5, 0  ,4,.005,1.5],
-			[2048, 128,4 ,1.2,-1.5,0,.003,1.0]
-#			[8192, 256,32,1.0,-2  ,3,.003,1.0],
-#			[32768,512,32,0.8,-2  ,1,.001,0.75]
-		]
-	elif options.quick:
+	elif options.quick or options.profile:
 		stages=[
 			[512,   16,24,1.8,-3  ,1,.01, 2.0],
 			[512,   16,24,1.8, 0  ,4,.01, 1.0],
@@ -293,9 +241,9 @@ def main():
 
 	if options.combineiters>0:
 		refineiters=5
-		stages[-1][2]+=(options.combineiters-1)*refineiters # Increase the number of iterations so can save Gaussians
-		final_gaus = Gaussians()
-		final_gaus._data = []
+		stages[-1][2]+=(options.combineiters-1)*refineiters # Increase the number of iterations so can save Points
+		final_point = Points()
+		final_point._data = []
 	times=[time.time()]
 
 	# Cache initialization
@@ -313,18 +261,16 @@ def main():
 
 	if options.verbose>1: print(f"\n{local_datetime()}: Refining")
 
-	# Initialize Gaussians
-	gaus=Gaussians()
-	#Initialize Gaussians to random values with amplitudes over a narrow range
+	# Initialize Points
+	point=Points()
+	#Initialize Points to random values with amplitudes over a narrow range
 	rng = np.random.default_rng()
-	rnd=rng.uniform(0.0,1.0,(options.initgauss*9//10,4))		# start with completely random Gaussian parameters
-#	rnd=tf.random.uniform((options.initgauss,4))     # specify the number of Gaussians to start with here
-	neg = rng.uniform(0.0, 1.0, (options.initgauss//10, 4))		# 10% of gaussians are negative WRT the background (zero)
+	rnd=rng.uniform(0.0,1.0,(options.initpoint*9//10,4))		# start with completely random Point parameters
+	neg = rng.uniform(0.0, 1.0, (options.initpoint//10, 4))		# 10% of points are negative WRT the background (zero)
 	rnd+=(-.5,-.5,-.5,2.0)
 	neg+=(-.5,-.5,-.5,-3.0)
 	rnd = np.concatenate((rnd, neg))
-	if options.tomo: gaus._data=rnd/(.9,.9,1.0/zmax,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
-	else: gaus._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
+	point._data=rnd/(1.5,1.5,1.5,3.0)	# amplitudes set to ~1.0, positions random within 2/3 box size
 
 	frchist=[]
 	times.append(time.time())
@@ -336,16 +282,11 @@ def main():
 		if options.verbose: print(f"Stage {sn} - {local_datetime()}:")
 		if options.profile and sn==2 : jax.profiler.start_trace("jax_trace")
 
-#		nliststg=range(sn,nptcl,max(1,nptcl//stage[0]))		# all of the particles to use in the current stage, sn start gives some stochasticity
-
 		if options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
 		lqual=-1.0
 		rstep=1.0
 		optim = optax.adam(.003)		# parm is learning rate
-#		optim = optax.lion(.003)		# tried, seems not quite as good as Adam in test, but maybe worth another try
-#		optim = optax.lamb(.005)		# tried, slightly better than adam, worse than lion
-#		optim = optax.fromage(.01)		# tried, not as good
-		optim_state=optim.init(gaus._data)		# initialize with data
+		optim_state=optim.init(point._data)		# initialize with data
 		for i in range(stage[2]):		# training epochs
 			if rstep<.01: break		# don't continue if we've optimized well at this level
 			if nptcl>stage[0]*2: idx0=sn+i
@@ -361,15 +302,14 @@ def main():
 				if len(ptclsfds)<5 :
 					print("Abort tiny batch: ",len(nliststg),j,batchsize)
 					continue
-				# standard mode, optimize gaussian parms only
+				# standard mode, optimize point parms only
 #				if not options.tomo or sn<2:
 
 				# on the first epoch of each stage we look at the variance of the fsc curve to estimate weighting
 				# only using a single batch for this right now. May be sufficient
 				# TODO - Do we need to do this differently with other CTF modes? Variance estimate might not be impacted by the phase flipping, so may be ok...
 				if i in (0,8) and j==0:
-					frcs=prj_frcs(gaus.jax,ptclsfds,meta)
-					#print("FRCS ",frcs.shape)
+					frcs=prj_frcs(point.jax,ptclsfds,meta)
 					try:
 						thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
 						weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
@@ -386,9 +326,7 @@ def main():
 
 
 				if options.ctf==0:
-					dsapix=ptclsfds.apix		# this is automatically adjusted for downsampling
-					# step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,orts,tytx,stage[3],stage[7],frc_Z)
-					step0,qual0,shift0,sca0=gradient_step_optax(gaus,ptclsfds,meta,symmx,weight,thresh,stage[7])
+					step0,qual0,shift0,sca0=point_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh)
 					# TODO: These nan_to_num shouldn't be necessary. Not sure what is causing nans. Could be there is an implicit sqrt somewhere we're taking the gradient of, or a roundoff error?
 					step0=jnp.nan_to_num(step0)
 					qual0=jnp.nan_to_num(qual0)
@@ -401,33 +339,11 @@ def main():
 						qual-=qual0
 						shift+=shift0
 						sca+=sca0
-
-					# update alignments of data to gaussian projections
-					# if i>3:
-					# 	dtytx=align_2d(gaus,orts,tytx,ptclsfds)
-					# 	caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,-dtytx)
-
-					# if i==stage[2]-1:
-					# # 	fscs0=jax_frc(jax_fft2d(gauss_project_simple_fn(gaus.jax,orts.to_mx2d(swapxy=True),ptclsfds.jax.shape[1],tytx)),ptclsfds.jax,-1,1.0,2)
-					# 	out=open(f"fscs_{sn}.txt","a" if j>0 else "w")
-					# 	for ii,fsc in enumerate(np.array(fscs0)): out.write(f"{nliststg[j+ii]:d}\t{fsc:0.5f}\n")
-					# 	out.close()
-				elif options.ctf==2:
-					### TODO new caching mechanism not implemented yet. See the definition of meta on line 419 for CTF parameters
-					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,stage[3],stage[7],frc_Z)
-					step0=jnp.nan_to_num(step0)
-					if j==0:
-						step,qual,shift,sca=step0,-qual0,shift0,sca0
-					else:
-						step+=step0
-						qual-=qual0
-						shift+=shift0
-						sca+=sca0
 				elif options.ctf==1:
-					### TODO new caching mechanism not implemented yet. See the definition of meta on line 419 for CTF parameters
-					dsapix=apix*nxraw/ptclsfds.shape[1]
-					step0,qual0,shift0,sca0=gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh)
+					dsapix=ptclsfds.apix
+					wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
+					dfstep=2*apix*apix/(wavelength*10000)
+					step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -436,21 +352,20 @@ def main():
 						qual-=qual0
 						shift+=shift0
 						sca+=sca0
-				# optimize gaussians and image shifts
-				### TODO - What is this?  Shouldn't CTF always be 0,1,2 ?
-				else:
-					step0,stept0,qual0,shift0,sca0,imshift0=gradient_step_tytx(gaus,ptclsfds,orts,tytx,stage[3],stage[7])
+				elif options.ctf==2:
+					dsapix=ptclsfds.apix
+					wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
+					dfstep=2*apix*apix/(wavelength*10000)
+					step0,qual0,shift0,sca0=point_gradient_step_layered_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
-						step,stept,qual,shift,sca,imshift=step0,stept0,qual0,shift0,sca0,imshift0
-						caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
+						step,qual,shift,sca=step0,-qual0,shift0,sca0
 					else:
 						step+=step0
-						caches[stage[1]].add_orts(nliststg[j:j+batchsize],None,stept0*rstep)	# we can immediately add the current 500 since it is per-particle
-						qual+=qual0
+						qual-=qual0
 						shift+=shift0
 						sca+=sca0
-						imshift+=imshift0
+
 
 			norm=len(nliststg)//batchsize+1
 			if norm==0: raise Exception("ERROR: norm zero. This shouldn't happen")
@@ -476,18 +391,18 @@ def main():
 					out=None
 					continue
 
-			update, optim_state = optim.update(step, optim_state, gaus._data)
-			gaus._data = optax.apply_updates(gaus._data, update)
+			update, optim_state = optim.update(step, optim_state, point._data)
+			point._data = optax.apply_updates(point._data, update)
 
-			if options.savesteps: from_numpy(gaus.numpy).write_image("steps.hdf",-1)
+			if options.savesteps: from_numpy(point.numpy).write_image("steps.hdf",-1)
 
 			if dbugvol is not None:
 				nyd=dbugvol.shape[1]
 				if options.sym not in ("c1","C1","I","i"):
-					vol=gaus.volume(nyd,zmax)
+					vol=point.volume(nyd,zmax)
 					vol.emdata[0].process_inplace("xform.applysym",{"sym":options.sym})
 					vol=vol.do_fft().jax
-				else: vol=gaus.volume(nyd,zmax).do_fft().jax
+				else: vol=point.volume(nyd,zmax).do_fft().jax
 				fsc=jax_fsc_jit(vol,dbugvol)
 				out=open(f"fscm3d_{sn:02d}_{i:02d}.txt","w")
 				for s in range(nyd//2): out.write(f"{s/nyd:1.4f}\t{float(fsc[0][s]):1.5f}\n")
@@ -502,18 +417,17 @@ def main():
 			# Combine final few iterations to give the final volume
 			if options.combineiters>0 and sn == len(stages)-1 and stage[2] - i -1 <= (options.combineiters-1)*refineiters:
 				if (i+1-(stage[2]-options.combineiters*refineiters))%refineiters == 0:
-					if len(final_gaus) == 0: final_gaus._data = np.array(gaus._data)
-					else: final_gaus._data = np.concatenate([final_gaus.numpy, np.array(gaus.jax)], axis=0)
+					if len(final_point) == 0: final_point._data = np.array(point._data)
+					else: final_point._data = np.concatenate([final_point.numpy, np.array(point.jax)], axis=0)
 					rng=np.random.default_rng()
-					gaus.coerce_jax()
+					point.coerce_jax()
 					std= 1/(2*outsz)
-					gaus._data+=np.hstack((rng.normal(0,std,(gaus._data.shape[0], 3)), np.zeros((gaus._data.shape[0], 1))))
+					point._data+=np.hstack((rng.normal(0,std,(point._data.shape[0], 3)), np.zeros((point._data.shape[0], 1))))
 					if options.verbose>5:
-						vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz).emdata[0]
+						vol=final_point.volume_np(outsz,zmax).center_clip(outsz).emdata[0]
 						vol["apix_x"]=apix*nxraw/outsz
 						vol["apix_y"]=apix*nxraw/outsz
 						vol["apix_z"]=apix*nxraw/outsz
-						if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 						if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
 						vol.process_inplace("normalize.edgemean")
 						vol.write_image(f"testing_combineiters_vol_{i}.hdf:12",-1)
@@ -528,7 +442,7 @@ def main():
 
 					# need to recompute this here since we may not have hit this stage yet
 					if j==0:
-						frcs=prj_frcs(gaus.jax,ptclsfds,meta)
+						frcs=prj_frcs(point.jax,ptclsfds,meta)
 						try:
 							thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
 							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
@@ -541,38 +455,35 @@ def main():
 							weight=np.ones((len(frcs.shape[1])))
 
 					# we measure per particle quality and save it
-					quality=jnp.nan_to_num(sym_prj_frcs_loss(gaus.jax,symmx,ptclsfds.jax,meta,weight,thresh), nan=2.0)
+					quality=jnp.nan_to_num(sym_prj_frcs_loss(point.jax,symmx,ptclsfds.jax,meta,weight,thresh), nan=2.0)
 
 					#print(quality.shape,quality)
 					for ii,q in enumerate(np.array(quality)): qualities[ii+j][sn]=q
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
-			dsapix=apix*nxraw/ptclsfds.shape[1]
-			mx2d=orts.to_mx2d(swapxy=True)
-			gausary=gaus.jax
+			dsapix=ptclsfds.apix
+			pointary=point.jax
 			ny=ptclsfds.shape[1]
-			# projs=EMStack2D(gauss_project_simple_fn(gausary,mx2d,ny,tytx))
-			projs=EMStack2D(gauss_project_simple_sym_fn(gausary, orts.jax, ny, tytx, symmx))
+			projs=EMStack2D(point_project_simple_sym_fn(pointary, meta[:,2:5], ny, meta[:,:2], symmx))
 			if options.ctf>0:
+				dsapix=ptclsfds.apix
+				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
+				dfstep=2*apix*apix/(wavelength*10000)
 				mx3d=orts.to_mx3d()
-				# ctfaryds=jax_downsample_2d(ctf_stack,ny)
-				# ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctfaryds,dfrange[0],dfstep,ny,tytx))
-				ctf_projs=EMStack2D(gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,dsapix,ny,tytx,astig))
-				# layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctfaryds,dfrange[0],dfstep,dsapix,ny,tytx))
-				layered_ctf_projs=EMStack2D(gauss_project_layered_ctf_fn(gausary,mx3d,ctf_info,dfstep,dsapix,ny,tytx,astig))
-			transforms=orts.transforms(tytx)
-#			# Need to calculate the ctf corrected projection then write 1. particle 2. simple projection 3. corrected simple projection 4.ctf projection
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, meta[:,2:5], jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, meta[:,:2], meta[:,5:9], symmx)
+				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,meta[:,2:5],jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,meta[:,:2],meta[:,5:9]))
 			ptclds=ptclsfds.do_ift()
 			for i in range(len(projs)):
+				tf=Transform({"type":"spinvec","v1":float(meta[i][2]),"v2":float(meta[i][3]),"v3":float(meta[i][4]),"tx":float(meta[i][1]*nxraw),"ty":float(meta[i][0]*nxraw)})
 				a=ptclds.emdata[i]
 				b=projs.emdata[i]
 				a["apix_x"]=dsapix
 				a["apix_y"]=dsapix
 				b["apix_x"]=dsapix
 				b["apix_y"]=dsapix
-				a["xform.projection"]=transforms[i]
-				b["xform.projection"]=transforms[i]
+				a["xform.projection"]=tf
+				b["xform.projection"]=tf
 				a.process_inplace("normalize")
 				b.process_inplace("filter.matchto",{"to":a})
 				if options.ctf>0:
@@ -584,8 +495,8 @@ def main():
 					d["apix_y"]=dsapix
 					c.process_inplace("filter.matchto",{"to":a})
 					d.process_inplace("filter.matchto",{"to":a})
-					c["xform.projection"]=transforms[i]
-					d["xform.projection"]=transforms[i]
+					c["xform.projection"]=tf
+					d["xform.projection"]=tf
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
 					c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)
@@ -594,30 +505,22 @@ def main():
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*2+1)
 
-		# if options.savesteps:
-		# 	vol=gaus.volume(nxraw,zmax)
-		# 	vol.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.volfilt})
-		# 	vol.write_images(f"A_vol_opt_{sn}.hdf")
-
 		# filter results and prepare for stage 2
 		if stage[5]>0:			# no filter/replicate in the last stage
-			g0=len(gaus)
-			if options.tomo: gaus.norm_filter(sig=stage[4], cyl_mask=1/outsz)		# gaussians outside the box may be important!
-			else: gaus.norm_filter(sig=stage[4],rad_downweight=0.33)
-			g1=len(gaus)
-			# Replicate gaussians to produce a specified total number for each stage. Critical that these numbers
+			g0=len(point)
+			point.norm_filter(sig=stage[4],rad_downweight=0.33)
+			g1=len(point)
+			# Replicate points to produce a specified total number for each stage. Critical that these numbers
 			# fall in a small set of specific N for JIT compilation
-			gaus.replicate_abs(stage[5]*options.initgauss,stage[6])
-			g2=len(gaus)
-		else: g0=g1=g2=len(gaus)
-		print(f"{local_datetime()}: Stage {sn} complete: {g0} -> {g1} -> {g2} gaussians")
+			point.replicate_abs(stage[5]*options.initpoint,stage[6])
+			g2=len(point)
+		else: g0=g1=g2=len(point)
+		print(f"{local_datetime()}: Stage {sn} complete: {g0} -> {g1} -> {g2} points")
 		times.append(time.time())
 
 		# do this at the end of each stage in case of early termination
-		if options.gaussout is not None and g2 != 0:
-			np.savetxt(options.gaussout,gaus.numpy,fmt="%0.4f",delimiter="\t")
-			# out=open(options.gaussout,"w")
-			# for x,y,z,a in gaus.tensor: out.write(f"{x:1.5f}\t{y:1.5f}\t{z:1.5f}\t{a:1.3f}\n")
+		if options.pointout is not None and g2 != 0:
+			np.savetxt(options.pointout,point.numpy,fmt="%0.4f",delimiter="\t")
 
 		# show individual shifts at high verbosity
 #		if options.verbose>2:
@@ -639,14 +542,14 @@ def main():
 
 
 	if options.combineiters>0:
-		if options.verbose>5:np.savetxt("testing_combine_iters.txt", final_gaus.numpy, fmt="%0.4f", delimiter="\t") # For testing
-		if options.postclip>0: vol = final_gaus.volume_np(outsz,zmax).center_clip(options.postclip)
-		else: vol=final_gaus.volume_np(outsz,zmax).center_clip(outsz)
-	elif options.postclip>0 : vol=gaus.volume(outsz,zmax).center_clip(options.postclip)
-	else : vol=gaus.volume(outsz,zmax).center_clip(outsz)
+		if options.verbose>5:np.savetxt("testing_combine_iters.txt", final_point.numpy, fmt="%0.4f", delimiter="\t") # For testing
+		if options.postclip>0: vol = final_point.volume_np(outsz,zmax).center_clip(options.postclip)
+		else: vol=final_point.volume_np(outsz,zmax).center_clip(outsz)
+	elif options.postclip>0 : vol=point.volume(outsz,zmax).center_clip(options.postclip)
+	else : vol=point.volume(outsz,zmax).center_clip(outsz)
 	vol=vol.emdata[0]
 	if options.sym not in ("c1","C1","I","i"):
-		if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not gaussians)")
+		if options.verbose>0 : print(f"Apply {options.sym} symmetry to map (not points)")
 		vol.process_inplace("xform.applysym",{"sym":options.sym})
 	times.append(time.time())
 	vol["apix_x"]=apix*nxraw/outsz
@@ -654,7 +557,6 @@ def main():
 	vol["apix_z"]=apix*nxraw/outsz
 	if options.ptcl3d_id is not None : vol["ptcl3d_id"]=options.ptcl3d_id
 	vol.write_image(options.volout.replace(".hdf","_unfilt.hdf"),-1)
-	if options.volfilthp>0: vol.process_inplace("filter.highpass.gauss",{"cutoff_freq":1.0/options.volfilthp})
 	if options.volfiltlp>0: vol.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.volfiltlp})
 	vol.process_inplace("normalize.edgemean")
 	times.append(time.time())
@@ -674,367 +576,10 @@ def main():
 		os.system(f'e2proc3d.py {options.volout.split(":")[0]} {options.volout.rsplit(".",1)[0]}_fsc.txt --calcfsc {options.fscdebug}')
 
 	times=np.array(times)
-	#times-=times[0]
 	times=times[1:]-times[:-1]
 	if options.verbose>1 : print(times.astype(np.int32))
 
 	E3end(llo)
-
-#@tf.function
-def gradient_step(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
-	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-	mx=orts.to_mx2d(swapxy=True)
-	gausary=gaus.jax
-	ptcls=ptclsfds.jax
-#	print("mx ",mx.shape)
-
-	frcs,grad=gradvalfn(gausary,mx,tytx,ptcls,weight,frc_Z)
-
-#	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
-	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational std
-	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*100)   	# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*100)))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,float(qual),float(shift),float(sca))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
-
-# @profile
-# def gradient_step_optax(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_optax(gaus,ptclsfds,meta,symmx,weight,thresh,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-	#mx=Orientations(ptclsfds.metadata[:,2:5]).to_mx2d(swapxy=True)
-	gausary=gaus.jax
-	ptcls=ptclsfds.jax
-
-	# frcs, grad= gradvalfnl(gausary,mx,ctf_info,dsapix,tytx,astig,ptcls,weight,frc_Z) # From when I tried SNR weighting Gaussian gradient
-	# if True:
-	frcs,grad=gradvalsfnl(gausary,meta[:,2:5],meta[:,0:2],symmx,ptcls,weight,thresh) # With symmetry
-
-
-	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational (gauss) std
-	sca=grad[:,3].std()			# amplitude std
-
-	return (grad,float(qual),float(shift),float(sca))
-
-# @profile
-def sym_prj_frc_loss(gausary,ortary,tytx,symmx,ptcls,weight,thresh):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
-	ny=ptcls.shape[1]
-	prj=gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx)
-#	print(prj.shape,ptcls.shape,weight,frc_Z)
-#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
-
-gradvalsfnl=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
-
-# @profile
-def prj_frc_loss(gausary,mx2d,tytx,ptcls,weight,thresh):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
-
-	ny=ptcls.shape[1]
-	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
-	#prj=pfn(gausary,mx2d,ny,tytx)
-	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,frc_Z)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
-
-gradvalfnl=jax.jit(jax.value_and_grad(prj_frc_loss))
-
-def __sym_prj_frcs_loss(gausary,symmx,ptcls,meta,weight,thresh):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
-	ny=ptcls.shape[1]
-	prj=gauss_project_simple_sym_fn(gausary, meta[:,2:5], ny, meta[:,0:2], symmx)
-#	print(prj.shape,ptcls.shape,weight,frc_Z)
-#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-	return -jax_frcs_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
-
-sym_prj_frcs_loss=jax.jit(__sym_prj_frcs_loss)
-
-def prj_frc(gausary,mx2d,tytx,ptcls,weight,frc_Z):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations."""
-
-	ny=ptcls.shape[1]
-	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
-	#prj=pfn(gausary,mx2d,ny,tytx)
-	prj=gauss_project_simple_fn(gausary,mx2d,ny,tytx)
-	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-
-gradvalfn=jax.value_and_grad(prj_frc)
-
-def prj_frcs(gausary,ptcls,meta):
-	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
-	a loss function, this returns the individual FRC curves for statistical analysis"""
-	mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
-	ny=ptcls.shape[1]
-	prjf=jax_fft2d_jit(gauss_project_simple_fn(gausary,mx2d,ny,meta[:,0:2]))
-#	print(prjf.shape,ptcls.jax.shape)
-
-	return jax_frcs_jit(prjf,ptcls.jax)
-
-
-def align_2d(gaus,orts,tytx,ptclsfds):
-	ny=ptclsfds.shape[1]
-	#ptcls=ptclsfds.jax
-	mx=orts.to_mx2d(swapxy=True)
-	prj=jax_fft2d(gauss_project_simple_fn(gaus.jax,mx,ny,tytx))	# FFT of gaussian projection for each particle
-	return ptclsfds.align_translate(prj)/ny			# ccf between each particle and its projection
-
-
-# TODO: This function is not updated to jax
-def gradient_step_tytxccf(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
-
-# TODO: This function is not updated to jax
-def gradient_step_tytx(gaus,ptclsfds,orts,tytx,weight=1.0,relstep=1.0):
-	"""Computes one gradient step on the Gaussian coordinates and image shifts given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-
-	with tf.GradientTape() as gt:
-		gt.watch(gaus.tensor)
-		gt.watch(tytx)
-		projs=gaus.project_simple(orts,ny,tytx=tytx)
-		projsf=projs.do_fft()
-		frcs=tf_frc(projsf.tensor,ptclsfds.tensor,ny//2,weight,2)	# specifying ny/2 radius explicitly so weight functions
-
-	grad,gradtytx=gt.gradient(frcs,(gaus._data,tytx))
-	qual=tf.math.reduce_mean(frcs)			# this is the average over all projections, not the average over frequency
-	shift=tf.math.reduce_std(grad[:,:3])	# translational std
-	imshift=tf.math.reduce_std(gradtytx)	# image shift std
-	sca=tf.math.reduce_std(grad[:,3])		# amplitude std
-	xyzs=relstep/(shift*500)   				# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*(xyzs,xyzs,xyzs,relstep/(sca*250))	# amplitude scale, 500 heuristic, TODO: may change
-	tytxstep=gradtytx*relstep/(imshift*2000)
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,tytxstep,float(qual),float(shift),float(sca),float(imshift))
-#	print(f"{i}) {float(qual)}\t{float(shift)}\t{float(sca)}")
-
-# TODO: This function is not fully updated to on-demand ctf (but also it isn't used anymore so probably fine)
-# def gradient_step_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_ctf(gaus,ptclsfds,orts,ctf_info,tytx,dfrange,dfstep,weight=1.0,relstep=1.0,frc_Z=3.0):
-	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-	mx=orts.to_mx2d(swapxy=True)
-	gausary=gaus.jax
-	ptcls=ptclsfds.jax
-#	print("mx ",mx.shape)
-
-	# frcs,grad=gradvalfn_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,tytx,ptcls,weight,frc_Z)
-	frcs,grad=gradvalfn_ctf(gausary,mx,jnp.array(ctf_info),dfrange[0],dfstep,tytx,ptcls,weight,frc_Z)
-
-#	qual=frcs.mean()			# this is the average over all projections, not the average over frequency
-	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational std
-	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
-#	gaus.add_tensor(grad*(xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-	#print(f"{qual}\t{shift}\t{sca}")
-
-	return (step,float(qual),float(shift),float(sca))
-
-# def prj_frc_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight,frc_Z):
-def prj_frc_ctf(gausary,mx2d,ctf_info,dfmin,dfstep,tytx,ptcls,weight,frc_Z):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations."""
-
-	ny=ptcls.shape[1]
-	#pfn=jax.jit(gauss_project_simple_fn,static_argnames=["boxsize"])
-	#prj=pfn(gausary,mx2d,ny,tytx)
-	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
-	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfmin,dfstep,ny,tytx)
-	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-
-gradvalfn_ctf=jax.value_and_grad(prj_frc_ctf)
-
-
-# def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,weight=1.0,relstep=1.0,frc_Z=3.0):
-def gradient_step_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,symmx,weight,thresh):
-	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-	mx=orts.to_mx2d(swapxy=True)
-	gausary=gaus.jax
-	ptcls=ptclsfds.jax
-
-	if False:
-	# if True:
-		frcs,grad=gradvalfnl_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight,thresh) # No symmetry
-	else:
-		frcs,grad=gradvalsfnl_ctf(gausary,orts.jax,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh) # Symmetry
-
-	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational std
-	sca=grad[:,3].std()			# amplitude std
-#	print(grad[:,3])
-
-	return (grad,float(qual),float(shift),float(sca))
-
-def sym_prj_frc_loss_ctf(gausary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
-	ny=ptcls.shape[1]
-	prj=gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
-#	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,3)
-	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3) # last two are minfreq and frc_Z which we are trying to get rid of
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
-
-# gradvalsfnl_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf)) # Crashes when I try to jit compile here with a ValueError: Non-hashable static arguments are not supported
-gradvalsfnl_ctf=jax.value_and_grad(sym_prj_frc_loss_ctf)
-
-# def prj_frc_loss_ctf(gausary,mx2d,ctfary,dfmin,dfstep,tytx,ptcls,weight):
-def prj_frc_loss_ctf(gausary,mx2d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,thresh):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations."""
-
-	ny=ptcls.shape[1]
-	# prj=gauss_project_ctf_fn(gausary,mx2d,ctfary,dfmin,dfstep,ny,tytx)
-	prj=gauss_project_ctf_fn(gausary,mx2d,ctf_info,dfstep,apix,ny,tytx,astig)
-	# return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,1,3)  # last arg is frc_z which we are trying to remove
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
-
-# gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfmin","dfstep"])
-gradvalfnl_ctf=jax.jit(jax.value_and_grad(prj_frc_loss_ctf), static_argnames=["dfstep"])
-
-def gradient_step_layered_ctf(gaus,ptclsfds,orts,ctfaryds,tytx,dfrange,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
-	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-	mx=orts.to_mx3d()
-	gausary=gaus.jax
-	ptcls=ptclsfds.jax
-
-	frcs,grad=gradvalfn_layered_ctf(gausary,mx,ctfaryds,dfrange[0],dfstep,dsapix,tytx,ptcls,weight, frc_Z)
-
-	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational std
-	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
-	step=grad*jnp.array((xyzs,xyzs,xyzs,relstep/(sca*250)))	# amplitude scale, 500 heuristic, TODO: may change
-
-	return (step,float(qual),float(shift),float(sca))
-
-def prj_frc_layered_ctf(gausary,mx3d,ctfary,dfmin,dfstep,apix,tytx,ptcls,weight,frc_Z):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations."""
-
-	ny=ptcls.shape[1]
-	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctfary,dfmin,dfstep,apix,ny,tytx)
-	return jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-
-gradvalfn_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf)
-
-def gradient_step_layered_ctf_optax(gaus,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
-	"""Computes one gradient step on the Gaussian coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
-	returns step, qual, shift, scale
-	step - one gradient step to be applied with (gaus.add_tensor)
-	qual - mean frc
-	shift - std of xyz shift gradient
-	scale - std of amplitude gradient"""
-	ny=ptclsfds.shape[1]
-	mx=orts.to_mx3d()
-	gausary=gaus.jax
-	ptcls=ptclsfds.jax
-
-	frcs,grad=gradvalfnl_layered_ctf(gausary,mx,jnp.array(ctf_info),dfstep,dsapix,tytx,astig,ptcls,weight, frc_Z)
-
-	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
-	shift=grad[:,:3].std()		# translational std
-	sca=grad[:,3].std()			# amplitude std
-	xyzs=relstep/(shift*500)   	# xyz scale factor, 1000 heuristic, TODO: may change
-
-	return (grad,float(qual),float(shift),float(sca))
-
-def prj_frc_layered_ctf_loss(gausary,mx3d,ctf_info,dfstep,apix,tytx,astig,ptcls,weight,frc_Z):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations."""
-
-	ny=ptcls.shape[1]
-	prj=gauss_project_layered_ctf_fn(gausary,mx3d,ctf_info,dfstep,apix,ny,tytx,astig)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,2,frc_Z)
-
-gradvalfnl_layered_ctf=jax.value_and_grad(prj_frc_layered_ctf_loss)
 
 
 

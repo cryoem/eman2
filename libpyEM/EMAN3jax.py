@@ -41,7 +41,7 @@ EMStack3D, 2D, 1D - A set of 3 classes to represent stacks of images of differen
 Orientations - an array {N,X,Y,Z} of orientations, interconvertable to EMAN Transform objects. The main representation is an XYZ vector where the length of the vector represents
 	the amount of rotation, and the direction is the plane of rotation. This representation is particularly conventient for work with deep learning.
 
-Gaussians - an array of Gaussian objects {N,X,Y,Z,A} with amplitude, but no width
+Points - an array of Point objects {N,X,Y,Z,A} with amplitude, but no width
 
 VERY important to note that when indexing EMData objects it is emd[x,y,z], whereas indexing numpy/tensorflow objects, the last index is the fastest varying ary[z,y,x] !
 
@@ -667,10 +667,8 @@ metadata in the new object."""
 			else: newary=self._data[:,shp[0]:shp[0]+size[0],shp[1]:shp[1]+size[1]]
 			return EMStack2D(newary,self)
 
-
-
 	def do_fft(self,keep_type=False):
-		"""Computes the FFT of each image and returns a new EMStack3D. If keep_type is not set, will convert to Tensor before computing FFT."""
+		"""Computes the FFT of each image and returns a new EMStack2D. If keep_type is not set, will convert to Tensor before computing FFT."""
 		if keep_type: raise Exception("do_fft: keep_type not functional yet")
 		self.coerce_jax()
 
@@ -689,19 +687,19 @@ metadata in the new object."""
 
 		if center:
 			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(jax_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])))
+				return EMStack2D(jax_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])),self)
 			elif isinstance(target,EMStack2D):
-				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target.jax)))
+				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target.jax)),self)
 			elif isinstance(target,jax.Array) and offset==0:
-				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target)))
+				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target)),self)
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 		else:
 			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(self.jax[:-offset]*jnp.conj(target.jax[offset:]))
+				return EMStack2D(self.jax[:-offset]*jnp.conj(target.jax[offset:]),self)
 			elif isinstance(target,EMStack2D):
-				return EMStack2D(self.jax*jnp.conj(target.jax))
+				return EMStack2D(self.jax*jnp.conj(target.jax),self)
 			elif isinstance(target,jax.Array) and offset==0:
-				return EMStack2D(self.jax*jnp.conj(target))
+				return EMStack2D(self.jax*jnp.conj(target),self)
 			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 	def convolve(self,target):
@@ -805,8 +803,8 @@ metadata in the new object."""
 
 		return jnp.transpose(peaks)
 
+# TODO: Remove class? Everything handled in meta of 2d stack now
 class EMAN3Ctf():
-	# TODO: Change this to be accurate
 	"""This class represents CTF conditions for an image."""
 
 	def __init__(self, defocus = None, dfdiff=None, dfang=None, voltage=None, cs=None, ampcont=None,apix=None, ctf=None): # TODO: Have phaseshift with ampcont get/set like in EMAN2. Also add defocus setter
@@ -826,7 +824,7 @@ class EMAN3Ctf():
 			self.ampcont=ctf.ampcont
 			self.apix=ctf.apix
 			self.defocus=ctf.defocus
-			self.dfang=ctf.dfang # TODO: Check if EMAN/CTFfind have same angle conventions--CTFfind's angle is the angle between the major axis and the x axis (counterclockwise), so is EMAN's
+			self.dfang=ctf.dfang
 			self.dfdiff=ctf.dfdiff
 		if voltage !=None: self.voltage=voltage
 		if cs != None: self.cs=cs
@@ -946,44 +944,13 @@ class EMAN3Ctf():
 			print("var_name was not recognized. It should be one of 'defocus', 'none'")
 			return
 
-def jax_df_img(ny, defocus, dfdiff, dfang):
-	return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2(y,x)-(2.0*jnp.pi/180)*dfang) , (ny//2, ny//2+1)),
-														jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2((y-ny//2),x)-(2.0*jnp.pi/180)*dfang), (ny//2, ny//2+1)))))
-
-jax_df_defocus_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, 0, None, None)), static_argnames=["ny"])
-
-def jax_compute_2d_ctf_stack_defocus(wavelength, cs, phase, apix, ny, dfmin, dfmax, num_df, dfdiff, dfang, sign_only):
-	defocus = jnp.linspace(dfmin, dfmax, num_df)
-	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
-	g2=jnp.pi*wavelength*10000.0
-	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
-	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
-	if sign_only:
-		ctf = jnp.sign(ctf)
-	return ctf
-
-jit_compute_2d_ctf_stack_defocus = jax.jit(jax_compute_2d_ctf_stack_defocus, static_argnames=["ny", "num_df", "sign_only"])
-
-def jax_compute_2d_ctf(wavelength, cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only):
-	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
-	g2=jnp.pi*wavelength*10000.0
-	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
-	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
-	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
-	if sign_only:
-		ctf = jnp.sign(ctf)
-	return ctf
-
-jit_compute_2d_ctf= jax.jit(jax_compute_2d_ctf, static_argnames=["ny", "sign_only"])
-
 
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
 		which conventionally span a range of ~1.0. This form can be readily interconverted to EMAN2 Transform objects or transformation matrices
-		for use with Gaussians. Note that this object handles only orientation, not translation.
-		NOTE: unlike some other objects, the Nx3 array is XYZ order, NOT ZYX order! This matches the vector ordering of Gaussians
+		for use with Points. Note that this object handles only orientation, not translation.
+		NOTE: unlike some other objects, the Nx3 array is XYZ order, NOT ZYX order! This matches the vector ordering of Points
 	"""
 
 	def __init__(self,data=None):
@@ -1006,11 +973,11 @@ class Orientations():
 	def __len__(self): return len(self._data)
 
 	def __getitem__(self,key):
-		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 3-vector for the i'th Orientation"""
+		"""Return the keyed Point parameter, may return a tensor or numpy array. O[i] returns the 3-vector for the i'th Orientation"""
 		return self._data[key]
 
 	def __setitem__(self,key,value):
-		# if the Gaussians are a tensor, we turn it back into numpy for modification
+		# if the Points are a tensor, we turn it back into numpy for modification
 		self.coerce_numpy()
 		self._data[key]=value
 
@@ -1066,7 +1033,7 @@ class Orientations():
 
 	def to_mx2d(self,swapxy=False):
 		"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
-		2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+		2-vectors, ignoring the resulting Z component. Typically used with Points to generate projections.
 
 		To apply to a set of vectors:
 		mx=self.to_mx2d()
@@ -1076,7 +1043,7 @@ class Orientations():
 		or
 		tf.einsum("ij,kj->ki",mx[:,:,0],vecs)
 
-		if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Gaussians are XYZA,
+		if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Points are XYZA,
 		but images are YX.
 		"""
 
@@ -1126,7 +1093,7 @@ class Orientations():
 
 	def to_mx3da(self):
 		"""Returns the current set of orientations as a 4 x 4 x N matrix which will transform a set of 3-vectors + amplitude to a set of
-		rotated 3-vectors with unchanged amplitudes. Typically used with Gaussians to symmetrize or rotate corresponding to a volume.
+		rotated 3-vectors with unchanged amplitudes. Typically used with Points to symmetrize or rotate corresponding to a volume.
 
 		To apply to a set of vectors:
 		ort=Orientations("c4")
@@ -1155,28 +1122,28 @@ class Orientations():
 		return jnp.array(mx)
 
 
-class Gaussians():
-	"""This represents a set of Gaussians with x,y,z,amp parameters (but no width). Representation is a N x 4 numpy array or tensor (x,y,z,amp) ],
+class Points():
+	"""This represents a set of Points with x,y,z,amp parameters (but no width). Representation is a N x 4 numpy array or tensor (x,y,z,amp) ],
 x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pixels) is applied when generating projections. """
 
-	def __init__(self,gaus=0):
-		if isinstance(gaus,int):
-			if gaus<=0: self._data=None
-			else: self._data=np.zeros((gaus,4),np.float32)
-		elif isinstance(gaus,str):
-			self._data=np.loadtxt(gaus,delimiter="\t")
+	def __init__(self,point=0):
+		if isinstance(point,int):
+			if point<=0: self._data=None
+			else: self._data=np.zeros((point,4),np.float32)
+		elif isinstance(point,str):
+			self._data=np.loadtxt(point,delimiter="\t")
 			if self._data.shape[1] != 4:
-				raise Exception(f"File {gaus} has shape {self._data.shape()}. Should be Nx4")
+				raise Exception(f"File {point} has shape {self._data.shape()}. Should be Nx4")
 		else:
-			try: self._data=np.array(gaus,np.float32)
-			except: raise Exception("Gaussians must be initialized with an integer (number of Gaussians) or N x 4 matrix")
+			try: self._data=np.array(point,np.float32)
+			except: raise Exception("Points must be initialized with an integer (number of Points) or N x 4 matrix")
 
 	def __getitem__(self,key):
-		"""Return the keyed Gaussian parameter, may return a tensor or numpy array. G[i] returns the 4-vector for the i'th Gaussian"""
+		"""Return the keyed Point parameter, may return a tensor or numpy array. P[i] returns the 4-vector for the i'th Point"""
 		return self._data[key]
 
 	def __setitem__(self,key,value):
-		# if the Gaussians are a tensor, we turn it back into numpy for modification
+		# if the Points are a tensor, we turn it back into numpy for modification
 		self.coerce_numpy()
 		self._data[key]=value
 
@@ -1202,15 +1169,15 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		return self._data
 
 	def save(self,outname):
-		"""Save the current gaussians as a 4 column text file"""
+		"""Save the current points as a 4 column text file"""
 		np.savetxt(outname,self.numpy,delimiter="\t")
 
 	def init_from_map(self,vol,res,minratio=0.1,apix=None):
-		"""Replace the current set of Gaussians with a set of Gaussians generated from a 3-D map by progressive Gaussian decomposition.
+		"""Replace the current set of Points with a set of Points generated from a 3-D map by progressive Gaussian decomposition.
 		The map is filtered to res, then the highest amplitude peak is assigned to the first Gaussian. After subtracting that Gaussian from the
 		map the process is repeated until the ratio of the next amplitude to the first amplitude falls below the minratio limit.
 		vol - a single EMData, numpy or tensorflow volume
-		res - lowpass filter resolution and the FWHM of the Gaussians to be subtracted, specified in A, use apix for non-EMData volumes
+		res - lowpass filter resolution and the FWHM of the Points to be subtracted, specified in A, use apix for non-EMData volumes
 		minratio - minimum peak ratio, >0
 		apix - A/pix override"""
 
@@ -1221,7 +1188,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 
 		if apix is not None: emd["apix_x"],emd["apix_y"],emd["apix_z"]=apix,apix,apix
 
-		# The actual Gaussian segmentation
+		# The actual Point segmentation
 		seg=emd.process("segment.gauss",{"minratio":minratio,"width":res,"skipseg":1})
 		amps=np.array(seg["segment_amps"])
 		centers=np.array(seg["segment_centers"]).reshape(len(amps),3)
@@ -1231,7 +1198,7 @@ x,y,z are ~-0.5 to ~0.5 (typ) and amp is 0 to ~1. A scaling factor (value -> pix
 		self._data=np.concatenate((centers.transpose(),amps.reshape((1,len(amps))))).transpose()
 
 	def replicate(self,n=2,dev=0.01):
-		"""Makes n copies of the current Gaussians shifted by a small random amount to improve the level of detail without
+		"""Makes n copies of the current Points shifted by a small random amount to improve the level of detail without
 significantly altering the spatial distribution. Note that amplitudes are also perturbed by the same distribution. Default
 stddev=0.01"""
 		if n<=1 : return
@@ -1240,41 +1207,41 @@ stddev=0.01"""
 		dups=[self._data+rng.normal(0,dev,self._data.shape) for i in range(n)]
 		self._data=jnp.concat(dups,axis=0)
 
-	def replicate_abs(self,ngaus,dev=0.01):
-		"""Makes copies of the current Gaussians shifted by a small random amount to improve the level of detail without
-significantly altering the spatial distribution. ngaus specifies the total number of desired gaussians after replication. Note that amplitudes are also perturbed by the same distribution. Default stddev=0.01"""
-		if len(self)==ngaus : return
-		if len(self)>ngaus :
-			print("Warning, replicate targeted fewer gaussians than currently exist! Unchanged")
+	def replicate_abs(self,npoint,dev=0.01):
+		"""Makes copies of the current Points shifted by a small random amount to improve the level of detail without
+significantly altering the spatial distribution. npoint specifies the total number of desired points after replication. Note that amplitudes are also perturbed by the same distribution. Default stddev=0.01"""
+		if len(self)==npoint : return
+		if len(self)>npoint :
+			print("Warning, replicate targeted fewer points than currently exist! Unchanged")
 			return
 		rng=np.random.default_rng()
 		self.coerce_jax()
 		dups=[self._data]
-		for i in range(ngaus//len(self)-1): dups.append(self._data+rng.normal(0,dev,self._data.shape))
-		tail=ngaus%len(self)
+		for i in range(npoint//len(self)-1): dups.append(self._data+rng.normal(0,dev,self._data.shape))
+		tail=npoint%len(self)
 		if tail>0: dups.append((self._data+rng.normal(0,dev,self._data.shape))[:tail])
 		self._data=jnp.concat(dups,axis=0)
 
 	def replicate_sym(self,sym="c1"):
-		"""Makes symmertry related copies of each Gaussian so the full Gaussians object matches the specified symmetry."""
+		"""Makes symmertry related copies of each Point so the full Points object matches the specified symmetry."""
 		symorts=Orientations(sym)
 		mx=np.moveaxis(symorts.to_mx3da(),2,0)	# gets matrix as Nsym x 4 x 4
 
 		self._data=jnp.matmul(self._data,mx).reshape(mx.shape[0]*self._data.shape[0],4)	# actual matrix multiplication becomes (Nsym,Ngau,4)
 
-	def replicate_rand(self, ngaus, tomo=False):
-		"""Adds randomly placed Gaussians to try and place Gaussians in places there are density but no Gaussians. ngaus specifies the total number of
-	desired Gaussians after replication. Note that amplitudes are also randomized"""
-		if len(self)==ngaus: return
-		if len(self)>ngaus:
-			print("Warning: replicate targeted fewer Gaussians than currently exist! Unchanged")
+	def replicate_rand(self, npoint, tomo=False):
+		"""Adds randomly placed Points to try and place Points in places there are density but no Points. npoint specifies the total number of
+	desired Points after replication. Note that amplitudes are also randomized"""
+		if len(self)==npoint: return
+		if len(self)>npoint:
+			print("Warning: replicate targeted fewer Points than currently exist! Unchanged")
 			return
 		rng=np.random.default_rng()
 		self.coerce_jax()
-		rand_num=ngaus-len(self)
+		rand_num=npoint-len(self)
 		neg_num=rand_num//10
-		rnd=rng.uniform(0.0,1.0,(rand_num-neg_num,4))		# start with completely random Gaussian parameters
-		neg = rng.uniform(0.0, 1.0, (neg_num, 4))		# 10% of gaussians are negative WRT the background (zero)
+		rnd=rng.uniform(0.0,1.0,(rand_num-neg_num,4))		# start with completely random Point parameters
+		neg = rng.uniform(0.0, 1.0, (neg_num, 4))		# 10% of points are negative WRT the background (zero)
 		rnd+=(-.5,-.5,-.5,2.0)
 		neg+=(-.5,-.5,-.5,-3.0)
 		rnd = np.concatenate((rnd, neg))
@@ -1285,8 +1252,8 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 	def norm_filter(self,sig=0.5,rad_downweight=-1,cyl_mask=-1):
 		"""Rescale the amplitudes so the maximum is 1, with amplitude below mean+sig*sigma removed.
-		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Gaussian coordinate range follows the -0.5 - 0.5 standard range for the box.
-		cyl_mask, if >0 will apply a cylindrical mask along xz to account for what space in 3d the tilts cover. The value is assumed to be the Gaussian corrdinate equivalent of 1px in the final boxsize """
+		rad_downweight, if >0 will apply a radial linear amplitude decay beyond the specified radius to the corner of the cube. eg - 0.5 will downweight the corners. Downweighting only works if Point coordinate range follows the -0.5 - 0.5 standard range for the box.
+		cyl_mask, if >0 will apply a cylindrical mask along xz to account for what space in 3d the tilts cover. The value is assumed to be the Point corrdinate equivalent of 1px in the final boxsize """
 		self.coerce_jax()
 		self._data=self._data*jnp.array((1.0,1.0,1.0,1.0/jnp.max(jnp.absolute(self._data[:,3]))))		# "normalize" amplitudes so max amplitude is scaled to 1.0, not sure how necessary this really is
 		if cyl_mask>0:
@@ -1296,7 +1263,7 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 			famp=jnp.absolute(self._data[:,3])*(1.0-jax.nn.relu(jnp.linalg.vector_norm(self._data[:,:3],axis=1)-rad_downweight))
 		else: famp=jnp.absolute(self._data[:,3])
 		thr=jnp.mean(famp)+sig*jnp.std(famp)
-		self._data=self._data[famp>thr]			# remove any gaussians with amplitude below threshold
+		self._data=self._data[famp>thr]			# remove any points with amplitude below threshold
 
 	def mask(self,mask):
 		"""
@@ -1304,20 +1271,20 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		if isinstance(mask,EMStack2D) : mask=mask.jax
 		elif isinstance(mask,EMData) : mask=to_jax(mask)
 		elif isinstance(mask,np.ndarray) : mask=jnp.array(mask)
-		elif not isinstance(mask,jax.Array) : raise Exception("invalid data type for Gaussians.mask")
+		elif not isinstance(mask,jax.Array) : raise Exception("invalid data type for Points.mask")
 
 		coords=((self.jax+0.5)*mask.shape[1]).astype(jnp.int32)
 		cmask=(mask[coords[:,2],coords[:,1],coords[:,0]]).astype(jnp.bool_)
-		return Gaussians(self.jax[cmask])
+		return Points(self.jax[cmask])
 
 
 	def project_simple(self,orts,boxsize,tytx=None):
-		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
+		"""Generates a tensor containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
 		orts - must be an Orientations object
-		tytx =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+		tytx =  is an (optional) N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
 		boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
-		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+		With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 		used for comparisons should be resampled without any "clip" operations.
 		"""
 		self.coerce_jax()
@@ -1326,44 +1293,44 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		proj2=[]
 		mx=orts.to_mx2d(swapxy=True)
 		if tytx is None: tytx=jnp.zeros
-		return EMStack2D(gauss_project_simple_fn(self._data,mx,boxsize,tytx))
+		return EMStack2D(point_project_simple_fn(self._data,mx,boxsize,tytx))
 
 	def project_ctf(self,orts,ctf_stack,boxsize,dfrange,dfstep,tytx=None):
-		"""Generates a tensor containing a phase-flipped 2-D projection of the set of Gaussians for each of N orientations in orts. Phase flipping is off a single
+		"""Generates a tensor containing a phase-flipped 2-D projection of the set of Points for each of N orientations in orts. Phase flipping is off a single
 		defocus value.
 
 		orts-must be an Orientations object
 		ctf_stack-A stack of ctf correction images at different defocuses
-		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
+		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Points in the first two columns and
 			per particle defocus in the third
 		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
 		dfrange-a tuple of (min defocus,max defocus) in the project
 		dfstep-The step between two correction images in ctf_stack
-		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data is
+		With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data is
 		used for comparisons should be resampled without any "clip" operations.
 		"""
 		self.coerce_jax()
 		mx=orts.to_mx2d(swapxy=True) # 2d is fine becasue don't need z position when we apply one ctf regardless
 		if tytx is None: tytx=jnp.zeros(3)
-		return EMStack2D(gauss_project_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
+		return EMStack2D(point_project_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
 
 	def project_layered_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
-		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Gaussians for each of N Orientations in orts
+		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Points for each of N Orientations in orts
 		orts-must be an Orientations object
 		ctf_stack-A stack of ctf correction images at different defocuses
-		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Gaussians in the first two columns and
+		tytx-is a Nx3+ vector containing an in-plane translation in units (-0.5,0.5) coordinates to be applied to the set of Points in the first two columns and
 			per particle defocus in the third
 		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
 		dfrange-a tuple of (min defocus,max defocus) in the project
 		dfstep-The step between two correction images in ctf_stack
 
-		With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+		With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 		is used for comparisons should be resampled without any "clip" operations.
 		"""
 		self.coerce_jax()
 		mx=orts.to_mx3d()
 		if tytx is None: tytx=jnp.zeros(3)
-		return EMStack2D(gauss_project_layered_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
+		return EMStack2D(point_project_layered_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
 
 	def volume(self,boxsize,zaspect=0.5):
 		self.coerce_jax()
@@ -1371,7 +1338,7 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		if zaspect<=0 : zsize=boxsize
 		else: zsize=good_size(boxsize*zaspect*2.0)
 
-		return EMStack3D(gauss_volume_fn(self._data,boxsize,zsize))
+		return EMStack3D(point_volume_fn(self._data,boxsize,zsize))
 
 		vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32)		# output
 
@@ -1379,23 +1346,23 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		"""A numpy implementation of volume since the jax at method makes a copy instead of updating in place when not in jit compiled and was causing OOM errors"""
 		zsize=good_size(boxsize*zaspect*2.0)
 		vol=np.zeros((zsize,boxsize,boxsize))
-		xfgauss=np.flip((self[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+		xfpoint=np.flip((self[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 
-		xfgaussf=np.floor(xfgauss)
-		xfgaussi=np.ndarray.astype(xfgaussf,np.int32)   # integer index
-		xfgaussf=xfgauss-xfgaussf			       # remainder used for bilinear interpolation
+		xfpointf=np.floor(xfpoint)
+		xfpointi=np.ndarray.astype(xfpointf,np.int32)   # integer index
+		xfpointf=xfpoint-xfpointf			       # remainder used for bilinear interpolation
 
 		# messy trilinear interpolation
-		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp000=self._data[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])*(    xfpointf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfpointf[:,0])*(    xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfpointf[:,0])*(    xfpointf[:,1])*(    xfpointf[:,2])
+		bamp100=self._data[:,3]*(    xfpointf[:,0])*(1.0-xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp101=self._data[:,3]*(    xfpointf[:,0])*(1.0-xfpointf[:,1])*(    xfpointf[:,2])
+		bamp110=self._data[:,3]*(    xfpointf[:,0])*(    xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp111=self._data[:,3]*(    xfpointf[:,0])*(    xfpointf[:,1])*(    xfpointf[:,2])
 		bampall=np.concatenate([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
-		bposall=np.concatenate([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+		bposall=np.concatenate([xfpointi,xfpointi+(0,0,1),xfpointi+(0,1,0),xfpointi+(0,1,1),xfpointi+(1,0,0),xfpointi+(1,0,1),xfpointi+(1,1,0),xfpointi+(1,1,1)],0)
 
 		# Jax doesn't give OOB errors it just puts them at the closest available index, but numpy will so need an extra check
 		mask = np.logical_and(np.logical_and(np.logical_and(bposall[:,0]>=0, bposall[:,0]<zsize), np.logical_and(bposall[:,1]>=0, bposall[:,1]<boxsize)),np.logical_and(bposall[:,2]>=0, bposall[:,2]<boxsize))
@@ -1413,23 +1380,23 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 		zsize=good_size(boxz*zaspect*2.0)
 		vol=np.zeros((zsize,ysize,xsize)) # TODO: Add a try/except state that if this fails to allocate it makes the binned tomogram? That way the refinement isn't wasted. Or add check beforehand
 
-		xfgauss=np.flip((self._data[:,:3]+(0.25*xtiles,0.25*ytiles,zaspect))*(xsize/xtiles*2,ysize/ytiles*2,zsize),[-1])	# shift and scale both x and y the same, flip handles the XYZ -> ZYX EMData->Jax/Numpy issue
+		xfpoint=np.flip((self._data[:,:3]+(0.25*xtiles,0.25*ytiles,zaspect))*(xsize/xtiles*2,ysize/ytiles*2,zsize),[-1])	# shift and scale both x and y the same, flip handles the XYZ -> ZYX EMData->Jax/Numpy issue
 
-		xfgaussf=np.floor(xfgauss)
-		xfgaussi=np.ndarray.astype(xfgaussf,np.int32)   # integer index
-		xfgaussf=xfgauss-xfgaussf			       # remainder used for bilinear interpolation
+		xfpointf=np.floor(xfpoint)
+		xfpointi=np.ndarray.astype(xfpointf,np.int32)   # integer index
+		xfpointf=xfpoint-xfpointf			       # remainder used for bilinear interpolation
 
 		# messy trilinear interpolation
-		bamp000=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp001=self._data[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp010=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp011=self._data[:,3]*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp100=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp101=self._data[:,3]*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-		bamp110=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-		bamp111=self._data[:,3]*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+		bamp000=self._data[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp001=self._data[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])*(    xfpointf[:,2])
+		bamp010=self._data[:,3]*(1.0-xfpointf[:,0])*(    xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp011=self._data[:,3]*(1.0-xfpointf[:,0])*(    xfpointf[:,1])*(    xfpointf[:,2])
+		bamp100=self._data[:,3]*(    xfpointf[:,0])*(1.0-xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp101=self._data[:,3]*(    xfpointf[:,0])*(1.0-xfpointf[:,1])*(    xfpointf[:,2])
+		bamp110=self._data[:,3]*(    xfpointf[:,0])*(    xfpointf[:,1])*(1.0-xfpointf[:,2])
+		bamp111=self._data[:,3]*(    xfpointf[:,0])*(    xfpointf[:,1])*(    xfpointf[:,2])
 		bampall=np.concatenate([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],0)
-		bposall=np.concatenate([xfgaussi,xfgaussi+(0,0,1),xfgaussi+(0,1,0),xfgaussi+(0,1,1),xfgaussi+(1,0,0),xfgaussi+(1,0,1),xfgaussi+(1,1,0),xfgaussi+(1,1,1)],0)
+		bposall=np.concatenate([xfpointi,xfpointi+(0,0,1),xfpointi+(0,1,0),xfpointi+(0,1,1),xfpointi+(1,0,0),xfpointi+(1,0,1),xfpointi+(1,1,0),xfpointi+(1,1,1)],0)
 
 		# Jax doesn't give OOB errors it just puts them at the closest available index, but numpy will so need an extra check
 		mask = np.logical_and(np.logical_and(np.logical_and(bposall[:,0]>=0, bposall[:,0]<zsize), np.logical_and(bposall[:,1]>=0, bposall[:,1]<ysize)),np.logical_and(bposall[:,2]>=0, bposall[:,2]<xsize))
@@ -1439,16 +1406,16 @@ significantly altering the spatial distribution. ngaus specifies the total numbe
 
 		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
 
-def gauss_project_single_fn(gausary,mx,boxsize,tytx):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+def point_project_single_fn(pointary,mx,boxsize,tytx):
+	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
 
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
 	mx - an Orientations object converted to a stack of 2d matrices
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
 	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 	used for comparisons should be resampled without any "clip" operations.
 	"""
 	os_bs=boxsize*2
@@ -1459,21 +1426,21 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	shift11=jnp.array((1,1))
 #	print("t1")
 
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*os_bs			# shift and scale both x and y the same
+	xfpoint=jnp.einsum("ij,kj->ki",mx,pointary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfpoint+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfpoint=(xfpoint+0.5)*os_bs			# shift and scale both x and y the same
 
-	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
-	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+	xfpointf=jnp.floor(xfpoint)
+	xfpointi=xfpointf.astype(jnp.int32)		# integer index
+	xfpointf=xfpoint-xfpointf				# remainder used for bilinear interpolation
 
 		# messy tensor math here to implement bilinear interpolation
-	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])		#1,1
-	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=pointary[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])	#0,0
+	bamp1=pointary[:,3]*(xfpointf[:,0])*(1.0-xfpointf[:,1])		#1,0
+	bamp2=pointary[:,3]*(xfpointf[:,0])*(xfpointf[:,1])		#1,1
+	bamp3=pointary[:,3]*(1.0-xfpointf[:,0])*(xfpointf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
-	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+	bposall=jnp.concat([xfpointi,xfpointi+shift10,xfpointi+shift11,xfpointi+shift01],axis=0).transpose() # TODO: this too
 
 		# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((1,os_bs,os_bs),dtype=jnp.float32)
@@ -1483,34 +1450,34 @@ def gauss_project_single_fn(gausary,mx,boxsize,tytx):
 	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
 	return jnp.squeeze(jnp.fft.irfft2(fproj[:,:,:boxsize//2+1]),0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
-gauss_project_simple_fn=jax.jit(jax.vmap(gauss_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
+point_project_simple_fn=jax.jit(jax.vmap(point_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
-def prj_single_simple_sym(gausary, ortary, ny, tytx,symmx):
-	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+def prj_single_simple_sym(pointary, ortary, ny, tytx,symmx):
+	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
 	mx3d=to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
-	return gauss_project_simple_fn(gausary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
+	return point_project_simple_fn(pointary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
 
-def _gauss_project_simple_sym_fn(gausary, ortary, ny, tytx, symmx):
-	return jnp.mean(jax.vmap(prj_single_simple_sym, in_axes=[None, None, None, None, 2])(gausary, ortary, ny, tytx, symmx), axis=0)
+def _point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
+	return jnp.mean(jax.vmap(prj_single_simple_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
-# gauss_project_simple_sym_fn=jax.jit(_gauss_project_simple_sym_fn, static_argnames=["ny"])
-gauss_project_simple_sym_fn=_gauss_project_simple_sym_fn
+# point_project_simple_sym_fn=jax.jit(_point_project_simple_sym_fn, static_argnames=["ny"])
+point_project_simple_sym_fn=_point_project_simple_sym_fn
 
-#def gauss_project_ctf_fn(gausary,mx,ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
-#	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+#def point_project_ctf_fn(pointary,mx,ctfary,dfmin,dfmax,dfstep,boxsize,tytx):
+#	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
 #
-#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-#	gausary - a Gaussians.jax array
+#	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+#	pointary - a Points.jax array
 #	mx - an Orientations object converted to a stack of 2d matrices
 #	ctfary - A jax array of ctf corrections for defocuses given by dfmin, dfmax, and dfstep
 #	dfmin - the min defocus value used in ctfary
 #	dfmax - the max defocus value used in ctfary
 #	dfstep - the defocus step between images in ctfary
-#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+#	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
 #	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 #
-#	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+#	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 #	used for comparisons should be resampled without any "clip" operations.
 #	"""
 #	proj2=[]
@@ -1519,23 +1486,23 @@ gauss_project_simple_sym_fn=_gauss_project_simple_sym_fn
 #	# TODO - at some point this outer loop should be converted to a tensor axis for better performance
 #	# note that the mx dimensions have N as the 3rd not 1st component!
 #	# TODO: I think we can just use jax.vmap() instead of having this whole function. It is made to vectorize a function and works well with jit
-#	gpcsf=jax.jit(gauss_project_ctf_single_fn,static_argnames=["boxsize"])
+#	gpcsf=jax.jit(point_project_ctf_single_fn,static_argnames=["boxsize"])
 #
 #	for j in range(mx.shape[2]):
-#		proj2.append(gpcsf(gausary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
+#		proj2.append(gpcsf(pointary,mx[:,:,j],ctfary,dfmin,dfstep,boxsize,tytx[j]))
 #
 #	return jnp.stack(proj2)
 
-def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method.
+def point_project_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
+	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
 
-	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Gaussians for each of N Orientations in orts.
-	gausary - a Gaussians.jax array
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
 	mx - an Orientations object converted to a stack of 2d matrices
-	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Gaussians for each Orientation.
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
 	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
-	With these definitions, Gaussian coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 	used for comparisons should be resampled without any "clip" operations.
 	"""
 	os_bs=boxsize*2
@@ -1544,21 +1511,21 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	shift01=jnp.array((0,1))
 	shift11=jnp.array((1,1))
 
-	xfgauss=jnp.einsum("ij,kj->ki",mx,gausary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgauss+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*os_bs			# shift and scale both x and y the same
+	xfpoint=jnp.einsum("ij,kj->ki",mx,pointary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfpoint+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
+	xfpoint=(xfpoint+0.5)*os_bs			# shift and scale both x and y the same
 
-	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
-	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+	xfpointf=jnp.floor(xfpoint)
+	xfpointi=xfpointf.astype(jnp.int32)		# integer index
+	xfpointf=xfpoint-xfpointf				# remainder used for bilinear interpolation
 
 	# messy tensor math here to implement bilinear interpolation
-	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=pointary[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])	#0,0
+	bamp1=pointary[:,3]*(xfpointf[:,0])*(1.0-xfpointf[:,1])		#1,0
+	bamp2=pointary[:,3]*(xfpointf[:,0])*(xfpointf[:,1])			#1,1
+	bamp3=pointary[:,3]*(1.0-xfpointf[:,0])*(xfpointf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
-	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+	bposall=jnp.concat([xfpointi,xfpointi+shift10,xfpointi+shift11,xfpointi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((1,os_bs,os_bs),dtype=jnp.float32)
@@ -1568,24 +1535,24 @@ def gauss_project_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,ast
 	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
 	proj=jnp.fft.irfft2(fproj[:,:,:boxsize//2+1])
 	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, False), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(tytx[2], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(astig[0], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
-gauss_project_ctf_fn=jax.jit(jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
-# gauss_project_ctf_fn=jax.vmap(gauss_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0])
+point_project_ctf_fn=jax.jit(jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
+# point_project_ctf_fn=jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0])
 
-def prj_single_ctf_sym(gausary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
-	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+def prj_single_ctf_sym(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
+	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
 	mx3d=to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_ctf expect
-	return gauss_project_ctf_fn(gausary,jnp.flipud(sym_mx3d), ctf_info, dfstep, apix, boxsize, tytx, astig) # flipud accounts for the flipxy option in to_mx2d()
+	return point_project_ctf_fn(pointary,jnp.flipud(sym_mx3d), ctf_info, dfstep, apix, boxsize, tytx, astig) # flipud accounts for the flipxy option in to_mx2d()
 
-def _gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
-	return jnp.mean(jax.vmap(prj_single_ctf_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(gausary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx), axis=0)
+def _point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
+	return jnp.mean(jax.vmap(prj_single_ctf_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx), axis=0)
 
-gauss_project_ctf_sym_fn=jax.jit(_gauss_project_ctf_sym_fn, static_argnames=["boxsize"])
-# gauss_project_ctf_sym_fn= _gauss_project_ctf_sym_fn
+point_project_ctf_sym_fn=jax.jit(_point_project_ctf_sym_fn, static_argnames=["boxsize"])
+# point_project_ctf_sym_fn= _point_project_ctf_sym_fn
 
-def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
+def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
 	shift11=jnp.array((1,1))
@@ -1595,59 +1562,61 @@ def gauss_project_layered_ctf_single_fn(gausary,mx,ctf_info,dfstep,apix,boxsize,
 	offset = ceil((boxsize*1.733-boxstep)/(2*boxstep))
 
 	#TODO: make sure einsum is doing what I want given ordering changes from 2d -> 3d mx. In tf I specified axes=[-1]
-	xfgauss=jnp.fliplr(jnp.einsum("ij,kj->ki",mx,gausary[:,:3]))	# changed to ik instead of ki due to y,x ordering in tensorflow
-	xfgaussz = xfgauss[:,0]
-	xfgauss = xfgauss[:,1:]+tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
-	xfgauss=(xfgauss+0.5)*boxsize			# shift and scale both x and y the same
-	xfgaussz *= boxsize
-	xfgaussz = jnp.round(xfgaussz/boxstep).astype(jnp.int32)
-#	xfgaussz = jnp.clip(xfgaussz, 0, 2*offset) # Clip z such that if any Gaussians are outside the expected range but in the box they will be in the outermost sections
+	xfpoint=jnp.fliplr(jnp.einsum("ij,kj->ki",mx,pointary[:,:3]))	# changed to ik instead of ki due to y,x ordering in tensorflow
+	xfpointz = xfpoint[:,0]
+	xfpoint = xfpoint[:,1:]+tytx	# translation
+	xfpoint=(xfpoint+0.5)*boxsize			# shift and scale both x and y the same
+	xfpointz *= boxsize
+	xfpointz = jnp.round(xfpointz/boxstep).astype(jnp.int32)
+#	xfpointz = jnp.clip(xfpointz, 0, 2*offset) # Clip z such that if any Points are outside the expected range but in the box they will be in the outermost sections
 
-	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=xfgaussf.astype(jnp.int32)		# integer index
-	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
+	xfpointf=jnp.floor(xfpoint)
+	xfpointi=xfpointf.astype(jnp.int32)		# integer index
+	xfpointf=xfpoint-xfpointf				# remainder used for bilinear interpolation
 
 	# messy tensor math here to implement bilinear interpolation
-	bamp0=gausary[:,3]*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])	#0,0
-	bamp1=gausary[:,3]*(xfgaussf[:,0])*(1.0-xfgaussf[:,1])		#1,0
-	bamp2=gausary[:,3]*(xfgaussf[:,0])*(xfgaussf[:,1])			#1,1
-	bamp3=gausary[:,3]*(1.0-xfgaussf[:,0])*(xfgaussf[:,1])		#0,1
+	bamp0=pointary[:,3]*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])	#0,0
+	bamp1=pointary[:,3]*(xfpointf[:,0])*(1.0-xfpointf[:,1])		#1,0
+	bamp2=pointary[:,3]*(xfpointf[:,0])*(xfpointf[:,1])			#1,1
+	bamp3=pointary[:,3]*(1.0-xfpointf[:,0])*(xfpointf[:,1])		#0,1
 	bampall=jnp.concat([bamp0,bamp1,bamp2,bamp3],axis=0)  			# TODO: this would be ,1 with the loop subsumed
-	bposall=jnp.concat([xfgaussi,xfgaussi+shift10,xfgaussi+shift11,xfgaussi+shift01],axis=0).transpose() # TODO: this too
+	bposall=jnp.concat([xfpointi,xfpointi+shift10,xfpointi+shift11,xfpointi+shift01],axis=0).transpose() # TODO: this too
 
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
-	proj=proj.at[jnp.tile(xfgaussz,4),bposall[0],bposall[1]].add(bampall, mode="drop")
+	proj=proj.at[jnp.tile(xfpointz,4),bposall[0],bposall[1]].add(bampall, mode="drop")
 	# proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]-offset*dfstep, tytx[2]+offset*dfstep, 2*offset+1), astig, dfstep, apix, False)
-	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(tytx[2]+offset*dfstep, tytx[2]-offset*dfstep, 2*offset+1), astig, dfstep, apix, False) # linspace start/end flipped
+	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]+offset*dfstep, astig[0]-offset*dfstep, 2*offset+1), astig, dfstep, apix, False) # linspace start/end flipped
 	return jnp.sum(proj, axis=0)
 
-gauss_project_layered_ctf_fn=jax.jit(jax.vmap(gauss_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
+point_project_layered_ctf_fn=jax.jit(jax.vmap(point_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
 
-def prj_single_layered_sym(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
-	"""Calculates the projections of gausary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+def prj_single_layered_sym(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
 	mx3d=to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)
-	return gauss_project_layered_ctf_fn(gausary,sym_mx3d, ctf_info, dfstep, apix, ny, tytx, astig)
+	return point_project_layered_ctf_fn(pointary,sym_mx3d, ctf_info, dfstep, apix, ny, tytx, astig)
 
-def _gauss_project_ctf_sym_fn(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
-	return jnp.mean(jax.vmap(prj_single_layered_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(gausary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
+def _point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+	return jnp.mean(jax.vmap(prj_single_layered_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
 
-gauss_project_ctf_sym_fn=jax.jit(_gauss_project_ctf_sym_fn, static_argnames=["ny", "apix","dfstep"])
+point_project_layered_ctf_sym_fn=jax.jit(_point_project_layered_ctf_sym_fn, static_argnames=["ny", "apix","dfstep"])
 
-def gauss_volume_fn(gausary,boxsize,zsize):
-	"""This exists as a function separate from the Gaussian class to better support JAX optimization. It is called by the corresponding Gaussian method."""
 
-#		xfgauss=tf.reverse((gausary[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+
+def point_volume_fn(pointary,boxsize,zsize):
+	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method."""
+
+#		xfpoint=tf.reverse((pointary[:,:3]+(0.5,0.5,zaspect))*boxsize,[-1])		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
 	zaspect=zsize/(2.0*boxsize)
-	xfgauss=jnp.flip((gausary[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
-	pos_mask = jnp.all(jnp.logical_and(xfgauss>0.0, xfgauss<boxsize-1.0001),axis=1).astype(float)
-	xfgauss=jnp.clip(xfgauss,0.0,boxsize-1.0001)
+	xfpoint=jnp.flip((pointary[:,:3]+jnp.array((0.5,0.5,zaspect)))*boxsize,-1)		# shift and scale both x and y the same, reverse handles the XYZ -> ZYX EMData->Tensorflow issue
+	pos_mask = jnp.all(jnp.logical_and(xfpoint>0.0, xfpoint<boxsize-1.0001),axis=1).astype(float)
+	xfpoint=jnp.clip(xfpoint,0.0,boxsize-1.0001)
 
-	xfgaussf=jnp.floor(xfgauss)
-	xfgaussi=xfgaussf.astype(jnp.int32)	# integer index
-	xfgaussf=xfgauss-xfgaussf				# remainder used for bilinear interpolation
-	xfamps=gausary[:,3]*pos_mask
+	xfpointf=jnp.floor(xfpoint)
+	xfpointi=xfpointf.astype(jnp.int32)	# integer index
+	xfpointf=xfpoint-xfpointf				# remainder used for bilinear interpolation
+	xfamps=pointary[:,3]*pos_mask
 
 	shift001=jnp.array((0,0,1))
 	shift010=jnp.array((0,1,0))
@@ -1659,16 +1628,16 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 
 	# messy trilinear interpolation
-	bamp000=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp001=xfamps*(1.0-xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-	bamp010=xfamps*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp011=xfamps*(1.0-xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
-	bamp100=xfamps*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp101=xfamps*(    xfgaussf[:,0])*(1.0-xfgaussf[:,1])*(    xfgaussf[:,2])
-	bamp110=xfamps*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(1.0-xfgaussf[:,2])
-	bamp111=xfamps*(    xfgaussf[:,0])*(    xfgaussf[:,1])*(    xfgaussf[:,2])
+	bamp000=xfamps*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])*(1.0-xfpointf[:,2])
+	bamp001=xfamps*(1.0-xfpointf[:,0])*(1.0-xfpointf[:,1])*(    xfpointf[:,2])
+	bamp010=xfamps*(1.0-xfpointf[:,0])*(    xfpointf[:,1])*(1.0-xfpointf[:,2])
+	bamp011=xfamps*(1.0-xfpointf[:,0])*(    xfpointf[:,1])*(    xfpointf[:,2])
+	bamp100=xfamps*(    xfpointf[:,0])*(1.0-xfpointf[:,1])*(1.0-xfpointf[:,2])
+	bamp101=xfamps*(    xfpointf[:,0])*(1.0-xfpointf[:,1])*(    xfpointf[:,2])
+	bamp110=xfamps*(    xfpointf[:,0])*(    xfpointf[:,1])*(1.0-xfpointf[:,2])
+	bamp111=xfamps*(    xfpointf[:,0])*(    xfpointf[:,1])*(    xfpointf[:,2])
 	bampall=jnp.concat([bamp000,bamp001,bamp010,bamp011,bamp100,bamp101,bamp110,bamp111],axis=0)
-	bposall=jnp.concat([xfgaussi,xfgaussi+shift001,xfgaussi+shift010,xfgaussi+shift011,xfgaussi+shift100,xfgaussi+shift101,xfgaussi+shift110,xfgaussi+shift111],axis=0).transpose()
+	bposall=jnp.concat([xfpointi,xfpointi+shift001,xfpointi+shift010,xfpointi+shift011,xfpointi+shift100,xfpointi+shift101,xfpointi+shift110,xfpointi+shift111],axis=0).transpose()
 
 	vol=jnp.zeros((zsize,boxsize,boxsize),dtype=jnp.float32).at[bposall[0],bposall[1],bposall[2]].add(bampall)
 
@@ -1676,13 +1645,43 @@ def gauss_volume_fn(gausary,boxsize,zsize):
 
 def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
-	ctfary = jit_compute_2d_ctf(ctf_info[0], ctf_info[1], astig[2], apix, proj.shape[1], dfary, astig[0], astig[1], sign_only)
+	ctfary = jit_compute_2d_ctf(ctf_info[0], ctf_info[1], jnp.pi/2-astig[1], apix, proj.shape[1], dfary, astig[2], astig[3], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
 
+def jax_df_img(ny, defocus, dfdiff, dfang):
+	return jnp.array(jnp.vstack((jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2(y,x)-(2.0*jnp.pi/180)*dfang) , (ny//2, ny//2+1)),
+														jnp.fromfunction(lambda y,x: defocus + (dfdiff/2.0)*jnp.cos(2.0*jnp.arctan2((y-ny//2),x)-(2.0*jnp.pi/180)*dfang), (ny//2, ny//2+1)))))
+
+jax_df_defocus_img = jax.jit(jax.vmap(jax_df_img, in_axes=(None, 0, None, None)), static_argnames=["ny"])
+
+def jax_compute_2d_ctf_stack_defocus(wavelength, cs, phase, apix, ny, dfmin, dfmax, num_df, dfdiff, dfang, sign_only):
+	defocus = jnp.linspace(dfmin, dfmax, num_df)
+	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
+	g2=jnp.pi*wavelength*10000.0
+	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
+	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
+	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
+	if sign_only:
+		ctf = jnp.sign(ctf)
+	return ctf
+
+jit_compute_2d_ctf_stack_defocus = jax.jit(jax_compute_2d_ctf_stack_defocus, static_argnames=["ny", "num_df", "sign_only"])
+
+def jax_compute_2d_ctf(wavelength, cs, phase, apix, ny, defocus, dfdiff, dfang, sign_only):
+	g1=(jnp.pi/2.0)*cs*1.0e7*jnp.power(wavelength, 3)
+	g2=jnp.pi*wavelength*10000.0
+	rad2 = rad2_img(ny)/(apix*apix*ny*ny)
+	df_img = jax_df_defocus_img(ny, defocus, dfdiff, dfang)
+	ctf = jnp.cos(-g1*rad2*rad2+g2*rad2*df_img-phase)
+	if sign_only:
+		ctf = jnp.sign(ctf)
+	return ctf
+
+jit_compute_2d_ctf= jax.jit(jax_compute_2d_ctf, static_argnames=["ny", "sign_only"])
 
 def jax_to_mx2d(ortary,swapxy=False):
 	"""Returns the current set of orientations as a 2 x 3 x N matrix which will transform a set of 3-vectors to a set of
-	2-vectors, ignoring the resulting Z component. Typically used with Gaussians to generate projections.
+	2-vectors, ignoring the resulting Z component. Typically used with Points to generate projections.
 
 	To apply to a set of vectors:
 	mx=self.to_mx2d()
@@ -1692,7 +1691,7 @@ def jax_to_mx2d(ortary,swapxy=False):
 	or
 	tf.einsum("ij,kj->ki",mx[:,:,0],vecs)
 
-	if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Gaussians are XYZA,
+	if swapxy is set, then the input vector is XYZ, but output is YX. This corrects for the fact that Points are XYZA,
 	but images are YX.
 	"""
 	# Find the zero rotation values
@@ -1836,8 +1835,8 @@ def jax_phaseorigin3d(imgs):
 
 	return imgs*POF3D
 
-def jax_gaussfilt_2d(boxsize,halfwidth):
-	"""create a (multiplicative) Gaussian lowpass filter for boxsize with halfwidth (0.5=Nyquist)"""
+def jax_pointfilt_2d(boxsize,halfwidth):
+	"""create a (multiplicative) Point lowpass filter for boxsize with halfwidth (0.5=Nyquist)"""
 	coef=-1.0/(halfwidth*boxsize)**2
 	r2img=rad2_img(boxsize)
 	filt=jnp.exp(r2img*coef)
@@ -2313,6 +2312,199 @@ def __jax_fsc_jit(ima,imb):
 	return jnp.stack(fsc)
 
 jax_fsc_jit=jax.jit(__jax_fsc_jit)
+
+
+#################################################### LOSS FUNCTIONS #################################################
+
+# @profile
+def point_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh):
+	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (point.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	pointary=point.jax
+	ptcls=ptclsfds.jax
+
+	frcs,grad=point_sym_prj_frc_loss(pointary,meta[:,2:5],meta[:,:2],symmx,ptcls,weight,thresh) # With symmetry
+
+	qual=frcs			# functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()		# translational (point) std
+	sca=grad[:,3].std()			# amplitude std
+
+	return (grad,float(qual),float(shift),float(sca))
+
+def ort_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh):
+	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
+	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
+	unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns ort_step, dytx_step, qual, ort_std, tytx_std, and the 1-tensor with the per particle integrated FRCs for potential
+	quality control.
+	step - one gradient step to be applied with (point.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	pointary=point.jax
+	ptcls=ptclsfds.jax
+
+	frcs, [gradort, gradtytx] = ort_sym_prj_frc_loss(pointary,meta[:,2:5],meta[:,:2],symmx,ptcls,weight,thresh)
+
+	qual=frcs
+	stdort=gradort.std()		# orientation spinvec std
+	stdtytx=gradtytx.std()	# tytx std
+
+	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
+
+# @profile
+def sym_prj_frc_loss(pointary,ortary,tytx,symmx,ptcls,weight,thresh):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	ny=ptcls.shape[1]
+	prj=point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+
+point_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
+ort_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss, argnums=(1,2)))
+
+
+@jax.jit
+def sym_prj_frcs_loss(pointary,symmx,ptcls,meta,weight,thresh):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	ny=ptcls.shape[1]
+	prj=point_project_simple_sym_fn(pointary, meta[:,2:5], ny, meta[:,0:2], symmx)
+	return -jax_frcs_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+
+def prj_frcs(pointary,ptcls,meta):
+	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
+	a loss function, this returns the individual FRC curves for statistical analysis"""
+	mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
+	ny=ptcls.shape[1]
+	prjf=jax_fft2d_jit(point_project_simple_fn(pointary,mx2d,ny,meta[:,0:2]))
+
+	return jax_frcs_jit(prjf,ptcls.jax)
+
+
+def point_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
+	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (point.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	pointary=point.jax
+	ptcls=ptclsfds.jax
+
+	frcs,grad=point_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dfstep,dsapix,meta[:,0:2],meta[:, 5:9],symmx,ptcls,weight,thresh) # Symmetry
+
+	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+
+	return (grad,float(qual),float(shift),float(sca))
+
+def ort_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
+	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
+	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
+	unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns ort_step, dytx_step, qual, ort_std, tytx_std, and the 1-tensor with the per particle integrated FRCs for potential
+	quality control.
+	step - one gradient step to be applied with (point.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	pointary=point.jax
+	ptcls=ptclsfds.jax
+
+	frcs, [gradort, gradtytx] = ort_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dfstep,dsapix,meta[:,0:2],meta[:,5:9],symmx,ptcls,weight,thresh)
+
+	qual=frcs
+	stdort=gradort.std()		# orientation spinvec std
+	stdtytx=gradtytx.std()	# tytx std
+
+	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
+
+def sym_prj_frc_loss_ctf(pointary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	ny=ptcls.shape[1]
+	prj=point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+
+point_sym_prj_frc_loss_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf))
+ort_sym_prj_frc_loss_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf, argnums=(1, 5)))
+
+def point_gradient_step_layered_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
+# def gradient_step_layered_ctf_optax(point,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
+	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (point.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	pointary=point.jax
+	ptcls=ptclsfds.jax
+
+	frcs,grad=point_sym_prj_frc_loss_layered_ctf(pointary,meta[:,2:5],ctf_info,dfstep,dsapix,meta[:,0:2],meta[:,5:9],symmx,ptcls,weight, thresh)
+
+	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+
+	return (grad,float(qual),float(shift),float(sca))
+
+def ort_gradient_step_layered_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
+# def gradient_step_layered_ctf_optax(point,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
+	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
+	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	returns step, qual, shift, scale
+	step - one gradient step to be applied with (point.add_tensor)
+	qual - mean frc
+	shift - std of xyz shift gradient
+	scale - std of amplitude gradient"""
+	ny=ptclsfds.shape[1]
+	pointary=point.jax
+	ptcls=ptclsfds.jax
+
+	frcs,grad=ort_sym_prj_frc_loss_layered_ctf(pointary,meta[:,2:5],ctf_info,dfstep,dsapix,meta[:,0:2],meta[:,5:9],symmx,ptcls,weight, thresh)
+
+	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
+	shift=grad[:,:3].std()		# translational std
+	sca=grad[:,3].std()			# amplitude std
+
+	return (grad,float(qual),float(shift),float(sca))
+
+def sym_prj_frc_loss_layered_ctf(pointary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
+	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	ny=ptcls.shape[1]
+	prj=point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
+	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+
+point_sym_prj_frc_loss_layered_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_layered_ctf), static_argnames=["dfstep","dsapix"])
+ort_sym_prj_frc_loss_layered_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_layered_ctf, argnums=(1,5)), static_argnames=["dfstep","dsapix"])
+
+def ccf_step_align(point,ptclsfds,orts,tytx):
+	"""Uses CCF to update all translational alignments in one step with CCF"""
+	ny=ptclsfds.shape[1]
+	mx = jax_to_mx2d(orts,swapxy=True)
+	# we are determining absolute shifts, so we get rid of the original shift
+	projsf=EMStack2D(point_project_simple_fn(point.jax,mx,ny,jnp.zeros(tytx.shape)),ptclsfds).do_fft()
+	newtytx= ptclsfds.align_translate(projsf).astype(jnp.float32)/float(-ny)
+	return newtytx
 
 #TODO: consider implementing this. Issue is we need a radial filter for each image being processed, which may be expensive
 # def jax_subtract_filt(ptcl,proj,masked_proj):
