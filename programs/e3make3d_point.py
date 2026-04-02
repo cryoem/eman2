@@ -465,24 +465,26 @@ def main():
 			dsapix=ptclsfds.apix
 			pointary=point.jax
 			ny=ptclsfds.shape[1]
-			projs=EMStack2D(point_project_simple_sym_fn(pointary, meta[:,2:5], ny, meta[:,:2], symmx))
+			orts, tytx=ptclsfds.orientations
+			projs=EMStack2D(point_project_simple_sym_fn(pointary, orts.jax, ny, tytx, symmx))
 			if options.ctf>0:
 				dsapix=ptclsfds.apix
+				ctf=ptclsfds.ctf
 				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 				dfstep=2*apix*apix/(wavelength*10000)
-				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, meta[:,2:5], jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, meta[:,:2], meta[:,5:9], symmx))
-				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,meta[:,2:5],jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,meta[:,:2],meta[:,5:9], symmx))
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, orts.jax, jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, tytx, ctf, symmx))
+				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,orts.jax,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,tytx,ctf, symmx))
 			ptclds=ptclsfds.do_ift()
+			transforms=orts.transforms(tytx=tytx)
 			for i in range(len(projs)):
-				tf=Transform({"type":"spinvec","v1":float(meta[i][2]),"v2":float(meta[i][3]),"v3":float(meta[i][4]),"tx":float(meta[i][1]*nxraw),"ty":float(meta[i][0]*nxraw)})
 				a=ptclds.emdata[i]
 				b=projs.emdata[i]
 				a["apix_x"]=dsapix
 				a["apix_y"]=dsapix
 				b["apix_x"]=dsapix
 				b["apix_y"]=dsapix
-				a["xform.projection"]=tf
-				b["xform.projection"]=tf
+				a["xform.projection"]=transforms[i]
+				b["xform.projection"]=transforms[i]
 				a.process_inplace("normalize")
 				b.process_inplace("filter.matchto",{"to":a})
 				if options.ctf>0:
@@ -494,8 +496,8 @@ def main():
 					d["apix_y"]=dsapix
 					c.process_inplace("filter.matchto",{"to":a})
 					d.process_inplace("filter.matchto",{"to":a})
-					c["xform.projection"]=tf
-					d["xform.projection"]=tf
+					c["xform.projection"]=transforms[i]
+					d["xform.projection"]=transforms[i]
 					a.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4)
 					b.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+1)
 					c.write_image(f"debug_img_{projs.shape[1]}.hdf:8",i*4+2)

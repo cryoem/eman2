@@ -804,7 +804,7 @@ metadata in the new object."""
 
 		return jnp.transpose(peaks)
 
-# TODO: Remove class? Everything handled in meta of 2d stack now
+# This class is unused due to needing to jit compile functions and ctf parameters being stored in E3Stack2D instead
 class EMAN3Ctf():
 	"""This class represents CTF conditions for an image."""
 
@@ -945,7 +945,7 @@ class EMAN3Ctf():
 			print("var_name was not recognized. It should be one of 'defocus', 'none'")
 			return
 
-
+# This class is almost exclusively not used due to moving functions out for jit compilation. It would not be hard to remove class if desired
 class Orientations():
 	"""This represents a set of orientations, with a standard representation of an XYZ vector where the vector length indicates the amount
 		of rotation with a length of 0.5 corresponding to 180 degrees. This form is a good representation for deep learning minimization strategies
@@ -2278,7 +2278,7 @@ ort_sym_prj_frc_loss_layered_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_lay
 def ccf_step_align(point,ptclsfds,orts,tytx):
 	"""Uses CCF to update all translational alignments in one step with CCF"""
 	ny=ptclsfds.shape[1]
-	mx = jax_to_mx2d(orts,swapxy=True)
+	mx=orts.to_mx2d(swapxy=True)
 	# we are determining absolute shifts, so we get rid of the original shift
 	projsf=EMStack2D(point_project_simple_fn(point.jax,mx,ny,jnp.zeros(tytx.shape)),ptclsfds).do_fft()
 	newtytx= ptclsfds.align_translate(projsf).astype(jnp.float32)/float(-ny)
