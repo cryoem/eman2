@@ -285,7 +285,11 @@ def main():
 
 		if stage[7]==0: # Refining Points
 			if  options.verbose: print(f"\tIterating x{stage[2]} with frc weight {stage[3]} to refine Points\n    FRC\t\tshift_grad\tamp_grad\timshift\tgrad_scale")
-			optim = optax.adam(.003)		# parm is learning rate
+			if stage[1]==stages[-1][1]:
+				learn_rate = 0.001
+			else:
+				learn_rate = 0.003
+			optim = optax.adam(learn_rate)		# parm is learning rate
 			optim_state=optim.init(point._data)		# initialize with data
 			for i in range(stage[2]):		# training epochs
 				if nptcl>stage[0]*2: idx0=sn+i
@@ -488,7 +492,7 @@ def main():
 				norm=nptcl//batchsize+1
 				for j in range(0,nptcl,batchsize):
 					ptclsfds=cache.read(stage[1],selimg[range(j,min(j+batchsize,nptcl))])
-					meta=jnp.array(ptclsfds.metadata)# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
+					meta=jnp.hstack((tytx[selimg[range(j,min(j+batchsize,nptcl))]], orts[selimg[range(j,min(j+batchsize,nptcl))]], ptclsfds.metadata[:,5:]))# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
 					dsapix = ptclsfds.apix
 
 					# TODO: Same question--do we need to do this differently with other CTF modes?
