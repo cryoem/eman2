@@ -1848,6 +1848,7 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
+	epsilon=1e-8
 #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
@@ -1875,7 +1876,7 @@ def jax_frc(ima,imb,avg=0,weight=1.0,minfreq=0):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
+		frc.append(cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon)))
 
 	frc=jnp.stack(frc)
 	if avg>len(frc[0]): avg=-1
@@ -1898,6 +1899,7 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	if tf.rank(ima)<3 or tf.rank(imb)<3 or ima.shape != imb.shape: raise Exception("tf_frc works on stacks of FFTs not individual images, and the shape of both inputs must match")
 
 	global FRC_RADS
+	epsilon=1e-8
 #	global FRC_NORM		# we don't actually need this unless we want to compute uncertainties (number of points at each radius)
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
@@ -1925,7 +1927,7 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
 		bprd=zero.at[rad_img].add(imbr+imbi)
-		frc.append(cross/jnp.sqrt(aprd*bprd))
+		frc.append(cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon)))
 
 	frc=jnp.stack(frc)
 	if avg>len(frc[0]): avg=-1
@@ -1947,6 +1949,7 @@ def jax_frc_jit(ima,imb,weight,thresh):
 
 	In thisa new version, weight MUST be passed with an array with exactly nr elements. It will be multiplied by the average FRC """
 	global FRC_RADS
+	epsilon=1e-8
 
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
@@ -1973,7 +1976,7 @@ def jax_frc_jit(ima,imb,weight,thresh):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
+		frc.append(cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon)))
 
 	frc=jnp.stack(frc)
 	return (jnp.clip(frc.mean(axis=0),thresh,1.0)*weight).mean()		# FRC weighted by passed weight array
@@ -1983,6 +1986,7 @@ def jax_frcs_jit(ima,imb,weight,thresh):
 	"""This is identical to jax_frc_jit, but returns a list of per-particle FRCs. This won't work with gradient calculations which
 must return a single value, but is necessary for per-particle quality estimates, so 2 versions... """
 	global FRC_RADS
+	epsilon=1e-8
 
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
@@ -2009,7 +2013,7 @@ must return a single value, but is necessary for per-particle quality estimates,
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
+		frc.append(cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon)))
 
 	frc=jnp.stack(frc)
 	return jnp.mean(jnp.clip(frc,thresh,1.0)*weight,axis=1)		# note that thresholding on a single curve is far less useful than thresholding on a mean like jax_frc_jit
@@ -2022,6 +2026,7 @@ def jax_unweighted_frcs_jit(ima,imb):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!"""
 	global FRC_RADS
+	epsilon=1e-8
 
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
@@ -2047,7 +2052,7 @@ def jax_unweighted_frcs_jit(ima,imb):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		frc.append(cross/jnp.sqrt(aprd*bprd))
+		frc.append(cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon)))
 
 	frc=jnp.stack(frc)
 	return frc
@@ -2061,6 +2066,7 @@ def jax_fsc_jit(ima,imb):
 	if ima.dtype!=jnp.complex64 or imb.dtype!=jnp.complex64 : raise Exception("tf_fsc requires FFTs")
 
 	global FSC_RADS
+	epsilon=1e-8
 
 	ny=ima.shape[1]
 	nimg=ima.shape[0]
@@ -2086,7 +2092,7 @@ def jax_fsc_jit(ima,imb):
 		cross=zero.at[rad_img].add(imabr[i]+imabi[i])
 		aprd=zero.at[rad_img].add(imar[i]+imai[i])
 		bprd=zero.at[rad_img].add(imbr[i]+imbi[i])
-		fsc.append(cross/jnp.sqrt(aprd*bprd))
+		fsc.append(cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon)))
 
 	return jnp.stack(fsc)
 

@@ -534,6 +534,8 @@ def main():
 				# TODO: again, nan_to_num shouldn't be necessary. What is causing it?'
 				ort_grads=jnp.nan_to_num(ort_grads)
 				tytx_grads=jnp.nan_to_num(tytx_grads)
+				ortstd=jnp.nan_to_num(ortstd)
+				dydxstd=jnp.nan_to_num(dydxstd)
 				qual/=norm
 				ortstd/=norm
 				dydxstd/=norm
