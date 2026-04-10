@@ -78,7 +78,7 @@ def main():
 	cache=StackCache(options.ptcls)
 
 	# the starting model, which provides the origin in latent space
-	points=Gaussians(options.model)
+	points=Points(options.model)
 
 	# critical for later in the program, this initializes the radius images for all of the samplings we will use
 	for s in cache.sizes:
@@ -108,118 +108,138 @@ def main():
 		weights[s]=weight
 #		print(f"{s:3d}: {thresh}\n     {weight}")
 
+	nans=set()
 	# Determine per-particle input representations
-	for bn in range(0,len(cache),4096):
-		ptcls=cache.read(64,range(bn,min(bn+4096,len(cache))))
+	grads=np.zeros((len(cache),len(points),4))
+	frcs=np.zeros(len(cache))
+	for bn in range(0,len(cache),1024):
+		ptcls=cache.read(128,range(bn,min(bn+1024,len(cache))))
 		meta=ptcls.metadata
 		mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
 		tytx=jnp.array(meta[:,0:2])
-		frc,grad=prj_frc_loss(points.jax,mx2d,tytx,ptcls.jax,weights[64],threshs[64])
-		print(frc.shape,grad.shape,frc.min(),frc.max())
+		frc,grad=prj_frc_loss_vmap(points.jax,mx2d,tytx,ptcls.jax,weights[128],threshs[128])
 
- #    # Initialize encoder
- #    encoder = Encoder(input_dim=input_dim, latent_dim=latent_dim, hidden_sizes=hidden_sizes)
- #    encoder_params = encoder.init(random.PRNGKey(0), random.normal(random.PRNGKey(1), (batch_size, input_dim)))
- #
- #    encoder_optimizer = optax.adam(learning_rate=1e-3)
- #    encoder_train_state = TrainState.create(
- #        apply_fn=encoder.apply,
- #        params=encoder_params,
- #        tx=encoder_optimizer
- #    )
- #
- #    # Initialize decoder
- #    decoder = Decoder(latent_dim=latent_dim, output_dim=output_dim, hidden_sizes=hidden_sizes)
- #    decoder_params = decoder.init(random.PRNGKey(0), random.normal(random.PRNGKey(1), (batch_size, latent_dim)))
- #
- #    decoder_optimizer = optax.adam(learning_rate=1e-3)
- #    decoder_train_state = TrainState.create(
- #        apply_fn=decoder.apply,
- #        params=decoder_params,
- #        tx=decoder_optimizer
- #    )
- #
- #
- #
+# 		for n in range(bn,min(bn+1024,len(cache))):
+# 			ns=n-bn
+# #			print(bn,n,points.jax.shape,mx2d[:,:,ns:ns+1].shape,tytx[ns:ns+1].shape,ptcls.jax[ns:ns+1].shape,ptcls.shape)
+# 			frc,grad=prj_frc_loss(points.jax,mx2d[:,:,ns:ns+1],tytx[ns:ns+1],ptcls.jax[ns:ns+1],weights[64],threshs[64])
+# 			grads[n]=grad
+# 			frcs[n]=frc
+
+	grads[np.isnan(grads)] = 0
+	frcs[np.isnan(frcs)] = 0
+
+	np.savetxt("gradsx.txt",grads[:,:,0])
+	np.savetxt("gradsy.txt",grads[:,:,1])
+	np.savetxt("gradsz.txt",grads[:,:,2])
+	np.savetxt("gradsa.txt",grads[:,:,3])
+	np.savetxt("frcs.txt",frcs)
+
+#    # Initialize encoder
+#    encoder = Encoder(input_dim=input_dim, latent_dim=latent_dim, hidden_sizes=hidden_sizes)
+#    encoder_params = encoder.init(random.PRNGKey(0), random.normal(random.PRNGKey(1), (batch_size, input_dim)))
+#
+#    encoder_optimizer = optax.adam(learning_rate=1e-3)
+#    encoder_train_state = TrainState.create(
+#        apply_fn=encoder.apply,
+#        params=encoder_params,
+#        tx=encoder_optimizer
+#    )
+#
+#    # Initialize decoder
+#    decoder = Decoder(latent_dim=latent_dim, output_dim=output_dim, hidden_sizes=hidden_sizes)
+#    decoder_params = decoder.init(random.PRNGKey(0), random.normal(random.PRNGKey(1), (batch_size, latent_dim)))
+#
+#    decoder_optimizer = optax.adam(learning_rate=1e-3)
+#    decoder_train_state = TrainState.create(
+#        apply_fn=decoder.apply,
+#        params=decoder_params,
+#        tx=decoder_optimizer
+#    )
+#
+#
+#
 	# latent=encoder_state.apply_fn(encoder_state.params, input_vector)
 #	output=decoder_state.apply_fn(decoder_state.params, latent_vector)
 
 	E3end(logid)
 
-@jit
+
 @jax.value_and_grad
 def prj_frc_loss(points:jnp.array,mx2d,tytx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
 	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
 
 	ny=ptcls.shape[1]
-	prj=gauss_project_simple_fn(points,mx2d,ny,tytx)
-	return -jax_frc_jit_new(jax_fft2d(prj),ptcls,weight,thresh)
+	prj=point_project_simple_fn(points,mx2d,ny,tytx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
+
+prj_frc_loss_vmap = jax.vmap(prj_frc_loss,in_axes=(None, 2, 0, 0, None, None),out_axes=0)
 
 def prj_frcs(points:jnp.array,ptcls:jnp.array,meta:jnp.array):
 	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
 	a loss function, this returns the individual FRC curves for statistical analysis"""
 	mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
 	ny=ptcls.shape[1]
-	prjf=jax_fft2d_jit(gauss_project_simple_fn(points,mx2d,ny,meta[:,0:2]))
+	prjf=jax_fft2d_jit(point_project_simple_fn(points,mx2d,ny,meta[:,0:2]))
 #	print(prjf.shape,ptcls.jax.shape)
 
-	return jax_frcs_jit(prjf,ptcls)
+	return jax_unweighted_frcs_jit(prjf,ptcls)
 
 class Encoder(nnx.Module):
-    def __init__(self, input_dim, latent_dim, hidden_sizes, rngs):
-        """
-        Initialize the encoder.
+	def __init__(self, input_dim, latent_dim, hidden_sizes, rngs):
+		"""
+		Initialize the encoder.
 
-        Args:
-            input_dim: Dimension of input vectors
-            latent_dim: Dimension of latent space
-            hidden_sizes: Tuple of hidden layer sizes (one layer per size)
-            rngs: NNX random keys (dropout, etc.)
-        """
-        layers = []
-        current_dim = input_dim
+		Args:
+			input_dim: Dimension of input vectors
+			latent_dim: Dimension of latent space
+			hidden_sizes: Tuple of hidden layer sizes (one layer per size)
+			rngs: NNX random keys (dropout, etc.)
+		"""
+		layers = []
+		current_dim = input_dim
 
-        for size in hidden_sizes:
-            layers.append(nnx_flax.Dense(current_dim, size))
-            layers.append(nnx.relu)  # Activation
-            current_dim = size
+		for size in hidden_sizes:
+			layers.append(nnx_flax.Dense(current_dim, size))
+			layers.append(nnx.relu)  # Activation
+			current_dim = size
 
-        # Final layer to latent dimension
-        layers.append(nnx_flax.Dense(current_dim, latent_dim))
+		# Final layer to latent dimension
+		layers.append(nnx_flax.Dense(current_dim, latent_dim))
 
-        self.layers = nnx.Sequential(layers)
+		self.layers = nnx.Sequential(layers)
 
-    def __call__(self, x):
-        return self.layers(x)
+	def __call__(self, x):
+		return self.layers(x)
 
 
 class Decoder(nnx.Module):
-    def __init__(self, latent_dim, output_dim, hidden_sizes, rngs):
-        """
-        Initialize the decoder.
+	def __init__(self, latent_dim, output_dim, hidden_sizes, rngs):
+		"""
+		Initialize the decoder.
 
-        Args:
-            latent_dim: Dimension of latent space
-            output_dim: Dimension of output vectors
-            hidden_sizes: Tuple of hidden layer sizes (reversed from encoder)
-            rngs: NNX random keys
-        """
-        layers = []
-        current_dim = latent_dim
+		Args:
+			latent_dim: Dimension of latent space
+			output_dim: Dimension of output vectors
+			hidden_sizes: Tuple of hidden layer sizes (reversed from encoder)
+			rngs: NNX random keys
+		"""
+		layers = []
+		current_dim = latent_dim
 
-        for size in hidden_sizes:
-            layers.append(nnx_flax.Dense(current_dim, size))
-            layers.append(nnx.relu)  # Activation
-            current_dim = size
+		for size in hidden_sizes:
+			layers.append(nnx_flax.Dense(current_dim, size))
+			layers.append(nnx.relu)  # Activation
+			current_dim = size
 
-        # Final layer to output dimension
-        layers.append(nnx_flax.Dense(current_dim, output_dim))
+		# Final layer to output dimension
+		layers.append(nnx_flax.Dense(current_dim, output_dim))
 
-        self.layers = nnx.Sequential(layers)
+		self.layers = nnx.Sequential(layers)
 
-    def __call__(self, z):
-        return self.layers(z)
+	def __call__(self, z):
+		return self.layers(z)
 
 
 """
@@ -236,51 +256,51 @@ Features:
 # ============================================
 
 def generate_input_vector(key):
-    """
-    Generate a single input vector of shape (N,)
-    Replace with your actual implementation.
+	"""
+	Generate a single input vector of shape (N,)
+	Replace with your actual implementation.
 
-    Args:
-        key: JAX random key
+	Args:
+		key: JAX random key
 
-    Returns:
-        Input vector of shape (N,)
-    """
-    N = 100  # Set your input dimension
-    return random.normal(key, (N,))
+	Returns:
+		Input vector of shape (N,)
+	"""
+	N = 100  # Set your input dimension
+	return random.normal(key, (N,))
 
 
 def generate_output_vector(key, input_vec):
-    """
-    Generate a target output vector of shape (N, 4) given input vector.
-    Replace with your actual implementation.
+	"""
+	Generate a target output vector of shape (N, 4) given input vector.
+	Replace with your actual implementation.
 
-    Args:
-        key: JAX random key
-        input_vec: Input vector of shape (N,)
+	Args:
+		key: JAX random key
+		input_vec: Input vector of shape (N,)
 
-    Returns:
-        Output vector of shape (N, 4)
-    """
-    N = 100
-    output_dim = 4
-    return random.normal(key, (N, output_dim))
+	Returns:
+		Output vector of shape (N, 4)
+	"""
+	N = 100
+	output_dim = 4
+	return random.normal(key, (N, output_dim))
 
 
 def compute_loss(decoder_output, target_output):
-    """
-    Compute loss between decoder output and target output.
-    Replace with your actual implementation.
+	"""
+	Compute loss between decoder output and target output.
+	Replace with your actual implementation.
 
-    Args:
-        decoder_output: Output from decoder
-        target_output: Target output
+	Args:
+		decoder_output: Output from decoder
+		target_output: Target output
 
-    Returns:
-        Scalar loss value
-    """
-    # Example: Mean squared error
-    return jnp.mean((decoder_output - target_output) ** 2)
+	Returns:
+		Scalar loss value
+	"""
+	# Example: Mean squared error
+	return jnp.mean((decoder_output - target_output) ** 2)
 
 
 
@@ -704,5 +724,5 @@ def compute_loss(decoder_output, target_output):
 
 # Entry point
 if __name__ == "__main__":
-    main()
+	main()
 

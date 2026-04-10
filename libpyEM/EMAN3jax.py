@@ -56,6 +56,9 @@ np.fromfunction(lambda x,y: np.hypot(x,y),(nx,ny)) - for example
 
 """
 
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
 from EMAN3 import *
 import numpy as np
 import jax
@@ -64,7 +67,6 @@ from jax import grad, jit
 from jax import lax
 from jax import random
 import jaxlib
-import os
 from functools import partial
 
 class StackCache():
@@ -1947,7 +1949,7 @@ def jax_frc_jit(ima,imb,weight,thresh):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST
 	be called with the appropriate size prior to using this function!
 
-	In thisa new version, weight MUST be passed with an array with exactly nr elements. It will be multiplied by the average FRC """
+	In this new version, weight MUST be passed with an array with exactly nr elements. It will be multiplied by the average FRC """
 	global FRC_RADS
 	epsilon=1e-8
 
