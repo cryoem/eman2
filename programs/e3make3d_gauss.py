@@ -32,4 +32,3 @@
 
 if __name__ == '__main__':
     print("This program has been renamed to e3make3d_point.py. Please use the updated program, using -h to check out the option changes.")
-	main()

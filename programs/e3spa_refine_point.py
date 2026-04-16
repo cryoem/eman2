@@ -379,7 +379,7 @@ def main():
 						ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
 						out=open("crash_lastb_ortdydx.txt","w")
 						for io in range(len(orts)):
-							out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+							out.write(f"{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][0]:1.6f}\t{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][1]*1000:1.6f}\t{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][2]*1000:1.6f}\t{tytx[selimg[range(j,min(j+batchsize,nptcl))] + io][0]*1000:1.2f}\t{tytx[selimg[range(j,min(j+batchsize,nptcl))] + io][1]*1000:1.2f} (/1000)\n")
 						sys.exit(1)
 					else:
 						print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
@@ -545,8 +545,8 @@ def main():
 						print("ERROR: nan on gradient descent, saving crash images and exiting")
 						ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
 						out=open("crash_lastb_ortdydx.txt","w")
-						for io in range(len(orts)):
-							out.write(f"{orts[io][0]:1.6f}\t{orts[io][1]*1000:1.6f}\t{orts[io][2]*1000:1.6f}\t{tytx[io][0]*1000:1.2f}\t{tytx[io][1]*1000:1.2f} (/1000)\n")
+						for io in range(len(ptclsfds)):
+							out.write(f"{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][0]:1.6f}\t{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][1]*1000:1.6f}\t{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][2]*1000:1.6f}\t{tytx[selimg[range(j,min(j+batchsize,nptcl))] + io][0]*1000:1.2f}\t{tytx[selimg[range(j,min(j+batchsize,nptcl))] + io][1]*1000:1.2f} (/1000)\n")
 						sys.exit(1)
 					else:
 						print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
@@ -561,27 +561,29 @@ def main():
 				(orts, tytx) = optax.apply_updates((orts, tytx), ort_update)
 
 				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
+				all_frcs.append((i, qual))
 
 			# Save the changes we've made to the np array so it goes to all levels of downsampling
 			cache._meta[:,:2]=np.array(tytx)
 			cache._meta[:,2:5]=np.array(orts)
+		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
 			dsapix=ptclsfds.apix
 			pointary=point.jax
 			ny=ptclsfds.shape[1]
-			orts, tytx=ptclsfds.orientations
-			projs=EMStack2D(point_project_simple_sym_fn(pointary, orts.jax, ny, tytx, symmx))
+			ptcl_orts, ptcl_tytx=ptclsfds.orientations
+			projs=EMStack2D(point_project_simple_sym_fn(pointary, ptcl_orts.jax, ny, ptcl_tytx, symmx))
 			if options.ctf>0:
 				dsapix=ptclsfds.apix
 				ctf=ptclsfds.ctf
 				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 				dfstep=2*apix*apix/(wavelength*10000)
-				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, orts.jax, jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, tytx, ctf, symmx))
-				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,orts.jax,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,tytx,ctf, symmx))
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, ptcl_orts.jax, jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, ptcl_tytx, ctf, symmx))
+				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,ptcl_orts.jax,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,ptcl_tytx,ctf, symmx))
 			ptclds=ptclsfds.do_ift()
-			transforms=orts.transforms(tytx=tytx)
+			transforms=ptcl_orts.transforms(tytx=ptcl_tytx)
 			for i in range(len(projs)):
 				a=ptclds.emdata[i]
 				b=projs.emdata[i]
