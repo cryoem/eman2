@@ -85,7 +85,7 @@ def readfile(filename,verbose=0):
 					lbls=lbls2
 					lbln=i
 
-	nc=len(re.split("[\s,;]+",ll))		# last non-comment
+	nc=len(re.split(r"[\s,;]+",ll))		# last non-comment
 	if verbose>0 :
 		print(f"{filename} : ({nc},{nr})")
 		if len(lbls)>1 : print("  ".join(lbls))
@@ -99,7 +99,7 @@ def readfile(filename,verbose=0):
 		l=lin.strip()
 		if lin[0]!="#" and len(l)!=0:
 			if (n1<0 or nl<n1) and nl>=n0 and (nl-n0)%ns==0:
-				v=[float(x) for x in re.split("[\s,;]+",l)]
+				v=[float(x) for x in re.split(r"[\s,;]+",l)]
 				data[r]=v
 				r+=1
 			nl+=1

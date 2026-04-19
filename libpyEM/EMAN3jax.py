@@ -1944,6 +1944,41 @@ def jax_frc_allvs1(ima,imb,avg=0,weight=1.0,minfreq=0):
 #	elif avg==-1: return tf.math.reduce_mean(frc,1)
 	else: return frc
 
+def jax_frc_single(ima,imb,weight,thresh):
+	"""Single particle version of jax_frc_jit() designed to be called inside a vectorized outer loop. This is used in
+cases where the frc for each particle is needed."""
+	global FRC_RADS
+	epsilon=1e-8
+
+	ny=ima.shape[0]
+#	nr=int(ny*0.70711)+1	# max radius we consider
+	nr=weight.shape[0]
+	rad_img=FRC_RADS[ny]	# NOTE: This is unsafe to permit JIT, appropriate FRC_RADS MUST be precomputed to use this
+
+	imar=jnp.real(ima) # if you do the dot product with complex math the processor computes the cancelling cross-terms. Want to avoid the waste
+	imai=jnp.imag(ima)
+	imbr=jnp.real(imb)
+	imbi=jnp.imag(imb)
+
+	imabr=imar*imbr		# compute these before squaring for normalization
+	imabi=imai*imbi
+
+	imar=imar*imar		# just need the squared versions, not the originals now
+	imai=imai*imai
+	imbr=imbr*imbr
+	imbi=imbi*imbi
+
+	zero=jnp.zeros([nr])
+
+	cross=zero.at[rad_img].add(imabr+imabi)
+	aprd=zero.at[rad_img].add(imar+imai)
+	bprd=zero.at[rad_img].add(imbr+imbi)
+	frc=cross/jnp.sqrt((aprd+epsilon)*(bprd+epsilon))
+
+	return (jnp.clip(frc,thresh,1.0)*weight).mean()		# FRC weighted by passed weight array
+#	return (frc*weight).mean()		# FRC weighted by passed weight array
+
+
 @jax.jit
 def jax_frc_jit(ima,imb,weight,thresh):
 	"""Simplified jax_frc with fewer options to permit JIT compilation. Computes averaged FRCs to ny//2. Note that rad_img_int(ny) MUST

@@ -108,16 +108,21 @@ def main():
 		weights[s]=weight
 #		print(f"{s:3d}: {thresh}\n     {weight}")
 
+#	print(weights[128],threshs[128])
+
 	nans=set()
 	# Determine per-particle input representations
 	grads=np.zeros((len(cache),len(points),4))
 	frcs=np.zeros(len(cache))
 	for bn in range(0,len(cache),1024):
-		ptcls=cache.read(128,range(bn,min(bn+1024,len(cache))))
+		bnend=min(bn+1024,len(cache))
+		ptcls=cache.read(128,range(bn,bnend))
 		meta=ptcls.metadata
 		mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
 		tytx=jnp.array(meta[:,0:2])
-		frc,grad=prj_frc_loss_vmap(points.jax,mx2d,tytx,ptcls.jax,weights[128],threshs[128])
+		print(points.jax.shape,mx2d.shape,tytx.shape,ptcls.jax.shape)
+
+		frcs[bn:bnend],grads[bn:bnend]=prj_frc_loss_vmap(points.jax,mx2d,tytx,ptcls.jax,weights[128],threshs[128])
 
 # 		for n in range(bn,min(bn+1024,len(cache))):
 # 			ns=n-bn
@@ -126,8 +131,8 @@ def main():
 # 			grads[n]=grad
 # 			frcs[n]=frc
 
-	grads[np.isnan(grads)] = 0
-	frcs[np.isnan(frcs)] = 0
+#	grads[np.isnan(grads)] = 0
+#	frcs[np.isnan(frcs)] = 0
 
 	np.savetxt("gradsx.txt",grads[:,:,0])
 	np.savetxt("gradsy.txt",grads[:,:,1])
@@ -164,17 +169,16 @@ def main():
 
 	E3end(logid)
 
-
 @jax.value_and_grad
 def prj_frc_loss(points:jnp.array,mx2d,tytx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Gaussians in gaus to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	comparison of the Gaussians in gaus to one particle in a known orientation. Returns -frc since optax wants to minimize, not maximize"""
 
-	ny=ptcls.shape[1]
-	prj=point_project_simple_fn(points,mx2d,ny,tytx)
-	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
+	ny=ptcls.shape[0]
+	prj=point_project_single_fn(points,mx2d,ny,tytx)
+	return -jax_frc_single(jax_fft2d(prj),ptcls,weight,thresh)
 
-prj_frc_loss_vmap = jax.vmap(prj_frc_loss,in_axes=(None, 2, 0, 0, None, None),out_axes=0)
+prj_frc_loss_vmap = jax.jit(jax.vmap(prj_frc_loss,in_axes=(None, 2, 0, 0, None, None),out_axes=0))
 
 def prj_frcs(points:jnp.array,ptcls:jnp.array,meta:jnp.array):
 	"""Computes the FRC between a 3-D model and a stack of projections. Instead of integrating to produce
