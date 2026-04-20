@@ -417,6 +417,9 @@ def main():
 					for j in range(0,nptcl,batchsize):
 						ptclsfds=cache.read(stage[1],nliststg[j:j+batchsize])	# metadata stored in ptclsfds, which is a EMStack2D
 						meta=jnp.array(ptclsfds.metadata)		# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
+						if len(ptclsfds)==0 :
+							print("Abort tiny batch: ",len(nliststg),j,batchsize)
+							continue
 
 						# need to recompute this here since we may not have hit this stage yet
 						if j==0:
@@ -494,6 +497,9 @@ def main():
 					ptclsfds=cache.read(stage[1],selimg[range(j,min(j+batchsize,nptcl))])
 					meta=jnp.hstack((tytx[selimg[range(j,min(j+batchsize,nptcl))]], orts[selimg[range(j,min(j+batchsize,nptcl))]], ptclsfds.metadata[:,5:]))# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
 					dsapix = ptclsfds.apix
+					if len(ptclsfds)==0:
+							print("How can len ptclsfds be 0:",len(nliststg),j,batchsize)
+							continue
 
 					# TODO: Same question--do we need to do this differently with other CTF modes?
 					if i in (0,8) and j==0:
