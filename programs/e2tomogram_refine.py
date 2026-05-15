@@ -194,7 +194,10 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 		calc_loss_multi=calc_loss_multi_direct
 		trans_coef=np.zeros((maxtilt, 3,2))
 		if has_coef:
-			trans_coef[:nimg,:2]=tpm_cf.copy()
+			try:
+				trans_coef[:nimg,:2]=tpm_cf.copy()
+			except:
+				pass
 			
 		learnrate=3e-2
 			
@@ -483,27 +486,33 @@ def get_clips(imgs, xf, xy):
     
 @jit
 def calc_loss_multi_direct(tc, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rng):
-	score=[]
+	"""Compute loss over all tiles using jax.lax.scan.
+	
+	Original used a Python for-loop over 9 tiles, each calling insert_slice_multi
+	(which itself looped over 38 tilts). XLA unrolled 9*38=342 iterations into one
+	massive graph. With scan, XLA traces ONCE and loops at runtime.
+	"""
 	trans=jnp.dot(xy1, tc)
 	rnd=jax.random.bernoulli(rng, .95, shape=trans.shape).astype(float)
 	trans=trans*rnd
-	for ii,data in enumerate(data_all):
+
+	def tile_loss(carry, inputs):
+		data, tr, tr_off = inputs
 		volume=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.complex64)
 		weight=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.float32)
-	
-		xf=jnp.concatenate([xfrot, trans[ii]+trans_offset[ii]], axis=1)
+		xf=jnp.concatenate([xfrot, tr+tr_off], axis=1)
 		volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 		vol_nrm=get_volume(volume, weight)
-		
 		std=jnp.std(vol_nrm**2, axis=(0,1))
 		std=jnp.sum(std*width)/jnp.sum(width)
-		score.append(std)
+		return carry, std
 
-	score=jnp.array(score)
+	_, score=jax.lax.scan(tile_loss, None, (data_all, trans, trans_offset))
+
 	loss=jnp.sum(score)
 	loss-=jnp.min(score)
-	loss=-loss/(len(data_all)-1)
-	
+	loss=-loss/(score.shape[0]-1)
+
 	return loss
 
 class MLP(nn.Module):
@@ -520,29 +529,30 @@ class MLP(nn.Module):
 	
 @jit
 def calc_loss_multi_mlp(mlp_var, xy1, xfrot, data_all, trans_offset, mask_tilt, width, rng):
-	score=[]
+	"""MLP variant of calc_loss_multi, also using jax.lax.scan."""
 	x=jnp.ones((1,4))
 	tc = mlp.apply(mlp_var, x, training=True, rngs={"dropout": rng})
 	trans=jnp.dot(xy1, tc)
 	rnd=jax.random.bernoulli(rng, .95, shape=trans.shape).astype(float)
 	trans=trans*rnd
-	for ii,data in enumerate(data_all):
+
+	def tile_loss(carry, inputs):
+		data, tr, tr_off = inputs
 		volume=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.complex64)
 		weight=jnp.zeros((rawbox, rawbox, rawbox), dtype=np.float32)
-	
-		xf=jnp.concatenate([xfrot, trans[ii]+trans_offset[ii]], axis=1)
+		xf=jnp.concatenate([xfrot, tr+tr_off], axis=1)
 		volume, weight=insert_slice_multi(volume, weight, data, xf, mask_tilt)
 		vol_nrm=get_volume(volume, weight)
-		
 		std=jnp.std(vol_nrm**2, axis=(0,1))
 		std=jnp.sum(std*width)/jnp.sum(width)
-		score.append(std)
+		return carry, std
 
-	score=jnp.array(score)
+	_, score=jax.lax.scan(tile_loss, None, (data_all, trans, trans_offset))
+
 	loss=jnp.sum(score)
 	loss-=jnp.min(score)
-	loss=-loss/(len(data_all)-1)
-	
+	loss=-loss/(score.shape[0]-1)
+
 	return loss
 
 if __name__ == '__main__':

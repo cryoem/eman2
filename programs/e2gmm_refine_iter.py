@@ -41,9 +41,10 @@ def main():
 	parser.add_argument("--startiter", type=int,help="starting iteration number.", default=1)
 	parser.add_argument("--batchsize", type=int,help="Number of particles in each batch for alignment. Increase will make the alignment faster, but also increases GPU memory use. Default is 16.", default=16)
 	parser.add_argument("--chunksize", type=int,help="Number of particles in each e2gmm_batch process. Increase will make the alignment slightly faster, but also increases CPU memory use. Default is 20000.", default=20000)
-	
+	parser.add_argument("--parallel", type=str,help="for e2spa_make3d.", default="thread:32")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--jax", action="store_true", default=False ,help="use jax backend")
+	parser.add_argument("--skipeven", action="store_true", default=False ,help="skip even for first iteration. testing only")
 
 	(options, args) = parser.parse_args()
 	
@@ -100,29 +101,38 @@ def main():
 	etcpp=""
 	if options.maskpp:
 		etcpp+=" --mask {}".format(options.maskpp)
+	if options.jax:
+		prog_refine="e2gmm_refine_jax.py"
+	else:
+		prog_refine="e2gmm_refine_new.py"
 		
 	for itr in range(options.startiter, options.startiter+options.niter):
 		it0=itr-1
 		
 		for ieo, eo in enumerate(["even", "odd"]):
-			run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4 --parallel=thread:24")
-			
+			if options.skipeven and itr==options.startiter and eo=="even":
+				continue
+			if options.jax:
+				ref_input=f"{path}/threed_{it0:02d}_{eo}.hdf"
+			else:
+				run(f"e2project3d.py {path}/threed_{it0:02d}_{eo}.hdf --outfile {path}/projections_{eo}.hdf --orientgen=eman:delta=4")
+				ref_input=f"{path}/projections_{eo}.hdf"			
 
 			if itr==options.startiter:
 				
 				if options.initpts:
-					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
+					run(f"{prog_refine} --ptclsin {ref_input} --model {path}/gmm_init_{eo}.{ext} --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 					
 				else:
 					run(f"e2segment3d.py {path}/threed_{it0:02d}_{eo}.hdf --pdb {path}/model_{it0:02d}_{eo}.pdb --process=segment.kmeans:nseg={options.npt}:thr=4")
 					
-					run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
+					run(f"{prog_refine} --ptclsin {ref_input} --model {path}/model_{it0:02d}_{eo}.pdb --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 		
 			else:
-				run(f"e2gmm_refine_new.py --ptclsin {path}/projections_{eo}.hdf --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
+				run(f"{prog_refine} --ptclsin {ref_input} --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 	
 			pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
-			if options.mask:
+			if options.jax==None and options.mask:
 				msk=EMData(options.mask)
 				
 				## read selected Gaussian from mask file
@@ -158,12 +168,11 @@ def main():
 				clip=e["nx"]
 				etcali+=f" --clip {clip}"
 				etcm3d+=f" --outsize {clip}"
+			if options.jax and options.mask:
+				etcali+=f" --mask {options.mask}"
+				
 
-			if options.jax:
-				run(f'e2gmm_batch.py "e2gmm_refine_jax.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
-			
-			else:
-				run(f'e2gmm_batch.py "e2gmm_refine_new.py --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
+			run(f'e2gmm_batch.py "{prog_refine} --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
 			
 			pfile=f"{path}/ptcls_{itr:02d}_{eo}.lst"
 			if options.breaksym:
@@ -178,14 +187,24 @@ def main():
 				pfile=f"{path}/ptcls_breaksym_{eo}.lst"
 				save_lst_params(lout, pfile)
 				
-			run(f"e2spa_make3d.py --input {pfile} --output {path}/threed_{itr:02d}_{eo}.hdf --parallel thread:32 --keep .9 --sym {options.sym} {etcm3d}")
+			if options.jax and options.mask:
+				if not os.path.isfile(f"{path}/threed_raw_{eo}.hdf"):
+					run(f"e2spa_make3d.py --input {pfile} --output {path}/threed_raw_{eo}.hdf --parallel {options.parallel} --keep .9 --sym {options.sym} {etcm3d}")
+				
+				im=EMUtil.get_image_count(options.mask)
+				for i in range(im):
+					run(f"e2spa_make3d.py --input {pfile} --output {path}/threed_{itr:02d}_{i:02d}_{eo}.hdf --parallel {options.parallel} --keep .9 --sym {options.sym} {etcm3d} --xform_key xform.projection_{i:02d}")
+			else:
+				run(f"e2spa_make3d.py --input {pfile} --output {path}/threed_{itr:02d}_{eo}.hdf --parallel {options.parallel} --keep .9 --sym {options.sym} {etcm3d}")
 	   
-			run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
+				run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_raw_{eo}.hdf")
 			
-			#run(f"e2proc3d.py {path}/threed_{itr:02d}_{eo}.hdf {path}/threed_{itr:02d}_{eo}.hdf --multfile mask_foc0_soft.hdf")
 			
 			if os.path.isfile(f"{path}/projections_{eo}.hdf"): 
 				os.remove(f"{path}/projections_{eo}.hdf")
+			
+		if options.jax and options.mask:
+			run(f"e2gmm_merge_patch.py {path} --iter {itr} --masks {options.mask}")
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf --res {res} --tophat {options.tophat} --sym {options.sym} --thread 32 --setsf sf.txt --align  {etcpp}")
 		

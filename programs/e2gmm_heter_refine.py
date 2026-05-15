@@ -175,7 +175,10 @@ def main():
 		save_lst_params(lst[:20000], f"{path}/ptcls_{it0:02d}{eo}_sample.lst")
 
 		etc=""
-		etc+=f" --selgauss {options.mask}"
+		if options.jax:
+			etc+=f" --mask {options.mask}"
+		else:
+			etc+=f" --selgauss {options.mask}"
 		etc+=f" --batchsz {options.batchsz}"
 		etc3=""# --setsf sf_lp.txt"
 		

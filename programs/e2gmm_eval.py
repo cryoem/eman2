@@ -18,7 +18,7 @@ def main():
 	parser.add_argument("--pad", type=int,help="pad for make3d", default=-1)
 	parser.add_argument("--ncls", type=int,help="number of classes", default=3)
 	parser.add_argument("--nbasis", type=int,help="PCA dimensionality", default=2)
-	parser.add_argument("--width", type=float,help="width of the vector. 1 covers all points. default 0.98", default=.99)
+	parser.add_argument("--width", type=float,help="width of the vector. 1 covers all points. default 0.99", default=.99)
 	parser.add_argument("--setsf", type=str,help="setsf", default="")
 	parser.add_argument("--mode", type=str,help="classify/regress", default="classify")
 	parser.add_argument("--axis", type=str,help="axis for regress. one number for a line, and two numbers separated by comma to draw circles.", default='0')
@@ -43,7 +43,48 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
-	pts=np.loadtxt(options.pts)
+	
+	fname=options.ptclsin
+	lin=load_lst_params(fname)
+	if options.spt:
+		pids=np.array([a["ptcl3d_id"] for a in lin])
+		uid=np.unique(pids)
+		p3did=[np.where(pids==u)[0] for u in uid]
+		print(len(uid), "3D particles")
+		
+	if options.pts.endswith(".lst"):
+		print("Found lst input. Use angle difference to build trajectory")
+		lst=load_lst_params(options.pts)
+		pts=[]
+		if options.spt:
+			for ip in p3did:
+				i=ip[0]
+				l0=lin[i]
+				l1=lst[i]
+				x0=l0["xform.projection"]
+				x1=l1["xform.projection_00"]
+				dx=x0*x1.inverse()
+				dx=dx.get_params("xyz")
+				dx=[dx["xtilt"],dx["ytilt"],dx["ztilt"],dx["tx"],dx["ty"],dx["tz"]]
+				pts.append(dx)
+			
+		else:
+			for l0,l1 in zip(lin, lst):
+				x0=l0["xform.projection"]
+				x1=l1["xform.projection_00"]
+				dx=x0*x1.inverse()
+				dx=dx.get_params("xyz")
+				dx=[dx["xtilt"],dx["ytilt"],dx["ztilt"],dx["tx"],dx["ty"],dx["tz"]]
+				pts.append(dx)
+				
+		pts=np.array(pts)
+		print("Point shape:", pts.shape)
+		print("STD:", np.std(pts, axis=0))
+		#pts=pts/np.std(pts, axis=0)
+		
+	else:
+		pts=np.loadtxt(options.pts)
+		
 	if np.mean(abs(pts[:,0]-np.round(pts[:,0])))>1e-3:
 		print("Assign sequential particle ID")
 		pts=np.hstack([np.arange(len(pts))[:,None], pts])
@@ -67,8 +108,11 @@ def main():
 		pos=[float(p) for p in options.pos_pca.split(',')]
 		pos=np.array(pos).reshape((-1, options.nbasis))
 		print(pos)
-		axis=[0,1]
+		axis=np.arange(options.nbasis)
+		print(axis)
 		rg=pos
+		options.ncls=len(pos)
+		print(f"{options.ncls} classes")
 		
 	elif options.mode=="classify":
 		clust=cluster.KMeans(options.ncls)
@@ -158,16 +202,6 @@ def main():
 				print("model saved to {}".format(tname))
 		
 	onames=[]
-	fname=options.ptclsin
-	lin=load_lst_params(fname)
-		
-	if options.spt:
-		print(len(lin), p2.shape)
-
-		pids=np.array([a["ptcl3d_id"] for a in lin])
-		uid=np.unique(pids)
-		p3did=[np.where(pids==u)[0] for u in uid]
-		print(len(uid), "3D particles")
 
 	lout=[]
 	for j in range(options.ncls):

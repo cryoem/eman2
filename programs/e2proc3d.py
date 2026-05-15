@@ -140,6 +140,7 @@ def main():
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output as a series of numbered single image files", default=False)
 
 	parser.add_option("--fouriermult", type=str, metavar="inputfile", help="multiply given file in Fourier space. experimental.")
+	parser.add_option("--applyxf", type=str, metavar="inputfile", help="apply xf from the xform.align3d header of another map.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
 	append_options = ["clip", "fftclip", "process", "filter", "filtertable",  "meanshrink", "medianshrink", "fouriershrink", "scale", "sym", "multfile", "addfile", "trans", "rot", "align","ralignzphi","alignctod"]
@@ -490,6 +491,11 @@ def main():
 				filt=[xy.get_yatx_smooth(old_div(i,(apix*ny)),1) for i in range(int(ceil(ny*sqrt(3.0)/2)))]
 				if options.verbose>1 : print(filt)
 				data.process_inplace("filter.radialtable",{"table":filt})
+			elif option1 == "applyxf":
+				if options.verbose>1 : print("applyxf -> ",options.applyxf)
+				tmp=EMData(options.applyxf, 0, True)
+				xf=tmp["xform.align3d"]
+				data.process_inplace("xform", {"transform":xf})
 
 			elif option1 == "process":
 				fi = index_d[option1]
