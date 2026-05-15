@@ -21,7 +21,7 @@ def main():
 	parser.add_argument("--startiter", type=int,help="Start from a specified iteration in an existing refinement ", default=0)
 	parser.add_argument("--setsf", type=str,help="Text file containing structure factor for map sharpening. Can be produced during CTF estimation, or from an existing high resolution map.", default=None)
 	parser.add_argument("--tophat", type=str, default="global",help="Options for filtering maps. Run 'e2help.py tophat' for more information. Default=global (local is often a better choice)", guitype='strbox', row=12, col=0, rowspan=1, colspan=1, mode="refinement['global']")
-	parser.add_argument("--gaussrecon",type=int,default=0,help="Use new e3make3d_gauss for 3-D reconstruction with N starting gaussians (1000 typ)")
+	parser.add_argument("--pointrecon",type=int,default=0,help="Use new e3make3d_point for 3-D reconstruction with N starting points (500 typ)")
 	parser.add_argument("--threads", type=int,help="Threads to use during postprocessing of 3d volumes", default=4, guitype='intbox', row=30, col=2, rowspan=1, colspan=1, mode="refinement[4]")
 	parser.add_argument("--mask", default=None, type=str,help="Specify a mask file for each iteration of refinement. Otherwise will generate mask automatically.", guitype='filebox', row=29, col=0, rowspan=1, colspan=3, mode="refinement")
 	parser.add_argument("--compressbits", type=int,help="Bits to keep when writing images. 4 generally safe for raw data. 0-> true lossless (floating point). Default 8", default=8)
@@ -94,13 +94,13 @@ def main():
 			res/=1.5
 
 		for ieo,eo in enumerate(["even","odd"]):
-			if options.gaussrecon>0 :
+			if options.pointrecon>0 :
 				if options.parallel[:6]=="thread" and options.parallel.count(":")==2: 
 					cache=options.parallel.split(":")[2]
 				else: cache="." 
 				# run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --keep {options.keep} --gaussout {options.path}/threed_{i+1:02d}_{eo}.txt --sym c1 --volfiltlp={res*0.75:.2f} --class {ieo} --cachepath {cache} --initgauss {options.gaussrecon}")
 				# if sym!="c1": run(f"e2proc3d.py {options.path}/threed_{i+1:02d}_{eo}.hdf {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --sym {sym}")
-				run(f"e3make3d_gauss.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --keep {options.keep} --gaussout {options.path}/threed_{i+1:02d}_{eo}.txt --sym {sym} --volfiltlp={res*0.75:.2f} --class {ieo} --cachepath {cache} --initgauss {options.gaussrecon}")
+				run(f"e3make3d_point.py {options.path}/ptcls_{i+1:02d}.lst --volout {options.path}/threed_{i+1:02d}_{eo}.hdf:12 --keep {options.keep} --pointout {options.path}/threed_{i+1:02d}_{eo}.txt --sym {sym} --volfiltlp={res*0.75:.2f} --class {ieo} --cachepath {cache} --initpoint {options.pointrecon}")
 			else:
 				run("e2spa_make3d.py --input {pt}/ptcls_{i1:02d}.lst --output {pt}/threed_{i1:02d}_{eo}.hdf --keep {kp} --sym {s} {par} --clsid {eo}".format(pt=options.path, i1=i+1, eo=eo, s=sym, par=m3dpar, kp=options.keep))
 			run("e2proc3d.py {pt}/threed_{i1:02d}_{eo}.hdf {pt}/threed_raw_{eo}.hdf".format(pt=options.path, i1=i+1, eo=eo))

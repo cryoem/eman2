@@ -110,6 +110,9 @@ def cache_path():
 			js=js_open_dict("info/project.json",false)
 			cp=js["global.cache_path"]
 		except: cp="cache/"
+
+	if not os.path.exists(cp): os.makedirs(cp)
+
 	return cp
 
 # Without this, in many countries Qt will set things so "," is used as a decimal
@@ -2334,13 +2337,17 @@ The file begins with
 number<\t>filename<\t>comment
 ...
 """
-	def __init__(self,path,ifexists=False, comments=""):
+	def __init__(self,path,ifexists=False, comments="", parent=""):
 		"""Initialize the object using the .lst file in 'path'. If 'ifexists' is set, an exception will be raised
-if the lst file does not exist."""
+if the lst file does not exist. If set, parent specifies the name of another .lst file with identical particles in it,
+differing only in metadata. This permits sharing cache files. Do not specify both comments and parent, or parent will be lost"""
 
 		self.path=path
 		if len(comments)==0:
-			comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
+			if len(parent)==0:
+				comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
+			else:
+				comments=f"# parent={parent} # This file is in fast LST format. All lines after the next line must have identical character count."
 
 		self.ptr=None
 		if os.path.isfile(path):
@@ -2357,6 +2364,7 @@ if the lst file does not exist."""
 		self.ptr.seek(0)
 		l=self.ptr.readline()
 		if l==0 or l!="#LSX\n" :
+			### UPDATE old LST file to LSX
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
@@ -2395,6 +2403,9 @@ if the lst file does not exist."""
 
 			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
 		self.filecomment=self.ptr.readline().strip()
+		if "parent=" in self.filecomment: self.parent=self.filecomment.split("parent=")[1].split("#")[0]
+		else: self.parent=None
+
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
 			print("ERROR: invalid line length in #LSX file {}".format(self.path))
