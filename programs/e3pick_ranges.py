@@ -455,15 +455,7 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     parser.add_argument("--movie_neg",  type=str, default="", help="Negative tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
     parser.add_argument("--movie_pos",  type=str, default="", help="Positive tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
     parser.add_argument("--basename",   type=str, default="", help="Short label for output files (e.g. CT07).", guitype='strbox', row=3, col=0, rowspan=1, colspan=3)
-    ntave_default = 18
-    _ip = os.path.join("info", "import_params.json")
-    if os.path.isfile(_ip):
-        try:
-            import json as _json
-            ntave_default = _json.load(open(_ip)).get("ntave", 18)
-        except Exception:
-            pass
-    parser.add_argument("--ntave",      type=int, default=ntave_default, help="Frames averaged per thumbnail — auto-loaded from Gain Correction (do not change).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--ntave",      type=int, default=18, help="Frames averaged per thumbnail — auto-loaded from Gain Correction (do not change).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
     parser.add_argument("--avgseq_sa",  type=int, default=60, help="Frames to average per tilt for SA tilt series.", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
     parser.add_argument("--compressbits", type=int, default=6, help="Compression bits for SA tilt series.", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
     parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
@@ -474,6 +466,15 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
 
     thumbnailmovie = args[0] if args else options.thumbnailmovie
     options.thumbnailmovie = thumbnailmovie
+
+    # Override ntave from import_params.json if present
+    import json as _json
+    _ip = os.path.join("info", "import_params.json")
+    if os.path.isfile(_ip):
+        try:
+            options.ntave = _json.load(open(_ip)).get("ntave", options.ntave)
+        except Exception:
+            pass
     options.ntave = options.ntave or 18
 
     print(f"Loading {thumbnailmovie} ...")
