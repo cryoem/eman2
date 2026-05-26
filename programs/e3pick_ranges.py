@@ -397,7 +397,7 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
     parser.add_pos_argument(name="thumbnailmovie", help="Thumbnail HDF stack (neg reversed + pos concatenated).", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
     parser.add_argument("--full_movie", type=str, default="", help="Full-resolution movie for avgseq inference (optional).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=1, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--avgseq", type=int, default=0, help="Thumbnail averaging factor (0 = infer from full_movie, else 1).", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--avgseq", type=int, default=18, help="Thumbnail averaging factor.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
     parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1)
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
     (options, args) = parser.parse_args()
@@ -408,7 +408,7 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     full_movie = options.full_movie if options.full_movie else None
 
     avgseq = options.avgseq if options.avgseq else None
-    if avgseq is None and full_movie:
+    if avgseq is None and full_movie:  # only infer if user explicitly passed 0
         n_thumb = hdf_nimg(thumbnailmovie)
         n_full  = hdf_nimg(full_movie)
         avgseq = round(n_full / n_thumb)
