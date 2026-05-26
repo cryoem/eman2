@@ -140,7 +140,7 @@ performed automatically by e3pick_ranges.py after range selection.
     parser = EMArgumentParser(usage=usage, version=EMANVERSION)
 
     parser.add_argument("--basename",     type=str,  default="",   help="Short label for output files (e.g. CT07). Must match what was used in Pick Ranges.", guitype='strbox', row=0, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--avgseq",       type=int,  default=18,   help="Frames averaged per tilt (must match Pick Ranges).", guitype='intbox', row=1, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--avgseq_sa",     type=int,  default=60,   help="Frames averaged per tilt in SA series (must match Pick Ranges).", guitype='intbox', row=1, col=0, rowspan=1, colspan=1)
     parser.add_argument("--tiltRange",    type=int,  default=120,  help="Total tilt range in degrees.", guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
     parser.add_argument("--compressbits", type=int,  default=6,    help="Compression bits for output.", guitype='intbox', row=1, col=2, rowspan=1, colspan=1)
     parser.add_argument("--threads",      type=int,  default=12,   help="CPU threads for e2tomogram.py --stage2prep.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
@@ -165,7 +165,7 @@ performed automatically by e3pick_ranges.py after range selection.
     # Compute all output paths upfront from basename + avgseq
     bn           = options.basename
     lst_path     = os.path.join("sets", f"{bn}_combined.lst")
-    sa_path      = os.path.join("tiltseries", f"{bn}__SA{options.avgseq}_Sh4.hdf")
+    sa_path      = os.path.join("tiltseries", f"{bn}__SA{options.avgseq_sa}_Sh4.hdf")
     fullsh4_path = _fullsh4_path(lst_path, bn)
     tomo_json    = _tomogram_json(sa_path)
     interp_json  = _interp_json(fullsh4_path, bn)

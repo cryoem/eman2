@@ -77,7 +77,7 @@ def run_steps_1_2(options):
     movie_neg = os.path.abspath(options.movie_neg)
     movie_pos = os.path.abspath(options.movie_pos)
     bn        = options.basename or None
-    avgseq    = options.avgseq
+    avgseq    = options.avgseq_sa
     cbits     = options.compressbits
 
     json_path = os.path.join("info", "pick_ranges.json")
@@ -137,7 +137,7 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         self.args = args
         self.done_clicked = False
         self.unidirectional = args.unidirectional
-        self.avgseq = args.avgseq or 1
+        self.avgseq = args.ntave or 1
         self.idx = 0
         self._markers_set = set()
         n = len(frames)
@@ -455,8 +455,9 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     parser.add_argument("--movie_neg",  type=str, default="", help="Negative tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
     parser.add_argument("--movie_pos",  type=str, default="", help="Positive tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
     parser.add_argument("--basename",   type=str, default="", help="Short label for output files (e.g. CT07).", guitype='strbox', row=3, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--avgseq",     type=int, default=18, help="Thumbnail averaging factor.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--compressbits", type=int, default=6, help="Compression bits for SA tilt series.", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--ntave",      type=int, default=18, help="Frames averaged per thumbnail (must match Gain Correction --ntave).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--avgseq_sa",  type=int, default=60, help="Frames to average per tilt for SA tilt series.", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--compressbits", type=int, default=6, help="Compression bits for SA tilt series.", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
     parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
     (options, args) = parser.parse_args()
@@ -465,7 +466,7 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
 
     thumbnailmovie = args[0] if args else options.thumbnailmovie
     options.thumbnailmovie = thumbnailmovie
-    options.avgseq = options.avgseq or 18
+    options.ntave = options.ntave or 18
 
     print(f"Loading {thumbnailmovie} ...")
     frames = load_stack(thumbnailmovie)
