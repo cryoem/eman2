@@ -421,6 +421,12 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
         chunkframes=options.chunk,
     )
 
+    # Record import parameters for downstream steps
+    import json as _json
+    os.makedirs("info", exist_ok=True)
+    with open(os.path.join("info", "import_params.json"), "w") as _f:
+        _json.dump({"ntave": options.ntave, "apix": options.apix}, _f, indent=2)
+
     print("\nAll done.")
     ts()
 
