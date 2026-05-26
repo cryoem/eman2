@@ -348,11 +348,11 @@ Supply movies as interleaved neg/pos pairs: neg1 pos1 neg2 pos2 ...
 """
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
     parser.add_pos_argument(name="movies", help="Input movie HDF files (interleaved neg/pos pairs).", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=True)", row=0, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--gain", type=str, default="", help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--gain", type=str, default="GainFiducial.hdf", help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
     parser.add_argument("--outdir", type=str, default=".", help="Project output directory.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=2, col=0, rowspan=1, colspan=3)
     parser.add_header(name="apixhdr", help="", title=u"Å/pixel", row=3, col=0, rowspan=1, colspan=1)
     parser.add_argument("--apix", type=float, default=3.714, help=u"Å/pixel — Angstroms per pixel.", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--meanshrink", type=int, default=4, help="Spatial shrink factor (1, 2, or 4; default: 4).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--meanshrink", type=int, default=1, help="Spatial shrink factor (1, 2, or 4; default: 1).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
     parser.add_argument("--compressbits", type=int, default=4, help="Compression bits for movie copies (default: 4).", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
     parser.add_argument("--ntave", type=int, default=18, help="Rolling time-average window size (default: 18).", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
     parser.add_argument("--chunk", type=int, default=50, help="I/O chunk size for processing (default: 50).")

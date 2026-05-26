@@ -38,7 +38,7 @@ Continuous-tilt gain reference utilities.
         # importgain: run e2proc2d.py to copy and set apix
         dest_dir = options.dest if options.dest else "."
         os.makedirs(dest_dir, exist_ok=True)
-        dst = os.path.join(dest_dir, os.path.basename(options.gainsrc))
+        dst = os.path.join(dest_dir, "GainFiducial.hdf")
         cmd = f"e2proc2d.py {options.gainsrc} {dst} --apix={options.apix} --compressbits=4"
         print(cmd)
         ret = os.system(cmd)
