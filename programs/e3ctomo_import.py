@@ -341,29 +341,33 @@ def main():
     EMData.write_images_c    = staticmethod(_c_write_images)
 
     progname = os.path.basename(sys.argv[0])
-    usage = """e3ctomo_import.py movies [options]
+    usage = """e3ctomo_import.py --movie_neg <neg> --movie_pos <pos> [options]
 
 Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-align movies.
-Supply movies as interleaved neg/pos pairs: neg1 pos1 neg2 pos2 ...
 """
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
-    parser.add_pos_argument(name="movies", help="Input movie HDF files (interleaved neg/pos pairs).", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=True)", row=0, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--gain", type=str, default="GainFiducial.hdf", help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--outdir", type=str, default=".", help="Project output directory.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=2, col=0, rowspan=1, colspan=3)
-    parser.add_header(name="apixhdr", help="", title=u"Å/pixel", row=3, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--apix", type=float, default=3.714, help=u"Å/pixel — Angstroms per pixel.", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--meanshrink", type=int, default=1, help="Spatial shrink factor (1, 2, or 4; default: 1).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--compressbits", type=int, default=4, help="Compression bits for movie copies (default: 4).", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--ntave", type=int, default=18, help="Rolling time-average window size (default: 18).", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--movie_neg", type=str, default="", help="Negative tilt movie (gain-corrected HDF).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--movie_pos", type=str, default="", help="Positive tilt movie (gain-corrected HDF).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--gain", type=str, default="GainFiducial.hdf", help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--outdir", type=str, default=".", help="Project output directory.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=3)
+    parser.add_header(name="apixhdr", help="", title=u"Å/pixel", row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--apix", type=float, default=3.714, help=u"Å/pixel — Angstroms per pixel.", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--meanshrink", type=int, default=1, help="Spatial shrink factor (1, 2, or 4; default: 1).", guitype='intbox', row=5, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--compressbits", type=int, default=4, help="Compression bits for movie copies (default: 4).", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--ntave", type=int, default=18, help="Rolling time-average window size (default: 18).", guitype='intbox', row=5, col=2, rowspan=1, colspan=1)
     parser.add_argument("--chunk", type=int, default=50, help="I/O chunk size for processing (default: 50).")
-    parser.add_argument("--skip_copy", default=False, help="Skip step i — movies already present in outdir/movies/.", action="store_true", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--skip_thumbs", default=False, help="Skip step iii — thumbnail creation.", action="store_true", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--skip_copy", default=False, help="Skip step i — movies already present in outdir/movies/.", action="store_true", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--skip_thumbs", default=False, help="Skip step iii — thumbnail creation.", action="store_true", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1)
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
     (options, args) = parser.parse_args()
 
     logid = EMAN2.E2init(sys.argv, options.ppid)
 
-    input_movies = [os.path.abspath(m) for m in args] if args else []
+    if not options.movie_neg or not options.movie_pos:
+        print("ERROR: --movie_neg and --movie_pos are both required.")
+        sys.exit(1)
+
+    input_movies = [os.path.abspath(options.movie_neg), os.path.abspath(options.movie_pos)]
     gain_file    = os.path.abspath(options.gain)
     outdir       = os.path.abspath(options.outdir)
 
