@@ -82,6 +82,7 @@ def main():
 	parser.add_argument("--verbose","-v", type=int,help="Verbose", default=0)
 	parser.add_argument("--noali", action="store_true",help="skip initial alignment", default=False)
 	parser.add_argument("--dryrun", action="store_true",help="skip final reconstruction", default=False)
+	parser.add_argument("--stage2prep", action="store_true",help="after reconstruction, write tlt_params/pks/ali_loss and all options needed for stage-2 reconstruction to <basename>_recon_tomo_final.json", default=False)
 	parser.add_argument("--patchtrack", type=int, help="use patch tracking before landmark based alignment. input 0/1/2 as the number of patch tracking iterations.", default=-1,guitype='intbox',row=16, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--posz", action="store_true",help="auto positioning along z axis", default=False,guitype='boolbox',row=14, col=0, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--xdrift", action="store_true",help="apply extra correction for drifting along x axis", default=False,guitype='boolbox',row=13, col=0, rowspan=1, colspan=1,mode="easy")
@@ -254,7 +255,6 @@ def main():
 			if options.compressbits<0: m.write_image(inppath, i)
 			else: m.write_compressed(inppath, i, options.compressbits, nooutliers=True)
 	
-	options.trans_coef=[]
 	if options.load:
 		#### loading parameters from json file
 		jsname=info_name(options.inputname)
@@ -298,10 +298,6 @@ def main():
 		
 	elif options.loadfile!=None:
 		tpm=np.loadtxt(options.loadfile)[:,1:]
-		print(tpm.shape)
-		if tpm.shape[1]>5:
-			options.trans_coef=tpm[:,5:].reshape((-1,2,2)).copy()
-			print("found local refinement parameters...")
 		ttparams=tpm.copy()
 		tlts=ttparams[:,3].copy()
 		jsname=info_name(options.inputname)
@@ -627,7 +623,7 @@ def main():
 	#### alignment finish. now save output
 	if options.dryrun:
 		print("Skipping final tomogram generation...")
-		
+
 	else:
 		
 		if options.outsize=="2k":
@@ -678,12 +674,44 @@ def main():
 	tpm=ttparams.copy()
 	#tpm[:,:2]*=options.binfac
 	js=js_open_dict(info_name(options.basename))
-	js["tlt_params"]=tpm.tolist()
+	#js["tlt_params"]=tpm.tolist()
+	js["tlt_params"]=tpm
 	js["tlt_file"]=options.inputname
 	js["ali_loss"]=loss0.tolist()
 	js["apix_unbin"]=options.apix_init
 	if len(boxes3d)>0: js["boxes_3d"]=boxes3d
 	js.close()
+
+	if options.stage2prep:
+		ttparams_save = ttparams.tolist() if isinstance(ttparams, np.ndarray) else ttparams
+		pks_save      = pks.tolist()      if isinstance(pks,      np.ndarray) else pks
+		np.save(options.basename + "_ttparams.npy", np.array(ttparams))
+		if len(pks) > 0:
+			np.save(options.basename + "_pks.npy", np.array(pks))
+		required_options = {
+			"tlt_params":  ttparams_save,
+			"pks":         pks_save,
+			"ali_loss":    loss0.tolist(),
+			"apix_init":   options.apix_init,
+			"autoclipxy":  options.autoclipxy,
+			"basename":    options.basename,
+			"clipz":       options.clipz,
+			"compressbits":options.compressbits,
+			"ctf":         options.ctf,
+			"extrapad":    options.extrapad,
+			"filterto":    options.filterto,
+			"inputname":   options.inputname,
+			"moretile":    options.moretile,
+			"normslice":   options.normslice,
+			"reconmode":   options.reconmode,
+			"threads":     options.threads,
+			"tltkeep":     options.tltkeep,
+		}
+		os.makedirs("info", exist_ok=True)
+		recon_options_FN = os.path.join("info", options.basename + "_recon_tomo_final.json")
+		with open(recon_options_FN, "w") as f:
+			json.dump(required_options, f, indent=2)
+		print("stage2prep: wrote {}, ttparams.npy, pks.npy".format(recon_options_FN))
 	
 	dtime=time.time()-time0
 	print("Finished. Total time: {:.1f}s".format(dtime))
@@ -1431,12 +1459,16 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		scr=(scr1[1:]+scr1[:-1])/2
 		scr2=np.max(data_conj2, axis=(1,2))
 		
-		badi=np.where(scr2>scr)[0]+1
-		kp=np.ones(len(data_fft), dtype=bool)
-		if len(badi)>0:
-			kp[badi]=False
-			print("skip jumping tilts: ", badi)
-			
+		if 0:  #PRB commented this out
+			badi=np.where(scr2>scr)[0]+1
+			kp=np.ones(len(data_fft), dtype=bool)
+			if len(badi)>0:
+				kp[badi]=False
+				print("skip jumping tilts: ", badi)
+
+		badi = np.array([], dtype=int)   # TEMP: do not skip anything
+		kp = np.ones(len(data_fft), dtype=bool)
+
 		data_conf=data_fft[kp]
 		data_conj=data_conf[:-1]*np.conj(data_conf[1:])
 		data_conj=np.fft.ifftshift(data_conj, axes=(1,2))
@@ -1716,7 +1748,8 @@ def make_tile(args):
 #### this is faster and has less artifacts. but takes a lot of memory (~4x the tomogram)
 def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	time0=time.time()
-	num=len(imgs)
+	num=len(imgs); # OK   PRB
+	#img0 = EMData(imgs[0][0], imgs[0][1])
 	scale=imgs[0]["apix_x"]/options.apix_init
 	imgsz=min(imgs[0]["nx"],imgs[0]["ny"])
 	if imgsz<=1024*1.1:
@@ -1726,7 +1759,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	else:
 		b=4
 		#print("tiling only support for 1k and 2k tomograms...")
-		#return make_tomogram(imgs, tltpm, options, errtlt=errtlt)
+		#return make_tomogram(imgs, tlxtpm, options, errtlt=errtlt)
 	
 	print("Making bin{:d} tomogram by tiling...".format(int(np.round(scale))))
 	tpm=tltpm.copy()
@@ -1810,22 +1843,11 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 			yrange=range(-nstepy+stepx%2,nstepy+1,2)
 		for stepy in yrange:
 			tiles=[]
-			if len(options.trans_coef)>0:
-				pp=np.array([stepx, stepy])*step/imgsz
-				ppx=np.dot(pp, options.trans_coef)
-				ppx/=scale
-				#print(stepx, stepy, pp)
-			else:
-				ppx=np.zeros((num, 2))
-				
 			for i in range(num):
 				if i in nrange:
-					t=tpm[i].copy()
-					#t[:2]*=0
+					t=tpm[i]
 					pos=[stepx*step,stepy*step,0]
-					pxf0=get_xf_pos(t, pos)
-					pxf=(pxf0+ppx[i]).tolist()
-					#print('    ',i, pxf0, pxf)
+					pxf=get_xf_pos(t, pos)
 					img=imgs[i]
 					m=img.get_clip(Region(img["nx"]//2-pad//2+pxf[0],img["ny"]//2-pad//2+pxf[1], pad, pad), fill=0)
 					if options.ctf!=None:
@@ -1888,10 +1910,9 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 		if not jsd.empty():
 			stepx, stepy, threed=jsd.get()
 			#threed["pos"]=[stepx, stepy]
+			threed.mult(msk)
 			if options.normslice:
 				threed.mult(maskz)
-				
-			threed.mult(msk)
 			#### insert the cubes to corresponding tomograms
 			if options.moretile:
 				full3d.insert_scaled_sum(

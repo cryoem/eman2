@@ -5675,8 +5675,8 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		static const string NAME;
 	};
 
-	/**Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.
-	 */
+	/**
+	// Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.
 	class MeanZeroEdgeProcessor:public Processor
 	{
 	  public:
@@ -5696,6 +5696,34 @@ width is also anisotropic and relative to the radii, with 1 being equal to the r
 		{
 			return "Fill zeroes at edges with nearest horizontal/vertical value damped towards Mean2.";
 		}
+
+		static const string NAME;
+	};
+	**/
+
+
+	/** Fill zero-valued image borders by tapering from the nearest interior
+	*  horizontal/vertical non-zero pixel.
+	*
+	*  Modes (param "mode"):
+	*    - "edgelinearzero" (default): linear blend from the first interior non-zero
+	*      value to 0.0 across the zero run to the edge (preserves the boundary pixel).
+	*    - "edgetapermean": legacy behavior; exponential (0.9) decay toward mean_nonzero.
+	*/
+	class MeanZeroEdgeProcessor : public Processor
+	{
+	public:
+		void process_inplace(EMData * image);
+
+		string get_name() const { return NAME; }
+
+		static Processor *NEW() { return new MeanZeroEdgeProcessor(); }
+
+		// Short human-readable description
+		string get_desc() const;
+
+		// Advertise parameters (so {"mode": "..."} works from Python/GUI)
+		TypeDict get_param_types() const;
 
 		static const string NAME;
 	};

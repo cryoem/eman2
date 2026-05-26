@@ -4511,7 +4511,8 @@ void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 
 	// Original code uses mean_nonzero; still needed for the legacy mode
 	Dict imgdict = image->get_attr_dict();
-	const float mean_nonzero = imgdict.get("mean_nonzero");
+	//const float mean_nonzero = imgdict.get("mean_nonzero");
+	const float mean_nonzero = static_cast<float>(imgdict["mean"]) * 1.0f;
 
 	// NEW: read processor parameter "mode" with default = "edgelinearzero"
 	string mode = "edgelinearzero";

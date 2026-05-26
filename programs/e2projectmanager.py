@@ -207,6 +207,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.modeCB.addItem("SPR")
 		self.modeCB.addItem("Tomo")
 		self.modeCB.addItem("SPT (Legacy)")
+		self.modeCB.addItem("Continuous Tomo")
 
 		box.addWidget(workflowcontrollabel)
 		box.addWidget(self.modeCB)
@@ -288,6 +289,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/spr.json', 'Single Particle Refinement'))
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/tomo.json', 'Tomography'))
 		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/tomo_legacy.json', 'SPT (Legacy)'))
+		self.tree_stacked_widget.addWidget(self.makeTreeWidget(e2getinstalldir()+'/lib/pmconfig/ctomo.json', 'Continuous Tomography'))
 
 		return self.tree_stacked_widget
 
@@ -615,6 +617,8 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			if "WIZARD" in child: qtreewidget.setWizardFile(child["WIZARD"])
 			# Optional expertmode, to enable expert mode GUI widgets
 			if "EXPERT" in child:  qtreewidget.setExpertMode(child["EXPERT"])
+			# Optional command template, overrides the generated command string
+			if "CMDTEMPLATE" in child: qtreewidget.setCmdTemplate(child["CMDTEMPLATE"])
 			if len(child["CHILDREN"])>0 : self._add_children(child, qtreewidget)
 			widgetitem.addChild(qtreewidget)
 
@@ -656,6 +660,8 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			if "WIZARD" in toplevel: qtreewidget.setWizardFile(toplevel["WIZARD"])
 			# Optional expertmode, to enable expert mode GUI widgets
 			if "EXPERT" in toplevel:  qtreewidget.setExpertMode(toplevel["EXPERT"])
+			# Optional command template
+			if "CMDTEMPLATE" in toplevel: qtreewidget.setCmdTemplate(toplevel["CMDTEMPLATE"])
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 
@@ -675,7 +681,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 	def _tree_widget_click(self, item, col):
 		# Display the program GUI
 		if item.getProgram():
-			self._set_GUI(item.getProgram(), item.getMode())
+			self._set_GUI(item.getProgram(), item.getMode(), item.getCmdTemplate())
 			self.updateProject()
 		elif item.getTable():
 			# Only one table is allowed to be displayed at a time
@@ -687,7 +693,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self.clearE2Interface()
 
 
-	def _set_GUI(self, program, mode):
+	def _set_GUI(self, program, mode, cmdtemplate=None):
 		"""
 		Set the current GUI widget
 		"""
@@ -708,9 +714,38 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self.stackedWidgetHash[program] = self.gui_stacked_widget.count()
 			guioptions = self._read_e2program(programfile, mode)
 			# Now actually make the widget
-			widget = PMProgramWidget(guioptions, programfile, self, mode)
+			widget = PMProgramWidget(guioptions, programfile, self, mode, cmdtemplate)
 			self.gui_stacked_widget.addWidget(widget)
 			self.gui_stacked_widget.setCurrentIndex(self.stackedWidgetHash[program])
+
+		if programfile == "e3ctomo_reconstruct.py":
+			self._autofill_reconstruct_ranges()
+
+	def _autofill_reconstruct_ranges(self):
+		"""Populate e3ctomo_reconstruct.py frame-range fields from info/pick_ranges.json."""
+		import json
+		json_path = os.path.join(self.pm_cwd, "info", "pick_ranges.json")
+		if not os.path.isfile(json_path):
+			return
+		try:
+			with open(json_path) as f:
+				d = json.load(f)
+		except Exception:
+			return
+		idx = self.gui_stacked_widget.currentIndex()
+		pw = self.gui_stacked_widget.widget(idx)
+		if pw is None:
+			return
+		wh = pw.guiwidget.widgethash
+		mapping = {
+			"startTltNeg": d.get("neg_start"),
+			"endTltNeg":   d.get("neg_end"),
+			"startTltPos": d.get("pos_start"),
+			"endTltPos":   d.get("pos_end"),
+		}
+		for name, val in mapping.items():
+			if val is not None and name in wh:
+				wh[name].setValue(val, quiet=True)
 
 	def _read_e2program(self, e2program, mode):
 		"""
@@ -1678,13 +1713,13 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 	"""
 	Creates a program interface for each e2 program, for each mode, etc. This is a tab widget and there are three tabs, a GUI tab, a command line tab and a help tab
 	"""
-	def __init__(self, options, program, pm, mode):
+	def __init__(self, options, program, pm, mode, cmdtemplate=None):
 		QtWidgets.QTabWidget.__init__(self)
 		self.pm = weakref.ref(pm)
 		self.setMinimumHeight(210) # Size of the tool bar
 
 		# Add GUI tab
-		self.guiwidget = PMGUIWidget(options, program, pm, mode)
+		self.guiwidget = PMGUIWidget(options, program, pm, mode, cmdtemplate)
 		self.addTab(self.guiwidget, "GUI")
 
 		# Add command tab
@@ -1731,7 +1766,8 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 			else:
 				self.guitexteditbox.setHtml(self.guiwidget.getCommand())
 		if idx == 0 and self.previoustab == 1:
-			self.guiwidget.updateGUIFromCmd(str(self.guitexteditbox.toPlainText()))
+			if not self.guiwidget.cmdtemplate:
+				self.guiwidget.updateGUIFromCmd(str(self.guitexteditbox.toPlainText()))
 
 		self.previoustab = idx
 
@@ -1741,7 +1777,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 	When the user clicks on a leaf node in the workflow tree an instance of this class is created, if it doesn't already exist, and added to the stackedwidget. If it
 	already exists, then it is rendered visible.
 	"""
-	def __init__(self, options, program, pm, mode):
+	def __init__(self, options, program, pm, mode, cmdtemplate=None):
 		QtWidgets.QScrollArea.__init__(self)
 		self.errorstate = False
 		# I need both an ordered list and an associative means of accessing the widgets
@@ -1752,6 +1788,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		self.db = js_open_dict("{}/info/pm/{}.json".format(str(self.cwd),self.program))
 		self.pm = weakref.ref(pm)
 		self.mode = mode
+		self.cmdtemplate = cmdtemplate
 		if options is None: options={}
 
 		# Loop through options (a list of dicts) and generate the GUI widget
@@ -1943,7 +1980,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 		if len(posargs) == len(args):
 			for posarg in posargs:
 				self._setValueJournaling(posarg, (args.pop())[1:])
-		else:
+		elif posargs:
 			argsstring = ''.join(str(n ) for n in args)
 			self._setValueJournaling(posargs[0], argsstring)
 
@@ -1958,19 +1995,29 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 	def getCommand(self):
 		""" Loop and check for errors and set the DB. If errors are encountered, then return None """
 		self.errorstate = False
-		args = self.program
 		for widget in self.widgetlist:
-			# If this is not a value holding widget continue
 			if widget.getArgument() == None: continue
-			# Check for errors before we launch script
 			if widget.getErrorMessage():
 				self.pm().statusbar.setMessage(self.getErrorMessage(),"color:red;")
 				self.errorstate = True
 				return None
-			# Save the value
 			self.db[widget.getName()+widget.getMode()] = widget.getValue()
-			args += " "+widget.getArgument()
 
+		if self.cmdtemplate:
+			vals = {}
+			for name, widget in self.widgethash.items():
+				v = widget.getValue()
+				vals[name] = str(v) if v is not None else ''
+			vals['gainsrcname'] = os.path.basename(vals['gainsrc']) if vals.get('gainsrc') else ''
+			try:
+				return self.cmdtemplate.format(**vals)
+			except (KeyError, ValueError, AttributeError):
+				pass
+
+		args = self.program
+		for widget in self.widgetlist:
+			if widget.getArgument() == None: continue
+			args += " "+widget.getArgument()
 		return args
 
 	def getErrorMessage(self):
@@ -1999,6 +2046,10 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 		self.wikipage = None
 		self.wizardfile = None
 		self.exmodestate = False
+		self.cmdtemplate = None
+
+	def setCmdTemplate(self, t): self.cmdtemplate = t
+	def getCmdTemplate(self): return self.cmdtemplate
 
 	def setProgram(self, program):
 		""" The name of the program the tree widget is supposed to run """

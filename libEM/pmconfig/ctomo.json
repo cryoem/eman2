@@ -1,0 +1,49 @@
+[
+  {
+    "NAME": "Import Data",
+    "ICON": "tomo_raw",
+    "CHILDREN": [
+      {
+        "NAME": "Import Gain File",
+        "PROGRAM": "e3ctomo_gain.py",
+        "MODE": "importgain",
+        "CMDTEMPLATE": "e2proc2d.py {gainsrc} {dest}/{gainsrcname} --apix={apix} --compressbits=4",
+        "CHILDREN": []
+      },
+      {
+        "NAME": "Create Gain File",
+        "PROGRAM": "e3ctomo_gain.py",
+        "MODE": "creategain",
+        "CMDTEMPLATE": "e3movie.py {movies} --est_gain={dest}/{gainname}",
+        "CHILDREN": []
+      }
+    ]
+  },
+  {
+    "NAME": "Gain Correction",
+    "ICON": "tomo_recon",
+    "CHILDREN": [
+      {
+        "NAME": "Perform Gain Correction",
+        "PROGRAM": "e3ctomo_import.py",
+        "CHILDREN": []
+      }
+    ]
+  },
+  {
+    "NAME": "Reconstruction",
+    "ICON": "tomo_spt",
+    "CHILDREN": [
+      {
+        "NAME": "Pick Ranges",
+        "PROGRAM": "e3pick_ranges.py",
+        "CHILDREN": []
+      },
+      {
+        "NAME": "Do Reconstruction",
+        "PROGRAM": "e3ctomo_reconstruct.py",
+        "CHILDREN": []
+      }
+    ]
+  }
+]
