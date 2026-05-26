@@ -157,8 +157,18 @@ performed automatically by e3pick_ranges.py after range selection.
 
     logid = E2init(sys.argv, options.ppid)
 
+    # Auto-load basename from pick_ranges.json if not supplied
     if not options.basename:
-        print("Error: --basename is required.")
+        _pr = os.path.join("info", "pick_ranges.json")
+        if os.path.isfile(_pr):
+            try:
+                with open(_pr) as _f:
+                    options.basename = json.load(_f).get("basename", "")
+            except Exception:
+                pass
+
+    if not options.basename:
+        print("Error: --basename is required (or run Pick Ranges first).")
         E2end(logid)
         return
 

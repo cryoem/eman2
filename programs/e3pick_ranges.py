@@ -410,10 +410,12 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         a = self.avgseq
         if self.unidirectional:
             data = {"unidirectional": True,
+                    "basename": self.args.basename,
                     "start": self.start * a,
                     "end":   self.end   * a}
         else:
             data = {"unidirectional": False,
+                    "basename":  self.args.basename,
                     "neg_start": self.neg_start * a,
                     "neg_end":   self.neg_end   * a,
                     "pos_start": self.pos_start * a,
