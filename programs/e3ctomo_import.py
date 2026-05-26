@@ -34,7 +34,7 @@ import glob
 import datetime
 import numpy as np
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
 # ── EMAN2/3 double-patch fix ──────────────────────────────────────────────────
 import EMAN2_cppwrap as _cppwrap
