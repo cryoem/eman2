@@ -48,6 +48,80 @@ def hdf_nimg(path):
         return len(f['MDF']['images'])
 
 
+# ---------------------------------------------------------------------------
+# Path helpers (mirrors e3ctomo_reconstruct.py)
+# ---------------------------------------------------------------------------
+
+def _lst_path(movie_neg, movie_pos, basename=None):
+    if basename:
+        return os.path.join("sets", f"{basename}_combined.lst")
+    neg_base = os.path.splitext(os.path.basename(movie_neg))[0]
+    pos_base = os.path.splitext(os.path.basename(movie_pos))[0]
+    return os.path.join("sets", f"{neg_base}__{pos_base}__combined.lst")
+
+def _sa_path(lst_path, avgseq, basename=None):
+    if basename:
+        return os.path.join("tiltseries", f"{basename}__SA{avgseq}_Sh4.hdf")
+    stem = os.path.splitext(os.path.basename(lst_path))[0]
+    return os.path.join("tiltseries", f"{stem}__SA{avgseq}_Sh4.hdf")
+
+
+# ---------------------------------------------------------------------------
+# Post-done pipeline: steps 1 and 2
+# ---------------------------------------------------------------------------
+
+def run_steps_1_2(options):
+    """Build combined LST (step 1) and SA tilt series (step 2)."""
+    import json
+
+    movie_neg = os.path.abspath(options.movie_neg)
+    movie_pos = os.path.abspath(options.movie_pos)
+    bn        = options.basename or None
+    avgseq    = options.avgseq
+    cbits     = options.compressbits
+
+    json_path = os.path.join("info", "pick_ranges.json")
+    with open(json_path) as f:
+        d = json.load(f)
+    neg_start = d.get("neg_start", 0)
+    neg_end   = d.get("neg_end",   9999)
+    pos_start = d.get("pos_start", 0)
+    pos_end   = d.get("pos_end",   9999)
+
+    lst  = _lst_path(movie_neg, movie_pos, bn)
+    sa   = _sa_path(lst, avgseq, bn)
+
+    # Step 1 — combined LST
+    print("\n=== Step 1 — build combined LST ===")
+    n_neg = EMUtil.get_image_count(movie_neg)
+    os.makedirs("sets", exist_ok=True)
+    neg_start = max(0, neg_start)
+    neg_end   = min(n_neg - 1, neg_end)
+    pos_end_max = n_neg + EMUtil.get_image_count(movie_pos) - 1
+    pos_start = max(n_neg, pos_start)
+    pos_end   = min(pos_end_max, pos_end)
+    with open(lst, "w") as f:
+        f.write("#LST\n")
+        for i in range(neg_start, neg_end + 1):
+            f.write(f"{n_neg - 1 - i}\t{movie_neg}\n")
+        for i in range(pos_start, pos_end + 1):
+            f.write(f"{i - n_neg}\t{movie_pos}\n")
+    print(f"  Wrote {lst}")
+    print(f"  Neg frames: {neg_end - neg_start + 1}  "
+          f"(combined {neg_start}–{neg_end} → orig neg {n_neg-1-neg_start}–{n_neg-1-neg_end})")
+    print(f"  Pos frames: {pos_end - pos_start + 1}  "
+          f"(pos movie {pos_start-n_neg}–{pos_end-n_neg})")
+
+    # Step 2 — sub-average + shrink
+    print(f"\n=== Step 2 — sub-average + shrink ===")
+    os.makedirs("tiltseries", exist_ok=True)
+    cmd = (f"e2proc2d.py {lst} {sa}:{cbits} --avgseq={avgseq} --meanshrink=4")
+    print(cmd)
+    ret = os.system(cmd)
+    if ret != 0:
+        print(f"Warning: e2proc2d.py exited with code {ret}")
+
+
 def load_stack(path):
     n = hdf_nimg(path)
     print(f"  Loading {n} frames from {os.path.basename(path)} ...")
@@ -61,6 +135,7 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.frames = frames
         self.args = args
+        self.done_clicked = False
         self.unidirectional = args.unidirectional
         self.avgseq = args.avgseq or 1
         self.idx = 0
@@ -289,6 +364,7 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         self._update_display()
 
     def _done(self):
+        self.done_clicked = True
         self._print_results()
         QtWidgets.QApplication.quit()
 
@@ -349,23 +425,12 @@ class PickRangesWindow(QtWidgets.QMainWindow):
     def _print_results(self):
         self._write_json()
         a = self.avgseq
-        movie = self.args.full_movie or \
-                os.path.basename(self.args.thumbnailmovie).replace('_thumb', '')
-
         if self.unidirectional:
             s, e = self.start, self.end
             print("\n=== Selected ranges (thumbnail frames) ===")
             print(f"  start: {s}  end: {e}  (avgseq={a})")
             print("\n=== Converted to full-stack frames ===")
             print(f"  start: {s*a}  end: {e*a}")
-            print("\n=== Command ===")
-            print(
-                f"e3ContinuousTilt.py \\\n"
-                f"    --movie {movie} \\\n"
-                f"    --gainfile=GainFiducial.hdf \\\n"
-                f"    --tiltRange=120 --compressbits=6 \\\n"
-                f"    --startTlt={s*a} --endTlt={e*a}"
-            )
         else:
             ns, ne = self.neg_start, self.neg_end
             ps, pe = self.pos_start, self.pos_end
@@ -375,15 +440,6 @@ class PickRangesWindow(QtWidgets.QMainWindow):
             print("\n=== Converted to full-stack frames ===")
             print(f"  neg: {ns*a} → {ne*a}")
             print(f"  pos: {ps*a} → {pe*a}")
-            print("\n=== Command ===")
-            print(
-                f"e3ContinuousTilt.py \\\n"
-                f"    --movie {movie} \\\n"
-                f"    --gainfile=GainFiducial.hdf \\\n"
-                f"    --tiltRange=120 --compressbits=6 \\\n"
-                f"    --startTltNeg={ns*a} --endTltNeg={ne*a} \\\n"
-                f"    --startTltPos={ps*a} --endTltPos={pe*a}"
-            )
 
 
 def main():
@@ -396,27 +452,20 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
 """
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
     parser.add_pos_argument(name="thumbnailmovie", help="Thumbnail HDF stack (neg reversed + pos concatenated).", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--full_movie", type=str, default="", help="Full-resolution movie for avgseq inference (optional).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=1, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--avgseq", type=int, default=18, help="Thumbnail averaging factor.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--movie_neg",  type=str, default="", help="Negative tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--movie_pos",  type=str, default="", help="Positive tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--basename",   type=str, default="", help="Short label for output files (e.g. CT07).", guitype='strbox', row=3, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--avgseq",     type=int, default=18, help="Thumbnail averaging factor.", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--compressbits", type=int, default=6, help="Compression bits for SA tilt series.", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
     (options, args) = parser.parse_args()
 
     logid = EMAN2.E2init(sys.argv, options.ppid)
 
     thumbnailmovie = args[0] if args else options.thumbnailmovie
-    full_movie = options.full_movie if options.full_movie else None
-
-    avgseq = options.avgseq if options.avgseq else None
-    if avgseq is None and full_movie:  # only infer if user explicitly passed 0
-        n_thumb = hdf_nimg(thumbnailmovie)
-        n_full  = hdf_nimg(full_movie)
-        avgseq = round(n_full / n_thumb)
-        print(f"  avgseq inferred: {n_full} full / {n_thumb} thumb = {avgseq}")
-
     options.thumbnailmovie = thumbnailmovie
-    options.full_movie = full_movie
-    options.avgseq = avgseq or 1
+    options.avgseq = options.avgseq or 18
 
     print(f"Loading {thumbnailmovie} ...")
     frames = load_stack(thumbnailmovie)
@@ -425,6 +474,11 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     win = PickRangesWindow(frames, options)
     win.show()
     app.exec_()
+
+    if win.done_clicked and options.movie_neg and options.movie_pos:
+        run_steps_1_2(options)
+    elif win.done_clicked and not (options.movie_neg and options.movie_pos):
+        print("Note: --movie_neg/--movie_pos not supplied; skipping LST and SA steps.")
 
     EMAN2.E2end(logid)
 
