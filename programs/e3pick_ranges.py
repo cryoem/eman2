@@ -136,6 +136,7 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         self.frames = frames
         self.args = args
         self.done_clicked = False
+        self.processing = False
         self.unidirectional = args.unidirectional
         self.avgseq = args.ntave or 1
         self.idx = 0
@@ -366,9 +367,21 @@ class PickRangesWindow(QtWidgets.QMainWindow):
     def _done(self):
         self.done_clicked = True
         self._print_results()
+        # Disable all interactive controls while processing
+        self.processing = True
+        for btn in list(self._btn_active.keys()) + [self.btn_done]:
+            btn.setEnabled(False)
+        self.frame_slider.setEnabled(False)
+        self.range_slider.setEnabled(False)
+        self.setWindowTitle("e3pick_ranges  —  building LST and SA tilt series...")
+        self.frame_label.setText("Building tilt series — see terminal for progress")
+        self.frame_label.setStyleSheet("font-size: 12pt; font-weight: bold; color: darkorange;")
+        QtWidgets.QApplication.processEvents()
         QtWidgets.QApplication.quit()
 
     def keyPressEvent(self, event):
+        if self.processing:
+            return
         key = event.key()
         n = len(self.frames)
         if key == QtCore.Qt.Key_Right:
@@ -399,7 +412,8 @@ class PickRangesWindow(QtWidgets.QMainWindow):
                 super().keyPressEvent(event)
 
     def closeEvent(self, event):
-        self._print_results()
+        if not self.done_clicked:
+            self._print_results()
         event.accept()
 
     def _write_json(self):
@@ -488,6 +502,7 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     app.exec_()
 
     if win.done_clicked and options.movie_neg and options.movie_pos:
+        win.close()
         run_steps_1_2(options)
     elif win.done_clicked and not (options.movie_neg and options.movie_pos):
         print("Note: --movie_neg/--movie_pos not supplied; skipping LST and SA steps.")
