@@ -143,7 +143,7 @@ performed automatically by e3pick_ranges.py after range selection.
     parser.add_argument("--avgseq_sa",     type=int,  default=60,   help="Frames averaged per tilt in SA series (must match Pick Ranges).", guitype='intbox', row=1, col=0, rowspan=1, colspan=1)
     parser.add_argument("--tiltRange",    type=int,  default=120,  help="Total tilt range in degrees.", guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
     parser.add_argument("--compressbits", type=int,  default=6,    help="Compression bits for output.", guitype='intbox', row=1, col=2, rowspan=1, colspan=1)
-    parser.add_argument("--threads",      type=int,  default=12,   help="CPU threads for e2tomogram.py --stage2prep.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--threads",      type=int,  default=2,    help="CPU threads for e2tomogram.py --stage2prep.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
     parser.add_argument("--clipz",        type=int,  default=768,  help="Z clip size (pixels).", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
     parser.add_argument("--tltkeep",      type=float, default=1.0, help="Fraction of tilt images to keep (1.0 = keep all).", guitype='floatbox', row=2, col=2, rowspan=1, colspan=1)
     parser.add_argument("--skip_tomogram",  default=False, action="store_true", help="Skip step 1: e2tomogram.py --stage2prep.", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1)
