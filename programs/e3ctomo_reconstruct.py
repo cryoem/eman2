@@ -58,6 +58,7 @@ def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep):
     cmd = (
         f"/home3/Python/e2tomogram.py {sa_path}"
         f" --stage2prep"
+        f" --outsuffix=_SA"
         f" --tltax=0.5"
         f" --zeroid=-1"
         f" --tltstep={tltstep:.6f}"
