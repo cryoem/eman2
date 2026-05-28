@@ -757,6 +757,17 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		except:
 			self.statusbar.setMessage("Can't open file '%s'"%e2program,"color:red;")
 			return
+		# Pre-load pick_ranges.json so parser defaults can reference pick_ranges_data
+		import json as _pmjson, os as _pmos
+		pick_ranges_data = {}
+		_pr_path = _pmos.path.join(_pmos.getcwd(), "info", "pick_ranges.json")
+		if _pmos.path.isfile(_pr_path):
+			try:
+				with open(_pr_path) as _prf:
+					pick_ranges_data = _pmjson.load(_prf)
+			except Exception:
+				pass
+
 		# Regex objects
 		lineregex = re.compile(r"^\s*parser\.add_",flags=re.I) # eval parser.add_ lines, which are  not commented out.
 		moderegex = re.compile(r"mode\s*=\s*[\"'].*%s[{0,1}.*]{0,1}.*[\"']"%mode,flags=re.I)	# If the program has a mode only eval lines with the right mode.

@@ -140,7 +140,7 @@ performed automatically by e3pick_ranges.py after range selection.
 """
     parser = EMArgumentParser(usage=usage, version=EMANVERSION)
 
-    parser.add_argument("--basename",     type=str,  default="",   help="Short label for output files (e.g. CT07). Must match what was used in Pick Ranges.", guitype='strbox', row=0, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--basename",     type=str,  default=pick_ranges_data.get("basename",""),   help="Short label for output files (e.g. CT07). Auto-loaded from Pick Ranges.", guitype='strbox', row=0, col=0, rowspan=1, colspan=3)
     parser.add_argument("--avgseq_sa",     type=int,  default=60,   help="Frames averaged per tilt in SA series (must match Pick Ranges).", guitype='intbox', row=1, col=0, rowspan=1, colspan=1)
     parser.add_argument("--tiltRange",    type=int,  default=120,  help="Total tilt range in degrees.", guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
     parser.add_argument("--compressbits", type=int,  default=6,    help="Compression bits for output.", guitype='intbox', row=1, col=2, rowspan=1, colspan=1)
