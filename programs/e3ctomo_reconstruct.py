@@ -5,6 +5,17 @@ from builtins import range
 from EMAN2 import *
 import sys, os, json
 
+# Pre-load pick_ranges.json so parser defaults can reference pick_ranges_data
+# (also injected by e2projectmanager.py's eval namespace)
+pick_ranges_data = {}
+try:
+    _pr = os.path.join(os.getcwd(), "info", "pick_ranges.json")
+    if os.path.isfile(_pr):
+        with open(_pr) as _f:
+            pick_ranges_data = json.load(_f)
+except Exception:
+    pass
+
 
 # ---------------------------------------------------------------------------
 # Path helpers  (all accept optional basename; fall back to auto-derived names)
