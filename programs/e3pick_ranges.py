@@ -502,7 +502,6 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     app.exec_()
 
     if win.done_clicked and options.movie_neg and options.movie_pos:
-        win.close()
         run_steps_1_2(options)
     elif win.done_clicked and not (options.movie_neg and options.movie_pos):
         print("Note: --movie_neg/--movie_pos not supplied; skipping LST and SA steps.")
