@@ -56,7 +56,7 @@ def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep):
     n_sa = EMUtil.get_image_count(sa_path)
     tltstep = tilt_range / n_sa
     cmd = (
-        f"/home3/Python/e2tomogram.py {sa_path}"
+        f"e2tomogram.py {sa_path}"
         f" --stage2prep"
         f" --outsuffix=_SA"
         f" --tltax=0.5"
