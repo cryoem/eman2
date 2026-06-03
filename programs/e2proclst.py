@@ -99,6 +99,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 	parser.add_argument("--scalexf", type=float, help="scale the translation in xform in header.",default=-1)
 	parser.add_argument("--applyxf", type=str, help="apply the transform to a list of particles with xform.projection or align3d.",default=None)
+	parser.add_argument("--replacekey", type=str, help="Input two keys separated by comma. Use the value of the first key to replace the second one. ",default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
@@ -300,7 +301,16 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				
 			save_lst_params(lsts, options.create)			
 		
-		
+		elif options.replacekey:
+			lsts=[load_lst_params(a) for a in args]
+			lsts=sum(lsts, [])
+			kys=options.replacekey.split(',')
+			print(f"Replacing {kys[1]} with {kys[0]}")
+			for l in lsts:
+				l[kys[1]]=l.pop(kys[0])
+
+			save_lst_params(lsts, options.create)
+
 		elif options.applyxf:
 			lsts=[load_lst_params(a) for a in args]
 			lsts=sum(lsts, [])
