@@ -93,19 +93,18 @@ def import_sphire_params(input_file, symclass):
 
     dtype_import = [('phi', '<f8'), ('theta', '<f8'), ('psi', '<f8'), ('shift_x', '<f8'), ('shift_y', '<f8'), ('err1', '<f8'), ('err2', '<f8'), ('norm', '<f8')]
     dtype = dtype_import + [('source_n', '<i8')]
-    #dtype = dtype_import + [('source_n', '<i8'), ('phi_old', '<f8'), ('theta_old', '<f8'), ('psi_old', '<f8')]
+    #dtype = dtype_import + [('mirror', '<i8'), ('source_n', '<i8')]
 
     data_import = np.genfromtxt(input_file, dtype=dtype_import)
-    #reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].view(np.float64).reshape(data_import.shape + (-1,)), inc_mirror=0, tolistconv=False)
+    data = np.empty(len(data_import), dtype=dtype)
 
-    #data['phi_old'] = data_import['phi']
-    #data['theta_old'] = data_import['theta']
-    #data['psi_old'] = data_import['psi']
+    #reduced_angles = symclass.reduce_anglesets(data_import[['phi', 'theta', 'psi']].tolist(), inc_mirror=0, tolistconv=False)
+
+    #data['mirror'] = (data_import['theta'] > 90) | ((data_import['theta'] == 90) & (data_import['phi'] < 180))
     #data_import['phi'] = reduced_angles[:, 0]
     #data_import['theta'] = reduced_angles[:, 1]
     #data_import['psi'] = reduced_angles[:, 2]
 
-    data = np.empty(len(data_import), dtype=dtype)
     data['source_n'] = np.arange(len(data))
     for name in data_import.dtype.names:
         data[name] = data_import[name]
@@ -135,11 +134,17 @@ def write_params_file(array, names, file_name, file_name_old, prior_tracker):
     for angle in prior_tracker['angle_names'][::-1]:
         new_name_order.insert(1, angle[prior_tracker['idx_angle_prior']])
 
+
     output_name = prepare_output(
         tracker=prior_tracker['tracker'],
         file_name=file_name,
         file_name_old=file_name_old
         )
+
+    # Undo the reduce operation on psi
+    #array[array['mirror'], 'psi'] += 180
+    #array[array['mirror'], 'psi'] %= 360
+
     write_file(output_name=output_name, array=array, name_list=new_name_order, outlier_apply=prior_tracker['do_discard_outlier'], outlier_name=prior_tracker['outlier'])
 
 
