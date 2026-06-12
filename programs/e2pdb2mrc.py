@@ -267,7 +267,7 @@ def main():
 			boxsize=boxsizeinput
 		except:
 			boxsize=max([(amax[0]-amin[0]),(amax[1]-amin[1]),(amax[2]-amin[2])])
-			boxsize=int(1.9*boxsize+(2.0*options.res/options.apix))
+			boxsize=int(1.9*boxsize/options.apix+(2.0*options.res/options.apix))
 
 		pa=PointArray()
 		pa.read_from_pdb(args[0], lines)
