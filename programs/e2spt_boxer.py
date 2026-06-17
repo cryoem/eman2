@@ -176,10 +176,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.grid_widget = QtWidgets.QWidget()
 		self.grid_widget.setLayout(self.gbl2)
 		self.splitter_bottom.addWidget(self.grid_widget)
-
 		self.splitter_bottom.addWidget(self.xzview)
-		self.splitter_top.splitterMoved.connect(self.splitter_bottom.moveSplitter)
 
+		self.splitter_top.splitterMoved.connect(lambda pos, index: self.sync_splitters(self.splitter_top, self.splitter_bottom))
+		self.splitter_bottom.splitterMoved.connect(lambda pos, index: self.sync_splitters(self.splitter_bottom, self.splitter_top))
 
 #########################################################################
 		
@@ -187,6 +187,22 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setColumnMinimumWidth(0,200)
 		#self.gbl.setRowMinimumHeight(0,200)
 		#self.gbl.setColumnStretch(0,0)
+
+		self.gbl3 = QtWidgets.QHBoxLayout()
+		self.gbl2.addLayout(self.gbl3,0,0,1,2)
+		
+		##coordinate display
+		self.wcoords=QtWidgets.QLabel("")
+		self.gbl3.addWidget(self.wcoords)
+
+		self.wcbmode=QtWidgets.QComboBox()
+		self.wcbmode.addItems(["Move","Box"])
+		self.gbl3.addWidget(self.wcbmode)
+
+		self.wbautoc=QtWidgets.QPushButton("AutoContrast")
+		self.wbautoc.setCheckable(True)
+		self.wbautoc.setChecked(True)
+		self.gbl3.addWidget(self.wbautoc)
 		
 		self.wzheight=ValBox(label="Z height:",value=256)
 		self.gbl2.addWidget(self.wzheight,1,0)
@@ -234,9 +250,6 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.boxesimgs=[]					# z projection of each box
 		self.dragging=-1
 
-		##coordinate display
-		self.wcoords=QtWidgets.QLabel("")
-		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
 		
 		self.button_flat.clicked[bool].connect(self.flatten_tomo)
 		self.button_reset.clicked[bool].connect(self.reset_flatten_tomo)
@@ -425,6 +438,20 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.update_all()
 		self.initialized=True
 #		self.splitter_bottom.moveSplitter(self.splitter_top.handle(0).pos(),0)
+
+	def showEvent(self,event):
+		super().showEvent(event)
+		self.sync_splitters(self.splitter_top,self.splitter_bottom)
+		if self.data is not None: self.scroll_to(self.data["nx"]//2,self.data["ny"]//2,self.data["nz"]//2)
+		#self.scroll_to(0,0,0)
+#		print(self.xyview.get_origin(),self.xzview.get_origin(),self.zyview.get_origin() )
+#		self.xy_origin((0,0))
+#		self.update_all()
+	
+	def sync_splitters(self, source_splitter, target_splitter):
+		target_splitter.blockSignals(True)
+		target_splitter.setSizes(source_splitter.sizes())
+		target_splitter.blockSignals(False)
 		
 	def set_data(self,data):
 
@@ -747,9 +774,28 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				### something changes the box shapes...
 				for i,b in enumerate(boxes):
 					self.update_box_shape(i,b)
+
+		if self.wcbmode.currentIndex()==0:
+			self.xyview.add_shapes(
+				{ "xline": EMShape(["line",0,.5,0, 0,self.y_loc,self.data["nx"],self.y_loc,1]),
+			  "yline": EMShape(["line",0,.5,0, self.x_loc,0,self.x_loc,self.data["ny"],1]) } )
+			self.xzview.add_shapes(
+				{ "xline": EMShape(["line",0,.5,0, 0,self.z_loc,self.data["nx"],self.z_loc,1]),
+			  "yline": EMShape(["line",0,.5,0, self.x_loc,0,self.x_loc,self.data["nz"],1]) } )
+			self.zyview.add_shapes(
+				{ "xline": EMShape(["line",0,.5,0, 0,self.y_loc,self.data["nz"],self.y_loc,1]),
+			  "yline": EMShape(["line",0,.5,0, self.z_loc,0,self.z_loc,self.data["ny"],1]) } )
+		else:
+			self.xyview.del_shape("xline")
+			self.xyview.del_shape("yline")
+			self.xzview.del_shape("xline")
+			self.xzview.del_shape("yline")
+			self.zyview.del_shape("xline")
+			self.zyview.del_shape("yline")
 			
 		for ax in axis:
 			ia, view, loc=pms[ax]
+
 			
 			## update the box shapes
 			shp=view.get_shapes()
@@ -787,7 +833,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			#if self.wfilt.getValue()!=0.0:
 				#img.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 
-			view.set_data(img)
+			view.set_data(img,keepcontrast=not self.wbautoc.isChecked())
 			
 		self.update_coords()
 
@@ -951,8 +997,10 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	def scroll_to(self, x,y,z, axis=""):
 		if axis!="z": self.xyview.scroll_to(x,y,True)
-		if axis!="y": self.xzview.scroll_to(x,self.data["nz"]/2,True)
-		if axis!="x": self.zyview.scroll_to(self.data["nz"]/2,y,True)
+		if axis!="y": self.xzview.scroll_to(x,z,True)
+		if axis!="x": self.zyview.scroll_to(z,y,True)
+		# if axis!="y": self.xzview.scroll_to(x,self.data["nz"]/2,True)
+		# if axis!="x": self.zyview.scroll_to(self.data["nz"]/2,y,True)
 	
 	#### mouse click
 	def xy_down(self,event):
@@ -972,40 +1020,50 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		xr,yr,zr=self.rotate_coord((x,y,z))
 		#print(x,y,z,xr,yr,zr)
-	
-		if self.optionviewer.erasercheckbox.isChecked():
-			
-			side=self.wlocalbox.isChecked()
-			xyz={'x':x,'y':y,'z':z}
-			if not side:
-				xyz[axis]=-1
-				
-			self.del_region_xy(xyz['x'],xyz['y'],xyz['z'],-1)
-			return
-			
-		for i in range(len(self.boxes)):
-			if self.inside_box(i,xr,yr,zr):
-				
-				if event.modifiers()&Qt.ShiftModifier:  ## delete box
-					self.del_box(i)
 
-				else:  ## start dragging
-					self.dragging=i
-					self.curbox=i
-					self.scroll_to(x,y,z,axis)
+		if self.wcbmode.currentIndex()==0:
+			
+			self.x_loc, self.y_loc, self.z_loc=x,y,z
+			self.wdepth.blockSignals(True)
+			self.wdepth.setValue(int(z))
+			self.wdepth.blockSignals(False)
+			self.dragging=0
+			self.update_sliceview()
+			
+		elif self.wcbmode.currentIndex()==1:
+			if self.optionviewer.erasercheckbox.isChecked():
+				
+				side=self.wlocalbox.isChecked()
+				xyz={'x':x,'y':y,'z':z}
+				if not side:
+					xyz[axis]=-1
 					
-				break
-		else:
-			if not event.modifiers()&Qt.ShiftModifier: ## add box
+				self.del_region_xy(xyz['x'],xyz['y'],xyz['z'],-1)
+				return
+				
+			for i in range(len(self.boxes)):
+				if self.inside_box(i,xr,yr,zr):
+					
+					if event.modifiers()&Qt.ShiftModifier:  ## delete box
+						self.del_box(i)
+	
+					else:  ## start dragging
+						self.dragging=i
+						self.curbox=i
+						self.scroll_to(x,y,z,axis)
+						
+					break
+			else:
+				if not event.modifiers()&Qt.ShiftModifier: ## add box
+	
+					self.x_loc, self.y_loc, self.z_loc=x,y,z
+					self.scroll_to(x,y,z,axis)
+					self.curbox=len(self.boxes)
+					self.boxes.append(([xr,yr,zr, 'manual', 0.0, self.currentset]))
+					self.update_box(len(self.boxes)-1)
+					self.dragging=len(self.boxes)-1
+					
 
-				self.x_loc, self.y_loc, self.z_loc=x,y,z
-				self.scroll_to(x,y,z,axis)
-				self.curbox=len(self.boxes)
-				self.boxes.append(([xr,yr,zr, 'manual', 0.0, self.currentset]))
-				self.update_box(len(self.boxes)-1)
-				self.dragging=len(self.boxes)-1
-				
-				
 
 	#### eraser mode
 	def xy_move(self,event):
@@ -1030,17 +1088,26 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			view.eraser_shape=None
 			
 	
-	#### dragging...
+	#### dragging 
 	def mouse_drag(self,x, y, z):
 		if self.dragging<0:
 			return
 		if min(x,y,z)<0:
 			return
-		
-		self.x_loc, self.y_loc, self.z_loc=x,y,z
-		x,y,z=self.rotate_coord((x,y,z))
-		self.boxes[self.dragging][:3]= x,y,z
-		self.update_box(self.dragging,True)
+
+		if self.wcbmode.currentIndex()==0:
+			# self.scroll_to(x,y,z)
+			self.x_loc, self.y_loc, self.z_loc=x,y,z
+			self.wdepth.blockSignals(True)
+			self.wdepth.setValue(int(z))
+			self.wdepth.blockSignals(False)
+			self.update_sliceview()
+			
+		elif self.wcbmode.currentIndex()==1:
+			self.x_loc, self.y_loc, self.z_loc=x,y,z
+			x,y,z=self.rotate_coord((x,y,z))
+			self.boxes[self.dragging][:3]= x,y,z
+			self.update_box(self.dragging,True)
 
 	def xy_drag(self,event):
 		if self.dragging>=0:
@@ -1070,7 +1137,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		zyo=self.zyview.get_origin()
 		self.zyview.set_origin(zyo[0],newor[1],True)
-	
+#		print(self.xyview.get_origin(),self.xzview.get_origin(),self.zyview.get_origin() )
+
 	def xz_origin(self,newor):
 		xyo=self.xyview.get_origin()
 		self.xyview.set_origin(newor[0],xyo[1],True)

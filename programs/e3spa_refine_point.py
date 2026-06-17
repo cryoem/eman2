@@ -567,12 +567,12 @@ def main():
 				(orts, tytx) = optax.apply_updates((orts, tytx), ort_update)
 
 				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
-				all_frcs.append((i, qual))
+#				all_frcs.append((i, qual))
 
 			# Save the changes we've made to the np array so it goes to all levels of downsampling
 			cache._meta[:,:2]=np.array(tytx)
 			cache._meta[:,2:5]=np.array(orts)
-		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
+#		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:

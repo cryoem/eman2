@@ -1621,14 +1621,16 @@ class EMImage2DWidget(EMGLWidget):
 		try:
 			self.shapes.pop(p)
 			self.shapechange=1
-		except:pass
+		except: pass
 
 	def del_shapes(self,k=None):
 		if k:
 			try:
 				for i in k:
 					del self.shapes[i]
-			except: del self.shapes[k]
+			except: 
+				try: del self.shapes[k]
+				except: pass
 		else:
 			self.shapes={}
 		self.shapechange=1

@@ -152,6 +152,8 @@ class StackCache():
 				for size in sizes:
 					stkfds=stkf.downsample(size).numpy
 					self._images[size][i:end,:,:]=stkfds
+			self._images.flush()		# close() may not work. This ensures write to disk
+			self._meta.flush()
 
 		# read selected metadata at init. Not stored in the cache
 		self._meta=self._meta.copy()	# we copy the memory mapped file to RAM, then overwrite specific values
@@ -1429,6 +1431,13 @@ def prj_simple_single_sym(pointary, ortary, ny, tytx,symmx):
 @partial(jax.jit, static_argnames=["ny"])
 def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
 	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
+
+# The following variant doesn't take a single point array and project it in N orientations, it
+# takes a stack of N point arrays and projects each one in the corresponding orientation
+# That is, each array generates only a single projection. This is used in training dynamic models
+@partial(jax.jit, static_argnames=["ny"])
+def pointset_project_simple_sym_fn(pointarys, ortary, ny, tytx, symmx):
+	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[0, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
 def point_project_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
 	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
