@@ -342,8 +342,7 @@ def main():
 					elif options.ctf==1:
 						dsapix=ptclsfds.apix
 						wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
-						dfstep=2*apix*apix/(wavelength*10000)
-						step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
+						step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dsapix,symmx,weight,thresh)
 						step0=jnp.nan_to_num(step0)
 						if j==0:
 							step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -520,8 +519,7 @@ def main():
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=ort_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh)
 					elif options.ctf ==1:
 						wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
-						dfstep=2*apix*apix/(wavelength*10000)
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0=ort_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0=ort_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength,ptclsfds.cs]),dsapix,symmx,weight,thresh)
 					elif options.ctf == 2:
 						wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 						dfstep=2*apix*apix/(wavelength*10000)
@@ -586,7 +584,7 @@ def main():
 				ctf=ptclsfds.ctf
 				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 				dfstep=2*apix*apix/(wavelength*10000)
-				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, ptcl_orts.jax, jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, ptcl_tytx, ctf, symmx))
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, ptcl_orts.jax, jnp.array([wavelength,ptclsfds.cs]), dsapix, ny, ptcl_tytx, ctf, symmx))
 				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,ptcl_orts.jax,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,ptcl_tytx,ctf, symmx))
 			ptclds=ptclsfds.do_ift()
 			transforms=ptcl_orts.transforms(tytx=ptcl_tytx)
