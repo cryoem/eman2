@@ -1262,7 +1262,7 @@ significantly altering the spatial distribution. npoint specifies the total numb
 		if tytx is None: tytx=jnp.zeros
 		return EMStack2D(point_project_simple_fn(self._data,mx,boxsize,tytx))
 
-	def project_ctf(self,orts,ctf_stack,boxsize,dfrange,dfstep,tytx=None):
+	def project_ctf(self,orts,ctf_stack,boxsize,dfrange,tytx=None):
 		"""Generates a tensor containing a phase-flipped 2-D projection of the set of Points for each of N orientations in orts. Phase flipping is off a single
 		defocus value.
 
@@ -1272,14 +1272,13 @@ significantly altering the spatial distribution. npoint specifies the total numb
 			per particle defocus in the third
 		boxsize-Value in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box
 		dfrange-a tuple of (min defocus,max defocus) in the project
-		dfstep-The step between two correction images in ctf_stack
 		With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data is
 		used for comparisons should be resampled without any "clip" operations.
 		"""
 		self.coerce_jax()
 		mx=orts.to_mx2d(swapxy=True) # 2d is fine becasue don't need z position when we apply one ctf regardless
 		if tytx is None: tytx=jnp.zeros(3)
-		return EMStack2D(point_project_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],dfstep,tytx))
+		return EMStack2D(point_project_ctf_fn(self._data,mx,ctf_stack._data,boxsize,dfrange[0],dfrange[1],tytx))
 
 	def project_layered_ctf(self,orts,ctf_stack,boxsize,apix,dfrange,dfstep,tytx=None):
 		"""Generates a tensor containing a phase-flipped 2-D projection accounting for defocus levels of the set of Points for each of N Orientations in orts
@@ -1378,12 +1377,13 @@ significantly altering the spatial distribution. npoint specifies the total numb
 
 def point_project_single_fn(pointary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
+		Does not do any CTF or account for symmetry
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
 	pointary - a Points.jax array
 	mx - an Orientations object converted to a stack of 2d matrices
 	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	boxsize- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 
 	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 	used for comparisons should be resampled without any "clip" operations.
@@ -1420,16 +1420,36 @@ def point_project_single_fn(pointary,mx,boxsize,tytx):
 	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
 	return jnp.squeeze(jnp.fft.irfft2(fproj[:,:,:boxsize//2+1]),0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
 
+# Jit compiled and vmapped over orientations (multiple projections).
+# Does not do CTF or symmetry
 point_project_simple_fn=jax.jit(jax.vmap(point_project_single_fn, in_axes=[None, 2, None, 0]), static_argnames=["boxsize"])
 
 def prj_simple_single_sym(pointary, ortary, ny, tytx,symmx):
-	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+	"""Like point_project_fn, but includes symmetry. Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx
+	Does not do any CTF
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	ny- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
 	mx3d=jax_to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
 	return point_project_simple_fn(pointary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
 
 @partial(jax.jit, static_argnames=["ny"])
 def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
+		"""Like point_project_simple_fn, but includes symmetry by averaging over each symmetrical projection. Does not do any CTF.
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	ny - boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
 	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
 # The following variant doesn't take a single point array and project it in N orientations, it
@@ -1439,14 +1459,21 @@ def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
 def pointset_project_simple_sym_fn(pointarys, ortary, ny, tytx, symmx):
 	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[0, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
-def point_project_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
+def point_project_ctf_single_fn(pointary,mx,ctf_info,apix,boxsize,tytx,astig):
+
 	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
+	Same as point_project_single_fn, but includes single defocus value CTF modification, does not include symmetry
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
 	pointary - a Points.jax array
 	mx - an Orientations object converted to a stack of 2d matrices
+	ctf_info - a jax array that contains the wavelength and cs
+	apix - The angstrom per pixel at the current level of downsampling, for CTF modification
 	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
-	boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	boxsize- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	astig = A Nx3+ vector containing the average defocus, defocus difference, defocus angle, and phase shift for CTF modification. Additional values
+	are for higher order artifacts
+
 
 	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
 	used for comparisons should be resampled without any "clip" operations.
@@ -1480,21 +1507,68 @@ def point_project_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,as
 	fproj=jnp.fft.rfft2(proj)
 	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
 	proj=jnp.fft.irfft2(fproj[:,:,:boxsize//2+1])
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(astig[0], (1,)), astig, dfstep, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(astig[0], (1,)), astig, apix, beamtiltZ, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj,  jnp.reshape(astig[0], (1,)), astig, apix, beamtiltZ, False), 0) # Went back to full amplitude because of beamshift--put back to just phase flipping?
 
-point_project_ctf_fn=jax.jit(jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize"])
+# A jit compiled and vmapped over orientations version of point_project_ctf_single_fn. Makes multiple projections
+# Also same as point_project_simple_fn only with single defocus value CTF modification
+point_project_ctf_fn=jax.jit(jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, 0, 0, 0]) ,static_argnames=["boxsize"])
 
-def prj_ctf_single_sym(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
-	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+def prj_ctf_single_sym(pointary, ortary, ctf_info, apix, boxsize, tytx, astig, beamtiltZ, symmx):
+		"""Like point_project_ctf_fn, but includes symmetry. Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx.
+	Also like prj_simple_single_sym but includes single defocus value CTF
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	ctf_info - a jax array that contains the wavelength and cs
+	apix - The angstrom per pixel at the current level of downsampling, for CTF modification
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	boxsize- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	astig = A Nx3+ vector containing the average defocus, defocus difference, defocus angle, and phase shift for CTF modification. Additional values
+	are for higher order artifacts
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
 	mx3d=jax_to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_ctf expect
-	return point_project_ctf_fn(pointary,jnp.flipud(sym_mx3d), ctf_info, dfstep, apix, boxsize, tytx, astig) # flipud accounts for the flipxy option in to_mx2d()
+	return point_project_ctf_fn(pointary,jnp.flipud(sym_mx3d), ctf_info, apix, boxsize, tytx, astig, beamtiltZ) # flipud accounts for the flipxy option in to_mx2d()
 
 @partial(jax.jit, static_argnames=["boxsize"])
-def point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx):
-	return jnp.mean(jax.vmap(prj_ctf_single_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, boxsize, tytx, astig, symmx), axis=0)
+def point_project_ctf_sym_fn(pointary, ortary, ctf_info, apix, boxsize, tytx, astig, beamtiltZ, symmx):
+	"""Like point_project_ctf_fn, but includes symmetry by averaging over each symmetrical projection.
+	Also like point_project_simple_sym_fn, but includes single defocus value CTF
+
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	ctf_info - a jax array that contains the wavelength and cs
+	apix - The angstrom per pixel at the current level of downsampling, for CTF modification
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	boxsize- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	astig = A Nx3+ vector containing the average defocus, defocus difference, defocus angle, and phase shift for CTF modification. Additional values
+	are for higher order artifacts
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
+	return jnp.mean(jax.vmap(prj_ctf_single_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, apix, boxsize, tytx, astig, beamtiltZ, symmx), axis=0)
 
 def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
+		"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
+	Same as point_project_single_fn or point_project_ctf_single_fn, but includes multislice defocus values in CTF modification. Does not include symmetry
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	mx - an Orientations object converted to a stack of 2d matrices
+	ctf_info - a jax array that contains the wavelength and cs
+	dfstep - The change in defocus between two defocus slices
+	apix - The angstrom per pixel at the current level of downsampling, for CTF modification
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	boxsize- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	astig = A Nx3+ vector containing the average defocus, defocus difference, defocus angle, and phase shift for CTF modification. Additional values
+	are for higher order artifacts
+
+
+	With these definitions, Point coordinates are sampling-independent as long as no box size alterations are performed. That is, raw projection data
+	used for comparisons should be resampled without any "clip" operations.
+	"""
 	shift10=jnp.array((1,0))
 	shift01=jnp.array((0,1))
 	shift11=jnp.array((1,1))
@@ -1524,20 +1598,50 @@ def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize
 	# note: tried this using advanced indexing, but JAX wouldn't accept the syntax for 2-D arrays
 	proj=jnp.zeros((2*offset+1,boxsize,boxsize),dtype=jnp.float32)
 	proj=proj.at[jnp.tile(xfpointz,4),bposall[0],bposall[1]].add(bampall, mode="drop")
-	# proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]-offset*dfstep, astig[0]+offset*dfstep, 2*offset+1), astig, dfstep, apix, False)
-	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]+offset*dfstep, astig[0]-offset*dfstep, 2*offset+1), astig, dfstep, apix, False) # linspace start/end flipped
+	# proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]-offset*dfstep, astig[0]+offset*dfstep, 2*offset+1), astig, apix, False)
+	proj = jit_apply_ctf(ctf_info, proj, jnp.linspace(astig[0]+offset*dfstep, astig[0]-offset*dfstep, 2*offset+1), astig, apix, False) # linspace start/end flipped
 	return jnp.sum(proj, axis=0)
 
+# A jit compiled and vmapped over orientations version of point_project_ctf_single_fn. Makes multiple projections
+# Also same as point_project_simple_fn and point_project_ctf_fn with multislice defocus value CTF modification, does not include symmetry
 point_project_layered_ctf_fn=jax.jit(jax.vmap(point_project_layered_ctf_single_fn, in_axes=[None, 2, None, None, None, None, 0, 0]) ,static_argnames=["boxsize","apix","dfstep"])
 
 def prj_layered_single_sym(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
-	"""Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx"""
+	"""Like point_project_layered_ctf_fn, but includes symmetry. Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx.
+	Also like prj_simple_single_sym and prj_ctf_single_sym but includes multislice defocus value CTF
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	ctf_info - a jax array that contains the wavelength and cs
+	dfstep - The change in defocus between two defocus slices
+	apix - The angstrom per pixel at the current level of downsampling, for CTF modification
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	ny- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	astig = A Nx3+ vector containing the average defocus, defocus difference, defocus angle, and phase shift for CTF modification. Additional values
+	are for higher order artifacts
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
 	mx3d=jax_to_mx3d(ortary)
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)
 	return point_project_layered_ctf_fn(pointary,sym_mx3d, ctf_info, dfstep, apix, ny, tytx, astig)
 
 @partial(jax.jit, static_argnames=["ny", "apix", "dfstep"])
 def point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
+		"""Like point_project_layered_ctf_fn, but includes symmetry by averaging over each symmetrical projection.
+	Also like point_project_simple_sym_fn and point_project_ctf_sym_fn, but includes multislice defocus value CTF
+
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	ctf_info - a jax array that contains the wavelength and cs
+	dfstep - The change in defocus between two defocus slices
+	apix - The angstrom per pixel at the current level of downsampling, for CTF modification
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	boxsize- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	astig = A Nx3+ vector containing the average defocus, defocus difference, defocus angle, and phase shift for CTF modification. Additional values
+	are for higher order artifacts
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
 	return jnp.mean(jax.vmap(prj_layered_single_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx), axis=0)
 
 
@@ -1580,7 +1684,7 @@ def point_volume_fn(pointary,boxsize,zsize):
 
 	return vol
 
-def jit_apply_ctf(ctf_info, proj, dfary, astig, dfstep, apix, sign_only):
+def jit_apply_ctf(ctf_info, proj, dfary, astig, apix,sign_only):
 	"""jitable version of apply_ctf function in CTFStack class. Called in projection code"""
 	ctfary = jit_compute_2d_ctf(ctf_info[0], ctf_info[1], jnp.pi/2-astig[1], apix, proj.shape[1], dfary, astig[2], astig[3], sign_only)
 	return jnp.fft.irfft2(jnp.fft.rfft2(proj) * ctfary)
@@ -2149,9 +2253,11 @@ def jax_fsc_jit(ima,imb):
 # @profile
 def point_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh):
 	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0).
 	returns step, qual, shift, scale
+
+	Does not include CTF
+
 	step - one gradient step to be applied with (point.add_tensor)
 	qual - mean frc
 	shift - std of xyz shift gradient
@@ -2170,10 +2276,12 @@ def point_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh):
 
 def ort_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
-	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
-	unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0).
 	returns ort_step, dytx_step, qual, ort_std, tytx_std, and the 1-tensor with the per particle integrated FRCs for potential
 	quality control.
+
+	Does not include CTF
+
 	step - one gradient step to be applied with (point.add_tensor)
 	qual - mean frc
 	shift - std of xyz shift gradient
@@ -2193,7 +2301,8 @@ def ort_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh):
 # @profile
 def sym_prj_frc_loss(pointary,ortary,tytx,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize
+	returns single averaged FRC over both particles and frequency"""
 	ny=ptcls.shape[1]
 	prj=point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
@@ -2204,8 +2313,9 @@ ort_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss, argnums=(1,2))
 
 @jax.jit
 def sym_prj_frcs_loss(pointary,symmx,ptcls,meta,weight,thresh):
-	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	"""Computes the frc array resulting from the comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize
+	Used to measure and save per-particle quality
+"""
 	ny=ptcls.shape[1]
 	prj=point_project_simple_sym_fn(pointary, meta[:,2:5], ny, meta[:,0:2], symmx)
 	return -jax_frcs_jit(jax_fft2d(prj),ptcls,weight,thresh)
@@ -2220,10 +2330,9 @@ def prj_frcs(pointary,ptcls,meta):
 	return jax_unweighted_frcs_jit(prjf,ptcls.jax)
 
 
-def point_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
+def point_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dsapix,symmx,weight,thresh):
 	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Includes single value CTF
 	returns step, qual, shift, scale
 	step - one gradient step to be applied with (point.add_tensor)
 	qual - mean frc
@@ -2233,7 +2342,8 @@ def point_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,sym
 	pointary=point.jax
 	ptcls=ptclsfds.jax
 
-	frcs,grad=point_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dfstep,dsapix,meta[:,0:2],meta[:, 5:9],symmx,ptcls,weight,thresh) # Symmetry
+	frcs,grad=point_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dsapix,meta[:,0:2],meta[:, 5:9],meta[:,11:26],symmx,ptcls,weight,thresh) # Symmetry
+	# frcs,grad=point_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dsapix,meta[:,0:2],meta[:, 5:9],meta[:,11:13],symmx,ptcls,weight,thresh) # Symmetry
 
 	qual=frcs					# functions used in jax gradient can't return a list, so frcs is a single value now
 	shift=grad[:,:3].std()		# translational std
@@ -2241,10 +2351,9 @@ def point_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,sym
 
 	return (grad,float(qual),float(shift),float(sca))
 
-def ort_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
+def ort_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dsapix,symmx,weight,thresh):
 	"""Computes one gradient step on the orientation coordinates given a set of particle FFTs at the approprate scale,
-	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Linear weight goes from 0-2. 1 is
-	unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	computing FRC to axial Nyquist, with the specified linear weighting factor (def 1.0). Includes single value CTF
 	returns ort_step, dytx_step, qual, ort_std, tytx_std, and the 1-tensor with the per particle integrated FRCs for potential
 	quality control.
 	step - one gradient step to be applied with (point.add_tensor)
@@ -2255,7 +2364,7 @@ def ort_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx
 	pointary=point.jax
 	ptcls=ptclsfds.jax
 
-	frcs, [gradort, gradtytx] = ort_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dfstep,dsapix,meta[:,0:2],meta[:,5:9],symmx,ptcls,weight,thresh)
+	frcs, [gradort, gradtytx] = ort_sym_prj_frc_loss_ctf(pointary,meta[:,2:5],ctf_info,dsapix,meta[:,0:2],meta[:,5:9],symmx,ptcls,weight,thresh)
 
 	qual=frcs
 	stdort=gradort.std()		# orientation spinvec std
@@ -2263,11 +2372,12 @@ def ort_gradient_step_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx
 
 	return (gradort, gradtytx,float(qual),float(stdort),float(stdtytx))
 
-def sym_prj_frc_loss_ctf(pointary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
+def sym_prj_frc_loss_ctf(pointary,ortary,ctf_info,dsapix,tytx,astig,beamtiltZ,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize
+	Includes single value CTF"""
 	ny=ptcls.shape[1]
-	prj=point_project_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
+	prj=point_project_ctf_sym_fn(pointary, ortary, ctf_info, dsapix, ny, tytx, astig, symmx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
 
 point_sym_prj_frc_loss_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf))
@@ -2276,8 +2386,7 @@ ort_sym_prj_frc_loss_ctf=jax.jit(jax.value_and_grad(sym_prj_frc_loss_ctf, argnum
 def point_gradient_step_layered_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
 # def gradient_step_layered_ctf_optax(point,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Includes multislice CTF
 	returns step, qual, shift, scale
 	step - one gradient step to be applied with (point.add_tensor)
 	qual - mean frc
@@ -2298,8 +2407,7 @@ def point_gradient_step_layered_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,ds
 def ort_gradient_step_layered_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsapix,symmx,weight,thresh):
 # def gradient_step_layered_ctf_optax(point,ptclsfds,orts,ctf_info,tytx,astig,dfstep,dsapix,weight=1.0,relstep=1.0,frc_Z=3.0):
 	"""Computes one gradient step on the Point coordinates given a set of particle FFTs at the appropriate scale,
-	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Linear weight goes from
-	0-2. 1 is unweighted, >1 upweights low resolution, <1 upweights high resolution.
+	computing FRC to axial Nyquist, with specified linear weighting factor (def 1.0). Includes multislice CTF
 	returns step, qual, shift, scale
 	step - one gradient step to be applied with (point.add_tensor)
 	qual - mean frc
@@ -2319,7 +2427,8 @@ def ort_gradient_step_layered_ctf_optax(point,ptclsfds,meta,ctf_info,dfstep,dsap
 
 def sym_prj_frc_loss_layered_ctf(pointary,ortary,ctf_info,dfstep,dsapix,tytx,astig,symmx,ptcls,weight,thresh):
 	"""Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
-	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize"""
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize
+	Includes multislice CTF"""
 	ny=ptcls.shape[1]
 	prj=point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, dsapix, ny, tytx, astig, symmx)
 	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
