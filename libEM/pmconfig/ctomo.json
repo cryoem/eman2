@@ -7,14 +7,12 @@
         "NAME": "Import Gain File",
         "PROGRAM": "e3ctomo_gain.py",
         "MODE": "importgain",
-        "CMDTEMPLATE": "e2proc2d.py {gainsrc} {dest}/{gainsrcname} --apix={apix} --compressbits=4",
         "CHILDREN": []
       },
       {
         "NAME": "Create Gain File",
         "PROGRAM": "e3ctomo_gain.py",
         "MODE": "creategain",
-        "CMDTEMPLATE": "e3movie.py {movies} --est_gain={dest}/{gainname}",
         "CHILDREN": []
       }
     ]

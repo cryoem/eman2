@@ -3,7 +3,7 @@
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-import sys, os, shutil
+import sys, os, shutil, json
 
 def main():
     progname = os.path.basename(sys.argv[0])
@@ -34,27 +34,46 @@ Continuous-tilt gain reference utilities.
 
     logid = E2init(sys.argv, options.ppid)
 
+    gain_file = None
+
     if options.gainsrc:
         # importgain: run e2proc2d.py to copy and set apix
-        dest_dir = options.dest if options.dest else "."
+        dest_dir = os.path.abspath(options.dest if options.dest else ".")
         os.makedirs(dest_dir, exist_ok=True)
-        dst = os.path.join(dest_dir, "GainFiducial.hdf")
+        src_basename = os.path.splitext(os.path.basename(options.gainsrc))[0] + ".hdf"
+        dst = os.path.join(dest_dir, src_basename)
+        if os.path.isfile(dst):
+            os.remove(dst)
+            print(f"Removed existing: {dst}")
         cmd = f"e2proc2d.py {options.gainsrc} {dst} --apix={options.apix} --compressbits=4"
         print(cmd)
         ret = os.system(cmd)
         if ret != 0:
             print(f"e2proc2d.py exited with code {ret}")
+        else:
+            gain_file = dst
     elif args:
         # creategain: run e3movie.py on supplied movies
-        dest_dir = options.dest if options.dest else "."
+        dest_dir = os.path.abspath(options.dest if options.dest else ".")
         os.makedirs(dest_dir, exist_ok=True)
         gainname = options.gainname if options.gainname else "GainFiducial.hdf"
         est_gain = os.path.join(dest_dir, gainname)
+        if os.path.isfile(est_gain):
+            os.remove(est_gain)
+            print(f"Removed existing: {est_gain}")
         cmd = "e3movie.py " + " ".join(args) + f" --est_gain={est_gain}"
         print(cmd)
         ret = os.system(cmd)
         if ret != 0:
             print(f"e3movie.py exited with code {ret}")
+        else:
+            gain_file = est_gain
+
+    if gain_file:
+        os.makedirs("info", exist_ok=True)
+        with open(os.path.join("info", "gain_params.json"), "w") as f:
+            json.dump({"gain_file": gain_file}, f, indent=2)
+        print(f"Gain file recorded: info/gain_params.json → {gain_file}")
 
     E2end(logid)
 

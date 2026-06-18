@@ -549,18 +549,21 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		else:
 			stdoutpipe = None
 
+		# Collapse any newlines in the command (e.g. from multi-line text widgets) into spaces
+		cmd = str(cmd).replace('\n', ' ').replace('\r', ' ')
+
 		if self.notebook and self.getProgramNoteLevel() > 0:
 			# Only take notes if note level is greater than 0
 			self.notebook.insertNewJob(cmd,local_datetime())
 			self.notebook.writeNotes()
-			child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
+			child = EMPopen((cmd+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		else:
 			if self.getProgramNoteLevel() > 0:
 				print("NOT Writing notes, ppid=-1")
-				child = EMPopen(str(cmd), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
+				child = EMPopen(cmd, shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 			else:
 				print("NOT Writing notes, ppid=-2")
-				child = EMPopen((str(cmd)+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
+				child = EMPopen((cmd+" --ppid=-2"), shell=True, cwd=self.pm_cwd, stdout=stdoutpipe, bufsize=1)
 		# Dump terminal stdout if desired
 		if self.dumpterminal.isChecked(): child.realTimeCommunicate(self.statusbar)
 
@@ -720,6 +723,53 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		if programfile == "e3ctomo_reconstruct.py":
 			self._autofill_reconstruct_ranges()
+		if programfile == "e3ctomo_import.py":
+			self._autofill_import_gain()
+		if programfile == "e3pick_ranges.py":
+			self._autofill_pick_ranges_thumb()
+
+	def _autofill_pick_ranges_thumb(self):
+		"""Populate e3pick_ranges.py fields from info/import_params.json."""
+		import json
+		json_path = os.path.join(self.pm_cwd, "info", "import_params.json")
+		if not os.path.isfile(json_path):
+			return
+		try:
+			with open(json_path) as f:
+				d = json.load(f)
+		except Exception:
+			return
+		idx = self.gui_stacked_widget.currentIndex()
+		pw = self.gui_stacked_widget.widget(idx)
+		if pw is None:
+			return
+		wh = pw.guiwidget.widgethash
+		for key in ("thumbnailmovie", "neg_gain_cor", "pos_gain_cor"):
+			val = d.get("combined_thumb" if key == "thumbnailmovie" else key)
+			if val and key in wh:
+				wh[key].setValue(val, quiet=True)
+
+	def _autofill_import_gain(self):
+		"""Populate e3ctomo_import.py --gain field from info/gain_params.json."""
+		import json
+		json_path = os.path.join(self.pm_cwd, "info", "gain_params.json")
+		if not os.path.isfile(json_path):
+			return
+		try:
+			with open(json_path) as f:
+				d = json.load(f)
+		except Exception:
+			return
+		gain_file = d.get("gain_file")
+		if not gain_file:
+			return
+		idx = self.gui_stacked_widget.currentIndex()
+		pw = self.gui_stacked_widget.widget(idx)
+		if pw is None:
+			return
+		wh = pw.guiwidget.widgethash
+		if "gain" in wh:
+			wh["gain"].setValue(gain_file, quiet=True)
 
 	def _autofill_reconstruct_ranges(self):
 		"""Populate e3ctomo_reconstruct.py frame-range fields from info/pick_ranges.json."""
@@ -738,6 +788,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			return
 		wh = pw.guiwidget.widgethash
 		mapping = {
+			"basename":    d.get("basename"),
 			"startTltNeg": d.get("neg_start"),
 			"endTltNeg":   d.get("neg_end"),
 			"startTltPos": d.get("pos_start"),
@@ -757,7 +808,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		except:
 			self.statusbar.setMessage("Can't open file '%s'"%e2program,"color:red;")
 			return
-		# Pre-load pick_ranges.json so parser defaults can reference pick_ranges_data
+		# Pre-load JSON handoff files so parser defaults can reference them
 		import json as _pmjson, os as _pmos
 		pick_ranges_data = {}
 		_pr_path = _pmos.path.join(_pmos.getcwd(), "info", "pick_ranges.json")
@@ -765,6 +816,22 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			try:
 				with open(_pr_path) as _prf:
 					pick_ranges_data = _pmjson.load(_prf)
+			except Exception:
+				pass
+		gain_params_data = {}
+		_gp_path = _pmos.path.join(_pmos.getcwd(), "info", "gain_params.json")
+		if _pmos.path.isfile(_gp_path):
+			try:
+				with open(_gp_path) as _gpf:
+					gain_params_data = _pmjson.load(_gpf)
+			except Exception:
+				pass
+		import_params_data = {}
+		_im_path = _pmos.path.join(_pmos.getcwd(), "info", "import_params.json")
+		if _pmos.path.isfile(_im_path):
+			try:
+				with open(_im_path) as _imf:
+					import_params_data = _pmjson.load(_imf)
 			except Exception:
 				pass
 

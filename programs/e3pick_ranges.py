@@ -21,7 +21,17 @@ Controls (unidirectional)
   S  Set Start    E  Set End    Q  Done
 """
 
-import sys, os
+import sys, os, json
+
+# Pre-load import_params.json so parser defaults can reference import_params_data
+import_params_data = {}
+try:
+    _ip = os.path.join(os.getcwd(), "info", "import_params.json")
+    if os.path.isfile(_ip):
+        with open(_ip) as _f:
+            import_params_data = json.load(_f)
+except Exception:
+    pass
 
 import EMAN2_cppwrap as _cppwrap
 _c_emdata_init        = _cppwrap.EMData.__init__
@@ -52,18 +62,19 @@ def hdf_nimg(path):
 # Path helpers (mirrors e3ctomo_reconstruct.py)
 # ---------------------------------------------------------------------------
 
-def _lst_path(movie_neg, movie_pos, basename=None):
+def _lst_path(neg_gain_cor, pos_gain_cor, basename=None):
     if basename:
         return os.path.join("sets", f"{basename}_combined.lst")
-    neg_base = os.path.splitext(os.path.basename(movie_neg))[0]
-    pos_base = os.path.splitext(os.path.basename(movie_pos))[0]
+    neg_base = os.path.splitext(os.path.basename(neg_gain_cor))[0]
+    pos_base = os.path.splitext(os.path.basename(pos_gain_cor))[0]
     return os.path.join("sets", f"{neg_base}__{pos_base}__combined.lst")
 
-def _sa_path(lst_path, avgseq, basename=None):
+def _sa_path(lst_path, avgseq, meanshrink=4, basename=None):
+    tag = f"_Sh{meanshrink}" if meanshrink > 1 else ""
     if basename:
-        return os.path.join("tiltseries", f"{basename}__SA{avgseq}_Sh4.hdf")
+        return os.path.join("tiltseries", f"{basename}__SA{avgseq}{tag}.hdf")
     stem = os.path.splitext(os.path.basename(lst_path))[0]
-    return os.path.join("tiltseries", f"{stem}__SA{avgseq}_Sh4.hdf")
+    return os.path.join("tiltseries", f"{stem}__SA{avgseq}{tag}.hdf")
 
 
 # ---------------------------------------------------------------------------
@@ -74,11 +85,12 @@ def run_steps_1_2(options):
     """Build combined LST (step 1) and SA tilt series (step 2)."""
     import json
 
-    movie_neg = os.path.abspath(options.movie_neg)
-    movie_pos = os.path.abspath(options.movie_pos)
+    neg_gain_cor = os.path.abspath(options.neg_gain_cor)
+    pos_gain_cor = os.path.abspath(options.pos_gain_cor)
     bn        = options.basename or None
     avgseq    = options.avgseq_sa
     cbits     = options.compressbits
+    shrink    = options.meanshrink
 
     json_path = os.path.join("info", "pick_ranges.json")
     with open(json_path) as f:
@@ -88,34 +100,40 @@ def run_steps_1_2(options):
     pos_start = d.get("pos_start", 0)
     pos_end   = d.get("pos_end",   9999)
 
-    lst  = _lst_path(movie_neg, movie_pos, bn)
-    sa   = _sa_path(lst, avgseq, bn)
+    lst  = _lst_path(neg_gain_cor, pos_gain_cor, bn)
+    sa   = _sa_path(lst, avgseq, shrink, bn)
 
     # Step 1 — combined LST
     print("\n=== Step 1 — build combined LST ===")
-    n_neg = EMUtil.get_image_count(movie_neg)
+    n_neg = EMUtil.get_image_count(neg_gain_cor)
     os.makedirs("sets", exist_ok=True)
     neg_start = max(0, neg_start)
     neg_end   = min(n_neg - 1, neg_end)
-    pos_end_max = n_neg + EMUtil.get_image_count(movie_pos) - 1
+    pos_end_max = n_neg + EMUtil.get_image_count(pos_gain_cor) - 1
     pos_start = max(n_neg, pos_start)
     pos_end   = min(pos_end_max, pos_end)
     with open(lst, "w") as f:
         f.write("#LST\n")
         for i in range(neg_start, neg_end + 1):
-            f.write(f"{n_neg - 1 - i}\t{movie_neg}\n")
+            f.write(f"{n_neg - 1 - i}\t{neg_gain_cor}\n")
         for i in range(pos_start, pos_end + 1):
-            f.write(f"{i - n_neg}\t{movie_pos}\n")
+            f.write(f"{i - n_neg}\t{pos_gain_cor}\n")
     print(f"  Wrote {lst}")
     print(f"  Neg frames: {neg_end - neg_start + 1}  "
           f"(combined {neg_start}–{neg_end} → orig neg {n_neg-1-neg_start}–{n_neg-1-neg_end})")
     print(f"  Pos frames: {pos_end - pos_start + 1}  "
           f"(pos movie {pos_start-n_neg}–{pos_end-n_neg})")
 
-    # Step 2 — sub-average + shrink
-    print(f"\n=== Step 2 — sub-average + shrink ===")
+    # Step 2 — sub-average (+ optional spatial shrink)
+    print(f"\n=== Step 2 — sub-average (meanshrink={shrink}) ===")
     os.makedirs("tiltseries", exist_ok=True)
-    cmd = (f"e2proc2d.py {lst} {sa}:{cbits} --avgseq={avgseq} --meanshrink=4")
+    if os.path.isfile(sa):
+        os.remove(sa)
+        print(f"  Removed existing: {sa}")
+    hdr = EMData(neg_gain_cor, 0, True)
+    output_apix = hdr["apix_x"] * shrink
+    shrink_arg = f" --meanshrink={shrink}" if shrink > 1 else ""
+    cmd = (f"e2proc2d.py {lst} {sa}:{cbits} --avgseq={avgseq}{shrink_arg} --apix={output_apix:.4f}")
     print(cmd)
     ret = os.system(cmd)
     if ret != 0:
@@ -247,7 +265,60 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         hint.setAlignment(QtCore.Qt.AlignCenter)
         vbox.addWidget(hint)
 
+        self._try_load_saved_ranges()
         self._update_display()
+
+    # ------------------------------------------------------------------
+
+    def _try_load_saved_ranges(self):
+        """Reload previously saved ranges from info/pick_ranges_<basename>.json or pick_ranges.json."""
+        json_path = None
+        if self.args.basename:
+            archive = os.path.join("info", f"pick_ranges_{self.args.basename}.json")
+            if os.path.isfile(archive):
+                json_path = archive
+        if json_path is None:
+            flat = os.path.join("info", "pick_ranges.json")
+            if os.path.isfile(flat):
+                json_path = flat
+        if json_path is None:
+            return
+        try:
+            with open(json_path) as f:
+                d = json.load(f)
+        except Exception:
+            return
+        if d.get("unidirectional") != self.unidirectional:
+            return
+        a = self.avgseq
+        n = len(self.frames)
+        if self.unidirectional:
+            if "start" in d and "end" in d:
+                self.start = max(0, min(n - 1, d["start"] // a))
+                self.end   = max(0, min(n - 1, d["end"]   // a))
+                self._markers_set.update({"start", "end"})
+                self._btn_active[self.btn_start] = True
+                self._btn_active[self.btn_end]   = True
+                self.btn_start.setStyleSheet(self._COLOR_START)
+                self.btn_end.setStyleSheet(self._COLOR_END)
+        else:
+            keys = ("neg_start", "neg_end", "pos_start", "pos_end")
+            if all(k in d for k in keys):
+                half = n // 2
+                self.neg_start = max(0,      min(half - 1, d["neg_start"] // a))
+                self.neg_end   = max(0,      min(half - 1, d["neg_end"]   // a))
+                self.pos_start = max(half,   min(n - 1,    d["pos_start"] // a))
+                self.pos_end   = max(half,   min(n - 1,    d["pos_end"]   // a))
+                self._markers_set.update({"neg_start", "neg_end", "pos_start", "pos_end"})
+                self._btn_active[self.btn_neg_start] = True
+                self._btn_active[self.btn_neg_end]   = True
+                self._btn_active[self.btn_pos_start] = True
+                self._btn_active[self.btn_pos_end]   = True
+                self.btn_neg_start.setStyleSheet(self._COLOR_START)
+                self.btn_neg_end.setStyleSheet(self._COLOR_END)
+                self.btn_pos_start.setStyleSheet(self._COLOR_START)
+                self.btn_pos_end.setStyleSheet(self._COLOR_END)
+        print(f"  Reloaded ranges from {json_path}")
 
     # ------------------------------------------------------------------
     _COLOR_START = "background-color: #90EE90;"   # light green
@@ -424,17 +495,24 @@ class PickRangesWindow(QtWidgets.QMainWindow):
         a = self.avgseq
         if self.unidirectional:
             data = {"unidirectional": True,
-                    "basename": self.args.basename,
+                    "basename":   self.args.basename,
+                    "avgseq_sa":  self.args.avgseq_sa,
+                    "meanshrink": self.args.meanshrink,
                     "start": self.start * a,
                     "end":   self.end   * a}
         else:
             data = {"unidirectional": False,
-                    "basename":  self.args.basename,
+                    "basename":   self.args.basename,
+                    "avgseq_sa":  self.args.avgseq_sa,
+                    "meanshrink": self.args.meanshrink,
                     "neg_start": self.neg_start * a,
                     "neg_end":   self.neg_end   * a,
                     "pos_start": self.pos_start * a,
                     "pos_end":   self.pos_end   * a}
         with open(path, "w") as f:
+            json.dump(data, f, indent=2)
+        archive = os.path.join(info_dir, f"pick_ranges_{self.args.basename}.json")
+        with open(archive, "w") as f:
             json.dump(data, f, indent=2)
         print(f"Ranges written to {path}")
 
@@ -467,14 +545,15 @@ Pick good frame ranges from a continuous-tilt thumbnail movie.
 The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames].
 """
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
-    parser.add_pos_argument(name="thumbnailmovie", help="Thumbnail HDF stack (neg reversed + pos concatenated).", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--movie_neg",  type=str, default="", help="Negative tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--movie_pos",  type=str, default="", help="Positive tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+    parser.add_pos_argument(name="thumbnailmovie", help="Thumbnail HDF stack (neg reversed + pos concatenated).", default=import_params_data.get("combined_thumb", ""), guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--neg_gain_cor",  type=str, default=import_params_data.get("neg_gain_cor", ""), help="Negative tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--pos_gain_cor",  type=str, default=import_params_data.get("pos_gain_cor", ""), help="Positive tilt GainShifted movie.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
     parser.add_argument("--basename",   type=str, default="", help="Short label for output files (e.g. CT07).", guitype='strbox', row=3, col=0, rowspan=1, colspan=3)
     parser.add_argument("--ntave",      type=int, default=18, help="Frames averaged per thumbnail — auto-loaded from Gain Correction (do not change).", guitype='intbox', row=4, col=0, rowspan=1, colspan=1)
     parser.add_argument("--avgseq_sa",  type=int, default=60, help="Frames to average per tilt for SA tilt series.", guitype='intbox', row=4, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--compressbits", type=int, default=6, help="Compression bits for SA tilt series.", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
-    parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--meanshrink", type=int, default=4,  help="Spatial shrink for SA tilt series (4 for 4K cameras → 1K; 2 for 2K cameras → 1K).", guitype='intbox', row=4, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--compressbits", type=int, default=6, help="Compression bits for SA tilt series.", guitype='intbox', row=5, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--unidirectional", default=False, help="Single-direction acquisition (no neg/pos split).", action="store_true", guitype='boolbox', row=5, col=2, rowspan=1, colspan=1)
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
     (options, args) = parser.parse_args()
 
@@ -501,10 +580,10 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     win.show()
     app.exec_()
 
-    if win.done_clicked and options.movie_neg and options.movie_pos:
+    if win.done_clicked and options.neg_gain_cor and options.pos_gain_cor:
         run_steps_1_2(options)
-    elif win.done_clicked and not (options.movie_neg and options.movie_pos):
-        print("Note: --movie_neg/--movie_pos not supplied; skipping LST and SA steps.")
+    elif win.done_clicked and not (options.neg_gain_cor and options.pos_gain_cor):
+        print("Note: --neg_gain_cor/--pos_gain_cor not supplied; skipping LST and SA steps.")
 
     EMAN2.E2end(logid)
 

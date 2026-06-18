@@ -41,7 +41,9 @@ def main():
 This will estimate gain for counting mode cameras, and has a "first draft" of frame alignment.
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
-	parser.add_argument("--est_gain", type=str,help="specify output file for gain image. Estimates a gain image when given a set of many movies via hierarchical median estimation", default=None)
+	parser.add_argument("--movies", type=str, default="", help="Movie files for gain estimation (space- or comma-separated). Use Browse for single-directory selection, or paste paths for files across directories.", guitype='filebox', row=0, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--est_gain", type=str, help="Output file for estimated gain image.", default="", guitype='strbox', row=1, col=0, rowspan=1, colspan=3)
+	parser.add_argument("--ppid", type=int, default=-1, help="PID of parent process (used by project manager).")
 	parser.add_argument("--seqavg",type=int,default=-1,help="Average N frames in sequence before alignment")
 	parser.add_argument("--shrinkout",type=float,default=-1,help="Fourier downsample the output movie stack by a factor of N (may be fractional)")
 	parser.add_argument("--apix", type=float, help="Override A/pixel from header on all inputs",default=None)
@@ -64,6 +66,13 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 	jax_set_device(dev=0,maxmem=options.gpuram)
 
 	pid=E3init(argv)
+
+	# --movies supplements positional args (filebox stores comma-separated; also accept spaces)
+	if options.movies:
+		args = args + [f for f in options.movies.replace(',', ' ').split() if f]
+	if not options.est_gain:
+		options.est_gain = None
+
 	nmov=len(args)
 	if options.clip is not None: clip=(int(options.clip.split(",")[0]),int(options.clip.split(",")[1]))
 	else: clip=None
@@ -77,11 +86,23 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 		for i in range(nmov):
 			if (i%10==0): E3progress(pid,i/nmov)
 			nimg=EMUtil.get_image_count(args[i])
-			print(f"{args[i]}: {nimg}")
-			#if (nimg>500) : raise Exception("Can't deal with movies with >500 frames at present")
-			for j in range(0,nimg,50):
-				imgs=EMData.read_images(f"{args[i]}:{j}:{j+50}")
-				for img in imgs: avgr.add_image(img)
+			hdr=EMData(args[i], 0, True)
+			nz=hdr["nz"]
+			# MRC movies are often read as a single 3D volume (nimg=1, nz=nframes)
+			if nimg==1 and nz>1:
+				nframes=nz
+				nx,ny=hdr["nx"],hdr["ny"]
+				print(f"{args[i]}: {nframes} frames (3D MRC, {nx}x{ny})")
+				for j in range(0,nframes,50):
+					for k in range(j, min(j+50, nframes)):
+						img=EMData()
+						img.read_image(args[i], 0, False, Region(0, 0, k, nx, ny, 1))
+						avgr.add_image(img)
+			else:
+				print(f"{args[i]}: {nimg}")
+				for j in range(0,nimg,50):
+					imgs=EMData.read_images(args[i], list(range(j, min(j+50, nimg))))
+					for img in imgs: avgr.add_image(img)
 
 		avg=avgr.finish()
 		avg.mult(1.0/avg["mean"])	# this insures that on average e- counts are still counts

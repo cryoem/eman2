@@ -32,7 +32,18 @@ import os
 import argparse
 import glob
 import datetime
+import json
 import numpy as np
+
+# Pre-load gain_params.json so parser default can reference gain_params_data
+gain_params_data = {}
+try:
+    _gp = os.path.join(os.getcwd(), "info", "gain_params.json")
+    if os.path.isfile(_gp):
+        with open(_gp) as _f:
+            gain_params_data = json.load(_f)
+except Exception:
+    pass
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 
@@ -70,21 +81,86 @@ def ts():
 
 # ── Step i: copy & spatially downsample movies ────────────────────────────────
 
+def to_hdf_name(path):
+    """Return basename with extension replaced by .hdf."""
+    return os.path.splitext(os.path.basename(path))[0] + ".hdf"
+
 def step_i_copy_movies(input_movies, outdir, apix, meanshrink, compressbits):
     movies_dir = os.path.join(outdir, "movies")
     os.makedirs(movies_dir, exist_ok=True)
 
     for src in input_movies:
-        basename = os.path.basename(src)
-        dst = os.path.join(movies_dir, basename)
+        if not os.path.isfile(src):
+            print(f"ERROR: source movie not found: {src}")
+            sys.exit(1)
+        dst = os.path.join(movies_dir, to_hdf_name(src))
         if os.path.isfile(dst):
             os.remove(dst)
             print(f"Removed existing movie: {dst}")
-        cmd = (f"e2proc2d.py {src} {dst}:4 "
+        cmd = (f"e2proc2d.py {src} {dst} "
                f"--apix={apix} --meanshrink={meanshrink} "
                f"--compressbits={compressbits}")
         print(cmd)
-        os.system(cmd)
+        ret = os.system(cmd)
+        if ret != 0 or not os.path.isfile(dst):
+            print(f"ERROR: copy failed for {src} -> {dst} (exit code {ret})")
+            sys.exit(1)
+
+
+# ── RPS diagnostic ────────────────────────────────────────────────────────────
+
+def _make_rps_diagnostic(gain_time_ave_file, gain_shifted_file, apix, outdir, neg_base, nframes=150):
+    """Save diagnostics/RPS_<neg_base>.jpg: unshifted vs shift-corrected average."""
+    try:
+        import numpy as np
+        import matplotlib
+        matplotlib.use('Agg')
+        import matplotlib.pyplot as plt
+    except ImportError as e:
+        print(f"  RPS diagnostic skipped (missing library): {e}")
+        return
+
+    n = hdf_nimg(gain_shifted_file)
+    mid = n // 2
+    start = max(0, mid - nframes // 2)
+    end   = min(n - 1, start + nframes - 1)
+
+    def _avg_block(path, s, e):
+        imgs = EMData.read_images(path, list(range(s, e + 1)))
+        avg = imgs[0].copy()
+        for img in imgs[1:]:
+            avg.add(img)
+        avg.mult(1.0 / len(imgs))
+        return avg
+
+    def _rps(img):
+        fft = img.do_fft()
+        nr  = img["nx"] // 2
+        rad = np.array(fft.calc_radial_dist(nr, 0.0, 1.0, 1))
+        freq = np.arange(nr) / (img["nx"] * apix)
+        return freq, np.log10(rad + 1e-12)
+
+    avg_u = _avg_block(gain_time_ave_file, start, end)
+    avg_s = _avg_block(gain_shifted_file,  start, end)
+    freq_u, rps_u = _rps(avg_u)
+    freq_s, rps_s = _rps(avg_s)
+
+    diag_dir = os.path.join(outdir, "diagnostics")
+    os.makedirs(diag_dir, exist_ok=True)
+
+    plt.figure(figsize=(4, 3))
+    plt.plot(freq_u, rps_u, label='Unshifted')
+    plt.plot(freq_s, rps_s, label='Shifted')
+    plt.xlim(0, 0.5 / apix)
+    plt.xlabel("Spatial frequency (1/Å)")
+    plt.ylabel("log10 Power")
+    plt.title(f"RPS: {neg_base}\nframes {start}–{end}")
+    plt.legend()
+    plt.tight_layout()
+    out = os.path.join(diag_dir, f"RPS_{neg_base}.jpg")
+    plt.savefig(out, dpi=150)
+    plt.close()
+    print(f"  RPS diagnostic → {out}")
 
 
 # ── Step iii: thumbnails ──────────────────────────────────────────────────────
@@ -348,7 +424,7 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
     parser.add_argument("--movie_neg", type=str, default="", help="Negative tilt movie (gain-corrected HDF).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
     parser.add_argument("--movie_pos", type=str, default="", help="Positive tilt movie (gain-corrected HDF).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--gain", type=str, default="GainFiducial.hdf", help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--gain", type=str, default=gain_params_data.get("gain_file", "GainFiducial.hdf"), help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
     parser.add_argument("--outdir", type=str, default=".", help="Project output directory.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=3)
     parser.add_header(name="apixhdr", help="", title=u"Å/pixel", row=4, col=0, rowspan=1, colspan=1)
     parser.add_argument("--apix", type=float, default=3.714, help=u"Å/pixel — Angstroms per pixel.", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1)
@@ -356,8 +432,9 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     parser.add_argument("--compressbits", type=int, default=4, help="Compression bits for movie copies (default: 4).", guitype='intbox', row=5, col=1, rowspan=1, colspan=1)
     parser.add_argument("--ntave", type=int, default=18, help="Rolling time-average window size (default: 18).", guitype='intbox', row=5, col=2, rowspan=1, colspan=1)
     parser.add_argument("--chunk", type=int, default=50, help="I/O chunk size for processing (default: 50).")
-    parser.add_argument("--skip_copy", default=False, help="Skip step i — movies already present in outdir/movies/.", action="store_true", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--skip_copy",  default=False, help="Skip step i — movies already present in outdir/movies/.", action="store_true", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
     parser.add_argument("--skip_thumbs", default=False, help="Skip step iii — thumbnail creation.", action="store_true", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--skip_gain",  default=False, help="Skip step iv — gain correction and CCF alignment.", action="store_true", guitype='boolbox', row=6, col=2, rowspan=1, colspan=1)
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
     (options, args) = parser.parse_args()
 
@@ -385,9 +462,9 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     print(f"Working directory: {os.getcwd()}")
     ts()
 
-    # movie_files always mirrors input_movies, just inside outdir/movies/
+    # movie_files always mirrors input_movies in outdir/movies/ as HDF
     movies_dir  = os.path.join(outdir, "movies")
-    movie_files = [os.path.join(movies_dir, os.path.basename(m)) for m in input_movies]
+    movie_files = [os.path.join(movies_dir, to_hdf_name(m)) for m in input_movies]
 
     # ── Step i ────────────────────────────────────────────────────────────────
     if not options.skip_copy:
@@ -412,20 +489,45 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
         print("Skipping step iii (--skip_thumbs).")
 
     # ── Step iv ───────────────────────────────────────────────────────────────
-    print("\n--- Step iv: rolling time-average + gain correction + CCF alignment ---")
-    step_iv_gain_and_align(
-        movie_files,
-        gain_file=gain_file,
-        apix=options.apix,
-        number_to_be_averaged=options.ntave,
-        chunkframes=options.chunk,
-    )
+    if not options.skip_gain:
+        print("\n--- Step iv: rolling time-average + gain correction + CCF alignment ---")
+        step_iv_gain_and_align(
+            movie_files,
+            gain_file=gain_file,
+            apix=options.apix,
+            number_to_be_averaged=options.ntave,
+            chunkframes=options.chunk,
+        )
+    else:
+        print("Skipping step iv (--skip_gain).")
+
+    # RPS diagnostic (neg movie only)
+    neg_base = os.path.splitext(os.path.basename(movie_files[0]))[0]
+    tave_file = neg_base + f"_GainTimeAve{options.ntave}.hdf"
+    shft_file = neg_base + "_GainShifted.hdf"
+    if os.path.isfile(tave_file) and os.path.isfile(shft_file):
+        print("\n--- RPS diagnostic ---")
+        _make_rps_diagnostic(tave_file, shft_file, options.apix, outdir, neg_base)
+    else:
+        print("  RPS diagnostic skipped (GainTimeAve or GainShifted not found).")
 
     # Record import parameters for downstream steps
     import json as _json
     os.makedirs("info", exist_ok=True)
+    neg_shifted = os.path.splitext(os.path.basename(movie_files[0]))[0] + "_GainShifted.hdf"
+    pos_shifted = os.path.splitext(os.path.basename(movie_files[1]))[0] + "_GainShifted.hdf"
+    combined_thumb = os.path.relpath(os.path.join(outdir, "thumbnails", neg_base + "_combined_thumb.hdf"))
+    params = {"ntave": options.ntave, "apix": options.apix,
+              "neg_gain_cor": neg_shifted, "pos_gain_cor": pos_shifted,
+              "combined_thumb": combined_thumb}
     with open(os.path.join("info", "import_params.json"), "w") as _f:
-        _json.dump({"ntave": options.ntave, "apix": options.apix}, _f, indent=2)
+        _json.dump(params, _f, indent=2)
+    archive = os.path.join("info", f"import_params_{neg_base}.json")
+    with open(archive, "w") as _f:
+        _json.dump(params, _f, indent=2)
+    print(f"  movie_neg → {neg_shifted}")
+    print(f"  movie_pos → {pos_shifted}")
+    print(f"  archived  → {archive}")
 
     print("\nAll done.")
     ts()

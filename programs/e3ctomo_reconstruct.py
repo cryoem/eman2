@@ -3,7 +3,7 @@
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-import sys, os, json
+import sys, os, json, subprocess
 
 # Pre-load pick_ranges.json so parser defaults can reference pick_ranges_data
 # (also injected by e2projectmanager.py's eval namespace)
@@ -21,11 +21,12 @@ except Exception:
 # Path helpers  (all accept optional basename; fall back to auto-derived names)
 # ---------------------------------------------------------------------------
 
-def _fullsh4_path(lst_path, basename=None):
+def _fullsh4_path(lst_path, basename=None, meanshrink=4):
+    tag = f"Sh{meanshrink}"
     if basename:
-        return os.path.join("sets", f"{basename}_Full_Sh4.hdf")
+        return os.path.join("sets", f"{basename}_Full_{tag}.hdf")
     stem = os.path.splitext(os.path.basename(lst_path))[0]
-    return os.path.join("sets", f"{stem}_Sh4.hdf")
+    return os.path.join("sets", f"{stem}_{tag}.hdf")
 
 def _tomogram_json(sa_path):
     """Path that e2tomogram.py --stage2prep writes: info/<sa_base>_recon_tomo_final.json."""
@@ -38,21 +39,23 @@ def _stage2_label(basename=None, interp_json=None):
     if basename:
         return basename
     if interp_json:
+        import re
         stem = os.path.splitext(os.path.basename(interp_json))[0]
-        if stem.endswith("_Full_Sh4"):
-            stem = stem[:-len("_Full_Sh4")]
+        stem = re.sub(r"_Full_Sh\d+$", "", stem)
         return stem
     return "stage2"
 
-def _interp_json(fullsh4_path, basename=None):
+def _interp_json(fullsh4_path, basename=None, meanshrink=4):
+    tag = f"Sh{meanshrink}"
     if basename:
-        return os.path.join("info", f"{basename}_Full_Sh4.json")
+        return os.path.join("info", f"{basename}_Full_{tag}.json")
     stem = os.path.splitext(os.path.basename(fullsh4_path))[0]
     return os.path.join("info", f"{stem}.json")
 
-def _interp_log(fullsh4_path, basename=None):
+def _interp_log(fullsh4_path, basename=None, meanshrink=4):
+    tag = f"Sh{meanshrink}"
     if basename:
-        return os.path.join("info", f"{basename}_Full_Sh4.txt")
+        return os.path.join("info", f"{basename}_Full_{tag}.txt")
     stem = os.path.splitext(os.path.basename(fullsh4_path))[0]
     return os.path.join("info", f"{stem}.txt")
 
@@ -61,9 +64,17 @@ def _interp_log(fullsh4_path, basename=None):
 # Pipeline steps  (all paths passed in; no internal path derivation)
 # ---------------------------------------------------------------------------
 
+def _run_logged(cmd_str, log_path):
+    """Run cmd_str, streaming stdout+stderr live to log_path (unbuffered)."""
+    env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+    with open(log_path, "w") as lf:
+        proc = subprocess.Popen(cmd_str, shell=True, stdout=lf,
+                                stderr=subprocess.STDOUT, env=env)
+        return proc.wait()
+
 
 def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep):
-    """Run /home3/Python/e2tomogram.py --stage2prep: reconstruct and write rich JSON."""
+    """Run e2tomogram.py --stage2prep: reconstruct and write rich JSON."""
     n_sa = EMUtil.get_image_count(sa_path)
     tltstep = tilt_range / n_sa
     cmd = (
@@ -97,9 +108,14 @@ def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep):
         print(f"Warning: e2tomogram.py exited with code {ret}")
 
 
-def make_fullframe_sh4(lst_path, fullsh4_path, compressbits):
+def make_fullframe_sh4(lst_path, fullsh4_path, compressbits, meanshrink=4):
     """Shrink the combined LST (no sub-averaging) → sets/."""
-    cmd = f"e2proc2d.py {lst_path} {fullsh4_path}:{compressbits} --meanshrink=4"
+    if os.path.isfile(fullsh4_path):
+        os.remove(fullsh4_path)
+        print(f"  Removed existing: {fullsh4_path}")
+    hdr = EMData(lst_path, 0, True)
+    output_apix = hdr["apix_x"] * meanshrink
+    cmd = f"e2proc2d.py {lst_path} {fullsh4_path}:{compressbits} --meanshrink={meanshrink} --apix={output_apix:.4f}"
     print(f"\n=== Step 4 — full-frame shrink ===")
     print(cmd)
     ret = os.system(cmd)
@@ -112,11 +128,10 @@ def run_interpolate_eulers(tomo_json, fullsh4_path, interp_json, interp_log):
     cmd = (f"e2InterpolateJsonEulersAmongFramesV2.py"
            f" --JsonIn {tomo_json}"
            f" --finalstackName {fullsh4_path}"
-           f" --JsonOut {interp_json}"
-           f" > {interp_log}")
+           f" --JsonOut {interp_json}")
     print(f"\n=== Step 5 — interpolate Euler angles to full frames ===")
-    print(cmd)
-    ret = os.system(cmd)
+    print(cmd + f" > {interp_log}")
+    ret = _run_logged(cmd, interp_log)
     if ret != 0:
         print(f"Warning: e2InterpolateJsonEulersAmongFramesV2.py exited with code {ret}")
 
@@ -124,11 +139,10 @@ def run_interpolate_eulers(tomo_json, fullsh4_path, interp_json, interp_log):
 def run_stage2(interp_json, label, log_path):
     """Run e2tomogram_stage2_Oct7th2025v2.py → tomograms/<label>.hdf."""
     cmd = (f"e2tomogram_stage2_Oct7th2025v2.py"
-           f" {interp_json} {label}"
-           f" > {log_path}")
+           f" {interp_json} {label}")
     print(f"\n=== Step 6 — stage-2 reconstruction ===")
-    print(cmd)
-    ret = os.system(cmd)
+    print(cmd + f" > {log_path}")
+    ret = _run_logged(cmd, log_path)
     if ret != 0:
         print(f"Warning: e2tomogram_stage2_Oct7th2025v2.py exited with code {ret}")
 
@@ -152,16 +166,18 @@ performed automatically by e3pick_ranges.py after range selection.
     parser = EMArgumentParser(usage=usage, version=EMANVERSION)
 
     parser.add_argument("--basename",     type=str,  default=pick_ranges_data.get("basename",""),   help="Short label for output files (e.g. CT07). Auto-loaded from Pick Ranges.", guitype='strbox', row=0, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--avgseq_sa",     type=int,  default=60,   help="Frames averaged per tilt in SA series (must match Pick Ranges).", guitype='intbox', row=1, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--tiltRange",    type=int,  default=120,  help="Total tilt range in degrees.", guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--compressbits", type=int,  default=6,    help="Compression bits for output.", guitype='intbox', row=1, col=2, rowspan=1, colspan=1)
-    parser.add_argument("--threads",      type=int,  default=2,    help="CPU threads for e2tomogram.py --stage2prep.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--clipz",        type=int,  default=768,  help="Z clip size (pixels).", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--tltkeep",      type=float, default=1.0, help="Fraction of tilt images to keep (1.0 = keep all).", guitype='floatbox', row=2, col=2, rowspan=1, colspan=1)
-    parser.add_argument("--skip_tomogram",  default=False, action="store_true", help="Skip step 1: e2tomogram.py --stage2prep.", guitype='boolbox', row=3, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--skip_fullsh4",   default=False, action="store_true", help="Skip step 2: full-frame Sh4 stack.", guitype='boolbox', row=3, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--skip_interp",    default=False, action="store_true", help="Skip step 3: Euler interpolation.", guitype='boolbox', row=3, col=2, rowspan=1, colspan=1)
-    parser.add_argument("--skip_stage2",    default=False, action="store_true", help="Skip step 4: stage-2 reconstruction.", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--avgseq_sa",     type=int,  default=pick_ranges_data.get("avgseq_sa", 60),        help="Frames averaged per tilt in SA series (must match Pick Ranges).", guitype='intbox', row=1, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--meanshrink_sa", type=int,  default=pick_ranges_data.get("meanshrink", 4),        help="Spatial shrink used when building SA tiltseries in Pick Ranges (4K→1K: 4; 2K→1K: 2).", guitype='intbox', row=1, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--tiltRange",    type=int,  default=120,  help="Total tilt range in degrees.", guitype='intbox', row=1, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--compressbits", type=int,  default=6,    help="Compression bits for output.", guitype='intbox', row=2, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--meanshrink",   type=int,  default=4,    help="Spatial shrink for full-frame stack (2 for 2K cameras, 4 for 4K cameras).", guitype='intbox', row=2, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--threads",      type=int,  default=2,    help="CPU threads for e2tomogram.py --stage2prep.", guitype='intbox', row=2, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--clipz",        type=int,  default=768,  help="Z clip size (pixels).", guitype='intbox', row=3, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--tltkeep",      type=float, default=1.0, help="Fraction of tilt images to keep (1.0 = keep all).", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--skip_tomogram",  default=False, action="store_true", help="Skip step 1: e2tomogram.py --stage2prep.", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--skip_fullsh4",   default=False, action="store_true", help="Skip step 2: full-frame shrink stack.", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--skip_interp",    default=False, action="store_true", help="Skip step 3: Euler interpolation.", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--skip_stage2",    default=False, action="store_true", help="Skip step 4: stage-2 reconstruction.", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
 
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
 
@@ -187,11 +203,12 @@ performed automatically by e3pick_ranges.py after range selection.
     # Compute all output paths upfront from basename + avgseq
     bn           = options.basename
     lst_path     = os.path.join("sets", f"{bn}_combined.lst")
-    sa_path      = os.path.join("tiltseries", f"{bn}__SA{options.avgseq_sa}_Sh4.hdf")
-    fullsh4_path = _fullsh4_path(lst_path, bn)
+    _sa_sh_tag   = f"_Sh{options.meanshrink_sa}" if options.meanshrink_sa > 1 else ""
+    sa_path      = os.path.join("tiltseries", f"{bn}__SA{options.avgseq_sa}{_sa_sh_tag}.hdf")
+    fullsh4_path = _fullsh4_path(lst_path, bn, options.meanshrink)
     tomo_json    = _tomogram_json(sa_path)
-    interp_json  = _interp_json(fullsh4_path, bn)
-    interp_log   = _interp_log(fullsh4_path, bn)
+    interp_json  = _interp_json(fullsh4_path, bn, options.meanshrink)
+    interp_log   = _interp_log(fullsh4_path, bn, options.meanshrink)
     s2_label     = _stage2_label(bn, interp_json)
     s2_log       = os.path.join("tomograms", f"{s2_label}_stage2.txt")
 
@@ -212,7 +229,7 @@ performed automatically by e3pick_ranges.py after range selection.
     if options.skip_fullsh4:
         print(f"\n--- Step 2 skipped (--skip_fullsh4)  [{fullsh4_path}]")
     else:
-        make_fullframe_sh4(lst_path, fullsh4_path, options.compressbits)
+        make_fullframe_sh4(lst_path, fullsh4_path, options.compressbits, options.meanshrink)
 
     # Step 3
     if options.skip_interp:

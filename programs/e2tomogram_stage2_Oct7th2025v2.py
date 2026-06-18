@@ -347,7 +347,7 @@ def make_tile(args):
 		threed.process_inplace("math.gausskernelfix", {"gauss_width": 4.0})
 
 	threed.clip_inplace(Region((pad - sz) // 2, (pad - sz) // 2, (pad - outz) // 2, sz, sz, outz))
-	if 0:  # PRB  06/04/2025
+	if 1:
 		threed.process_inplace("filter.lowpass.gauss", {"cutoff_abs": options.filterto})
 
 	# Return results directly instead of using jsd
