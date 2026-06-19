@@ -1441,7 +1441,7 @@ def prj_simple_single_sym(pointary, ortary, ny, tytx,symmx):
 
 @partial(jax.jit, static_argnames=["ny"])
 def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
-		"""Like point_project_simple_fn, but includes symmetry by averaging over each symmetrical projection. Does not do any CTF.
+	"""Like point_project_simple_fn, but includes symmetry by averaging over each symmetrical projection. Does not do any CTF.
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
 	pointary - a Points.jax array
@@ -1450,6 +1450,7 @@ def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
 	ny - boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
 	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
 	"""
+	
 	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
 # The following variant doesn't take a single point array and project it in N orientations, it
@@ -1515,7 +1516,7 @@ def point_project_ctf_single_fn(pointary,mx,ctf_info,apix,boxsize,tytx,astig):
 point_project_ctf_fn=jax.jit(jax.vmap(point_project_ctf_single_fn, in_axes=[None, 2, None, None, None, 0, 0, 0]) ,static_argnames=["boxsize"])
 
 def prj_ctf_single_sym(pointary, ortary, ctf_info, apix, boxsize, tytx, astig, beamtiltZ, symmx):
-		"""Like point_project_ctf_fn, but includes symmetry. Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx.
+	"""Like point_project_ctf_fn, but includes symmetry. Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx.
 	Also like prj_simple_single_sym but includes single defocus value CTF
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
@@ -1551,7 +1552,7 @@ def point_project_ctf_sym_fn(pointary, ortary, ctf_info, apix, boxsize, tytx, as
 	return jnp.mean(jax.vmap(prj_ctf_single_sym, in_axes=[None, None, None, None, None, None, None, None, 2])(pointary, ortary, ctf_info, apix, boxsize, tytx, astig, beamtiltZ, symmx), axis=0)
 
 def point_project_layered_ctf_single_fn(pointary,mx,ctf_info,dfstep,apix,boxsize,tytx,astig):
-		"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
+	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
 	Same as point_project_single_fn or point_project_ctf_single_fn, but includes multislice defocus values in CTF modification. Does not include symmetry
 
 	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
@@ -1628,7 +1629,7 @@ def prj_layered_single_sym(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, a
 
 @partial(jax.jit, static_argnames=["ny", "apix", "dfstep"])
 def point_project_layered_ctf_sym_fn(pointary, ortary, ctf_info, dfstep, apix, ny, tytx, astig, symmx):
-		"""Like point_project_layered_ctf_fn, but includes symmetry by averaging over each symmetrical projection.
+	"""Like point_project_layered_ctf_fn, but includes symmetry by averaging over each symmetrical projection.
 	Also like point_project_simple_sym_fn and point_project_ctf_sym_fn, but includes multislice defocus value CTF
 
 	pointary - a Points.jax array
