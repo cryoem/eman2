@@ -169,7 +169,7 @@ def main():
 		for batch in range(Nptcl//batchsize):
 			x = jnp.array(ptclrep[batch*batchsize:(batch+1)*batchsize])
 			aux = cache.read(128,range(batch*batchsize,(batch+1)*batchsize))
-			loss_val = train_step(model, optimizer, x, aux.jax, jnp.array(aux.metadata) )
+			loss_val = train_step(model, optimizer, x, aux.jax, jnp.array(aux.metadata),weights[128],threshs[128] )
 			
 			running_loss += float(loss_val)
 		
@@ -180,13 +180,14 @@ def main():
 	E3end(logid)
 
 @nnx.jit
-def train_step(model, optimizer, x, ptcl, meta):
+def train_step(model, optimizer, x, ptcl, meta,weight,thresh):
 	# 1. Define a local function that computes loss based ONLY on model state.
 	#    nnx.value_and_grad differentiates with respect to the first argument's variables.
 	def loss_fn(mdl):
 		pointary = mdl(x)  # Forward pass
-		return(sym_prj_frc_loss_ctf(pointary,meta[:,2:5],))
-		return loss_function(predictions, aux)
+#		return(sym_prj_frc_loss_ctf(pointary,meta[:,2:5],))
+		return(sym_prj_frc_loss(pointary,meta[:,2:5],meta[:,0:2],None,ptcl,weight,thresh))
+		#return loss_function(predictions, aux)
 
 	# 2. Compute loss value and gradients relative to model state
 	loss, grads = nnx.value_and_grad(loss_fn)(model)
