@@ -439,6 +439,9 @@ as well as alignment parameters, so use of tomograms from other software is not 
 			output=os.path.join("particles3d", outname)
 			if not os.path.isfile(output):
 				skip=False
+			output=os.path.join("particles", outname)
+			if not os.path.isfile(output):
+				skip=False
 		if skip:
 			print("all particles in {} exist. skip tilt series...".format(tfile))
 			
@@ -485,7 +488,7 @@ as well as alignment parameters, so use of tomograms from other software is not 
 		options.pad=pad=good_size(boxsz*2*options.padtwod)
 		
 		if options.norewrite:
-			if os.path.isfile(options.output):
+			if os.path.isfile(options.output) and os.path.isfile(options.output2d):
 				print("File {} already exist. skipping...".format(options.output))
 				continue
 				
@@ -661,6 +664,18 @@ def make3d(jsd, ids, imgs, ttparams, pinfo, options, ctfinfo=[], tltkeep=[], mas
 			pxf=get_xf_pos(ttparams[nid], pos)
 			tx=m["nx"]//2 +pxf[0]
 			ty=m["ny"]//2 +pxf[1]
+			
+			if len(tpm)>5:
+				cf=tpm[5:].reshape((2,2))
+				a=np.array([pos[0]/m["ny"], pos[1]/m["ny"]])
+				dt=np.dot(a, cf)/options.shrink
+				tx+=dt[0]
+				ty+=dt[1]
+				#print("############")
+				#print(cf)
+				#print(dt)
+				#print(cf.shape, dt)
+
 
 			## get_clip only take integers and we do not want to introduce the extra interpolation for floating point translation
 			txint=int(tx)

@@ -77,7 +77,8 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--mindf", type=float, help="Minimum defocus",default=-1,guitype='floatbox', row=8, col=1)
 	parser.add_argument("--maxdf", type=float, help="Maximum defocus",default=-1,guitype='floatbox', row=8, col=0)
 	parser.add_argument("--maxscore", type=float, help="Per-particle score used to exclude particles above a specified value. Works only with --create, with .lst inputs. Some other options may also prevent it. ",default=1)
-	
+	parser.add_argument("--maxshift", type=float, help="If the shift in pixels (xform.projection) exceeds this amount, the particle will be excluded. This permits exclusion of poorly centered particles.",default=-1)
+
 	parser.add_argument("--numaslist", type=str, default=None, help="extract the particle indexes (numbers) only from an lst file into a text file (one number per line).")
 	
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -85,7 +86,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--keeptilt", type=int, default=-1, help="Keep X subtilt close to the center tilt. Require ptcl3d_id and tilt_id.")
 
 	parser.add_argument("--range", type=str, default=None, help="Range of particles to use. Works only with --create option. Input of 0,10,2 means range(0,10, step=2).")
-	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files)")
+	parser.add_argument("--retype", type=str, default=None, help="If a lst file is referencing a set of particles from particles/imgname__oldtype.hdf, this will change oldtype to the specified string in-place (modifies input files), use 'none' to remove the type.")
 	parser.add_argument("--refile", type=str, default=None, help="similar to retype, but replaces the full filename of the source image file with the provided string")
 	parser.add_argument("--shuffle", action="store_true", default=False, help="shuffle list inplace.")
 	parser.add_argument("--flip", action="store_true", default=False, help="flip xform.")
@@ -98,6 +99,7 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 	parser.add_argument("--nocomments", action="store_true", default=False, help="Removes the comments from each line of the lst file.")
 	parser.add_argument("--scalexf", type=float, help="scale the translation in xform in header.",default=-1)
 	parser.add_argument("--applyxf", type=str, help="apply the transform to a list of particles with xform.projection or align3d.",default=None)
+	parser.add_argument("--replacekey", type=str, help="Input two keys separated by comma. Use the value of the first key to replace the second one. ",default=None)
 
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 
@@ -299,7 +301,16 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				
 			save_lst_params(lsts, options.create)			
 		
-		
+		elif options.replacekey:
+			lsts=[load_lst_params(a) for a in args]
+			lsts=sum(lsts, [])
+			kys=options.replacekey.split(',')
+			print(f"Replacing {kys[1]} with {kys[0]}")
+			for l in lsts:
+				l[kys[1]]=l.pop(kys[0])
+
+			save_lst_params(lsts, options.create)
+
 		elif options.applyxf:
 			lsts=[load_lst_params(a) for a in args]
 			lsts=sum(lsts, [])
@@ -399,6 +410,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 							if ln[2]["score"]>options.maxscore: continue
 						except: pass
 
+						try:
+							shft=ln[2]["xform.projection"].get_trans_2d().length()
+							if options.maxshift>=0 and shft>options.maxshift: continue
+						except: pass
+
 						if options.inplace:
 							lst.write(kk,ln[0],ln[1],ln[2])
 						else:
@@ -418,9 +434,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 			print("ERROR: --minlosnr and --minhisnr not compatible with --retype")
 			sys.exit(1)
 
-		# if the user provided the leading __ for us, we strip it off and add it back later
-		if options.retype[:2]=="__" :
-			options.retype=options.retype[2:]
+		# Make sure we have an __ in the replacement unless blank
+		if len(options.retype)>2 and options.retype[:2]!="__" :
+			options.retype="__"+options.retype
+
+		if options.retype=="none" or len(options.retype.strip())==0 : options.retype=""
 
 		for f in args:
 			if options.verbose : print("Processing ",f)
@@ -432,13 +450,13 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 
 			if options.verbose>1 :
 				b=base_name(a[1])
-				print("{} -> {}".format(a[1],b+"__"+options.retype+".hdf"))
+				print("{} -> {}".format(a[1],b+options.retype+".hdf"))
 
 			# loop over the images in the lst file
 			for i in range(len(lst)):
 				im=lst.read(i)
-				if "3d" in a[1] : outname="particles3d/{}__{}.hdf".format(base_name(im[1]),options.retype)
-				else: outname="particles/{}__{}.hdf".format(base_name(im[1]),options.retype)
+				if "3d" in a[1] : outname="particles3d/{}{}.hdf".format(base_name(im[1]),options.retype)
+				else: outname="particles/{}{}.hdf".format(base_name(im[1]),options.retype)
 				lst.write(i,im[0],outname,im[2])
 
 			lst.normalize()			# clean up at the end
@@ -669,6 +687,11 @@ sort of virtual stack represented by .lst files, use e2proc2d.py or e2proc3d.py 
 				for at in attr:
 					if e.has_attr(at):
 						l[at]=e[at]
+						# For CTF we don't want to save the background or SNR in the .lst file, even if present in the CTF.
+						# these are really no longer used for anything in the modern .lst strategies.
+						if at=="ctf" :
+							l[at].background=[]
+							l[at].snr=[]
 					else:
 						print("error: not all particles have the specified attribute")
 						print("       {}, {} does not have key {}".format(l["src"],l["idx"],at))

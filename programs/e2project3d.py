@@ -416,7 +416,7 @@ def check(options, verbose=0):
 		error = True
 
 	for f in options.model:
-		if not os.path.exists(f) and not db_check_dict(f):
+		if not os.path.exists(f):
 			if verbose>0:
 				print("Error: 3D image %s does not exist" %f)
 			error = True

@@ -55,15 +55,25 @@ def main():
 	parser.add_argument("--smooth",type=float,help="smooth local motion by this factor. smoother local motion with larger numbers. default 100",default=100)
 	parser.add_argument("--smoothN",type=int,help="number of neighboring particles used for smoothing. default 15",default=15)
 	parser.add_argument("--m3dthread",action="store_true", default=False ,help="do make3d in threading mode with shared memory. safer for large boxes")
-	parser.add_argument("--gaussrecon",type=int,default=0,help="Use new e3make3d_gauss for 3-D reconstruction with N starting gaussians (1000 typ)")
+	parser.add_argument("--gaussrecon",type=str,default=None,help="Ngauss[,preclip] Reconstruction with e3make3d_gauss. Ngauss=1000 typical.")
 	parser.add_argument("--maxtilt",type=float,help="Excluding tilt images beyond the angle",default=-1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 	parser.add_argument("--continuefrom",type=float,help="continue from an iteration number. continue from 1 will use threed_01 as reference. continue from 0.5 will make 3d from aliptcls2d_01.",default=-1)
+	parser.add_argument("--slow_iter",action="store_true", default=False ,help="move toward higher resolution at smaller steps each iteration")
+	parser.add_argument("--ext_p", type=str,help="extra command for p iterations.", default=None)
+	parser.add_argument("--ext_g", type=str,help="extra command for g iterations.", default=None)
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 	
+	if options.gaussrecon is not None:
+		try: 
+			ngauss=int(options.gaussrecon)
+			preclip=-1
+		except: 
+			ngauss,preclip=[int(s) for s in options.gaussrecon.split(",")]
+
 	if options.path==None: options.path=num_path_new("spt_")
 	path=options.path
 	print(f"Writing in {path}...")
@@ -111,7 +121,7 @@ def main():
 		else:
 			iters.append(i)
 			
-	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop"}
+	keydic={'p':"Subtomogram alignment", 't': "Subtilt translational refinement", 'T': "Subtilt translational CCF alignment", 'r': "Subtilt rotational refinement", 'd':"Defocus refinement", 'x':"Skipping alignment",'z':"Stop",'g':"per-micrograph subtilt refinement"}
 	
 	last2d00=None
 	if options.continuefrom>0:
@@ -266,7 +276,10 @@ def main():
 			#if options.maxtilt>0:
 				#opt+=f" --maxtilt={options.maxtilt}"
 				
-			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt}"
+			cmd=f"e2spt_align_subtlt.py {ptcls} {ref} --path {path} --iter {itr} --maxres {res:.2f} --sym {options.sym} --parallel {options.parallel} {opt} "
+			
+			if options.ext_p:
+				cmd+=options.ext_p
 			run(cmd)
 			
 			last3d=f"{path}/aliptcls3d_{itr:02d}.lst"
@@ -300,7 +313,14 @@ def main():
 				
 			run(cmd)
 			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
-				
+		
+		if itype=='g':
+			cmd=f"e2spt_subtlt_global.py --ref {ref} --path {path} --iter {itr} --maxres {res:.2f} --parallel {options.parallel} --aliptcls3d {last3d}  --order=2 "
+			if options.ext_g:
+				cmd+=options.ext_g
+			run(cmd)
+			last2d=f"{path}/aliptcls2d_{itr:02d}.lst"
+		
 		#### defocus refinement. not too useful but working...
 		if itype=='d':
 			if last2d==None or last3d==None:
@@ -323,8 +343,8 @@ def main():
 			m3dpar=f" --parallel {options.parallel}"
 			
 		for ieo,eo in enumerate(["even", "odd"]):
-			if options.gaussrecon>0 :
-				run(f"e3make3d_gauss.py {path}/aliptcls2d_{itr:02d}.lst --volout {path}/threed_{itr:02d}_{eo}.hdf:12 --sym {options.sym} --keep {options.keep} --volfiltlp={res*0.75:.2f} --class {ieo} --initgauss {options.gaussrecon} --postclip {boxsize} --spt")
+			if options.gaussrecon is not None :
+				run(f"e3make3d_gauss.py {path}/aliptcls2d_{itr:02d}.lst --volout {path}/threed_{itr:02d}_{eo}.hdf:12 --gaussout {path}/threed_{itr:02d}_{eo}.txt --sym {options.sym} --keep {options.keep} --volfiltlp={res*0.75:.2f} --class {ieo} --initgauss {ngauss} --preclip {preclip} --postclip {boxsize} --spt")
 			else:
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --sym {options.sym} {m3dpar}")
 
@@ -339,8 +359,12 @@ def main():
 				run(f"e2spa_make3d.py --input {path}/aliptcls2d_{itr:02d}.lst --output {path}/threed_{itr:02d}_{eo}.hdf --keep {options.keep} --clsid {eo} --outsize {boxsize} --ref {path}/threed_{itr:02d}_{eo}.hdf --maxres {res} --sym {options.sym}  {m3dpar}")
 			
 		run(f"e2refine_postprocess.py --even {path}/threed_{itr:02d}_even.hdf {setsf} {tophat} --threads {options.threads} --restarget {res:.2f} --align --sym {options.sym} {ppmask}")
-
-		r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+		
+		if options.slow_iter:
+			r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt", cutoff=.1, mult=1.)
+		else:
+			r=calc_resolution(f"{path}/fsc_masked_{itr:02d}.txt")
+			
 		res=min(r,res*1.1)		# resolution can't take too large a step in the wrong direction
 
 		# put the unmasked file back again once we finish the iteration
@@ -348,8 +372,11 @@ def main():
 			for eo in ("even","odd"):
 				tmp=f"{path}/tmpmsk_{eo}.hdf"
 				refeo=f"{path}/threed_{ii:02d}_{eo}.hdf"
-				os.unlink(refeo)
-				os.rename(tmp,refeo)
+				try:
+					os.unlink(refeo)
+					os.rename(tmp,refeo)
+				except:
+					pass
 
 		elapsed=int(time.time()-starttime)
 		print(f"Iteration {ii} complete, {elapsed//3600:d}:{(elapsed%3600)//60:02d}:{elapsed%60:02d}")
@@ -420,6 +447,13 @@ def gather_metadata(pfile, maxtilt=-1):
 		keys=["xform.align3d", "class"]
 		for k in keys:
 			if k in pm: dc[k]=pm[k]
+			
+		if "class" in pm:
+			dc["class"]=pm["class"]
+		elif img.has_attr("orig_class"):
+			dc["class"]=img["orig_class"]%2			
+		else:
+			dc["class"]=ii%2
 		#if len(pm)>2:
 			#dc["xform.align3d"]=pm[2]
 		
@@ -435,20 +469,20 @@ def gather_metadata_singlethread(pfile, maxtilt=-1):
 	print("Gathering metadata...")
 	params=[]
 	if pfile.endswith(".lst"):
-		lst=load_lst_params(pfile)
-		if "xform.align3d" in lst[0]:
-			params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
-		else:
-			params=[[l["src"], l["idx"]] for l in lst]
+		params=load_lst_params(pfile)
+		#if "xform.align3d" in lst[0]:
+			#params=[[l["src"], l["idx"], l["xform.align3d"]] for l in lst]
+		#else:
+			#params=[[l["src"], l["idx"]] for l in lst]
 		
 	else:
 		nptcl=EMUtil.get_image_count(pfile)
-		params=[[pfile, i] for i in range(nptcl)]
+		params=[{"src":pfile, "idx":i} for i in range(nptcl)]
 	
 	info3d=[]
 	info2d=[]
 	for ii,pm in enumerate(params):
-		img=EMData(pm[0], pm[1], True)
+		img=EMData(pm["src"], pm["idx"], True)
 		imgsrc=img["class_ptcl_src"]
 		imgidx=img["class_ptcl_idxs"]
 		if img.has_attr("ptcl_source_coord"):
@@ -476,9 +510,15 @@ def gather_metadata_singlethread(pfile, maxtilt=-1):
 			idx2d.append(len(info2d))
 			info2d.append(dc)
 		
-		dc={"src":pm[0], "idx":pm[1], "coord":coord, "idx2d":idx2d}
-		if len(pm)>2:
-			dc["xform.align3d"]=pm[2]
+		dc={"src":pm["src"], "idx":pm["idx"], "coord":coord, "idx2d":idx2d}
+		if "xform.align3d" in pm:
+			dc["xform.align3d"]=pm["xform.align3d"]
+		if "class" in pm:
+			dc["class"]=pm["class"]
+		elif img.has_attr("orig_class"):
+			dc["class"]=img["orig_class"]%2			
+		else:
+			dc["class"]=ii%2
 		
 		info3d.append(dc)
 
@@ -491,18 +531,18 @@ def gather_metadata_singlethread(pfile, maxtilt=-1):
 	
 #### here we use 0.2 cutoff as the 0.143 one is sometimes hard to find.
 ##   return a slightly higher resolution to use as the maxres for the next iteration
-def calc_resolution(fscfile):
+def calc_resolution(fscfile, cutoff=0.2, mult=0.8):
 	fsc=np.loadtxt(fscfile)
 	
-	fi=fsc[:,1]<0.2
+	fi=fsc[:,1]<cutoff
 	if np.sum(fi)==0:
 		print(f"WARNING: something wrong with the FSC curve ({fscfile}). Cannot estimate resolution. Please check.")
 		rs=1./fsc[-2,0]
 	else:
 		rs=1./fsc[fi, 0][0]
-		print("Resolution (FSC<0.2) is ~{:.1f} A".format(rs))
+		print("Resolution (FSC<{:.2f}) is ~{:.1f} A".format(cutoff, rs))
 	
-	return rs*.8
+	return rs*mult
 	
 	
 if __name__ == '__main__':

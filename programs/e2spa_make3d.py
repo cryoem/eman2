@@ -32,6 +32,7 @@ def main():
 	parser.add_argument("--parallel", type=str,help="Thread/mpi parallelism to use without shared memory. Each worker will reconstruct a map with a subset of particles and the results from workers will be averaged together with the corresponding Fourier weighting. Along with --threads, this allows having one worker per node using multiple threads.", default="thread:1")
 	parser.add_argument("--threads", type=int,help="Number of threads using shared memory.", default=1)
 	parser.add_argument("--setsf", type=str,help="Set structure factor from text file", default=None)
+	parser.add_argument("--xform_key", type=str,help="Use different key than xform.projection", default="xform.projection")
 	
 	parser.add_argument("--debug", action="store_true", default=False, help="Turn on debug mode. This will only process a small subset of the data.")
 	parser.add_argument("--clsid", default=None, type=str, help="Only reconstruct a class of particles. Also take even/odd to reconstruct subsets of particles.")
@@ -266,7 +267,7 @@ def initialize_data(inputfile, options):
 		tokeep[scrs>thr]=False
 		print("  Excluding particles on 2D score. Now {:.1f}%  left".format(100*np.mean(tokeep)))
 		
-	if  "dxf" in data[0]:
+	if  "dxf" in data[0] and type(data[0]["dxf"])==Transform:
 		dt=np.array([d["dxf"].get_trans() for d in data])
 		dt=np.linalg.norm(dt, axis=1)
 		s=dt[tokeep]
@@ -296,7 +297,7 @@ def initialize_data(inputfile, options):
 	return data
 
 
-def reconstruct(data,recon,pad,ref=None):
+def reconstruct(data,recon,pad,ref=None, key="xform.projection"):
 
 	for i,elem in enumerate(data):
 		wt=elem["weight"]
@@ -330,8 +331,8 @@ def reconstruct(data,recon,pad,ref=None):
 			c=elem["curve"]
 			img.process_inplace("filter.radialtable", {"table":c.tolist()})
 		
-		if "xform.projection" in elem:
-			pjxf=elem["xform.projection"]
+		if key in elem:
+			pjxf=elem[key]
 		else:
 			pjxf=img["xform.projection"]
 			
@@ -378,7 +379,7 @@ class Make3dTask(JSTask):
 		recon.setup()
 		
 		threads=[threading.Thread(target=reconstruct,
-			    args=(data[i::options.threads],recon, padvol)) for i in range(options.threads)]
+			    args=(data[i::options.threads],recon, padvol, None, options.xform_key)) for i in range(options.threads)]
 
 		for t in threads: t.start()
 		for t in threads: t.join()
@@ -421,7 +422,7 @@ class WeightptclTask(JSTask):
 			img=img.do_fft()
 			img.process_inplace("xform.phaseorigin.tocenter")
 			
-			xf=Transform(elem["xform.projection"])
+			xf=Transform(elem[optoins.xform_key])
 			pj=ref.project('gauss_fft',{"transform":xf, "returnfft":1})
 
 			fsc=img.calc_fourier_shell_correlation(pj)

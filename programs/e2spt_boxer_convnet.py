@@ -716,40 +716,48 @@ class EMTomobox(QtWidgets.QMainWindow):
 		if self.nnet==None:
 			self.new_nnet()
 			
-		if len(self.trainset)==0:
-			if len(self.references)==0:
-				print("No references.")
-				return
+		niter=int(self.val_niter.getval())
+		bigiter=1
+		if niter>20:
+			bigiter=niter//20+1
+			niter=20
 			
-			print("Preparing training set...")
-			labels=[b["label"] for b in self.references]
-			ngood=np.mean(labels)
-			nc=500/len(labels)
-			ncopy=[int(round(nc/(1-ngood)+1)), int(round(nc/ngood+1))]
-			#print(ncopy)
-			imgs=[]
-			labs=[]
-			for i,p in enumerate(self.references):
-				lb=labels[i]
-				m=get_image(p, thick=self.thick, ncopy=ncopy[lb])
-				imgs.extend(m)
-				labs.extend([lb]*ncopy[lb])
-			imgs=np.array(imgs, dtype=np.float32)
-			labs=np.array(labs, dtype=np.float32)
-			#print(len(labs),np.sum(labs==0), np.sum(labs==1), np.mean(labels))
-			self.trainset=(imgs, labs)
+		for itr in range(bigiter):
+			if 1:#len(self.trainset)==0:
+				if len(self.references)==0:
+					print("No references.")
+					return
+				
+				print("Preparing training set...")
+				labels=[b["label"] for b in self.references]
+				ngood=np.mean(labels)
+				nc=500/len(labels)
+				ncopy=[int(round(nc/(1-ngood)+1)), int(round(nc/ngood+1))]
+				#print(ncopy)
+				imgs=[]
+				labs=[]
+				for i,p in enumerate(self.references):
+					lb=labels[i]
+					m=get_image(p, thick=self.thick, ncopy=ncopy[lb])
+					imgs.extend(m)
+					labs.extend([lb]*ncopy[lb])
+				imgs=np.array(imgs, dtype=np.float32)
+				labs=np.array(labs, dtype=np.float32)
+				#print(len(labs),np.sum(labs==0), np.sum(labs==1), np.mean(labels))
+				self.trainset=(imgs, labs)
+				
+			dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
+			dataset=dataset.shuffle(500).batch(32)
+			usemax=(self.val_lossfun.currentText()=="Max")
+			self.nnet.do_training(
+				dataset, 
+				learnrate=self.val_learnrate.getval(), 
+				niter=niter,
+				tarsz=self.val_targetsize.getval(),
+				usemax=usemax, 
+				posmult=self.val_posmult.getval()
+				)
 			
-		dataset = tf.data.Dataset.from_tensor_slices(self.trainset)
-		dataset=dataset.shuffle(500).batch(32)
-		usemax=(self.val_lossfun.currentText()=="Max")
-		self.nnet.do_training(
-			dataset, 
-			learnrate=self.val_learnrate.getval(), 
-			niter=int(self.val_niter.getval()),
-			tarsz=self.val_targetsize.getval(),
-			usemax=usemax, 
-			posmult=self.val_posmult.getval()
-			)
 		
 		self.segout=None
 		print("Generating output...")

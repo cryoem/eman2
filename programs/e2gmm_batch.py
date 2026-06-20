@@ -14,11 +14,14 @@ def main():
 	parser.add_argument("--dryrun", action="store_true", default=False ,help="printing command without running them")
 	parser.add_argument("--subtilt", action="store_true", default=False ,help="separate particles for subtilt refinement")
 	parser.add_argument("--ppid", type=int,help="ppid...", default=-1)
+	parser.add_argument("--multibody", action="store_true", default=False ,help="multibody refinement mode. one round to load previous xform, one round to match to image, and one round to get output.")
 
 	(options, args) = parser.parse_args()
 	
 	
 	logid=E2init(sys.argv)
+	if options.multibody: options.niter=max(options.niter,2)
+	
 	curid="{:06d}".format(np.random.randint(1000000-1))
 	print(f"current session id {curid}")
 	
@@ -28,6 +31,7 @@ def main():
 	oname=find_option(cmd, "--ptclsout")
 	dec=find_option(cmd, "--decoderout")
 	enc=find_option(cmd, "--encoderout")
+	grad=find_option(cmd, "--gradout")
 	midin=find_option(cmd, "--midin")
 	midout=find_option(cmd, "--midout")
 	citer=find_option(cmd, "--niter")
@@ -45,12 +49,22 @@ def main():
 	# print(int(diter))
 	
 	for rawiter in range(options.niter+1):
-		if get_latent and rawiter==options.niter:
-			rawcmd=rawcmd.replace(f"--niter {citer}", "--niter 0")
-			rawcmd=rawcmd.replace(f"--learnrate {learnrate}", "--learnrate 0")
-			if diter!=None and int(diter)>0:
-				rawcmd+=" --skipdec"
+		curcmd=rawcmd
+		
+		if options.multibody:
+			print(f"multibody round {rawiter}")
+			if rawiter==0 or rawiter==options.niter:
+				curcmd=curcmd.replace(f"--niter {citer}", "--niter 0")
+			if rawiter>0:
+				curcmd+=" --no_load"
 			
+		elif get_latent and rawiter==options.niter:
+			curcmd=curcmd.replace(f"--niter {citer}", "--niter 0")
+			curcmd=curcmd.replace(f"--learnrate {learnrate}", "--learnrate 0")
+			if diter!=None and int(diter)>0:
+				curcmd+=" --skipdec"
+			
+				
 		lst=load_lst_params(pname)
 		print(f"List input {pname}, with {len(lst)} particles")
 		
@@ -107,11 +121,13 @@ def main():
 			tmplst=path+f'tmp_{curid}_input__{it:03d}.lst'
 			tmpout=path+f'tmp_{curid}_output_{it:03d}.lst'
 			tmpmid=path+f'tmp_{curid}_mid_{it:03d}.txt'
+			tmpgrad=path+f'tmp_{curid}_grad_{it:03d}.npy'
 			save_lst_params(ll, tmplst)
-			tmps=[tmplst,tmpout, tmpmid]
-			cc=rawcmd.replace(pname, tmplst)
+			tmps=[tmplst,tmpout, tmpmid, tmpgrad]
+			cc=curcmd.replace(pname, tmplst)
 			if oname: cc=cc.replace(oname, tmpout)
 			if midout: cc=cc.replace(midout, tmpmid)
+			if grad:  cc=cc.replace(grad, tmpgrad)
 			
 			if midin!=None:
 				tmpmidin=path+f'tmp_{curid}_midin_{it:03d}.txt'
@@ -150,6 +166,15 @@ def main():
 			midall[:,0]=np.arange(len(midall))
 			print(f"final latent space saved to {midout}, shape {midall.shape}")
 			np.savetxt(midout, midall)
+			
+		if grad: 
+			grad_in=[]
+			for tmp in tmpfiles:
+				grad_in.append(np.load(tmp[3]))
+				
+			grad_in=np.concatenate(grad_in, axis=0)
+			np.save(grad, grad_in)
+			print(f"gradiant saved to {grad}, shape {grad_in.shape}")
 				
 		if oname:
 			if "e2gmm_rigidbody.py" in rawcmd:

@@ -98,6 +98,23 @@ bispec_invar_parm=(32,10)
 # These are processors which don't support in-place operation
 outplaceprocs=["math.bispectrum.slice","math.harmonic","misc.directional_sum","morph.blackhat.binary","morph.close.binary","morph.dilate.binary","morph.erode.binary","morph.ext_grad.binary","morph.gradient.binary","morph.grow","morph.int_grad.binary","morph.majority","morph.object.density","morph.object.label","morph.open.binary","morph.prune","morph.thin","morph.tophat.binary"]
 
+def cache_path():
+	"""Returns the path to where .lsx file caches should be placed. Uses, in order:
+	- EMAN3_CACHE_PATH env variable
+	- project .json file
+	- current folder
+"""
+	cp=os.getenv("EMAN3_CACHE_PATH")
+	if cp is None:
+		try:
+			js=js_open_dict("info/project.json",false)
+			cp=js["global.cache_path"]
+		except: cp="cache/"
+
+	if not os.path.exists(cp): os.makedirs(cp)
+
+	return cp
+
 # Without this, in many countries Qt will set things so "," is used as a decimal
 # separator by sscanf and other functions, which breaks CTF reading and some other things
 try:
@@ -2320,13 +2337,17 @@ The file begins with
 number<\t>filename<\t>comment
 ...
 """
-	def __init__(self,path,ifexists=False, comments=""):
+	def __init__(self,path,ifexists=False, comments="", parent=""):
 		"""Initialize the object using the .lst file in 'path'. If 'ifexists' is set, an exception will be raised
-if the lst file does not exist."""
+if the lst file does not exist. If set, parent specifies the name of another .lst file with identical particles in it,
+differing only in metadata. This permits sharing cache files. Do not specify both comments and parent, or parent will be lost"""
 
 		self.path=path
 		if len(comments)==0:
-			comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
+			if len(parent)==0:
+				comments="# This file is in fast LST format. All lines after the next line have exactly the number of characters shown on the next line. This MUST be preserved if editing."
+			else:
+				comments=f"# parent={parent} # This file is in fast LST format. All lines after the next line must have identical character count."
 
 		self.ptr=None
 		if os.path.isfile(path):
@@ -2343,6 +2364,7 @@ if the lst file does not exist."""
 		self.ptr.seek(0)
 		l=self.ptr.readline()
 		if l==0 or l!="#LSX\n" :
+			### UPDATE old LST file to LSX
 			if l=="#LST\n" :
 				#### This is very similar to rewrite(), but is used to convert LST files to LSX files
 				self.seekbase=self.ptr.tell()
@@ -2381,6 +2403,9 @@ if the lst file does not exist."""
 
 			else: raise Exception("ERROR: The file {} is not in #LSX format".format(self.path))
 		self.filecomment=self.ptr.readline().strip()
+		if "parent=" in self.filecomment: self.parent=self.filecomment.split("parent=")[1].split("#")[0]
+		else: self.parent=None
+
 		try: self.linelen=int(self.ptr.readline()[1:])
 		except:
 			print("ERROR: invalid line length in #LSX file {}".format(self.path))
@@ -2407,6 +2432,8 @@ if the lst file does not exist."""
 		if len(tupl)==3 : self.write(n,tupl[0],tupl[1],tupl[2])
 		else : self.write(n,tupl[0],tupl[1])
 
+	def __len__(self): return self.n
+
 	def close(self):
 		"""Once you call this, you should not try to access this object any more"""
 		if self.ptr!=None :
@@ -2423,16 +2450,16 @@ jsondict : optional string in JSON format or a JSON compatible dictionary. value
 
 		self.lock.acquire()
 		if jsondict==None : 
-			outln="{}\t{}".format(nextfile,extfile)
+			outln="{:d}\t{}".format(nextfile,extfile)
 		elif isinstance(jsondict,str) and jsondict[0]=="{" and jsondict[-1]=='}' : 
-			outln="{}\t{}\t{}".format(nextfile,extfile,jsondict)
+			outln="{:d}\t{}\t{}".format(nextfile,extfile,jsondict)
 		else:
 			if not isinstance(jsondict,dict) and jsondict!=None: 
 				jsondict={"__default__":jsondict}
 			if jsondict!=None:
 				jss=json.dumps(jsondict,indent=None,sort_keys=True,separators=(',',':'),default=EMAN3jsondb.obj_to_json)
-				outln="{}\t{}\t{}".format(nextfile,extfile,jss)
-			else: outln="{}\t{}".format(nextfile,extfile)
+				outln="{:d}\t{}\t{}".format(nextfile,extfile,jss)
+			else: outln="{:d}\t{}".format(nextfile,extfile)
 			
 		# We can't write in the middle of the file if the existing linelength is too short
 		if len(outln)+1>self.linelen : self.rewrite(len(outln)+5)	# +5 just reduces the chance of many rewrites at a small cost in file size
@@ -2478,7 +2505,13 @@ and translate them into a dictionary."""
 				elif ln[2][:9]=="Transform":
 					ln[2]={"xform.projection":eval(ln[2])}
 				else:
-					ln[2]={"lst_comment":ln[2]}
+					try:
+						dc=eval(ln[2])
+						try: score=dc.pop("score")
+						except: score=0.0
+						ln[2]={"xform.projection":Transform(dc),"score":score}
+					except: ln[2]={"lst_comment":ln[2]}
+
 		self.lock.release()
 		return ln
 
@@ -2556,10 +2589,13 @@ but this method prevents multiple open/close operations on the #LSX file."""
 
 		return ret
 
-	def cache_name(self): return f'cache/{os.path.basename(self.path).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
+
+	def cache_name(self):
+		ap=os.path.abspath(self.path)
+		return f'{cache_path()}/{ap.split("/")[-3]}_{ap.split("/")[-2]}_{os.path.basename(ap).rsplit(".",1)[0]}.bin' # not base_name() because we want __ retained
 
 	def write_cache(self):
-		"""This will (re)create a multi-scale cache file for the entire .lst file"""
+		"""This will create a multi-scale cache file for the entire .lst file if necessary"""
 		import EMAN3jax
 		if not os.path.exists("cache"):
 			try: os.mkdir("cache")
@@ -2571,8 +2607,6 @@ but this method prevents multiple open/close operations on the #LSX file."""
 			imgs=EMAN3jax.EMStack(self.read_images(range(i,min(i+chunk,self.n))))
 
 		#TODO - finish caching
-
-	def __len__(self): return self.n
 
 	def normalize(self):
 		"""This will read the entire file and insure that the line-length parameter is valid. If it is not,

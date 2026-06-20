@@ -53,6 +53,7 @@ import time
 import traceback
 import weakref
 import random
+from builtins import min,max
 
 
 def display_error(msg) :
@@ -2706,9 +2707,9 @@ class EMTextInfoPane(EMInfoPane) :
 		self.vbl.addLayout(self.hbl)
 
 		self.wfind.valueChanged.connect(self.find)
-		self.wbutedit.clicked[bool].connect(self.buttonEdit)
-		self.wbutcancel.clicked[bool].connect(self.buttonCancel)
-		self.wbutok.clicked[bool].connect(self.buttonOk)
+		self.wbutedit.clicked.connect(self.buttonEdit)
+		self.wbutcancel.clicked.connect(self.buttonCancel)
+		self.wbutok.clicked.connect(self.buttonOk)
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
@@ -2728,16 +2729,16 @@ class EMTextInfoPane(EMInfoPane) :
 			self.text.moveCursor(1, 0)
 			self.text.find(value)
 
-	def buttonEdit(self, tog) :
+	def buttonEdit(self, tog=None) :
 		self.text.setReadOnly(False)
 		self.wbutedit.setEnabled(False)
 		self.wbutcancel.setEnabled(True)
 		self.wbutok.setEnabled(True)
 
-	def buttonCancel(self, tog) :
+	def buttonCancel(self, tog=None) :
 		self.display(self.target)
 
-	def buttonOk(self, tog) :
+	def buttonOk(self, tog=None) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
@@ -2775,9 +2776,9 @@ class EMHTMLInfoPane(EMInfoPane) :
 		self.vbl.addLayout(self.hbl)
 
 		self.wfind.valueChanged.connect(self.find)
-		self.wbutedit.clicked[bool].connect(self.buttonEdit)
-		self.wbutcancel.clicked[bool].connect(self.buttonCancel)
-		self.wbutok.clicked[bool].connect(self.buttonOk)
+		self.wbutedit.clicked.connect(self.buttonEdit)
+		self.wbutcancel.clicked.connect(self.buttonCancel)
+		self.wbutok.clicked.connect(self.buttonOk)
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
@@ -2795,16 +2796,16 @@ class EMHTMLInfoPane(EMInfoPane) :
 			self.text.moveCursor(1, 0)
 			self.text.find(value)
 
-	def buttonEdit(self, tog) :
+	def buttonEdit(self,tog=None) :
 		self.text.setReadOnly(False)
 		self.wbutedit.setEnabled(False)
 		self.wbutcancel.setEnabled(True)
 		self.wbutok.setEnabled(True)
 
-	def buttonCancel(self, tog) :
+	def buttonCancel(self,tog=None) :
 		self.display(self.target)
 
-	def buttonOk(self, tog) :
+	def buttonOk(self,tog=None) :
 		try : open(self.target.path(), "w").write(str(self.text.toHtml()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
@@ -2833,9 +2834,9 @@ class EMPDBInfoPane(EMInfoPane) :
 		self.hbl.addWidget(self.wbutok)
 		self.vbl.addLayout(self.hbl)
 		self.wfind.valueChanged.connect(self.find)
-		self.wbutedit.clicked[bool].connect(self.buttonEdit)
-		self.wbutcancel.clicked[bool].connect(self.buttonCancel)
-		self.wbutok.clicked[bool].connect(self.buttonOk)
+		self.wbutedit.clicked.connect(self.buttonEdit)
+		self.wbutcancel.clicked.connect(self.buttonCancel)
+		self.wbutok.clicked.connect(self.buttonOk)
 
 	def display(self, data) :
 		"""display information for the target EMDirEntry"""
@@ -2853,16 +2854,16 @@ class EMPDBInfoPane(EMInfoPane) :
 			self.text.moveCursor(1, 0)
 			self.text.find(value)
 
-	def buttonEdit(self, tog) :
+	def buttonEdit(self,tog=None) :
 		self.text.setReadOnly(False)
 		self.wbutedit.setEnabled(False)
 		self.wbutcancel.setEnabled(True)
 		self.wbutok.setEnabled(True)
 
-	def buttonCancel(self, tog) :
+	def buttonCancel(self,tog=None) :
 		self.display(self.target)
 
-	def buttonOk(self, tog) :
+	def buttonOk(self,tog=None) :
 		try : open(self.target.path(), "w").write(str(self.text.toPlainText()))
 		except : QtWidgets.QMessageBox.warning(self, "Error !", "File write failed")
 
@@ -2974,7 +2975,7 @@ class EMBDBInfoPane(EMInfoPane) :
 				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].setEnabled(False)
-				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked.connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 		self.wbutxx = QtWidgets.QLabel("")
@@ -3151,7 +3152,7 @@ class EMJSONInfoPane(EMInfoPane) :
 				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].setEnabled(False)
-				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked.connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 		self.wbutxx = QtWidgets.QLabel("")
@@ -3405,7 +3406,7 @@ class EMStackInfoPane(EMInfoPane) :
 				self.wbutmisc.append(QtWidgets.QPushButton("-"))
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].setEnabled(False)
-				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked.connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		# These just clean up the layout a bit
 		self.wbutxx = QtWidgets.QLabel("")
@@ -3751,8 +3752,8 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		self.wbutcancel = QtWidgets.QPushButton("Cancel")
 		self.bhb.addWidget(self.wbutcancel)
 	
-		self.wbutok.clicked[bool].connect(self.okpress)
-		self.wbutcancel.clicked[bool].connect(self.reject)
+		self.wbutok.clicked.connect(self.okpress)
+		self.wbutcancel.clicked.connect(self.reject)
 		self.wbutok.setDefault(1)
 		
 	def okpress(self,state):
@@ -3924,7 +3925,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 				self.hbl2.addWidget(self.wbutmisc[-1], j, i)
 				self.wbutmisc[-1].setEnabled(False)
 #				self.wbutmisc[-1].setEnabled(False)
-				self.wbutmisc[-1].clicked[bool].connect(lambda x, v = i*2+j :self.buttonMisc(v))
+				self.wbutmisc[-1].clicked.connect(lambda x, v = i*2+j :self.buttonMisc(v))
 
 		self.wbutxx = QtWidgets.QLabel("")
 		self.wbutxx.setMaximumHeight(12)
@@ -3948,17 +3949,17 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.hbl2.setColumnStretch(7, 1)
 			self.hbl2.setColumnStretch(8, 1)
 
-			self.wbutcancel.clicked[bool].connect(self.buttonCancel)
-			self.wbutok.clicked[bool].connect(self.buttonOk)
+			self.wbutcancel.clicked.connect(self.buttonCancel)
+			self.wbutok.clicked.connect(self.buttonOk)
 
 		self.gbl.addLayout(self.hbl2, 4, 1)
 
-		self.wbutback.clicked[bool].connect(self.buttonBack)
-		self.wbutfwd.clicked[bool].connect(self.buttonFwd)
-		self.wbutup.clicked[bool].connect(self.buttonUp)
-		self.wbutrefresh.clicked[bool].connect(self.buttonRefresh)
-		self.wbutinfo.clicked[bool].connect(self.buttonInfo)
-		self.selectall.clicked[bool].connect(self.selectAll)
+		self.wbutback.clicked.connect(self.buttonBack)
+		self.wbutfwd.clicked.connect(self.buttonFwd)
+		self.wbutup.clicked.connect(self.buttonUp)
+		self.wbutrefresh.clicked.connect(self.buttonRefresh)
+		self.wbutinfo.clicked.connect(self.buttonInfo)
+		self.selectall.clicked.connect(self.selectAll)
 		self.wtree.clicked[QtCore.QModelIndex].connect(self.itemSel)
 		self.wtree.activated[QtCore.QModelIndex].connect(self.itemActivate)
 		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
@@ -4183,14 +4184,14 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			traceback.print_exc()
 			# sometimes we are missing an action
 
-	def buttonOk(self, tog) :
+	def buttonOk(self,tog=None) :
 		"""When the OK button is pressed, this will emit a signal. The receiver should call the getResult method (once) to get the list of paths"""
 		qism = self.wtree.selectionModel().selectedRows()
 		self.result = [i.internalPointer().path().replace(os.getcwd(), ".") for i in qism]
 		self.updtimer.stop()
 		self.ok.emit() # this signal is important when e2ctf is being used by a program running its own eve
 
-	def buttonCancel(self, tog) :
+	def buttonCancel(self,tog=None) :
 		"""When the Cancel button is pressed, a signal is emitted, but getResult should not be called."""
 		self.result = []
 		self.updtimer.stop()
@@ -4200,7 +4201,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 	def selectAll(self) :
 		self.wtree.selectAll()
 
-	def buttonBack(self, tog) :
+	def buttonBack(self,tog=None) :
 		"""Button press"""
 		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
 		l = self.pathstack.index(self.curpath)
@@ -4210,7 +4211,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.wbutback.setEnabled(False)
 			self.wbutfwd.setEnabled(True)
 
-	def buttonFwd(self, tog) :
+	def buttonFwd(self,tog=None) :
 		"""Button press"""
 		# I don't like the stack idea, it's annoying, so I am using a circular array instead John F
 		l = self.pathstack.index(self.curpath)
@@ -4220,7 +4221,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 			self.wbutback.setEnabled(True)
 			self.wbutfwd.setEnabled(False)
 
-	def buttonUp(self, tog) :
+	def buttonUp(self,tog=None) :
 		"""Button press"""
 		if "/" in self.curpath : newpath = self.curpath.rsplit("/", 1)[0]
 		else : newpath = os.path.realpath(self.curpath).rsplit("/", 1)[0]
@@ -4231,14 +4232,14 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		if len(newpath) > 0 : self.setPath(newpath)
 
-	def buttonRefresh(self, tog) :
+	def buttonRefresh(self,tog=None) :
 		"""Button press"""
 		self.setPath(self.curpath)
 
 	def infowinClosed(self) :
 		self.wbutinfo.setChecked(False)
 
-	def buttonInfo(self, tog) :
+	def buttonInfo(self,tog=None) :
 		if tog :
 			if self.infowin == None :
 				self.infowin = EMInfoWin()

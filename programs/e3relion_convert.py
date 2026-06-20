@@ -128,7 +128,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 
 	# at this point rkey should contain the star key for the particle metadata
 
-	nptcl=len(star[rkey]["rlnAnglePsi"])
+	nptcl=len(star[rkey]["rlnImageName"])
 	ctferrprt=True
 
 	### Here we create "ugnums" a per-particle micrograph identifier
@@ -212,7 +212,7 @@ Import a Relion star file and accompanying images to an EMAN3 style .lst file in
 		except:
 			try: xform=Transform({"type":"spider","phi":star[rkey]["rlnAngleRot"][i],"theta":star[rkey]["rlnAngleTilt"][i],"psi":star[rkey]["rlnAnglePsi"][i],"tx":-star[rkey]["rlnOriginXAngstrom"][i]/apix,"ty":-star[rkey]["rlnOriginYAngstrom"][i]/apix})
 			except:
-				traceback.print_exc()
+				#traceback.print_exc()
 				if i==0: print("No usable particle orientations found in STAR file!")
 				xform=Transform()
 

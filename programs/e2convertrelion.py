@@ -177,7 +177,7 @@ def main():
 		ii=int(ii)-1
 		if options.onestack:
 			fm=options.onestack
-			io=i
+			io=-1
 		else:
 			io=ii
 			if '/' in src:
@@ -197,14 +197,14 @@ def main():
 				nz=e["nz"]
 				
 			src0=src
-			#try:	
-			if src.endswith('.mrc') and nz>1:
-				e=EMData(src, 0, False, Region(0, 0, ii, nx, ny, 1))
-			else:
-				e=EMData(src, ii)
-			#except:
-				#print("something wrong with {} image {}".format(src, ii))
-				#exit()
+			try:	
+				if src.endswith('.mrc') and nz>1:
+					e=EMData(src, 0, False, Region(0, 0, ii, nx, ny, 1))
+				else:
+					e=EMData(src, ii)
+			except:
+				print("something wrong with {} image {}".format(src, ii))
+				continue
 			
 			du, dv, ang=float(l[rid["dfu"]]), float(l[rid["dfv"]]), float(l[rid["dfang"]])
 
@@ -229,18 +229,25 @@ def main():
 			
 			if options.clip>0:
 				e.clip_inplace(Region((nx-options.clip)//2, (ny-options.clip)//2, options.clip, options.clip))
-			e.write_compressed(fm, io,12,nooutliers=True)
+			e.write_compressed(fm, io, 8, nooutliers=True)
 			if options.shrink:
 				for s in shrink:
 					fms="{}_bin{}.hdf".format(fm[:-4],s.replace('.','_'))
 					ex=e.copy()
 					ex.process_inplace("math.fft.resample",{"n":float(s)})
 					ex.process_inplace("normalize.edgemean")
-					ex.write_compressed(fms, io,12,nooutliers=True)
-			
-		fnames.append([i, fm ,io])
+					ex.write_compressed(fms, io, 8, nooutliers=True)
+		
+		if options.onestack:
+			ik=EMUtil.get_image_count(fm)-1
+			fnames.append([i, fm , ik, src, ii])
+		else:
+			ik=io
+			fnames.append([i, fm , io, src, ii])
 		if i%100==0 or i==len(lines)-1 : sys.stdout.write("\r{}/{}	  ".format(i, len(lines)))
 		sys.stdout.flush()
+		#test=EMData(fm, ik)
+		#print(fm, ik, test["sigma"])
 	
 	print()
 
@@ -254,7 +261,7 @@ def main():
 		if len(ln)<5: 
 			continue
 		
-		dic={"src":fm[1], "idx":fm[2]}
+		dic={"src":fm[1], "idx":fm[2],"import_src":fm[3], "import_idx":fm[4]}
 		l=ln.split()
 		
 		if "psi" in rid:

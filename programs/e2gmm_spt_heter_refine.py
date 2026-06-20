@@ -25,7 +25,8 @@ def main():
 	parser.add_argument("--learnrate", type=float, help="learning rate",default=1e-5)
 	# parser.add_argument("--angle_range", type=str,help="search angle range", default=None)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
-
+	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 111", default="111")
+	
 	(options, args) = parser.parse_args()	
 	logid=E2init(sys.argv)
 	
@@ -104,7 +105,7 @@ def main():
 	nx=e["nx"]
 
 	
-	run(f"e2gmm_spt_heterg.py --ptclsin {path}/aliptcls2d_test.lst --model {path}/model_00.txt --mask {options.mask} --clip {nx} --midout {path}/midout_test.txt --encoderout {path}/encoder.h5 --decoderout {path}/decoder.h5 --anchor {path}/anchor_00.txt --maxres {options.maxres} --minres {options.minres} --learnrate {options.learnrate} --niter {options.niter}")
+	run(f"e2gmm_spt_heterg.py --ptclsin {path}/aliptcls2d_test.lst --model {path}/model_00.txt --mask {options.mask} --clip {nx} --midout {path}/midout_test.txt --encoderout {path}/encoder.h5 --decoderout {path}/decoder.h5 --anchor {path}/anchor_00.txt --maxres {options.maxres} --minres {options.minres} --learnrate {options.learnrate} --niter {options.niter} --pas {options.pas}")
 	
 	nn=100
 	run(f"e2gmm_eval.py --pts {path}/midout_test.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/aliptcls2d_test.lst --ptclsout {path}/ptcls_cls_test.lst --mode regress --ncls 4 --nptcl {nn} --axis 0 --spt --outsize {nx}")
@@ -112,7 +113,7 @@ def main():
 	run(f"e2proc3d.py {path}/ptcls_cls_test.hdf {path}/ptcls_cls_test.hdf --process filter.lowpass.gauss:cutoff_freq={1./options.maxres} --process normalize.edgemean")
 	
 	
-	run(f'e2gmm_batch.py "e2gmm_spt_heterg.py --ptclsin {path}/aliptcls2d_00.lst --model {path}/model_00.txt --mask {options.mask} --clip {nx} --midout {path}/midout_all_00.txt --encoderout {path}/encoder.h5 --decoderout {path}/decoder.h5 --anchor {path}/anchor_00.txt --maxres {options.maxres} --minres {options.minres} --learnrate {options.learnrate} --niter {options.niter}" --ptcl3d --batch 500 --niter 1 --load')
+	run(f'e2gmm_batch.py "e2gmm_spt_heterg.py --ptclsin {path}/aliptcls2d_00.lst --model {path}/model_00.txt --mask {options.mask} --clip {nx} --midout {path}/midout_all_00.txt --encoderout {path}/encoder.h5 --decoderout {path}/decoder.h5 --anchor {path}/anchor_00.txt --maxres {options.maxres} --minres {options.minres} --learnrate {options.learnrate} --niter {options.niter} --pas {options.pas}" --ptcl3d --batch 500 --niter 1 --load')
 	
 	nn=500
 	run(f"e2gmm_eval.py --pts {path}/midout_all_00.txt --pcaout {path}/mid_pca.txt --ptclsin {path}/aliptcls2d_00.lst --ptclsout {path}/ptcls_cls_00.lst --mode regress --ncls 4 --nptcl {nn} --axis 0 --spt --outsize {nx}")

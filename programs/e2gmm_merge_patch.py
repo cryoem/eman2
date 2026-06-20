@@ -15,6 +15,7 @@ def main():
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--base", type=str, help="path of the global refinement. required for merging multiple folders",default=None)
 	parser.add_argument("--sym", type=str, help="",default="c1")
+	parser.add_argument("--iter", type=int, help="iteration number. per-iter merge only",default=-1)
 	parser.add_argument("--masks", type=str, help="replace masks in info files",default=None)
 	parser.add_argument("--skippp", action="store_true", default=False ,help="skip post process")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -24,8 +25,53 @@ def main():
 	if options.masks:
 		options.masks=options.masks.split(',')
 		print(options.masks)
-	
-	if len(args)==1 and options.base==None:
+		
+	if len(args)==1 and options.iter>=0:
+		path=args[0]
+		itr=options.iter
+		print(f"Merging maps in {path}, iteration {itr}")
+		if options.masks==None:
+			print("error. require masks")
+			exit()
+		elif len(options.masks)>1:
+			masks=[EMData(m) for m in options.masks]
+		else:
+			masks=EMData.read_images(options.masks[0])
+			
+		for eo in ["even","odd"]:
+			avg=EMData(f"{path}/threed_{itr:02d}_00_{eo}.hdf")
+			avg.to_zero()
+			wt=avg.copy()
+
+			for ci,m in enumerate(masks):
+				e=EMData(f"{path}/threed_{itr:02d}_{ci:02d}_{eo}.hdf")
+				e.mult(m)
+				avg.add(e)
+				wt.add(m)
+				
+			#### copy background noise from the first map
+			wt0=1-wt
+			wt0.process_inplace("threshold.belowtozero")
+			e=EMData(f"{path}/threed_raw_{eo}.hdf")
+			e.mult(wt0)
+			avg.add(e)
+			wt.add(wt0)
+			
+			wt.process_inplace("math.reciprocal", {"zero_to":0})
+			avg.mult(wt)
+			avg.write_image(f"{path}/threed_{itr:02d}_{eo}.hdf")
+		print(f"Outputs written to {path}/threed_{itr:02d}_even/odd.hdf")
+		for ci,m in enumerate(options.masks):
+			if len(masks)==1:
+				cc=""
+			else:
+				cc=f"_{ci:02d}"
+			run(f"e2proc3d.py {path}/threed_{itr:02d}_{ci:02d}_even.hdf {path}/tmp.hdf --multfile {m}")
+			run(f"e2proc3d.py {path}/threed_{itr:02d}_{ci:02d}_odd.hdf {path}/fsc_foc_{itr:02d}{cc}.txt --multfile {m} --calcfsc {path}/tmp.hdf")
+			os.remove(f"{path}/tmp.hdf")
+
+		
+	elif len(args)==1 and options.base==None:
 		## read from gmm_refine_patch in a single folder
 		path=args[0]
 		print("Reading from patch-wise refinement in",path)

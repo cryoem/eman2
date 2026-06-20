@@ -45,6 +45,7 @@ def main():
 
 	parser.add_argument("--anchor", type=str,help="anchor points save file. will generate from model by default", default=None)
 	parser.add_argument("--n_anchor", type=int,help="number of anchor points. default 32", default=32)
+	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. use 3 digit 0/1 input. default is 111", default="111")
 	# parser.add_argument("--xfin_starti", type=int,help="starting index for tranform input", default=0)
 
 	parser.add_argument("--maxres", type=float, help="resolution",default=10.)
@@ -56,7 +57,6 @@ def main():
 	(options, args) = parser.parse_args()
 	
 	logid=E2init(sys.argv)
-	
 	alipm=load_lst_params(options.ptclsin)
 	pids=np.array([a["ptcl3d_id"] for a in alipm])
 	uid=np.unique(pids)
@@ -188,7 +188,9 @@ def main():
 	###############
 	##### now train
 
-	pas=[1,0,0]
+	pas=[int(i) for i in options.pas]
+	#pas=np.array(pas[:1]*3+pas[1:], dtype=np.float32)
+	#pas=[1,0,0]
 	pas=tf.constant(np.array([pas[0],pas[0],pas[0],pas[1],pas[2]], dtype=floattype))
 
 	wts=encode_model.trainable_variables + decode_model.trainable_variables[:-1]

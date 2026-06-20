@@ -160,10 +160,10 @@ Manipulations of text files conatining multi-column data (as would be used with 
 	parser.add_argument("--columns",type=str,help="which columns to use for the analysis (eg, 2-4). First column is 0. End is inclusive. default = all columns",default=None)
 	parser.add_argument("--normalize",action="store_true",default=False,help="Applies normal EMAN normalization to specified columns (mean->0, std->1)")
 	parser.add_argument("--precout",type=str,help="specify precision and format for writing output, '1.5f' - 5 digits of precision, '1.5g' 5 digits sci notation. default=1.5f",default="1.5f")
-	parser.add_argument("--gaussvol",type=str,help="<output file>. The input should have 4 or more columns. The first 4 columns will be interpreted as x,y,z,A for a set of Gaussians (-.5 - .5, 0-1).",default=None)
-	parser.add_argument("--gaussbox",type=int,help="Box size in pixels for Gaussian output",default=256)
-	parser.add_argument("--gaussapix",type=float,help="A/pix for Gaussian output header",default=1)
-	parser.add_argument("--gausslp",type=float,help="lowpass filter in A for Gaussian output",default=-1)
+	parser.add_argument("--pointvol",type=str,help="<output file>. The input should have 4 or more columns. The first 4 columns will be interpreted as x,y,z,A for a set of Points (-.5 - .5, 0-1).",default=None)
+	parser.add_argument("--pointbox",type=int,help="Box size in pixels for Point output",default=256)
+	parser.add_argument("--pointapix",type=float,help="A/pix for Point output header",default=1)
+	parser.add_argument("--pointlp",type=float,help="lowpass filter in A for Point output",default=-1)
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 
@@ -184,7 +184,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 		E3end(logid)
 		sys.exit(0)
 
-	if options.gaussvol is not None:
+	if options.pointvol is not None:
 		for filename in args:
 			data,lbls=readfile(filename,options.verbose)
 
@@ -194,15 +194,15 @@ Manipulations of text files conatining multi-column data (as would be used with 
 				v2a=data[:,cols]
 			else: v2a=data
 
-			if v2a.shape[1]<4 : error_exit("ERROR: need 4 columns for Gaussian output")
+			if v2a.shape[1]<4 : error_exit("ERROR: need 4 columns for Point output")
 
-			g=Gaussians(v2a[:,:4])
-			v=g.volume(options.gaussbox,-1)
+			g=Points(v2a[:,:4])
+			v=g.volume(options.pointbox,-1)
 
-			v.emdata[0]["apix_x"]=v.emdata[0]["apix_y"]=v.emdata[0]["apix_z"]=options.gaussapix
-			if options.gausslp>0: v.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.gausslp})
+			v.emdata[0]["apix_x"]=v.emdata[0]["apix_y"]=v.emdata[0]["apix_z"]=options.pointapix
+			if options.pointlp>0: v.emdata[0].process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/options.pointlp})
 
-			v.emdata[0].write_image(options.gaussvol,-1)
+			v.emdata[0].write_image(options.pointvol,-1)
 
 	if options.dimreduce is not None:
 		for filename in args:

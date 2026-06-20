@@ -1202,7 +1202,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 								glRasterPos(tx,ty)
 								glDrawPixels(tw,th,GL_LUMINANCE,GL_UNSIGNED_BYTE,a)
 
-							hist2=numpy.fromstring(a[-1024:],'i')
+							hist2=numpy.frombuffer(a[-1024:],'i')
 							self.hist+=hist2
 						else:
 							# d is excluded/deleted

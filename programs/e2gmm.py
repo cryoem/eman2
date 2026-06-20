@@ -30,13 +30,19 @@
 #
 # This GUI no longer works with Muyuan's program, preferring the new more memory efficient e2gmm_refine_point
 
+import os
+if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0'
+os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
+os.environ["TF_USE_LEGACY_KERAS"]="1"	# This needs to be before tensorflow is imported ... I think
+
+
 from past.utils import old_div
 from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 import h5py
 import sys
-import os
 import weakref
 import threading
 import time
@@ -59,13 +65,10 @@ import sklearn.manifold as skmf
 from queue import Queue
 from matplotlib.patches import Circle
 
-if "CUDA_VISIBLE_DEVICES" not in os.environ: os.environ["CUDA_VISIBLE_DEVICES"]='0'
-os.environ["TF_FORCE_GPU_ALLOW_GROWTH"]='true'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' #### reduce log output
-os.environ["TF_USE_LEGACY_KERAS"]="1"	# This needs to be before tensorflow is imported ... I think
 
 import traceback
 import tensorflow as tf
+import tf_keras
 #import tensorflow.keras.models
 import numpy as np
 
@@ -417,7 +420,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.gbll.addLayout(self.gflparm,2,0)
 
 		self.wedbatch = QtWidgets.QLineEdit("1")
-		self.wedbatch.setToolTip("Number of batches for network training (reduces memory requirements)")
+		self.wedbatch.setToolTip("batches for network training (less RAM), negative integer will use only a fraction of the particles for training")
 		self.gflparm.addRow("# Ptcl Batches:",self.wedbatch)
 
 		self.wedrres = QtWidgets.QLineEdit("25")
@@ -2688,7 +2691,8 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		# Decoder model for generating Gaussians
 		try:
-			self.decoder = tf.keras.models.load_model(f"{self.gmm}/{self.currunkey}_decoder.h5",compile=False)
+			with tf.device("/CPU:0"):
+				self.decoder = tf.keras.models.load_model(f"{self.gmm}/{self.currunkey}_decoder.h5",compile=False)
 		except:
 			traceback.print_exc(limit=1)
 			print("...")

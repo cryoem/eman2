@@ -206,6 +206,10 @@ def transform_from_jsondict(dct):
 	ret.set_matrix(lst)
 	return ret
 
+def eman3ctf_from_jsondict(dct):
+	ret=EMAN3Ctf(dct["dfmajor"], dct["dfminor"], dct["dfang"], dct["voltage"], dct["cs"], dct["ampcont"], dct["apix"])
+	return ret
+
 ############
 ### File locking routines, hopefully platform independent
 ############
@@ -927,7 +931,8 @@ jsonclasses = {
 	"JSTaskQueue":JSTaskQueue.from_jsondict,
 	"EMData":emdata_from_jsondict,
 	"EMAN2Ctf":eman2ctf_from_jsondict,
-	"Transform":transform_from_jsondict
+	"Transform":transform_from_jsondict,
+	"EMAN3Ctf":eman3ctf_from_jsondict
 }
 
 

@@ -47,37 +47,37 @@ def main():
 		try: os.remove(out)
 		except: pass
 	
-		cmd="e2proclst.py {} --create {}".format(' '.join(pts), out)
-		run(cmd)
-		n=EMUtil.get_image_count(out)
-		print("{} particles in {}".format(n, out))
-		if options.spliteo:
+		if not options.spliteo:
+			cmd="e2proclst.py {} --create {}".format(' '.join(pts), out)
+			run(cmd)
+			n=EMUtil.get_image_count(out)
+			print("{} particles in {}".format(n, out))
+		else:
 			print("Splitting even/odd sets...")
-			lsts=[]
-			for eo in ["even","odd"]:
-				out="sets/{}__{}.lst".format(tag, eo)
-				try: os.remove(out)
-				except: pass
-				lsts.append(LSXFile(out, False))
+			lst=[]
+			
+			#lsts=[]
+			#for eo in ["even","odd"]:
+				#out="sets/{}__{}.lst".format(tag, eo)
+				#try: os.remove(out)
+				#except: pass
+				#lsts.append(LSXFile(out, False))
 			
 			### need to check location of each particle_stacks
 			for fm in pts:
 				n=EMUtil.get_image_count(fm)
-				p=[]
 				imgs=EMData.read_images(fm, [], IMAGE_UNKNOWN, True)
 				p=np.array([e["ptcl_source_coord"] for e in imgs])
-				#for i in range(n):
-					#e=EMData(fm, i, True)
-					#p.append(e["ptcl_source_coord"])
-				#p=np.array(p)
 				m=np.median(p[:,0])+np.random.randn()*0.01
 				for i in range(n):
-					lsts[int(p[i,0]<m)].write(-1, i, fm)
+					lst.append({"src":fm, "idx":i, "class":int(p[i,0]<m)})
+					#lsts[int(p[i,0]<m)].write(-1, i, fm)					
 					
 				print("{} : center: {:.1f}, even {}, odd {}".format(base_name(fm), m, np.sum(p[:,0]<m), np.sum(p[:,0]>m)))
 			
-			for l in lsts:
-				l.close()
+			save_lst_params(lst, out)
+			#for l in lsts:
+				#l.close()
 	
 	print("Done")
 	

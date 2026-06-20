@@ -41,7 +41,7 @@ from math import *
 import os
 import sys
 import time
-from numpy import *
+import numpy as np
 import queue
 
 def calc_oneres(jsd,vol1f,vol2f,apix,freq,ftsize,tophat=False,cutoff=0.143,rmask=None):

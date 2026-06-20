@@ -73,13 +73,13 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 
 	logid=E3init(sys.argv,options.ppid)
 
-	try: os.mkdir("eman3profile2")
+	try: os.mkdir("eman3")
 	except: pass
-	try: os.mkdir("eman3profile2/particles")
+	try: os.mkdir("eman3/particles")
 	except: pass
-	try: os.mkdir("eman3profile2/sets")
+	try: os.mkdir("eman3/sets")
 	except: pass
-	os.chdir("eman3profile2")	# many things need to happen with the project directory as a base
+	os.chdir("eman3")	# many things need to happen with the project directory as a base
 
 	if options.verbose>0 : print("Parsing .cs file")
 	print("filename: ", args[0])
@@ -144,7 +144,7 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 					if df[i]!=df[i-1]: n+=1
 					ugnums.append(n)
 			if len(dfs)>=nptcl/5 or ugnums[-1]>nptcl/5:
-				print(df[:1000])
+				print(list(dfs)[:1000])
 				print(f'WARNING: Unable to group particles usefully by micrograph ({len(dfs)} defoci, {len(ugnums)} migrographs), collapsing to a single file. Consider rerunning with sufficiently large --dftolerance')
 				ugnums=np.zeros(nptcl,"int32")
 
@@ -164,8 +164,8 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 		nbx=good_size(int(options.clip*apix/1.8))
 	lastctf=[]
 	t0=time.time()
-#	for i in range(nptcl):
-	for i in range(50000):
+	for i in range(nptcl):
+#	for i in range(50000):
 		if options.verbose>0 and time.time()-t0>1.0:
 			print(f"  {i+1}/{nptcl}\r",end="")
 			t0=time.time()
@@ -173,7 +173,7 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 		try:
 			df1=float(csfile["ctf/df1_A"][i]) # df1_A directly matches rlnDefocusU
 			df2=float(csfile["ctf/df2_A"][i]) # df2_A directly matches rlnDefocusV
-			dfang=float(csfile["ctf/df_angle_rad"][i])
+			dfang=float(csfile["ctf/df_angle_rad"][i]) * 180/pi
 			defocus=(df1+df2)/20000.0
 			dfdiff=(df1-df2)/10000.0
 		except:
@@ -212,10 +212,18 @@ Import a CryoSparc .cs file and accompanying images to an EMAN3 style .lst file 
 			jdb["ctf_frame"]=[1024,ctf,(256,256),tuple(),5,1]
 
 		imfsp=csfile["blob/path"][i].decode('UTF-8')[1:] # blob/path is numpy.bytes and has a leading > to be removed
-		imfsp=re.sub(r'/\d+_', '/', imfsp) #They also have the micrograph uid added to the filepath at the start of the filename, after the relative path
+		if not os.path.isfile(imfsp):
+			if os.path.isfile("../"+imfsp): imfsp="../"+imfsp
+			else:
+				imfsp=re.sub(r'/\d+_', '/', imfsp) #They also have the micrograph uid added to the filepath at the start of the filename, after the relative path, which may or may not need to be stripped
+				if not os.path.isfile(imfsp):
+					if os.path.isfile("../"+imfsp): imfsp="../"+imfsp
+					else:
+						error_exit(f'Unable to find referenced file: {csfile["blob/path"][i].decode('UTF-8')[1:]}  or variants. You may need to reposition your .cs file or double check exported data.')
+
 		imn=csfile["blob/idx"][i]
 
-		img=EMData("../"+imfsp,imn) # CryoSparc and Eman start with 0
+		img=EMData(imfsp,imn)
 		img["apix_x"]=apix
 		img["apix_y"]=apix
 		img["apix_z"]=apix
