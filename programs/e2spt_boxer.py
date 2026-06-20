@@ -35,6 +35,8 @@
 
 
 
+from __future__ import print_function
+from __future__ import division
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
@@ -43,7 +45,6 @@ import numpy as np
 
 import weakref
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QSplitter, QHBoxLayout # Erik add for Qsplitter
 from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
@@ -53,7 +54,6 @@ from eman2_gui.emscene3d import EMScene3D
 from eman2_gui.emdataitem3d import EMDataItem3D, EMIsosurface
 from eman2_gui.emshape import EMShape
 from eman2_gui.valslider import ValSlider, ValBox
-from sklearn.decomposition import PCA
 
 	
 def run(cmd):
@@ -75,8 +75,7 @@ def main():
 	parser.add_argument("--box3d",action="store_true",help="Boxing 3D particls from tomograms (default).",default=False, guitype='boolbox', row=4, col=0, rowspan=1, colspan=1, mode='box3d[True]')
 	parser.add_header(name="instruction0", help='instruction', title="### Use '~' and '1' to go through slices along Z axis. ###", row=10, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
 	parser.add_header(name="instruction1", help='instruction', title="### Hold Shift to delete particles ###", row=11, col=0, rowspan=1, colspan=2, mode="box3d,box2d")
-	parser.add_argument("--label", type=str,help="start from viewing particles of the specified label.", default=None)
-	parser.add_argument("--clean",action="store_true",help="cleaning mode.",default=False)
+
 
 	#parser.add_argument("--mode", type=str,help="Boxing mode. choose from '2D' and '3D'. Default is '3D'", default="3D",guitype='combobox',choicelist="('2D', '3D')",row=1, col=0, rowspan=1, colspan=1,mode="boxing")
 
@@ -120,6 +119,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.initialized=False
 		self.app=weakref.ref(application)
 		self.options=options
+		self.yshort=False
 		self.apix=options.apix
 		self.currentset=0
 		self.shrink=1#options.shrink
@@ -129,72 +129,54 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		else:
 			self.boxshape="rect"
 
-		self.globalxf=Transform()
-		
+
 		# Menu Bar
 		self.mfile=self.menuBar().addMenu("File")
-		#self.mfile_open=self.mfile.addAction("Open")
+		self.mfile_open=self.mfile.addAction("Open")
 		self.mfile_read_boxloc=self.mfile.addAction("Read Box Coord")
 		self.mfile_save_boxloc=self.mfile.addAction("Save Box Coord")
 		self.mfile_save_boxpdb=self.mfile.addAction("Save Coord as PDB")
 		self.mfile_save_boxes_stack=self.mfile.addAction("Save Boxes as Stack")
-		self.mfile_save_gif=self.mfile.addAction("Save GIF movie")
-		#self.mfile_quit=self.mfile.addAction("Quit")
+		self.mfile_quit=self.mfile.addAction("Quit")
 
 
-#old code, Erik commented out
-#		self.setCentralWidget(QtWidgets.QWidget())
-#		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
-
-#New QSplitter code, Erik addition
 		self.setCentralWidget(QtWidgets.QWidget())
 		self.gbl = QtWidgets.QGridLayout(self.centralWidget())
-		self.gblh = QtWidgets.QHBoxLayout()
-		self.gbl.addLayout(self.gblh,0,0,2,2)
 
-		self.splitter_top = QSplitter(Qt.Horizontal) #top panel of images
-		self.splitter_bottom = QSplitter(Qt.Horizontal) #bottom panel of images
-		self.splitter_wrapper = QSplitter(Qt.Vertical) #will stack the top and bottom image panels
-
-		self.xyview = EMImage2DWidget(sizehint=(1024,1024))
-		self.xzview = EMImage2DWidget(sizehint=(1024,256))
-		self.zyview	= EMImage2DWidget(sizehint=(256,1024))
-		
-		self.wdepth = QtWidgets.QSlider()
-		self.gbl.addWidget(self.wdepth,0,2)
-
-		self.splitter_top.addWidget(self.zyview)
-		self.splitter_top.addWidget(self.xyview)
-		
-		self.splitter_wrapper.addWidget(self.splitter_top)
-		self.splitter_wrapper.addWidget(self.splitter_bottom)
-		
-		self.gblh.addWidget(self.splitter_wrapper)
-		
-		#control panel
-		self.gbl2 = QtWidgets.QGridLayout()
-		self.grid_widget = QtWidgets.QWidget()
-		self.grid_widget.setLayout(self.gbl2)
-		self.splitter_bottom.addWidget(self.grid_widget)
-
-		self.splitter_bottom.addWidget(self.xzview)
-		self.splitter_top.splitterMoved.connect(self.splitter_bottom.moveSplitter)
-
-
-#########################################################################
-		
 		# relative stretch factors
-		#self.gbl.setColumnMinimumWidth(0,200)
-		#self.gbl.setRowMinimumHeight(0,200)
-		#self.gbl.setColumnStretch(0,0)
-		
-		self.wzheight=ValBox(label="Z height:",value=256)
-		self.gbl2.addWidget(self.wzheight,1,0)
+		self.gbl.setColumnStretch(0,1)
+		self.gbl.setColumnStretch(1,4)
+		self.gbl.setColumnStretch(2,0)
+		self.gbl.setRowStretch(1,1)
+		self.gbl.setRowStretch(0,4)
 
+		# 3 orthogonal restricted projection views
+		self.xyview = EMImage2DWidget()
+		self.gbl.addWidget(self.xyview,0,1)
+
+		self.xzview = EMImage2DWidget()
+		self.gbl.addWidget(self.xzview,1,1)
+
+		self.zyview = EMImage2DWidget()
+		self.gbl.addWidget(self.zyview,0,0)
+
+		# Select Z for xy view
+		self.wdepth = QtWidgets.QSlider()
+		self.gbl.addWidget(self.wdepth,1,2)
+
+		### Control panel area in upper left corner
+		self.gbl2 = QtWidgets.QGridLayout()
+		self.gbl.addLayout(self.gbl2,1,0)
+
+		#self.wxpos = QtWidgets.QSlider(Qt.Horizontal)
+		#self.gbl2.addWidget(self.wxpos,0,0)
+		
+		#self.wypos = QtWidgets.QSlider(Qt.Vertical)
+		#self.gbl2.addWidget(self.wypos,0,3,6,1)
+		
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=0)
-		self.gbl2.addWidget(self.wboxsize,2,0)
-		
+		self.gbl2.addWidget(self.wboxsize,2,0,1,2)
 
 		# max or mean
 		#self.wmaxmean=QtWidgets.QPushButton("MaxProj")
@@ -202,9 +184,6 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl2.addWidget(self.wmaxmean,3,0)
 
 		# number slices
-		label0=QtWidgets.QLabel("Thickness")
-		self.gbl2.addWidget(label0,3,0)
-
 		self.wnlayers=QtWidgets.QSpinBox()
 		self.wnlayers.setMinimum(1)
 		self.wnlayers.setMaximum(256)
@@ -213,80 +192,65 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 		# Local boxes in side view
 		self.wlocalbox=QtWidgets.QCheckBox("Limit Side Boxes")
-		self.gbl2.addWidget(self.wlocalbox,4,0)
+		self.gbl2.addWidget(self.wlocalbox,3,0)
 		self.wlocalbox.setChecked(True)
-		
-		self.button_flat = QtWidgets.QPushButton("Flatten")
-		self.gbl2.addWidget(self.button_flat,5,0)
-		self.button_reset = QtWidgets.QPushButton("Reset")
-		self.gbl2.addWidget(self.button_reset,5,1)
-		## scale factor
-		#self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
-		#self.gbl2.addWidget(self.wscale,4,0,1,2)
+
+		# scale factor
+		self.wscale=ValSlider(rng=(.1,2),label="Sca:",value=1.0)
+		self.gbl2.addWidget(self.wscale,4,0,1,2)
 
 		# 2-D filters
-		self.wfilt = ValSlider(rng=(0,150),label="Filt",value=0.0)
-		self.gbl2.addWidget(self.wfilt,6,0,1,2)
+		self.wfilt = ValSlider(rng=(0,150),label="Filt:",value=0.0)
+		self.gbl2.addWidget(self.wfilt,5,0,1,2)
 		
 		self.curbox=-1
 		
 		self.boxes=[]						# array of box info, each is (x,y,z,...)
 		self.boxesimgs=[]					# z projection of each box
-		self.dragging=-1
+		self.xydown=self.xzdown=self.zydown=None
+		self.firsthbclick = None
 
-		##coordinate display
-		self.wcoords=QtWidgets.QLabel("")
-		self.gbl2.addWidget(self.wcoords, 0, 0, 1, 2)
-		
-		self.button_flat.clicked[bool].connect(self.flatten_tomo)
-		self.button_reset.clicked[bool].connect(self.reset_flatten_tomo)
+		# coordinate display
+		self.wcoords=QtWidgets.QLabel("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
+		self.gbl2.addWidget(self.wcoords, 1, 0, 1, 2)
 
 		# file menu
-		#self.mfile_open.triggered[bool].connect(self.menu_file_open)
+		self.mfile_open.triggered[bool].connect(self.menu_file_open)
 		self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
 		self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
 		self.mfile_save_boxpdb.triggered[bool].connect(self.menu_file_save_boxpdb)
 		
 		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
-		self.mfile_save_gif.triggered[bool].connect(self.save_gif)
-		#self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
 		# all other widgets
 		self.wdepth.valueChanged[int].connect(self.event_depth)
 		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
-		
-#Erik commented out because QHBoxlayerout has no attribute 'setRowMinimumheight'
-#		self.wzheight.valueChanged.connect(self.event_zheight)
-
 		#self.wmaxmean.clicked[bool].connect(self.event_projmode)
-		#self.wscale.valueChanged.connect(self.event_scale)
+		self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
 		self.wlocalbox.stateChanged[int].connect(self.event_localbox)
 
 		self.xyview.mousemove.connect(self.xy_move)
 		self.xyview.mousedown.connect(self.xy_down)
 		self.xyview.mousedrag.connect(self.xy_drag)
-		self.xyview.mouseup.connect(self.mouse_up)
+		self.xyview.mouseup.connect(self.xy_up)
 		self.xyview.mousewheel.connect(self.xy_wheel)
-		self.xyview.signal_set_scale.connect(self.event_scale)
+		self.xyview.signal_set_scale.connect(self.xy_scale)
 		self.xyview.origin_update.connect(self.xy_origin)
 
 		self.xzview.mousedown.connect(self.xz_down)
 		self.xzview.mousedrag.connect(self.xz_drag)
-		self.xzview.mouseup.connect(self.mouse_up)
-		self.xzview.mousewheel.connect(self.xz_wheel)
-		self.xzview.signal_set_scale.connect(self.event_scale)
+		self.xzview.mouseup.connect(self.xz_up)
+		self.xzview.signal_set_scale.connect(self.xz_scale)
 		self.xzview.origin_update.connect(self.xz_origin)
-		self.xzview.mousemove.connect(self.xz_move)
 
 		self.zyview.mousedown.connect(self.zy_down)
 		self.zyview.mousedrag.connect(self.zy_drag)
-		self.zyview.mouseup.connect(self.mouse_up)
-		self.zyview.mousewheel.connect(self.zy_wheel)
-		self.zyview.signal_set_scale.connect(self.event_scale)
+		self.zyview.mouseup.connect(self.zy_up)
+		self.zyview.signal_set_scale.connect(self.zy_scale)
 		self.zyview.origin_update.connect(self.zy_origin)
-		self.zyview.mousemove.connect(self.zy_move)
 		
 		self.xyview.keypress.connect(self.key_press)
 		self.datafilename=datafile
@@ -324,15 +288,15 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		self.optionviewer.show()
 		
+		# Average viewer shows results of background tomographic processing
+#		self.averageviewer=EMAverageViewer(self)
+		#self.averageviewer.show()
+
 		self.boxesviewer.mx_image_selected.connect(self.img_selected)
 		
-		##################
-		#### deal with metadata in the _info.json file...
-		
 		self.jsonfile=info_name(datafile)
-		info=js_open_dict(self.jsonfile)
 		
-		#### read particle classes
+		info=js_open_dict(self.jsonfile)
 		self.sets={}
 		self.boxsize={}
 		if "class_list" in info:
@@ -344,17 +308,20 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				else:
 					self.sets[int(k)]=str(clslst[k])
 					self.boxsize[int(k)]=64
+				
 					
+		
+			
+			
 		clr=QtGui.QColor
 		self.setcolors=[QtGui.QBrush(clr("blue")),QtGui.QBrush(clr("green")),QtGui.QBrush(clr("red")),QtGui.QBrush(clr("cyan")),QtGui.QBrush(clr("purple")),QtGui.QBrush(clr("orange")), QtGui.QBrush(clr("yellow")),QtGui.QBrush(clr("hotpink")),QtGui.QBrush(clr("gold"))]
 		self.sets_visible={}
 				
-		#### read boxes
 		if "boxes_3d" in info:
 			box=info["boxes_3d"]
 			for i,b in enumerate(box):
 				#### X-center,Y-center,Z-center,method,[score,[class #]]
-				bdf=[0,0,0,"manual",0.0, 0, 0]
+				bdf=[0,0,0,"manual",0.0, 0]
 				for j,bi in enumerate(b):  bdf[j]=bi
 				
 				
@@ -365,85 +332,52 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 				
 				self.boxes.append(bdf)
 		
+		
 		###### this is the new (2018-09) metadata standard..
 		### now we use coordinates at full size from center of tomogram so it works for different binning and clipping
 		### have to make it compatible with older versions though..
-		shape=[data["nx"], data["ny"], data["nz"]]
 		if "apix_unbin" in info:
 			self.apix_unbin=info["apix_unbin"]
 			self.apix_cur=apix=data["apix_x"]
 			for b in self.boxes:
-				for i in range(3):
-					b[i]=b[i]/apix*self.apix_unbin+shape[i]//2
-				#b[1]=b[1]/apix*self.apix_unbin+data["ny"]//2
-				#b[2]=b[2]/apix*self.apix_unbin+data["nz"]//2
+				b[0]=b[0]/apix*self.apix_unbin+data["nx"]//2
+				b[1]=b[1]/apix*self.apix_unbin+data["ny"]//2
+				b[2]=b[2]/apix*self.apix_unbin+data["nz"]//2
 				
 			for k in self.boxsize.keys():
 				self.boxsize[k]=int(np.round(self.boxsize[k]*self.apix_unbin/apix))
 		else:
 			self.apix_unbin=-1
-			
-		for b in self.boxes:
-			for i in range(3):
-				#b[i]=int(np.clip(np.round(b[i]), 0, shape[i]))
-				b[i]=int(np.clip(np.round(b[i]), 1, shape[i]-1))
-				
-		#self.boxes=self.boxes[:100]
-		#for b in self.boxes:print(b)
-				
+		
+		
+		
 		info.close()
-		
-		E2loadappwin("e2sptboxer","main",self)
-		E2loadappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
-		E2loadappwin("e2sptboxer","option",self.optionviewer)
-		
-		#### particle classes
 		if len(self.sets)==0:
 			self.new_set("particles_00")
-			
+		self.sets_visible[list(self.sets.keys())[0]]=0
 		self.currentset=sorted(self.sets.keys())[0]
-		if options.label:
-			sid=[i for i in self.sets.keys() if self.sets[i]==options.label]
-			if len(sid)>0:
-				self.currentset=sid[0]
-			else:
-				print("cannot find specified label")
-				
-		self.sets_visible[self.currentset]=0
 		self.setspanel.update_sets()
 		self.wboxsize.setValue(self.get_boxsize())
-		
-		if options.clean:
-			self.optionviewer.erasercheckbox.setChecked(True)
-			self.wlocalbox.setChecked(False)
-			
 
-		#print(self.sets)
+		print(self.sets)
 		for i in range(len(self.boxes)):
 			self.update_box(i)
 		
 		self.update_all()
 		self.initialized=True
-#		self.splitter_bottom.moveSplitter(self.splitter_top.handle(0).pos(),0)
-		
+
 	def set_data(self,data):
 
 		self.data=data
 		self.apix=data["apix_x"]
 
 		self.datasize=(data["nx"],data["ny"],data["nz"])
-		self.x_loc, self.y_loc, self.z_loc=data["nx"]//2,data["ny"]//2,data["nz"]//2
 
-		#self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
-		#self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
-		#print(data["nx"],data["ny"],data["nz"])
-		self.wzheight.setValue(data["nz"])
-
-		self.wdepth.setRange(0,data["nz"]-1)
-		self.wdepth.setValue(data["nz"]//2)
+		self.wdepth.setRange(0,self.datasize[2]-1)
 		self.boxes=[]
 		self.curbox=-1
 
+		self.wdepth.setValue(old_div(self.datasize[2],2))
 		if self.initialized:
 			self.update_all()
 
@@ -469,104 +403,51 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			r=self.data.get_clip(Region(x-bs//2,y-bs//2,z-bz//2,bs,bs,bz))
 
 		if self.apix!=0 :
-			r["apix_x"]=r["apix_y"]=r["apix_z"]=self.apix
+			r["apix_x"]=self.apix
+			r["apix_y"]=self.apix
+			r["apix_z"]=self.apix
 
+		#if options.normproc:
+			#r.process_inplace(options.normproc)
 		return r
 
-	def get_slice(self,idx,thk=1,axis="z"):
-		if not self.globalxf.is_identity():
-			data=self.dataxf
-		elif self.wfilt.getValue()!=0.0:
-			data=self.datalp
+	def get_slice(self,n,xyz):
+		"""Reads a slice either from a file or the preloaded memory array.
+		xyz is the axis along which 'n' runs, 0=x (yz), 1=y (xz), 2=z (xy)"""
+
+		if xyz==0:
+			r=self.data.get_clip(Region(n,0,0,1,self.datasize[1],self.datasize[2]))
+			r.set_size(self.datasize[1],self.datasize[2],1)
+		elif xyz==1:
+			r=self.data.get_clip(Region(0,n,0,self.datasize[0],1,self.datasize[2]))
+			r.set_size(self.datasize[0],self.datasize[2],1)
 		else:
-			data=self.data
-			
-		t=int(thk-1)
-		idx=int(idx)
-		r=data.process("misc.directional_sum",{"axis":axis,"first":idx-t,"last":idx+t})
-		r.div(t*2+1)
-		
+			r=self.data.get_clip(Region(0,0,n,self.datasize[0],self.datasize[1],1))
+
 		if self.apix!=0 :
-			r["apix_x"]=r["apix_y"]=r["apix_z"]=self.apix
+			r["apix_x"]=self.apix
+			r["apix_y"]=self.apix
+			r["apix_z"]=self.apix
 		return r
 
-#Erik commented out because QHBoxLayout has no attribute 'setRowMinimumheight'
-#	def event_zheight(self):
-#		z=self.wzheight.getValue()
-#		self.gbl.setRowMinimumHeight(1,z)
-#		self.gbl.setColumnMinimumWidth(0,z)
-#		#print(data["nx"],data["ny"],data["nz"])
-#		return
-	def save_gif(self):
-		
-
-		cmd, ok = QtWidgets.QInputDialog.getText(self, 'Command', 'xy:100-200')
-		if not ok:
-			return
-		
-		try:
-			from PIL import ImageGrab
-		except:
-			print("require PIL")
-			return
-		
-			
-		cmd=str(cmd)
-		print(cmd)
-		cmd=cmd.split(':')
-		win=cmd[0]
-		if win=="xy":
-			view=self.xyview
-		elif win=="xz":
-			view=self.xzview
-		elif win=="zy":
-			view=self.zyview
-		else:
-			print("choose from xy, xz, zy.")
-			return
-		
-		z=[int(i) for i in cmd[1].split('-')]
-		fnames=[]
-		for i in range(z[0], z[1]):
-			if win=="xy":
-				self.wdepth.setValue(i)
-			elif win=="xz":
-				self.y_loc=i
-				self.update_sliceview(['y'])
-			else:
-				self.x_loc=i
-				self.update_sliceview(['x'])
-				
-			p= view.mapToGlobal(QtCore.QPoint(0, 0))
-			ss_region=(p.x(), p.y(), p.x()+view.width(), p.y()+view.height())
-			# print(ss_region)
-			ss_img = ImageGrab.grab(ss_region)
-			fnames.append(f"snapshot_{i:03d}.png")
-			ss_img.save(fnames[-1])
-# 		
-		c="convert {} snapshot.gif".format(' '.join(fnames+fnames[::-1]))
-		print(c)
-		os.system(c)
-
-	
 	def event_boxsize(self):
 		if self.get_boxsize()==int(self.wboxsize.getValue()):
 			return
 		
 		self.boxsize[self.currentset]=int(self.wboxsize.getValue())
 		
-		#cb=self.curbox
+		cb=self.curbox
 		self.initialized=False
 		for i in range(len(self.boxes)):
 			if self.boxes[i][5]==self.currentset:
 				self.update_box(i)
-		#self.update_box(cb)
+		self.update_box(cb)
 		self.initialized=True
 		self.update_all()
 
-	#def event_projmode(self,state):
-		#"""Projection mode can be simple average (state=False) or maximum projection (state=True)"""
-		#self.update_all()
+	def event_projmode(self,state):
+		"""Projection mode can be simple average (state=False) or maximum projection (state=True)"""
+		self.update_all()
 
 	def event_scale(self,newscale):
 		self.xyview.set_scale(newscale)
@@ -574,25 +455,17 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.zyview.set_scale(newscale)
 
 	def event_depth(self):
-		if self.z_loc!=self.wdepth.value():
-			self.z_loc=self.wdepth.value()
 		if self.initialized:
-			self.update_sliceview()
+			self.update_xy()
 
 	def event_nlayers(self):
 		self.update_all()
 
 	def event_filter(self):
-		if self.wfilt.getValue()!=0.0:
-			print("Filtering tomogram...")
-			self.datalp=self.data.process("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue()})
-		else:
-			self.datalp=self.data
-			
 		self.update_all()
 
 	def event_localbox(self,tog):
-		self.update_sliceview()
+		self.update_sides()
 
 	def get_boxsize(self, clsid=-1):
 		if clsid<0:
@@ -607,6 +480,40 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	def nlayers(self):
 		return int(self.wnlayers.value())
+
+	def depth(self):
+		return int(self.wdepth.value())
+
+	def scale(self):
+		return self.wscale.getValue()
+
+	def get_x(self):
+		return self.get_coord(0)
+
+	def get_y(self):
+		return self.get_coord(1)
+
+	def get_z(self):
+		return self.depth()
+
+	def get_coord(self, coord_index):
+		if len(self.boxes) > 1:
+			if self.curbox:
+				return self.boxes[self.curbox][coord_index]
+			else:
+				return self.boxes[-1][coord_index]
+		else:
+			return 0
+
+
+	def menu_file_open(self,tog):
+		QtWidgets.QMessageBox.warning(None,"Error","Sorry, in the current version, you must provide a file to open on the command-line.")
+
+	def load_box_yshort(self, boxcoords):
+		if options.yshort:
+			return [boxcoords[0], boxcoords[2], boxcoords[1]]
+		else:
+			return boxcoords
 
 	def menu_file_read_boxloc(self):
 		fsp=str(QtWidgets.QFileDialog.getOpenFileName(self, "Select output text file")[0])
@@ -631,17 +538,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output text file")[0])
 		if len(fsp)==0:
 			return
-		
-		clsid=list(self.sets_visible.keys())
-		if len(clsid)==0:
-			print("No visible particles to save")
-			return
-		
+
 		out=open(fsp,"w")
 		for b in self.boxes:
-			if int(b[5]) in clsid:
-				out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
+			out.write("%d\t%d\t%d\n"%(b[0]*shrinkf,b[1]*shrinkf,b[2]*shrinkf))
 		out.close()
+		
 		
 	def menu_file_save_boxpdb(self):
 		fsp=str(QtWidgets.QFileDialog.getSaveFileName(self, "Select output PDB file", filter="PDB (*.pdb)")[0])
@@ -659,6 +561,9 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		numpy2pdb(bxs, fsp)
 		print("PDB saved to {}. Use voxel size 0.1".format(fsp))
 		
+		
+
+
 	def save_boxes(self, clsid=[]):
 		if len(clsid)==0:
 			defaultname="ptcls.hdf"
@@ -728,94 +633,172 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			if progress.wasCanceled():
 				break
 
-	def update_sliceview(self, axis=['x','y','z']):
-		boxes=self.get_rotated_boxes()
-		
-		allside=(not self.wlocalbox.isChecked())
-		
-		pms={'z':[2, self.xyview, self.z_loc],
-		     'y':[1, self.xzview, self.y_loc],
-		     'x':[0, self.zyview, self.x_loc]} 
-		
-		if self.boxshape=="circle": lwi=7
-		else: lwi=8
-		
-		for ax in axis:
-			ia, view, loc=pms[ax]
-			shp=view.get_shapes()
-			if len(shp)!=len(boxes):
-				### something changes the box shapes...
-				for i,b in enumerate(boxes):
-					self.update_box_shape(i,b)
-			
-		for ax in axis:
-			ia, view, loc=pms[ax]
-			
-			## update the box shapes
-			shp=view.get_shapes()
-			for i,b in enumerate(boxes):
-				bs=self.get_boxsize(b[5])
-				dst=abs(b[ia] - loc)
-				
-				inplane=dst<bs//2
-				rad=bs//2-dst
-				
-				if allside:
-					## display all side view boxes in this mode
-					inplane=True
-					rad=bs//2
-					
-				if ax=='z' and self.options.mode=="2D":
-					## boxes are 1 slice thick in 2d mode
-					inplane=dst<1
-				
-				
-				if inplane and (b[5] in self.sets_visible):
-					shp[i][0]=self.boxshape
-					## selected box is slightly thicker
-					if self.curbox==i:
-						shp[i][lwi]=3
-					else:
-						shp[i][lwi]=2
-					if self.options.mode=="3D":
-						shp[i][6]=rad
-				else:
-					shp[i][0]="hidden"
-				
-			view.shapechange=1
-			img=self.get_slice(loc, self.nlayers(), ax)
-			#if self.wfilt.getValue()!=0.0:
-				#img.process_inplace("filter.lowpass.gauss",{"cutoff_freq":1.0/self.wfilt.getValue(),"apix":self.apix})
 
-			view.set_data(img)
-			
-		self.update_coords()
+	def menu_file_quit(self):
+		self.close()
 
-	def get_rotated_boxes(self):
-		if len(self.boxes)==0:
-			return []
-		if self.globalxf.is_identity():
-			boxes=self.boxes
-		else:
-			cnt=[self.data["nx"]//2,self.data["ny"]//2,self.data["nz"]//2]
-			pts=np.array([b[:3] for b in self.boxes])-cnt
-			pts=np.array([self.globalxf.transform(p.tolist()) for p in pts])+cnt
-			boxes=[]
-			for i,b in enumerate(self.boxes):
-				p=pts[i]
-				boxes.append([p[0],p[1],p[2],b[3],b[4],b[5]])
-		return boxes
-		
-	def update_all(self):
-		"""redisplay of all widgets"""
+	def transform_coords(self, point, xform):
+		xvec = xform.get_matrix()
+		return [xvec[0]*point[0] + xvec[4]*point[1] + xvec[8]*point[2] + xvec[3], xvec[1]*point[0] + xvec[5]*point[1] + xvec[9]*point[2] + xvec[7], xvec[2]*point[0] + xvec[6]*point[1] + xvec[10]*point[2] + xvec[11]]
+
+	def get_averager(self):
+		"""returns an averager of the appropriate type for generating projection views"""
+		#if self.wmaxmean.isChecked() : return Averagers.get("minmax",{"max":1})
+
+		return Averagers.get("mean")
+
+	def update_sides(self):
+		"""updates xz and yz views due to a new center location"""
+
+		#print "\n\n\n\n\nIn update sides, self.datafile is", self.datafile
+		#print "\n\n\n\n"
+
 		if self.data==None:
 			return
 
-		self.update_sliceview()
+		if self.curbox==-1 :
+			x=self.datasize[0]//2
+			y=self.datasize[1]//2
+			z=0
+		else:
+			x,y,z=self.boxes[self.curbox][:3]
+
+		self.cury=y
+		self.curx=x
+
+		# update shape display
+		if self.wlocalbox.isChecked():
+			xzs=self.xzview.get_shapes()
+			for i in range(len(self.boxes)):
+				bs=self.get_boxsize(self.boxes[i][5])
+				if self.boxes[i][1]<self.cury+old_div(bs,2) and self.boxes[i][1]>self.cury-old_div(bs,2) and  self.boxes[i][5] in self.sets_visible:
+					xzs[i][0]=self.boxshape
+				else:
+					xzs[i][0]="hidden"
+
+			zys=self.zyview.get_shapes()
+			
+			for i in range(len(self.boxes)):
+				bs=self.get_boxsize(self.boxes[i][5])
+				if self.boxes[i][0]<self.curx+old_div(bs,2) and self.boxes[i][0]>self.curx-old_div(bs,2) and  self.boxes[i][5] in self.sets_visible:
+					zys[i][0]=self.boxshape
+				else:
+					zys[i][0]="hidden"
+		else :
+			xzs=self.xzview.get_shapes()
+			zys=self.zyview.get_shapes()
+		
+			for i in range(len(self.boxes)):
+				bs=self.get_boxsize(self.boxes[i][5])
+				if  self.boxes[i][5] in self.sets_visible:
+					xzs[i][0]=self.boxshape
+					zys[i][0]=self.boxshape
+				else:
+					xzs[i][0]="hidden"
+					zys[i][0]="hidden"
+
+		self.xzview.shapechange=1
+		self.zyview.shapechange=1
+
+		# yz
+		avgr=self.get_averager()
+
+		for x in range(x-(self.nlayers()//2),x+((self.nlayers()+1)//2)):
+			slc=self.get_slice(x,0)
+			avgr.add_image(slc)
+
+		av=avgr.finish()
+		if not self.yshort:
+			av.process_inplace("xform.transpose")
+
+		if self.wfilt.getValue()!=0.0:
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
+
+		self.zyview.set_data(av)
+
+		# xz
+		avgr=self.get_averager()
+
+		for y in range(y-old_div(self.nlayers(),2),y+old_div((self.nlayers()+1),2)):
+			slc=self.get_slice(y,1)
+			avgr.add_image(slc)
+
+		av=avgr.finish()
+		if self.wfilt.getValue()!=0.0:
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
+
+		self.xzview.set_data(av)
+
+
+	def update_xy(self):
+		"""updates xy view due to a new slice range"""
+
+		#print "\n\n\n\n\nIn update_xy, self.datafile is", self.datafile
+		#print "\n\n\n\n"
+
+		if self.data==None:
+			return
+
+		# Boxes should also be limited by default in the XY view
+		if len(self.boxes) > 0:
+			zc=self.wdepth.value()
+			#print "The current depth is", self.wdepth.value()
+			xys=self.xyview.get_shapes()
+			for i in range(len(self.boxes)):
+
+				bs=self.get_boxsize(self.boxes[i][5])
+				zdist=abs(self.boxes[i][2] - zc)
+
+				if self.options.mode=="3D":
+					zthr=bs/2
+					xys[i][6]=bs//2-zdist
+				else:
+					zthr=1
+					
+				if zdist < zthr and self.boxes[i][5] in self.sets_visible:
+					xys[i][0]=self.boxshape
+					
+				else :
+					xys[i][0]="hidden"
+			self.xyview.shapechange=1
+
+		#if self.wmaxmean.isChecked():
+			#avgr=Averagers.get("minmax",{"max":1})
+
+		#else:
+		avgr=Averagers.get("mean")
+
+		slc=EMData()
+		for z in range(self.wdepth.value()-self.nlayers()//2,self.wdepth.value()+(self.nlayers()+1)//2):
+			slc=self.get_slice(z,2)
+			avgr.add_image(slc)
+
+		av=avgr.finish()
+
+		#print "\n\nIn update xy, av and type are", av, type(av)
+
+		if self.wfilt.getValue()!=0.0:
+
+			av.process_inplace("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.apix})
+		if self.initialized:
+			self.xyview.set_data(av, keepcontrast=True)
+		else:
+			self.xyview.set_data(av)
+
+	def update_all(self):
+		"""redisplay of all widgets"""
+
+		#print "\n\n\n\n\nIn update all, self.datafile is", self.datafile
+		#print "\n\n\n\n"
+		if self.data==None:
+			return
+
+		self.update_xy()
+		self.update_sides()
 		self.update_boximgs()
 
 	def update_coords(self):
-		self.wcoords.setText("X: {:d}\tY: {:d}\tZ: {:d}".format(int(self.x_loc), int(self.y_loc), int(self.z_loc)))
+		self.wcoords.setText("X: " + str(self.get_x()) + "\t\t" + "Y: " + str(self.get_y()) + "\t\t" + "Z: " + str(self.get_z()))
 
 	def inside_box(self,n,x=-1,y=-1,z=-1):
 		"""Checks to see if a point in image coordinates is inside box number n. If any value is negative, it will not be checked."""
@@ -829,10 +812,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			rr=(x>=0)*((box[0]-x)**2) + (y>=0)*((box[1]-y) **2) + (z>=0)*(box[2]!=z)*(1e3*bs**2)
 		return rr<=bs**2
 
-	def del_box(self, delids):
-		
-		if type(delids)!=list:
-			delids=[delids]
+	def do_deletion(self, delids):
 		
 		kpids=[i for i,b in enumerate(self.boxes) if i not in delids]
 		self.boxes=[self.boxes[i] for i in kpids]
@@ -843,18 +823,36 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#print self.boxes, self.xyview.get_shapes()
 		self.curbox=-1
 		self.update_all()
-	
-	def update_box_shape(self,n, box):
+
+	def del_box(self,n):
+		"""Delete an existing box by replacing the deleted box with the last box. A bit funny, but otherwise
+		update after deletion is REALLY slow."""
+#		print "del ",n
+		if n<0 or n>=len(self.boxes): return
+
+		#if self.boxviewer.get_data(): self.boxviewer.set_data(None)
+		self.curbox=-1
+		self.do_deletion([n])
+
+
+
+
+	def update_box(self,n,quiet=False):
+		"""After adjusting a box, call this"""
+#		print "upd ",n,quiet
+
+		try:
+			box=self.boxes[n]
+		except IndexError:
+			return
 		bs2=self.get_boxsize(box[5])//2
-		if n==self.curbox:
-			lw=3
-		else:
-			lw=2
+
+		
 		color=self.setcolors[box[5]%len(self.setcolors)].color().getRgbF()
 		if self.options.mode=="3D":
-			self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,lw]))
-			self.xzview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[2],bs2,lw]))
-			self.zyview.add_shape(n,EMShape(("circle",color[0],color[1],color[2],box[2],box[1],bs2,lw)))
+			self.xyview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[1],bs2,2]))
+			self.xzview.add_shape(n,EMShape(["circle",color[0],color[1],color[2],box[0],box[2],bs2,2]))
+			self.zyview.add_shape(n,EMShape(("circle",color[0],color[1],color[2],box[2],box[1],bs2,2)))
 		else:
 			self.xyview.add_shape(n,EMShape(["rect",color[0],color[1],color[2],
 				    box[0]-bs2,box[1]-bs2,box[0]+bs2,box[1]+bs2,2]))
@@ -863,20 +861,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			self.zyview.add_shape(n,EMShape(["rect",color[0],color[1],color[2],
 				    box[2]-1,box[1]-bs2,box[2]+1,box[1]+bs2,2]))
 			
-	
-	def update_box(self,n,quiet=False):
-		"""After adjusting a box, call this"""
-#		print "upd ",n,quiet
-		if n<0 or n>=len(self.boxes):
-			return
-		
-		box=self.boxes[n]
-		
-		boxes=self.get_rotated_boxes()
-		self.update_box_shape(n,boxes[n])
+			
 
-		if self.initialized: 
-			self.update_sliceview()
+		if self.depth()!=box[2]:
+			self.wdepth.setValue(box[2])
+		else:
+			self.xyview.update()
+		if self.initialized: self.update_sides()
 
 		# For speed, we turn off updates while dragging a box around. Quiet is set until the mouse-up
 		if not quiet:
@@ -895,10 +886,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			
 		if self.initialized:
 			self.update_boximgs()
-			#if n!=self.curbox:
-				#self.boxesviewer.set_selected((n,),True)
+			
+
+			if n!=self.curbox:
+				self.boxesviewer.set_selected((n,),True)
 
 		self.curbox=n
+		self.update_coords()
 
 	def update_boximgs(self):
 		self.boxids=[im for im,m in enumerate(self.boxesimgs) if self.boxes[im][5] in self.sets_visible]
@@ -907,199 +901,245 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		return
 
 	def img_selected(self,event,lc):
-		#print("sel",lc[0])
+		#print "sel",lc[0]
 		lci=self.boxids[lc[0]]
 		if event.modifiers()&Qt.ShiftModifier:
-			if event.modifiers()&Qt.ControlModifier:
-				self.del_box(list(range(lci, len(self.boxes))))
-			else:
-				self.del_box(lci)
+			self.del_box(lci)
 		else:
-			#self.update_box(lci)
-			self.curbox=lci
-			box=self.boxes[lci]
-			self.x_loc,self.y_loc,self.z_loc=self.rotate_coord([box[0], box[1], box[2]], inv=False)
-			self.scroll_to(self.x_loc,self.y_loc,self.z_loc)
-			
-			self.update_sliceview()
-			
-			
-	def rotate_coord(self, p, inv=True):
-		if not self.globalxf.is_identity():
-			cnt=[self.data["nx"]//2,self.data["ny"]//2,self.data["nz"]//2]
-			p=[p[i]-cnt[i] for i in range(3)]
-			xf=Transform(self.globalxf)
-			if inv:
-				xf.invert()
-			p=xf.transform(p)+cnt
-		return p
+			self.update_box(lci)
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xyview.scroll_to(box[0],box[1])
+			self.xzview.scroll_to(None,box[2])
+			self.zyview.scroll_to(box[2],None)
+			self.currentset=box[5]
+			self.setspanel.initialized=False
+			self.setspanel.update_sets()
 
 	def del_region_xy(self, x=-1, y=-1, z=-1, rad=-1):
 		if rad<0:
 			rad=self.eraser_width()
 		
-		#print(x,y,z, rad)
 		delids=[]
-		boxes=self.get_rotated_boxes()
-		for i,b in enumerate(boxes):
+		for i,b in enumerate(self.boxes):
 			if b[5] not in self.sets_visible:
 				continue
 			
 			if (x>=0)*(b[0]-x)**2 + (y>=0)*(b[1]-y)**2 +(z>=0)*(b[2]-z)**2 < rad**2:
 				delids.append(i)
-		self.del_box(delids)
-	
-	def scroll_to(self, x,y,z, axis=""):
-		if axis!="z": self.xyview.scroll_to(x,y,True)
-		if axis!="y": self.xzview.scroll_to(x,self.data["nz"]/2,True)
-		if axis!="x": self.zyview.scroll_to(self.data["nz"]/2,y,True)
-	
-	#### mouse click
+		self.do_deletion(delids)
+
 	def xy_down(self,event):
 		x,y=self.xyview.scr_to_img((event.x(),event.y()))
-		self.mouse_down(event, x,y,self.z_loc, "z")
-		
-	def xz_down(self,event):
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
-		self.mouse_down(event,x,self.y_loc,z, "y")
-			
-	def zy_down(self,event):
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
-		self.mouse_down(event,self.x_loc,y,z, "x")
-		
-	def mouse_down(self,event, x, y, z, axis):
-		if min(x,y,z)<0: return
-		
-		xr,yr,zr=self.rotate_coord((x,y,z))
-		#print(x,y,z,xr,yr,zr)
-	
+		x,y=int(x),int(y)
+		z=int(self.get_z())
+		self.xydown=None
+		if x<0 or y<0 : return		# no clicking outside the image (on 2 sides)
 		if self.optionviewer.erasercheckbox.isChecked():
-			
-			side=self.wlocalbox.isChecked()
-			xyz={'x':x,'y':y,'z':z}
-			if not side:
-				xyz[axis]=-1
-				
-			self.del_region_xy(xyz['x'],xyz['y'],xyz['z'],-1)
+			self.del_region_xy(x,y)
 			return
 			
 		for i in range(len(self.boxes)):
-			if self.inside_box(i,xr,yr,zr):
-				
-				if event.modifiers()&Qt.ShiftModifier:  ## delete box
+			if self.inside_box(i,x,y,z):
+				if event.modifiers()&Qt.ShiftModifier:
 					self.del_box(i)
-
-				else:  ## start dragging
-					self.dragging=i
-					self.curbox=i
-					self.scroll_to(x,y,z,axis)
-					
+					self.firsthbclick = None
+				else:
+					self.xydown=(i,x,y,self.boxes[i][0],self.boxes[i][1])
+					self.update_box(i)
 				break
 		else:
-			if not event.modifiers()&Qt.ShiftModifier: ## add box
+#			if x>self.get_boxsize()/2 and x<self.datasize[0]-self.get_boxsize()/2 and y>self.get_boxsize()/2 and y<self.datasize[1]-self.get_boxsize()/2 and self.depth()>self.get_boxsize()/2 and self.depth()<self.datasize[2]-self.get_boxsize()/2 :
+			if not event.modifiers()&Qt.ShiftModifier:
+				self.boxes.append(([x,y,self.depth(), 'manual', 0.0, self.currentset]))
+				self.xydown=(len(self.boxes)-1,x,y,x,y)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.xydown[0])
 
-				self.x_loc, self.y_loc, self.z_loc=x,y,z
-				self.scroll_to(x,y,z,axis)
-				self.curbox=len(self.boxes)
-				self.boxes.append(([xr,yr,zr, 'manual', 0.0, self.currentset]))
-				self.update_box(len(self.boxes)-1)
-				self.dragging=len(self.boxes)-1
-				
-				
-
-	#### eraser mode
-	def xy_move(self,event):
-		self.mouse_move(event, self.xyview)
-			
-	def xz_move(self,event):
-		self.mouse_move(event, self.xzview)
-		
-	def zy_move(self,event):
-		self.mouse_move(event, self.zyview)
-			
-	
-	def mouse_move(self,event,view):
-		
-		if self.optionviewer.erasercheckbox.isChecked(): 
-			self.xyview.eraser_shape=self.xzview.eraser_shape=self.zyview.eraser_shape=None
-			x,y=view.scr_to_img((event.x(),event.y()))
-			view.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
-			view.shapechange=1
-			view.update()
-		else:
-			view.eraser_shape=None
-			
-	
-	#### dragging...
-	def mouse_drag(self,x, y, z):
-		if self.dragging<0:
-			return
-		if min(x,y,z)<0:
-			return
-		
-		self.x_loc, self.y_loc, self.z_loc=x,y,z
-		x,y,z=self.rotate_coord((x,y,z))
-		self.boxes[self.dragging][:3]= x,y,z
-		self.update_box(self.dragging,True)
+		if self.curbox>=0:
+			box=self.boxes[self.curbox]
+			self.xzview.scroll_to(None,box[2])
+			self.zyview.scroll_to(box[2],None)
 
 	def xy_drag(self,event):
-		if self.dragging>=0:
-			x,y=self.xyview.scr_to_img((event.x(),event.y()))
-			self.mouse_drag(x,y,self.z_loc)
-
-	def xz_drag(self,event):
-		if self.dragging>=0:
-			x,z=self.xzview.scr_to_img((event.x(),event.y()))
-			self.mouse_drag(x,self.y_loc,z)
-	
-	def zy_drag(self,event):
-		if self.dragging>=0:
-			z,y=self.zyview.scr_to_img((event.x(),event.y()))
-			self.mouse_drag(self.x_loc,y,z)
 		
-	def mouse_up(self,event):
-		if self.dragging>=0:
-			self.update_box(self.dragging)
-		self.dragging=-1
+		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=int(x),int(y)
+		if self.optionviewer.erasercheckbox.isChecked():
+			self.del_region_xy(x,y)
+			self.xyview.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
+			self.xyview.shapechange=1
+			self.xyview.update()
+			return
+		
+		if self.xydown==None : return
 
-	
-	#### keep the same origin for the 3 views
+
+		dx=x-self.xydown[1]
+		dy=y-self.xydown[2]
+
+		self.boxes[self.xydown[0]][0]=dx+self.xydown[3]
+		self.boxes[self.xydown[0]][1]=dy+self.xydown[4]
+		self.update_box(self.curbox,True)
+
+	def xy_up  (self,event):
+		if self.xydown!=None: self.update_box(self.curbox)
+		self.xydown=None
+
+	def xy_wheel (self,event):
+		if event.angleDelta().y() > 0:
+			#self.wdepth.setValue(self.wdepth.value()+4)
+			self.wdepth.setValue(self.wdepth.value()+1) #jesus
+
+		elif event.angleDelta().y() < 0:
+			#self.wdepth.setValue(self.wdepth.value()-4)
+			self.wdepth.setValue(self.wdepth.value()-1) #jesus
+
+
+	def xy_scale(self,news):
+		"xy image view has been rescaled"
+		self.wscale.setValue(news)
+		#self.xzview.set_scale(news,True)
+		#self.zyview.set_scale(news,True)
+
 	def xy_origin(self,newor):
+		"xy origin change"
 		xzo=self.xzview.get_origin()
 		self.xzview.set_origin(newor[0],xzo[1],True)
 
 		zyo=self.zyview.get_origin()
 		self.zyview.set_origin(zyo[0],newor[1],True)
 	
+	def xy_move(self,event):
+		if self.optionviewer.erasercheckbox.isChecked():
+			x,y=self.xyview.scr_to_img((event.x(),event.y()))
+			#print x,y
+			self.xyview.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
+			self.xyview.shapechange=1
+			self.xyview.update()
+		else:
+			self.xyview.eraser_shape=None
+
+	def xz_down(self,event):
+		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=int(x),int(z)
+		y=int(self.get_y())
+		self.xzdown=None
+		if x<0 or z<0 : return		# no clicking outside the image (on 2 sides)
+		if self.optionviewer.erasercheckbox.isChecked():
+			return
+		for i in range(len(self.boxes)):
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or self.inside_box(i,x,self.cury,z) :
+				if event.modifiers()&Qt.ShiftModifier:
+					self.del_box(i)
+					self.firsthbclick = None
+				else :
+					self.xzdown=(i,x,z,self.boxes[i][0],self.boxes[i][2])
+					self.update_box(i)
+				break
+		else:
+			if not event.modifiers()&Qt.ShiftModifier:
+				self.boxes.append(([x,self.cury,z, 'manual', 0.0, self.currentset]))
+				self.xzdown=(len(self.boxes)-1,x,z,x,z)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.xzdown[0])
+
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xyview.scroll_to(None,box[1])
+			self.zyview.scroll_to(box[2],None)
+
+	def xz_drag(self,event):
+		if self.xzdown==None : return
+
+		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=int(x),int(z)
+
+		dx=x-self.xzdown[1]
+		dz=z-self.xzdown[2]
+
+		self.boxes[self.xzdown[0]][0]=dx+self.xzdown[3]
+		self.boxes[self.xzdown[0]][2]=dz+self.xzdown[4]
+		self.update_box(self.curbox,True)
+
+	def xz_up  (self,event):
+		if self.xzdown!=None: self.update_box(self.curbox)
+		self.xzdown=None
+
+	def xz_scale(self,news):
+		"xy image view has been rescaled"
+		self.wscale.setValue(news)
+		#self.xyview.set_scale(news,True)
+		#self.zyview.set_scale(news,True)
+
 	def xz_origin(self,newor):
+		"xy origin change"
 		xyo=self.xyview.get_origin()
 		self.xyview.set_origin(newor[0],xyo[1],True)
 
+		#zyo=self.zyview.get_origin()
+		#self.zyview.set_origin(zyo[0],newor[1],True)
+
+
+	def zy_down(self,event):
+		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=int(z),int(y)
+		x=int(self.get_x())
+		self.xydown=None
+		if z<0 or y<0 : return		# no clicking outside the image (on 2 sides)
+
+		for i in range(len(self.boxes)):
+			if (not self.wlocalbox.isChecked() and self.inside_box(i,x,y,z)) or  self.inside_box(i,self.curx,y,z):
+				if event.modifiers()&Qt.ShiftModifier:
+					self.del_box(i) 
+					self.firsthbclick = None
+				else :
+					self.zydown=(i,z,y,self.boxes[i][2],self.boxes[i][1])
+					self.update_box(i)
+				break
+		else:
+			if not event.modifiers()&Qt.ShiftModifier:
+				###########
+				self.boxes.append(([self.curx,y,z, 'manual', 0.0, self.currentset]))
+				self.zydown=(len(self.boxes)-1,z,y,z,y)		# box #, x down, y down, x box at down, y box at down
+				self.update_box(self.zydown[0])
+
+		if self.curbox>=0 :
+			box=self.boxes[self.curbox]
+			self.xyview.scroll_to(box[0],None)
+			self.xzview.scroll_to(None,box[2])
+
+	def zy_drag(self,event):
+		if self.zydown==None : return
+
+		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=int(z),int(y)
+
+		dz=z-self.zydown[1]
+		dy=y-self.zydown[2]
+
+		self.boxes[self.zydown[0]][2]=dz+self.zydown[3]
+		self.boxes[self.zydown[0]][1]=dy+self.zydown[4]
+		self.update_box(self.curbox,True)
+
+	def zy_up  (self,event):
+		if self.zydown!=None:
+			self.update_box(self.curbox)
+		self.zydown=None
+
+	def zy_scale(self,news):
+		"xy image view has been rescaled"
+		self.wscale.setValue(news)
+		#self.xyview.set_scale(news,True)
+		#self.xzview.set_scale(news,True)
+
 	def zy_origin(self,newor):
+		"xy origin change"
 		xyo=self.xyview.get_origin()
 		self.xyview.set_origin(xyo[0],newor[1],True)
 
-
-	##### go up/down with shift+wheel
-	def xy_wheel(self, event):
-		z=int(self.z_loc+ np.sign(event.angleDelta().y()))
-		if z>0 and z<self.data["nz"]:
-			self.wdepth.setValue(z)
+		#xzo=self.xzview.get_origin()
+		#self.xzview.set_origin(xzo[0],newor[1],True)
 	
-	def xz_wheel(self, event):
-		y=int(self.y_loc+np.sign(event.angleDelta().y()))
-		if y>0 and y<self.data["ny"]:
-			self.y_loc=y
-			self.update_sliceview(['y'])
-		
-	def zy_wheel(self, event):
-		x=int(self.x_loc+np.sign(event.angleDelta().y()))
-		if x>0 and x<self.data["nx"]:
-			self.x_loc=x
-			self.update_sliceview(['x'])
-			
-
-	########
+	
 	def set_current_set(self, name):
 		
 		#print "set current", name
@@ -1137,12 +1177,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		name=parse_setname(name)
 		## idx to keep
 		delids=[i for i,b in enumerate(self.boxes) if b[5]==int(name)]
-		self.del_box(delids)
+		self.do_deletion(delids)
 		
 		if name in self.sets_visible: self.sets_visible.pop(name)
 		if name in self.sets: self.sets.pop(name)
 		if name in self.boxsize: self.boxsize.pop(name)
 		
+		self.curbox=-1
 		self.update_all()
 		
 		return
@@ -1175,80 +1216,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	
 	def key_press(self,event):
-		if event.key() == 96: ## "`" to move up a slice since arrow keys are occupied...
-			self.wdepth.setValue(int(round(self.z_loc+1)))
+		if event.key() == 96:
+			self.wdepth.setValue(self.wdepth.value()+1)
 
-		elif event.key() == 49: ## "1" to move down a slice
-			self.wdepth.setValue(int(round(self.z_loc-1)))
+		elif event.key() == 49:
+			self.wdepth.setValue(self.wdepth.value()-1)
 		else:
 			self.keypress.emit(event)
-
-	def flatten_tomo(self):
-		print("Flatten tomogram by particles coordinates")
-		vis=list(self.sets_visible.keys())
-		pts=[b[:3] for b in self.boxes if b[5] in vis]
-		if len(pts)<3:
-			print("Too few visible particles. Cannot flatten tomogram.")
-			return
-		pts=np.array(pts)
-		pca=PCA(3)
-		pca.fit(pts);
-		c=pca.components_
-		
-		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
-			axis=0
-			t2=Transform({"type":"xyz","ytilt":90, "ztilt":90})
-		else:
-			axis=2
-			t2=Transform()
-			
-		t=Transform()
-		cc=c[axis]
-		if cc[axis]!=0:
-			cc*=np.sign(cc[axis])
-		
-		t.set_rotation(c[axis].tolist())
-		t.invert()
-		
-		t=t2*t
-		xyz=t.get_params("xyz")
-		
-		if axis==2: xyz["ztilt"]=0
-		print("xtilt {:.02f}, ytilt {:.02f}, ztilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"], xyz["ztilt"]))
-# 		
-# 		print("xtilt {:.02f}, ytilt {:.02f}".format(xyz["xtilt"], xyz["ytilt"]))
-		t=Transform(xyz)
-		self.globalxf=t
-		if self.wfilt.getValue()!=0.0:
-			data=self.datalp
-		else:
-			data=self.data
-		self.dataxf=data.process("xform",{"transform":t})
-		
-		self.xyview.shapes={}
-		self.zyview.shapes={}
-		self.xzview.shapes={}
-		
-		boxes=self.get_rotated_boxes()
-		for i,b in enumerate(boxes):
-			self.update_box_shape(i,b)
-		
-		self.update_sliceview()
-		print("Done")
-	
-	def reset_flatten_tomo(self, event):
-		self.globalxf=Transform()
-		self.xyview.shapes={}
-		self.zyview.shapes={}
-		self.xzview.shapes={}
-		
-		boxes=self.get_rotated_boxes()
-		for i,b in enumerate(boxes):
-			self.update_box_shape(i,b)
-		
-		self.update_sliceview()
-		
 
 	def SaveJson(self):
 		
@@ -1286,20 +1260,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		print("Exiting")
 		self.SaveJson()
 		
-		E2saveappwin("e2sptboxer","main",self)
-		E2saveappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
-		E2saveappwin("e2sptboxer","option",self.optionviewer)
-		
 		#self.boxviewer.close()
 		self.boxesviewer.close()
 		self.optionviewer.close()
-		#self.optionviewer.close()
-		try:
-			self.xyview.close()
-			self.xzview.close()
-			self.zyview.close()
-		except:
-			pass
+		self.xyview.close()
+		self.xzview.close()
+		self.zyview.close()
 		
 		self.module_closed.emit() # this signal is important when e2ctf is being used by a program running its own event loop
 
@@ -1314,6 +1280,98 @@ def parse_setname(name):
 	
 	return ret
 			
+	
+
+class EMBoxViewer(QtWidgets.QWidget):
+	"""This is a multi-paned view showing a single boxed out particle from a larger tomogram"""
+
+	def __init__(self):
+		QtWidgets.QWidget.__init__(self)
+		self.setWindowTitle("Single Particle View")
+
+		self.resize(300,300)
+
+		self.gbl = QtWidgets.QGridLayout(self)
+		self.xyview = EMImage2DWidget()
+		self.gbl.addWidget(self.xyview,0,1)
+
+		self.xzview = EMImage2DWidget()
+		self.gbl.addWidget(self.xzview,1,1)
+
+		self.zyview = EMImage2DWidget()
+		self.gbl.addWidget(self.zyview,0,0)
+		self.data = None
+
+
+		# This puts an isosurface view in the lower left corner, but was causing a lot of segfaults, so switching to 2-D slices for now
+		#self.d3view = EMScene3D()
+		#self.d3viewdata = EMDataItem3D(test_image_3d(3), transform=Transform())
+		#isosurface = EMIsosurface(self.d3viewdata, transform=Transform())
+		#self.d3view.insertNewNode('', self.d3viewdata, parentnode=self.d3view)
+		#self.d3view.insertNewNode("Iso", isosurface, parentnode=self.d3viewdata )
+
+		self.d3view = EMImage2DWidget()
+		self.gbl.addWidget(self.d3view,1,0)
+
+		self.wfilt = ValSlider(rng=(0,50),label="Filter:",value=0.0)
+		self.gbl.addWidget(self.wfilt,2,0,1,2)
+
+		self.wfilt.valueChanged.connect(self.event_filter)
+
+		self.gbl.setRowStretch(2,1)
+		self.gbl.setRowStretch(0,5)
+		self.gbl.setRowStretch(1,5)
+		
+	def set_data(self,data):
+		"""Sets the current volume to display"""
+
+		self.data=data
+		self.fdata=data
+
+		self.update()
+		self.show()
+
+	def get_data(self):
+		return self.data
+
+	def update(self):
+		if self.data==None:
+			self.xyview.set_data(None)
+			self.xzview.set_data(None)
+			self.zyview.set_data(None)
+
+			#self.d3viewdata.setData(test_image_3d(3))
+			#self.d3view.updateSG()
+			self.d3view.set_data(test_image_3d(3))
+
+			return
+
+		if self.wfilt.getValue()>4 :
+			self.fdata=self.data.process("filter.lowpass.gauss",{"cutoff_freq":old_div(1.0,self.wfilt.getValue()),"apix":self.data['apix_x']}) #JESUS
+
+		xyd=self.fdata.process("misc.directional_sum",{"axis":"z"})
+		xzd=self.fdata.process("misc.directional_sum",{"axis":"y"})
+		zyd=self.fdata.process("misc.directional_sum",{"axis":"x"})
+
+		self.xyview.set_data(xyd)
+		self.xzview.set_data(xzd)
+		self.zyview.set_data(zyd)
+
+		#self.d3viewdata.setData(self.fdata)
+		#self.d3view.updateSG()
+		self.d3view.set_data(self.fdata)
+
+
+	def event_filter(self,value):
+		self.update()
+
+	def closeEvent(self, event):
+		self.d3view.close()
+		self.xyview.close()
+		self.xzview.close()
+		self.zyview.close()
+
+
 class EMTomoBoxerOptions(QtWidgets.QWidget):
 	def __init__(self,target) :
 		QtWidgets.QWidget.__init__(self)
@@ -1330,7 +1388,7 @@ class EMTomoBoxerOptions(QtWidgets.QWidget):
 		self.erasercheckbox=QtWidgets.QCheckBox("Eraser")
 		self.gbl.addWidget(self.erasercheckbox,0,0)
 		
-		self.eraser_radius=ValBox(label="Radius:",value=128)
+		self.eraser_radius=ValBox(label="Radius:",value=64)
 		self.gbl.addWidget(self.eraser_radius,0,1)
 
 		self.tabwidget = QtWidgets.QTabWidget()
