@@ -35,7 +35,7 @@ def _tomogram_json(sa_path):
     return os.path.join("info", f"{first}_recon_tomo_final.json")
 
 def _stage2_label(basename=None, interp_json=None):
-    """Label passed to e2tomogram_stage2_Oct7th2025v2.py as baseNameForOutputs."""
+    """Label passed to e2tomogram_stage2.py as baseNameForOutputs."""
     if basename:
         return basename
     if interp_json:
@@ -137,14 +137,14 @@ def run_interpolate_eulers(tomo_json, fullsh4_path, interp_json, interp_log):
 
 
 def run_stage2(interp_json, label, log_path):
-    """Run e2tomogram_stage2_Oct7th2025v2.py → tomograms/<label>.hdf."""
-    cmd = (f"e2tomogram_stage2_Oct7th2025v2.py"
+    """Run e2tomogram_stage2.py → tomograms/<label>.hdf."""
+    cmd = (f"e2tomogram_stage2.py"
            f" {interp_json} {label}")
     print(f"\n=== Step 6 — stage-2 reconstruction ===")
     print(cmd + f" > {log_path}")
     ret = _run_logged(cmd, log_path)
     if ret != 0:
-        print(f"Warning: e2tomogram_stage2_Oct7th2025v2.py exited with code {ret}")
+        print(f"Warning: e2tomogram_stage2.py exited with code {ret}")
 
 
 # ---------------------------------------------------------------------------
@@ -159,7 +159,7 @@ Four-step continuous-tilt reconstruction pipeline:
   1. e2tomogram.py --stage2prep  (reconstruct SA tilt series + write rich JSON)
   2. Full-frame shrink (no SA)  ->  sets/
   3. Interpolate SA Euler angles to all full frames
-  4. e2tomogram_stage2_Oct7th2025v2.py  ->  tomograms/
+  4. e2tomogram_stage2.py  ->  tomograms/
 Steps 1 and 2 of the original pipeline (build LST, sub-average) are now
 performed automatically by e3pick_ranges.py after range selection.
 """
