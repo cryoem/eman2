@@ -139,6 +139,37 @@ def run_steps_1_2(options):
     if ret != 0:
         print(f"Warning: e2proc2d.py exited with code {ret}")
 
+    # Selected thumbnail — convert full-frame indices to thumbnail indices
+    thumb = getattr(options, 'thumbnailmovie', None)
+    if bn and thumb:
+        ntave = options.ntave or 18
+        n_neg_thumb = n_neg // ntave
+        t_neg_start = neg_start // ntave
+        t_neg_end   = neg_end   // ntave
+        t_pos_start = (pos_start - n_neg) // ntave + n_neg_thumb
+        t_pos_end   = (pos_end   - n_neg) // ntave + n_neg_thumb
+        print(f"\n=== Step 2b — selected thumbnail ===")
+        make_selected_thumb(thumb, t_neg_start, t_neg_end, t_pos_start, t_pos_end, bn)
+
+
+def make_selected_thumb(thumbnailmovie, neg_start, neg_end, pos_start, pos_end, basename):
+    """Write thumbnails/<basename>_selected_thumb.hdf with only the selected frames."""
+    if not thumbnailmovie or not os.path.isfile(thumbnailmovie):
+        print("  Selected thumbnail skipped (combined thumbnail not found).")
+        return
+    os.makedirs("thumbnails", exist_ok=True)
+    out = os.path.join("thumbnails", f"{basename}_selected_thumb.hdf")
+    if os.path.isfile(out):
+        os.remove(out)
+    out_idx = 0
+    for i in range(neg_start, neg_end + 1):
+        EMData(thumbnailmovie, i).write_image(out + ":6", out_idx)
+        out_idx += 1
+    for i in range(pos_start, pos_end + 1):
+        EMData(thumbnailmovie, i).write_image(out + ":6", out_idx)
+        out_idx += 1
+    print(f"  Selected thumbnail → {out}  ({out_idx} frames)")
+
 
 def load_stack(path):
     n = hdf_nimg(path)

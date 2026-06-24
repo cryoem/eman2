@@ -73,7 +73,7 @@ def _run_logged(cmd_str, log_path):
         return proc.wait()
 
 
-def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep):
+def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep, extrapad=True, moretile=False):
     """Run e2tomogram.py --stage2prep: reconstruct and write rich JSON."""
     n_sa = EMUtil.get_image_count(sa_path)
     tltstep = tilt_range / n_sa
@@ -95,12 +95,14 @@ def run_tomogram(sa_path, tilt_range, threads, clipz, tltkeep):
         f" --clipz={clipz}"
         f" --bxsz=32"
         f" --filterres=40.0"
-        f" --extrapad"
-        f" --moretile"
         f" --rmbeadthr=-1.0"
         f" --threads={threads}"
         f" --patchtrack=-1"
     )
+    if extrapad:
+        cmd += " --extrapad"
+    if moretile:
+        cmd += " --moretile"
     print(f"\n=== Step 3 — tomogram reconstruction + stage2prep ({n_sa} SA frames, tltstep={tltstep:.4f}°) ===")
     print(cmd)
     ret = os.system(cmd)
@@ -174,10 +176,12 @@ performed automatically by e3pick_ranges.py after range selection.
     parser.add_argument("--threads",      type=int,  default=2,    help="CPU threads for e2tomogram.py --stage2prep.", guitype='intbox', row=2, col=2, rowspan=1, colspan=1)
     parser.add_argument("--clipz",        type=int,  default=768,  help="Z clip size (pixels).", guitype='intbox', row=3, col=0, rowspan=1, colspan=1)
     parser.add_argument("--tltkeep",      type=float, default=1.0, help="Fraction of tilt images to keep (1.0 = keep all).", guitype='floatbox', row=3, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--skip_tomogram",  default=False, action="store_true", help="Skip step 1: e2tomogram.py --stage2prep.", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1)
-    parser.add_argument("--skip_fullsh4",   default=False, action="store_true", help="Skip step 2: full-frame shrink stack.", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
-    parser.add_argument("--skip_interp",    default=False, action="store_true", help="Skip step 3: Euler interpolation.", guitype='boolbox', row=4, col=2, rowspan=1, colspan=1)
-    parser.add_argument("--skip_stage2",    default=False, action="store_true", help="Skip step 4: stage-2 reconstruction.", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--extrapad",   default=True,  action="store_true", help="Pass --extrapad to e2tomogram.py --stage2prep (recommended).", guitype='boolbox', row=4, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--moretile",   default=False, action="store_true", help="Pass --moretile to e2tomogram.py --stage2prep (more tiles, slower).", guitype='boolbox', row=4, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--skip_tomogram",  default=False, action="store_true", help="Skip step 1: e2tomogram.py --stage2prep.", guitype='boolbox', row=5, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--skip_fullsh4",   default=False, action="store_true", help="Skip step 2: full-frame shrink stack.", guitype='boolbox', row=5, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--skip_interp",    default=False, action="store_true", help="Skip step 3: Euler interpolation.", guitype='boolbox', row=5, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--skip_stage2",    default=False, action="store_true", help="Skip step 4: stage-2 reconstruction.", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
 
     parser.add_argument("--ppid", type=int, default=-1, help="Set the PID of the parent process, used for cross-platform PPID.")
 
@@ -223,7 +227,8 @@ performed automatically by e3pick_ranges.py after range selection.
     if options.skip_tomogram:
         print(f"\n--- Step 1 skipped (--skip_tomogram)  [{sa_path}]")
     else:
-        run_tomogram(sa_path, options.tiltRange, options.threads, options.clipz, options.tltkeep)
+        run_tomogram(sa_path, options.tiltRange, options.threads, options.clipz, options.tltkeep,
+                     extrapad=options.extrapad, moretile=options.moretile)
 
     # Step 2
     if options.skip_fullsh4:
