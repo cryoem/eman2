@@ -1372,9 +1372,6 @@ significantly altering the spatial distribution. npoint specifies the total numb
 
 		return from_numpy(vol) # I think this makes a copy which isn't ideal but I don't know how to get it to an EMData object another way
 
-
-
-
 def point_project_single_fn(pointary,mx,boxsize,tytx):
 	"""This exists as a function separate from the Point class to better support JAX optimization. It is called by the corresponding Point method.
 		Does not do any CTF or account for symmetry
@@ -1396,6 +1393,10 @@ def point_project_single_fn(pointary,mx,boxsize,tytx):
 	shift11=jnp.array((1,1))
 #	print("t1")
 
+	# jax.debug.print("--- DEBUG EINSUM ---")
+	# jax.debug.print("Shape of mx: {x}", x=mx.shape)
+	# jax.debug.print("Shape of pointary sliced: {y}", y=pointary[:, :3].shape)
+	# print(f"{mx.shape},{pointary[:, :3].shape}")
 	xfpoint=jnp.einsum("ij,kj->ki",mx,pointary[:,:3])	# changed to ik instead of ki due to y,x ordering in tensorflow
 	xfpoint+=tytx[:2]	# translation, ignore z or any other variables which might be used for per particle defocus, etc
 	xfpoint=(xfpoint+0.5)*os_bs			# shift and scale both x and y the same
@@ -1439,6 +1440,7 @@ def prj_simple_single_sym(pointary, ortary, ny, tytx,symmx):
 	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
 	return point_project_simple_fn(pointary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
 
+
 @partial(jax.jit, static_argnames=["ny"])
 def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
 	"""Like point_project_simple_fn, but includes symmetry by averaging over each symmetrical projection. Does not do any CTF.
@@ -1453,12 +1455,43 @@ def point_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
 	
 	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
 
+# Jit compiled and vmapped over orientations (multiple projections).
+# Does not do CTF or symmetry
+pointset_project_simple_fn=jax.jit(jax.vmap(point_project_single_fn, in_axes=[0, 2, None, 0]), static_argnames=["boxsize"])
+
+def prjset_simple_single_sym(pointary, ortary, ny, tytx,symmx):
+	"""Like point_project_fn, but includes symmetry. Calculates the projections of pointary in the orientation defined by ortary and tytx, but modified into the symmetrical unit specified by symmx
+	Does not do any CTF
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	ny- boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
+	mx3d=jax_to_mx3d(ortary)
+	sym_mx3d = jnp.einsum("ijn,jk->ikn", mx3d, symmx)[:2,:,:] # The splicing turns it back into the 2d transformation matrix that project_simple expect
+	return pointset_project_simple_fn(pointary,jnp.flipud(sym_mx3d),ny,tytx) # flipud accounts for the flipxy option in to_mx2d()
+
+
 # The following variant doesn't take a single point array and project it in N orientations, it
 # takes a stack of N point arrays and projects each one in the corresponding orientation
 # That is, each array generates only a single projection. This is used in training dynamic models
 @partial(jax.jit, static_argnames=["ny"])
-def pointset_project_simple_sym_fn(pointarys, ortary, ny, tytx, symmx):
-	return jnp.mean(jax.vmap(prj_simple_single_sym, in_axes=[0, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
+def pointset_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx):
+	"""Like point_project_simple_fn, but includes symmetry by averaging over each symmetrical projection. Does not do any CTF.
+
+	Generates an array containing a simple 2-D projection (interpolated delta functions) of the set of Points for each of N Orientations in orts.
+	pointary - a Points.jax array
+	ortary - the jax data from an Orientations object--will be converted to a stack of 2d matrices modified by symmx
+	tytx =  a N x 2+ vector containing an in-plane translation in unit (-0.5 - 0.5) coordinates to be applied to the set of Points for each Orientation.
+	ny - boxsize in pixels. Scaling factor is equal to boxsize, such that -0.5 to 0.5 range covers the box.
+	symmx=A stack of 2d matrices from an Orientations object, represents the transformations between symmetric units
+	"""
+	
+	return jnp.mean(jax.vmap(prjset_simple_single_sym, in_axes=[None, None, None, None, 2])(pointary, ortary, ny, tytx, symmx), axis=0)
+
 
 def point_project_ctf_single_fn(pointary,mx,ctf_info,apix,boxsize,tytx,astig):
 
@@ -2311,6 +2344,15 @@ def sym_prj_frc_loss(pointary,ortary,tytx,symmx,ptcls,weight,thresh):
 point_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss))
 ort_sym_prj_frc_loss=jax.jit(jax.value_and_grad(sym_prj_frc_loss, argnums=(1,2)))
 
+def sym_prjset_frc_loss(pointary,ortary,tytx,symmx,ptcls,weight,thresh):
+	"""The set_ variant allows each of ptcls[N] to have a different pointary[N]
+
+	Aggregates the functions we need to calculate the gradient through. Computes the frc array resulting from the
+	comparison of the Points in point to particles in known orientations. Returns -frc since optax wants to minimize, not maximize
+	returns single averaged FRC over both particles and frequency"""
+	ny=ptcls.shape[1]
+	prj=pointset_project_simple_sym_fn(pointary, ortary, ny, tytx, symmx)
+	return -jax_frc_jit(jax_fft2d(prj),ptcls,weight,thresh)
 
 @jax.jit
 def sym_prj_frcs_loss(pointary,symmx,ptcls,meta,weight,thresh):
