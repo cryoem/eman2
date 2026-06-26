@@ -190,9 +190,18 @@ def main():
 
 	print(epoch,running_loss/Nptcl,options.niter,batchsize,Nptcl,Npnt)
 
+	# save the final model to disk
 	graphdef, state = nnx.split(model)
-	param={"nin":ptclrep.shape[1],"nout":points.jax.size,"nlat":options.nlatent,"hidden_dims":hidden, "activation":activation, "state":nnx.to_pure_dict(state) }
+	param={"config": {"nin":ptclrep.shape[1],"nout":points.jax.size,"nlat":options.nlatent,"hidden_dims":hidden, "activation":activation}, "state":serialization.to_state_dict(nnx.to_pure_dict(state)) }
 	with open(options.modelout,"wb") as f: f.write(serialization.msgpack_serialize(param))
+
+	# test restoring the saved model
+	with open(options.modelout,"rb") as f: param=serialization.msgpack_restore(f.read())
+	config=param["config"]
+	model=Autoencoder(Nin=config["nin"],Nout=config["nout"],Nlat=config["nlat"],hidden_dims=config["hidden_dims"],activation=config["activation"],rngs=rngs)
+	graphdef,state=nnx.split(model)
+	state = serialization.from_state_dict(state, nnx.restore_int_paths(param["state"]))
+	model = nnx.merge(graphdef,state)
 	
 	E3end(logid)
 
@@ -221,7 +230,9 @@ def train_step_init(model, optimizer, points):
 	# This trains the neutral state of the network (0...0) input vector
 	def loss_fn(mdl):
 		pointary = mdl(jnp.zeros(mdl.layers.layers[0].in_features)).reshape(points.shape)  # Forward pass
-		return -jnp.sum(pointary*points)
+#		jax.debug.print("{x} {y}",x=-jnp.sum(pointary*points),y=jnp.std(pointary)+.00001)
+		return jnp.sqrt(jnp.mean(jnp.square(pointary-points))+.000001)
+#		return -jnp.sum(pointary*points)/(jnp.std(pointary)+.00001)
 
 	# 2. Compute loss value and gradients relative to model state
 	loss, grads = nnx.value_and_grad(loss_fn)(model)
@@ -241,8 +252,9 @@ class Encoder(nnx.Module):
 
 		for i,size in enumerate(hidden_dims):
 			layers.append(nnx.Linear(in_features=current_dim, out_features=size, rngs=rngs))
-			if i==len(hidden_dims)-1 : layers.append(nnx.leaky_relu)
-			else: layers.append(activation)
+			#if i==len(hidden_dims)-1 : layers.append(nnx.leaky_relu)
+			#else: 
+			layers.append(activation)
 			current_dim = size
 
 		layers.append(nnx.Linear(in_features=current_dim, out_features=latent_dim, rngs=rngs))
@@ -260,8 +272,9 @@ class Decoder(nnx.Module):
 		# Reverse the hidden dimensions for symmetric decoding
 		for i,size in enumerate(reversed(hidden_dims)):
 			layers.append(nnx.Linear(in_features=current_dim, out_features=size, rngs=rngs))
-			if i==0 : layers.append(nnx.leaky_relu)
-			else: layers.append(activation)
+			#if i==0 : layers.append(nnx.leaky_relu)
+			#else: 
+			layers.append(activation)
 			current_dim = size
 
 		# Map back to output dimensionality (Nout)
