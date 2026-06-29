@@ -37,7 +37,7 @@ def main():
 	"""
 	parser = EMArgumentParser(usage=usage,version=EMANVERSION)
 	parser.add_argument("--sym", type=str,help="symmetry. currently only support c and d", default="c1")
-	parser.add_argument("--model", type=str,help="Required: point reconstruction (X,Y,Z,A) .txt file. This model will be used for representation of individual particles as well as the 3-D volume.", default=None)
+	parser.add_argument("--points", type=str,help="Required: point reconstruction (X,Y,Z,A) .txt file. This model will be used for representation of individual particles as well as the 3-D volume.", default=None)
 	parser.add_argument("--ptcls", type=str,help="Required: particle data for training. Must be a .lst file with orientations.", default=None)
 #	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
 	parser.add_argument("--modelin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
@@ -53,7 +53,7 @@ def main():
 	parser.add_argument("--batchsz", type=int,help="particle batch size", default=1024)
 #	parser.add_argument("--minressz", type=int,help="Fourier diameter associated with minimum resolution to consider. ", default=4)
 #	parser.add_argument("--maxboxsz", type=int,help="maximum fourier box size to use. 2 x target Fourier radius. ", default=64)
-#	parser.add_argument("--maxres", type=float,help="maximum resolution. will overwrite maxboxsz. ", default=-1)
+	parser.add_argument("--maxres", type=float,help="maximum resolution in loss function (in A). Default = -1", default=-1)
 #	parser.add_argument("--align", action="store_true", default=False ,help="align particles.")
 #	parser.add_argument("--heter", action="store_true", default=False ,help="heterogeneity analysis.")
 #	parser.add_argument("--decoderentropy", action="store_true", default=False ,help="This will train some entropy into the decoder using particles to reduce vanishing gradient problems")
@@ -79,7 +79,7 @@ def main():
 	Nptcl=len(cache)			# number of particles, but note that only N*batchsize will be used in training
 
 	# the starting model, which provides the origin in latent space
-	points=Points(options.model)
+	points=Points(options.points)
 
 	# Setting up symmetry
 	sym=parsesym(options.sym)
@@ -125,7 +125,7 @@ def main():
 	# we recreate the ptclrep every time right now
 	frcout=open("frcs.txt","w")
 	# If we have a ptclrep newer than the particles and points, use it
-	if os.path.exists(options.ptclrep) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.ptcls) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.model):
+	if os.path.exists(options.ptclrep) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.ptcls) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.points):
 		ptclrep=np.memmap(options.ptclrep,mode="r",dtype=np.float32,shape=(len(cache),len(points)))
 	else:		# otherwise, we need to generate it
 		ptclrep=np.memmap(options.ptclrep,mode="w+",dtype=np.float32,shape=(len(cache),len(points)))
@@ -170,23 +170,27 @@ def main():
 	model = Autoencoder(Nin=ptclrep.shape[1], Nout=points.jax.size, Nlat=options.nlatent, hidden_dims=hidden, activation=activation, rngs=rngs)
 
 	# train the decoder so latent zero vector produces the input model
-	preoptimizer=nnx.Optimizer(model.decoder,optax.adam(learning_rate=1e-3),wrt=nnx.Param)
-	for epoch in range(100):
+	preoptimizer=nnx.Optimizer(model.decoder,optax.adam(learning_rate=1e-2),wrt=nnx.Param)
+	for epoch in range(251):
 		loss=train_step_init(model.decoder,preoptimizer,points.jax)
-		print(epoch,loss)
-	
-	optimizer = nnx.Optimizer(model, optax.adam(learning_rate=1e-3),wrt=nnx.Param)
-	for epoch in range(options.niter):
-		running_loss = 0.0
-		
-		for batch in range(Nptcl//batchsize):
-			x = jnp.array(ptclrep[batch*batchsize:(batch+1)*batchsize])
-			ptcl = cache.read(128,range(batch*batchsize,(batch+1)*batchsize))
-			loss_val = train_step(model, optimizer, x, ptcl.jax, symmx, jnp.array(ptcl.metadata),weights[128],threshs[128] )
+		if epoch%10==0: print(epoch,loss)
+
+	# Train the full autoencoder
+	sizes=cache.sizes
+	for i,s in enumerate(sizes):
+		optimizer = nnx.Optimizer(model, optax.adam(learning_rate=1e-3),wrt=nnx.Param)
+		itr=16 if i!=len(sizes)-1 else options.niter
+		for epoch in range(itr):
+			running_loss = 0.0
 			
-			running_loss += float(loss_val)
-		
-		print(f"Epoch {epoch+1}/{options.niter} | Loss: {running_loss / Nptcl:.8f}")
+			for batch in range(Nptcl//batchsize):
+				x = jnp.array(ptclrep[batch*batchsize:(batch+1)*batchsize])
+				ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
+				loss_val = train_step(model, optimizer, x, ptcl.jax, symmx, jnp.array(ptcl.metadata),weights[s],threshs[s] )
+				
+				running_loss += float(loss_val)
+			
+			print(f"{s}: Epoch {epoch+1}/{itr} | Loss: {running_loss / Nptcl:.8f}")
 
 	print(epoch,running_loss/Nptcl,options.niter,batchsize,Nptcl,Npnt)
 
