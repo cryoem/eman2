@@ -74,7 +74,6 @@ from .emshape import *
 import weakref
 from pickle import dumps,loads
 import struct, math
-from numpy import *
 from .valslider import *
 from io import StringIO
 import re
@@ -274,11 +273,11 @@ class EMPlot3DWidget(EMGLWidget):
 
 		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
 			x_axis = arange(len(data))
-			data = [ x_axis,array(data) ]		# replace data with our refactored version
+			data = [ x_axis,np.array(data) ]		# replace data with our refactored version
 			self.data[key]= data
 			self.visibility.setdefault(key,True)
 		else:
-			self.data[key]=[array(i) for i in data]
+			self.data[key]=[np.array(i) for i in data]
 			self.visibility.setdefault(key,True)
 
 		try:
@@ -308,7 +307,7 @@ class EMPlot3DWidget(EMGLWidget):
 			if symsize<0 : symsize=pp[6]
 		else:
 			if symtype==-2 and linetype==-2:
-				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
+				if len(data)<4 and (np.diff(self.data[key][0])>=0).all() : doline,linetype=1,0
 				else : dosym,symtype=1,0
 			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 			if color >len(colortypes): color = 0 # there are only a certain number of colors
@@ -452,7 +451,7 @@ class EMPlot3DWidget(EMGLWidget):
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
 				nx=len(rdata[0])
 				ny=len(rdata)
-				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
+				data=[[np.array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 
 			except:
 				print("couldn't read",filename)

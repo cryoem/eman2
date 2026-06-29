@@ -152,7 +152,7 @@ class StackCache():
 				for size in sizes:
 					stkfds=stkf.downsample(size).numpy
 					self._images[size][i:end,:,:]=stkfds
-			self._images.flush()		# close() may not work. This ensures write to disk
+			for s in self._images: self._images[s].flush()		# close() may not work. This ensures write to disk
 			self._meta.flush()
 
 		# read selected metadata at init. Not stored in the cache

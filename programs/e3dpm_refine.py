@@ -191,7 +191,7 @@ def main():
 		# not clear if we really need to recreate the optimizer for each size
 		opt_net = nnx.Optimizer(model, optax.adam(learning_rate=1e-3),wrt=nnx.Param) # for training Decoder
 
-		opt_lat = optax.adam(1e-3)				# for learning latent vectors
+		opt_lat = optax.adam(1e-2)				# for learning latent vectors
 		curlatent=jnp.array(latent)
 		opt_lat_state=opt_lat.init(curlatent)
 		
@@ -200,34 +200,36 @@ def main():
 			frcs=np.zeros(Nptcl)
 			grads=np.zeros((Nptcl,options.nlatent))
 
-			#
-			# this is the latent space optimization
-			#
-			for batch in range(Nptcl//batchsize):
-				x = jnp.array(latent[batch*batchsize:(batch+1)*batchsize])
-				ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
-				meta=ptcl.metadata
-				#mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
-				tytx=jnp.array(meta[:,0:2])
-				frcsub,gradsub=latent_step(x,model,meta[:,2:5],tytx,symmx,ptcl.jax,weights[s],threshs[s])
-				frcs[batch*batchsize:(batch+1)*batchsize]=frcsub
-				grads[batch*batchsize:(batch+1)*batchsize]=gradsub
-
-			upd,opt_lat_state=opt_lat.update(grads,opt_lat_state,curlatent)
-			curlatent=optax.apply_updates(curlatent,upd)
-			latent[:,:]=curlatent[:,:]
-			latentloss=frcs.mean()
-
-			#
-			# this is the decoder optimization
-			#
-			running_loss = 0.0
-			for batch in range(Nptcl//batchsize):
-				x = jnp.array(latent[batch*batchsize:(batch+1)*batchsize])
-				ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
-				loss_val = train_step(model, opt_net, x, ptcl.jax, symmx, jnp.array(ptcl.metadata),weights[s],threshs[s] )
-				
-				running_loss += float(loss_val)
+				#
+				# this is the latent space optimization
+				#
+			for ii in range(3):
+				for batch in range(Nptcl//batchsize):
+					x = jnp.array(latent[batch*batchsize:(batch+1)*batchsize])
+					ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
+					meta=ptcl.metadata
+					#mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
+					tytx=jnp.array(meta[:,0:2])
+					frcsub,gradsub=latent_step(x,model,meta[:,2:5],tytx,symmx,ptcl.jax,weights[s],threshs[s])
+					frcs[batch*batchsize:(batch+1)*batchsize]=frcsub
+					grads[batch*batchsize:(batch+1)*batchsize]=gradsub
+	
+				upd,opt_lat_state=opt_lat.update(grads,opt_lat_state,curlatent)
+				curlatent=optax.apply_updates(curlatent,upd)
+				latent[:,:]=curlatent[:,:]
+				latentloss=frcs.mean()
+	
+				#
+				# this is the decoder optimization
+				#
+			for ii in range(3):
+				running_loss = 0.0
+				for batch in range(Nptcl//batchsize):
+					x = jnp.array(latent[batch*batchsize:(batch+1)*batchsize])
+					ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
+					loss_val = train_step(model, opt_net, x, ptcl.jax, symmx, jnp.array(ptcl.metadata),weights[s],threshs[s] )
+					
+					running_loss += float(loss_val)
 			
 			print(f"size {s:3d}: Epoch {epoch+1:3d}/{itr:3d} | Latent Loss: {latentloss:.8f} | Loss: {running_loss / (Nptcl//batchsize):.8f} | Latminmax {latent.min():.8g} {latent.max():.8g}")
 
