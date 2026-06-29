@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-# Steve Ludtke 2026
+# Steve Ludtke 07/27/2026
+# This variant eschews an encoder, and instead tries to train the latent space directly from the loss function
 #
 from EMAN3 import *
 from EMAN3jax import *
@@ -42,6 +43,8 @@ def main():
 #	parser.add_argument("--segments", type=str,help="Divide the model into sequential domains. Comma separated list of integers. Each integer is the first sequence number of a new region, starting with 0",default=None)
 	parser.add_argument("--modelin", type=str,help="Rather than initializing the decoder from a model, read an existing trained decoder", default="")
 	parser.add_argument("--modelout", type=str,help="Save the trained decoder model.", default="model.msgpack")
+	parser.add_argument("--latentin", type=str,help="Use existing latent vector seeds", default=None)
+	parser.add_argument("--latentout", type=str,help="middle layer output", default="latent.txt")
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
 	parser.add_argument("--netstyle",type=str,help="Multiple network designs are available: leaky_5, relu_3, linear",default="leaky_5")
 #	parser.add_argument("--learnrate", type=float,help="learning rate for model training only. Default is 1e-4. ", default=1e-4)
@@ -61,7 +64,6 @@ def main():
 #	parser.add_argument("--conv", action="store_true", default=False ,help="Use a convolutional network for heterogeneity analysis.")
 #	parser.add_argument("--fromscratch", action="store_true", default=False ,help="start from coarse alignment. otherwise will only do refinement from last round")
 	parser.add_argument("--ptclrep", type=str,help="Save the per-particle representation to a file", default="ptclrep.bin")
-	parser.add_argument("--latentout", type=str,help="middle layer output", default="")
 #	parser.add_argument("--pas", type=str,help="choose whether to adjust position, amplitude, sigma. sigma is not supported in this version of the program. use 3 digit 0/1 input. default is 110, i.e. only adjusting position and amplitude", default="110")
 	parser.add_argument("--nlatent", type=int,help="size of the middle layer. If model is grouped must be divisible by ngroup", default=4)
 #	parser.add_argument("--mask", type=str,help="remove points outside mask", default="")
@@ -123,24 +125,24 @@ def main():
 	# grads=np.zeros((batchsize,len(points),4))
 	# frcs=np.zeros(batchsize)
 	# we recreate the ptclrep every time right now
-	frcout=open("frcs.txt","w")
-	# If we have a ptclrep newer than the particles and points, use it
-	if os.path.exists(options.ptclrep) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.ptcls) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.points):
-		ptclrep=np.memmap(options.ptclrep,mode="r",dtype=np.float32,shape=(len(cache),len(points)))
-	else:		# otherwise, we need to generate it
-		ptclrep=np.memmap(options.ptclrep,mode="w+",dtype=np.float32,shape=(len(cache),len(points)))
-		for bn in range(0,len(cache),batchsize):
-			bnend=min(bn+batchsize,len(cache))
-			ptcls=cache.read(128,range(bn,bnend))
-			meta=ptcls.metadata
-			mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
-			tytx=jnp.array(meta[:,0:2])
-			print(points.jax.shape,mx2d.shape,tytx.shape,ptcls.jax.shape)
+	# frcout=open("frcs.txt","w")
+	# # If we have a ptclrep newer than the particles and points, use it
+	# if os.path.exists(options.ptclrep) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.ptcls) and os.path.getmtime(options.ptclrep)>os.path.getmtime(options.points):
+	# 	ptclrep=np.memmap(options.ptclrep,mode="r",dtype=np.float32,shape=(len(cache),len(points)))
+	# else:		# otherwise, we need to generate it
+	# 	ptclrep=np.memmap(options.ptclrep,mode="w+",dtype=np.float32,shape=(len(cache),len(points)))
+	# 	for bn in range(0,len(cache),batchsize):
+	# 		bnend=min(bn+batchsize,len(cache))
+	# 		ptcls=cache.read(128,range(bn,bnend))
+	# 		meta=ptcls.metadata
+	# 		mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
+	# 		tytx=jnp.array(meta[:,0:2])
+	# 		print(points.jax.shape,mx2d.shape,tytx.shape,ptcls.jax.shape)
 	
-			frcs,grads=prj_frc_loss_vmap(points.jax,mx2d,tytx,ptcls.jax,weights[128],threshs[128])
-			grads*=points.jax.shape[0]
-			ptclrep[bn:bnend]=grads[:,:,3]
-			for f in frcs: frcout.write(f"{f:1.6f}\n")
+	# 		frcs,grads=prj_frc_loss_vmap(points.jax,mx2d,tytx,ptcls.jax,weights[128],threshs[128])
+	# 		grads*=points.jax.shape[0]
+	# 		ptclrep[bn:bnend]=grads[:,:,3]
+	# 		for f in frcs: frcout.write(f"{f:1.6f}\n")
 		
 # 		for n in range(bn,min(bn+1024,len(cache))):
 # 			ns=n-bn
@@ -157,7 +159,7 @@ def main():
 	# np.savetxt("gradsa.txt",grads[:,:,3])
 	# np.savetxt("frcs.txt",frcs)
 
-	Npnt=ptclrep.shape[1]		# number of points
+	Npnt=len(points)		# number of points
 	netstyles={
 		"leaky_5":([Npnt,Npnt//4,Npnt//8,max(Npnt//32,options.nlatent),max(Npnt//64,options.nlatent)],"leakyrelu"), 
 		"relu_3":([Npnt,Npnt//4,Npnt//16],"relu"), 
@@ -167,48 +169,96 @@ def main():
 	except: error_exit(f"ERROR: available network styles are: {",".join(netstyles.keys())}")
 	
 	rngs = nnx.Rngs(int(time.time()))
-	model = Autoencoder(Nin=ptclrep.shape[1], Nout=points.jax.size, Nlat=options.nlatent, hidden_dims=hidden, activation=activation, rngs=rngs)
+	model = Decoder(output_dim=points.jax.size, latent_dim=options.nlatent, hidden_dims=hidden, activation=activation, rngs=rngs)
 
 	# train the decoder so latent zero vector produces the input model
-	preoptimizer=nnx.Optimizer(model.decoder,optax.adam(learning_rate=1e-2),wrt=nnx.Param)
+	preoptimizer=nnx.Optimizer(model,optax.adam(learning_rate=1e-2),wrt=nnx.Param)
 	for epoch in range(251):
-		loss=train_step_init(model.decoder,preoptimizer,points.jax)
+		loss=train_step_init(model,preoptimizer,points.jax)
 		if epoch%10==0: print(epoch,loss)
 
-	# Train the full autoencoder
+	# Direct training of latent space instead of using an encoder
+	#try: 
+	if options.latentin is not None: latent=np.loadtxt(options.latentin)
+	else: latent=np.random.normal(scale=0.1, size=(len(cache),options.nlatent))
+	#latent=np.zeros((len(cache),options.nlatent))
+	#np.memmap(options.ptclrep,mode="r+",dtype=np.float32,shape=(len(cache),options.nlatent))
+	#except: latent=np.memmap(options.ptclrep,mode="w+",dtype=np.float32,shape=(len(cache),options.nlatent))
+
+	# We alternate training the latent representation and the model
 	sizes=cache.sizes
 	for i,s in enumerate(sizes):
-		optimizer = nnx.Optimizer(model, optax.adam(learning_rate=1e-3),wrt=nnx.Param)
-		itr=16 if i!=len(sizes)-1 else options.niter
+		# not clear if we really need to recreate the optimizer for each size
+		opt_net = nnx.Optimizer(model, optax.adam(learning_rate=1e-3),wrt=nnx.Param) # for training Decoder
+
+		opt_lat = optax.adam(1e-3)				# for learning latent vectors
+		curlatent=jnp.array(latent)
+		opt_lat_state=opt_lat.init(curlatent)
+		
+		itr=options.niter//2 if i!=len(sizes)-1 else options.niter
 		for epoch in range(itr):
-			running_loss = 0.0
-			
+			frcs=np.zeros(Nptcl)
+			grads=np.zeros((Nptcl,options.nlatent))
+
+			#
+			# this is the latent space optimization
+			#
 			for batch in range(Nptcl//batchsize):
-				x = jnp.array(ptclrep[batch*batchsize:(batch+1)*batchsize])
+				x = jnp.array(latent[batch*batchsize:(batch+1)*batchsize])
 				ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
-				loss_val = train_step(model, optimizer, x, ptcl.jax, symmx, jnp.array(ptcl.metadata),weights[s],threshs[s] )
+				meta=ptcl.metadata
+				#mx2d=Orientations(meta[:,2:5]).to_mx2d(swapxy=True)
+				tytx=jnp.array(meta[:,0:2])
+				frcsub,gradsub=latent_step(x,model,meta[:,2:5],tytx,symmx,ptcl.jax,weights[s],threshs[s])
+				frcs[batch*batchsize:(batch+1)*batchsize]=frcsub
+				grads[batch*batchsize:(batch+1)*batchsize]=gradsub
+
+			upd,opt_lat_state=opt_lat.update(grads,opt_lat_state,curlatent)
+			curlatent=optax.apply_updates(curlatent,upd)
+			latent[:,:]=curlatent[:,:]
+			latentloss=frcs.mean()
+
+			#
+			# this is the decoder optimization
+			#
+			running_loss = 0.0
+			for batch in range(Nptcl//batchsize):
+				x = jnp.array(latent[batch*batchsize:(batch+1)*batchsize])
+				ptcl = cache.read(s,range(batch*batchsize,(batch+1)*batchsize))
+				loss_val = train_step(model, opt_net, x, ptcl.jax, symmx, jnp.array(ptcl.metadata),weights[s],threshs[s] )
 				
 				running_loss += float(loss_val)
 			
-			print(f"{s}: Epoch {epoch+1}/{itr} | Loss: {running_loss / Nptcl:.8f}")
+			print(f"size {s:3d}: Epoch {epoch+1:3d}/{itr:3d} | Latent Loss: {latentloss:.8f} | Loss: {running_loss / (Nptcl//batchsize):.8f} | Latminmax {latent.min():.8g} {latent.max():.8g}")
 
 	print(epoch,running_loss/Nptcl,options.niter,batchsize,Nptcl,Npnt)
 
+	if options.latentout!=None and len(options.latentout)>0:
+		np.savetxt(options.latentout,latent)
+
 	# save the final model to disk
 	graphdef, state = nnx.split(model)
-	param={"config": {"nin":ptclrep.shape[1],"nout":points.jax.size,"nlat":options.nlatent,"hidden_dims":hidden, "activation":activation}, "state":serialization.to_state_dict(nnx.to_pure_dict(state)) }
+	param={"config": {"nout":points.jax.size,"nlat":options.nlatent,"hidden_dims":hidden, "activation":activation}, "state":serialization.to_state_dict(nnx.to_pure_dict(state)) }
 	with open(options.modelout,"wb") as f: f.write(serialization.msgpack_serialize(param))
 
 	# test restoring the saved model
 	with open(options.modelout,"rb") as f: param=serialization.msgpack_restore(f.read())
 	config=param["config"]
-	model=Autoencoder(Nin=config["nin"],Nout=config["nout"],Nlat=config["nlat"],hidden_dims=config["hidden_dims"],activation=config["activation"],rngs=rngs)
+	model=Decoder(output_dim=points.jax.size, latent_dim=options.nlatent, hidden_dims=hidden, activation=activation, rngs=rngs)
 	graphdef,state=nnx.split(model)
 	state = serialization.from_state_dict(state, nnx.restore_int_paths(param["state"]))
 	model = nnx.merge(graphdef,state)
 	
 	E3end(logid)
 
+@jax.jit
+@jax.value_and_grad
+def latent_step(latent,model,ortary,tytx,symmx,ptcls,weight,thresh):
+	# Just like the loss_fn in train_step, but gradient with respect to latent, rather than the model parameters
+	points=model(latent)
+	points=points.reshape((points.shape[0],points.shape[1]//4,4))
+	return(sym_prjset_frc_loss(points,ortary,tytx,symmx,ptcls,weight,thresh))
+	
 @nnx.jit
 def train_step(model, optimizer, x, ptcl, symmx, meta,weight,thresh):
 	# 1. Define a local function that computes loss based ONLY on model state.
@@ -273,6 +323,9 @@ class Decoder(nnx.Module):
 		layers = nnx.List()
 		current_dim = latent_dim
 		
+		activations={"relu":nnx.relu,"leakyrelu":nnx.leaky_relu,"identity":nnx.identity}
+		activation=activations[activation]			# This is done so serialization works
+
 		# Reverse the hidden dimensions for symmetric decoding
 		for i,size in enumerate(reversed(hidden_dims)):
 			layers.append(nnx.Linear(in_features=current_dim, out_features=size, rngs=rngs))
