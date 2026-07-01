@@ -3139,7 +3139,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 				self.ctrtog.isChecked(), self.ctrsteps.value(),self.ctrlvls.value(),self.hsttog.isChecked(),self.hststeps.value())
 		else:
 			for name in names:
-				self.target().setPlotParms(name,self.color.currentIndex(),None,None,None,None,None,None,True,None,None,None,False,None,None)
+				self.target().setPlotParms(name,self.color.currentIndex(),None,None,None,None,None,None,True,None,None,None,False,None)
 			self.target().updateGL()
 
 	#def updPlotHmsel(self,s=None):

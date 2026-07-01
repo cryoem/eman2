@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 #
-# Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
-# Copyright (c) 2000-2006 Baylor College of Medicine
+# Author: Steven Ludtke,  (sludtke@bcm.edu)
+# Copyright (c) 2000-  Baylor College of Medicine
 #
 # This software is issued under a joint BSD/GNU license. You may use the
 # source code in this file under either license. However, note that the
@@ -57,7 +57,7 @@ import numpy as np
 import threading
 from EMAN3jsondb import JSDict,js_open_dict,js_close_dict,js_remove_dict,js_list_dicts,js_check_dict,js_one_key
 
-
+__EMAN3=True
 ### If we ever need to add 'cleanup' exit code, this is how to do it. Drawn from the old BDB code.
 ## if the program exits nicely, close all of the databases
 #atexit.register(DB_cleanup)

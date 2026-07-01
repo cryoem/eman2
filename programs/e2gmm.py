@@ -281,7 +281,7 @@ def main():
 #	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
 
 
-	pid=E2init(argv)
+#	pid=E2init(argv)
 
 	app = EMApp()
 	emgmm=EMGMM(app,options)
@@ -294,7 +294,7 @@ of gaussians to resolution/volume is key in obtaining good
 distributions.""")
 	app.execute()
 
-	E2end(pid)
+#	E2end(pid)
 
 class EMGMM(QtWidgets.QMainWindow):
 	"""This is the main window for the e2gmm application"""
