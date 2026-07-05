@@ -856,13 +856,13 @@ lc is the cursor selection point in plot coords"""
 
 	def mousePressEvent(self, event):
 #		lc=self.scr2plot(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
 			self.updateGL()
 			self.rmousedrag=(event.x(),event.y())
-		elif event.button()==Qt.LeftButton:
+		elif event.button()==Qt.MouseButton.LeftButton:
 			self.lmousedrag=(event.x(),event.y())
 
 	def mouseMoveEvent(self, event):
@@ -879,7 +879,7 @@ lc is the cursor selection point in plot coords"""
 			self.viewang=(self.viewang[0]+delev,self.viewang[1]-daz)
 			self.needupd=True
 			self.updateGL()
-		elif event.buttons()&Qt.LeftButton:
+		elif event.buttons()&Qt.MouseButton.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 

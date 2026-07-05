@@ -489,7 +489,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			if needresize:
 				x=self.data["nx"]
 				y=self.data["ny"]
-				xys=QtWidgets.QApplication.desktop().availableGeometry()
+				xys=QtWidgets.QApplication.primaryScreen().availableGeometry()
 				mx=xys.width()*2//3
 				my=xys.height()*2//3
 

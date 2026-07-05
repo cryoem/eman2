@@ -192,6 +192,7 @@ class EMImage2DWidget(EMGLWidget):
 #		self.qt_parent.deleteLater()
 
 	def initializeGL(self):
+		self._ensure_font()
 		GL.glClearColor(0,0,0,0)
 
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
@@ -199,24 +200,28 @@ class EMImage2DWidget(EMGLWidget):
 		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
 		glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
 
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
+		enable(GL_LIGHTING)
+		enable(GL_LIGHT0)
 
 	def paintGL(self):
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		# glClear(GL_COLOR_BUFFER_BIT) # throws error.
-		glClearColor(0.0, 0.0, 0.0, 0.0)
-		if glIsEnabled(GL_DEPTH_TEST):
-			glClear(GL_DEPTH_BUFFER_BIT)
-		if glIsEnabled(GL_STENCIL_TEST):
-			glClear(GL_STENCIL_BUFFER_BIT)
-		#self.cam.position()
-		#context = OpenGL.contextdata.getContext(None)
-		#print "Image2D context is", context
-		glPushMatrix()
-		self.render()
-		glPopMatrix()
+		try:
+			glMatrixMode(GL_MODELVIEW)
+			glLoadIdentity()
+			# glClear(GL_COLOR_BUFFER_BIT) # throws error.
+			glClearColor(0.0, 0.0, 0.0, 0.0)
+			if glIsEnabled(GL_DEPTH_TEST):
+				glClear(GL_DEPTH_BUFFER_BIT)
+			if glIsEnabled(GL_STENCIL_TEST):
+				glClear(GL_STENCIL_BUFFER_BIT)
+			#self.cam.position()
+			#context = OpenGL.contextdata.getContext(None)
+			#print "Image2D context is", context
+			glPushMatrix()
+			self.render()
+			glPopMatrix()
+		except Exception as e:
+			print("EMImage2DWidget.paintGL error:", e)
+			import traceback; traceback.print_exc()
 
 	def resizeGL(self, width, height):
 		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
@@ -224,7 +229,7 @@ class EMImage2DWidget(EMGLWidget):
 		height = height // self.devicePixelRatio()
 		side = min(width, height)
 		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -489,7 +494,7 @@ class EMImage2DWidget(EMGLWidget):
 			if needresize:
 				x=self.data["nx"]
 				y=self.data["ny"]
-				xys=QtWidgets.QApplication.desktop().availableGeometry()
+				xys=QtWidgets.QApplication.primaryScreen().availableGeometry()
 				mx=old_div(xys.width()*2,3)
 				my=old_div(xys.height()*2,3)
 
@@ -1059,12 +1064,11 @@ class EMImage2DWidget(EMGLWidget):
 			self.setup_shapes()
 			self.shapechange=0
 
-		width = old_div(self.width(),2.0)
-		height = old_div(self.height(),2.0)
+		width = self.width() / 2.0
+		height = self.height() / 2.0
 
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
-
 
 		update = False
 		if self.display_state_changed():
@@ -1072,8 +1076,6 @@ class EMImage2DWidget(EMGLWidget):
 
 		if update:
 			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
-
-#		print "render",update,self.image_change_count
 
 
 		render = False
@@ -1097,19 +1099,16 @@ class EMImage2DWidget(EMGLWidget):
 			if not self.glflags.npt_textures_unsupported():
 
 				self.hist=struct.unpack('256i',a[-1024:])
+				img_data = a[:-1024]  # Strip histogram bytes from image data for OpenGL
 
 				if self.tex_name != 0: glDeleteTextures(self.tex_name)
 				self.tex_name = glGenTextures(1)
 				if ( self.tex_name <= 0 ):
 					raise("failed to generate texture name")
 
-				#if self.otherdatablend and self.otherdata != None:
-
-					#glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
-
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, img_data)
 
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
@@ -1126,11 +1125,12 @@ class EMImage2DWidget(EMGLWidget):
 
 			else:
 				self.hist=struct.unpack('256i',a[-1024:])
+				img_data = a[:-1024]  # Strip histogram bytes from image data for OpenGL
 				glNewList(self.main_display_list,GL_COMPILE)
 				#GL.glRasterPos(0,self.height()-1)
 				#GL.glPixelZoom(1.0,-1.0)
 				GL.glRasterPos(0,0)
-				GL.glDrawPixels(self.width(),self.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+				GL.glDrawPixels(self.width(),self.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,img_data)
 		else:
 			glCallList(self.main_display_list)
 
@@ -1147,6 +1147,7 @@ class EMImage2DWidget(EMGLWidget):
 
 				scale = self.scale*self.otherdatascale
 				b=GLUtil.render_amp8(self.otherdata, int(old_div(self.origin[0],scale)),int(old_div(self.origin[1],scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+				other_img_data = b[:-1024]  # Strip histogram bytes from image data for OpenGL
 				gl_render_type = GL_LUMINANCE
 
 				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
@@ -1154,9 +1155,9 @@ class EMImage2DWidget(EMGLWidget):
 				if ( self.other_tex_name <= 0 ):
 					raise("failed to generate texture name")
 
-				glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
+				bindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
+				glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, other_img_data)
 
 
 				if self.otherdatadl != 0: glDeleteLists(self.otherdatadl,1)
@@ -2368,7 +2369,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.pyinp.returnPressed.connect(self.do_python)
 		self.invtog.toggled.connect(target.set_invert)
 		self.histoequal.currentIndexChanged.connect(target.set_histogram)
-		self.fftg.buttonClicked.connect(target.set_FFT)
+		self.fftg.buttonClicked.connect(lambda btn: target.set_FFT(self.fftg.id(btn)))
 		self.mmtab.currentChanged.connect(target.set_mouse_mode)
 		self.auto_contrast_button.clicked.connect(target.auto_contrast)
 		self.full_contrast_button.clicked.connect(target.full_contrast)

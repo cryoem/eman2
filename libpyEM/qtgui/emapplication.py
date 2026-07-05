@@ -93,13 +93,23 @@ class ModuleEventsManager(object):
 		emitter.ok.disconnect(self.module_ok) # yes, redundant, but time is short
 		emitter.cancel.disconnect(self.module_cancel) # yes, redundant, but time is short
 
+# Set default OpenGL format globally before any QOpenGLWidget is created
+# Qt6 defaults to Core profile which doesn't support legacy GL functions (glMatrixMode, etc.)
+def _set_gl_format():
+	from PySide6.QtGui import QSurfaceFormat
+	fmt = QSurfaceFormat()
+	fmt.setProfile(QSurfaceFormat.CompatibilityProfile)
+	QSurfaceFormat.setDefaultFormat(fmt)
+
+_set_gl_format()
+
 class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	"""
 	This class encapsulates the use of the EMParentWin to provide a status bar with a size grip on Mac.
 	It also handles much of the inspector behavior, displays help in a web browser, and provides 
-	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in place. 
+	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in progress. 
 	"""
-	
+
 	module_closed = QtCore.Signal()
 	inspector_shown = QtCore.Signal()
 
@@ -112,9 +122,12 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 			QtOpenGLWidgets.QOpenGLWidget.resize(self, int(w), int(h))
 			if get_platform()=="Darwin" : self.qt_parent.resize(int(w), int(h)+22)
 			else : self.qt_parent.resize(int(w+4), int(h+4))
+		self.update()
 
 	def resizeGL(self, width, height):
 		QtOpenGLWidgets.QOpenGLWidget.resizeGL(self,int(width),int(height))
+		# Subclass resizeGL will be called by Qt after this
+		self.update()
 			
 	def show(self):
 		if self.qt_parent:
@@ -150,15 +163,32 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 		self.file_name = ""
 		self.disable_inspector = False
 		
+		# In Qt6, makeCurrent() must not be called during __init__ before the widget has a valid surface.
+		# Font renderer is lazily initialized on first use.
+		self.font_renderer = None
+		self._font_initialized = False
+		
+		self.busy = False #updateGL() does nothing when self.busy == True
+		
+	def _ensure_font(self):
+		"""Lazily initialize the font renderer with an active GL context.
+		Call this before using self.font_renderer in paintGL/render methods."""
+		if self._font_initialized:
+			return
 		self.makeCurrent()
 		self.font_renderer = get_3d_font_renderer()
-		if self.font_renderer == None : 
+		if self.font_renderer == None :
 			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
 			sys.exit(1)
 		self.font_renderer.set_face_size(16)
 		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			
-		self.busy = False #updateGL() does nothing when self.busy == True
+		self._font_initialized = True
+		return self.font_renderer
+		
+	def showEvent(self, event):
+		"""Force an update when shown to ensure initial paintGL fires in Qt6."""
+		QtOpenGLWidgets.QOpenGLWidget.showEvent(self, event)
+		self.update()
 		
 	def closeEvent(self, event):
 		if self.inspector:
@@ -332,7 +362,7 @@ class EMApp(QtWidgets.QApplication):
 	def show_specific(self,child):
 		for child_ in self.children:
 			if child == child_:
-#				print "show",child
+#\t\t\t\tprint "show",child
 				if child.isVisible() == False:
 					child.show()
 					child.setFocus()

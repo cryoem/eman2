@@ -1046,13 +1046,13 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "rotate"):
 			if event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
 				QtWidgets.QApplication.instance().setOverrideCursor(self.zrotatecursor)
 				self.zrotate = True
 			else:
 				QtWidgets.QApplication.instance().setOverrideCursor(self.xyrotatecursor)
-			self.zrotate = False
+				self.zrotate = False
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
 			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.getAPix(), self.camera.getViewPortWidthScaling(), transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Ruler", self.newnode, clearsel=False)

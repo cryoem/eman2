@@ -1,5 +1,4 @@
-\
-	#!/usr/bin/env python
+#!/usr/bin/env python
 #
 # Author: Steven Ludtke, 04/10/2003 (sludtke@bcm.edu)
 # Copyright (c) 2000-2006 Baylor College of Medicine
@@ -188,11 +187,11 @@ class EMPlot2DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		EMGLWidget.resizeGL(self,width,height)
 		#print "resize ",self.width(), self.height()
-#		width = width 
-#		height = height
+#\t\twidth = width
+#\t\theight = height
 #
 		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -545,11 +544,16 @@ class EMPlot2DWidget(EMGLWidget):
 	is_file_readable = staticmethod(is_file_readable)
 
 	def render(self):
-#		print(self.width(),self.height(),self.devicePixelRatio(),self.needupd,self.qt_parent.__dict__)
+#\t\tprint(self.width(),self.height(),self.devicePixelRatio(),self.needupd,self.qt_parent.__dict__)
 		try:
-			if self.data==None or len(self.data)==0 : return
-			if self.xlimits==None or self.ylimits==None or self.climits==None or self.slimits==None : return
-		except:
+			if self.data==None or len(self.data)==0 :
+				print("EMPlot2DWidget.render: no data")
+				return
+			if self.xlimits==None or self.ylimits==None or self.climits==None or self.slimits==None :
+				print("EMPlot2DWidget.render: limits not set", self.xlimits, self.ylimits, self.climits, self.slimits)
+				return
+		except Exception as e:
+			print("EMPlot2DWidget.render exception:", e)
 			return
 
 		dpr=self.devicePixelRatio()
@@ -1048,13 +1052,13 @@ lc is the cursor selection point in plot coords"""
 	def mousePressEvent(self, event):
 		if self.scrlim is None: return
 		lc=self.scr2plot(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
 			self.updateGL()
 			self.rmousedrag=(event.x(),event.y())
-		elif event.button()==Qt.LeftButton:
+		elif event.button()==Qt.MouseButton.LeftButton:
 			self.lmousedrag=(event.x(),event.y())
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
@@ -1080,7 +1084,7 @@ lc is the cursor selection point in plot coords"""
 		if  self.rmousedrag:
 			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
 			self.updateGL()
-		elif event.buttons()&Qt.LeftButton:
+		elif event.buttons()&Qt.MouseButton.LeftButton:
 			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
 			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
 
@@ -1195,6 +1199,7 @@ lc is the cursor selection point in plot coords"""
 					cmax=max(cmax,max(self.data[k][ax]))
 					
 			self.climits=(cmin,cmax)
+			if self.climits[0] >= self.climits[1]: self.climits = (0.0, 1.0)
 
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
@@ -1210,6 +1215,7 @@ lc is the cursor selection point in plot coords"""
 					smax=max(smax,max(self.data[k][ax]))
 
 			self.slimits=(smin,smax)
+			if self.slimits[0] >= self.slimits[1]: self.slimits = (0.0, 1.0)
 
 		if self.inspector: self.inspector.update()
 
@@ -1290,7 +1296,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
 		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -1340,17 +1346,17 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.lastcy = self.firstcy = event.y()
 		x = self.firstcx - old_div(self.width(),2.0)
 		y = self.firstcy - old_div(self.height(),2.0)
-		if event.buttons()&Qt.MidButton:
+		if event.buttons()&Qt.MouseButton.MiddleButton:
 			filename = QtWidgets.QFileDialog.getSaveFileName(self, 'Publish or Perish! Save Plot', os.getcwd(), "(*.tiff *.jpeg, *.png)")[0]
 			if filename: # if we cancel
 				self.saveSnapShot(filename)
-		elif event.buttons()&Qt.LeftButton:
+		elif event.buttons()&Qt.MouseButton.LeftButton:
 			self.clusterorigin_rad = self._computeRadius(x,y)
 			self.clusterorigin_theta = self._computeTheta(x,y)
 			self.valradius = 1.0
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
-		elif event.buttons()&Qt.RightButton:
+		elif event.buttons()&Qt.MouseButton.RightButton:
 			best = self.find_image(self._computeTheta(x,y), self._computeRadius(x,y))
 			if best == -1:
 				print("No Point Selected")
@@ -1411,7 +1417,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 #		self.emit(QtCore.SIGNAL("pointIdentity(int)"), bestpoint)
 
 	def mouseMoveEvent(self, event):
-		if event.buttons()&Qt.LeftButton:
+		if event.buttons()&Qt.MouseButton.LeftButton:
 			lc=self.scr2plot(event.x(),event.y())
 			disp = (self.lastcx - event.x()) + (self.lastcy - event.y())
 			self.valradius += disp

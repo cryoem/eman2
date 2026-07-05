@@ -186,8 +186,6 @@ class EMHistogramWidget(EMGLWidget):
 				self.browser.resize(800,800)
 			if not self.browser.isVisible(): self.browser.show()
 
-		if not self.browser.isVisible(): self.browser.show()
-
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
 

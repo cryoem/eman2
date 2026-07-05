@@ -882,7 +882,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			nimg=sqrt(len(self.data))
 			x=self.data[0]["nx"]*sqrt(nimg)
 			y=self.data[0]["ny"]*sqrt(nimg)
-			xys=QtWidgets.QApplication.desktop().availableGeometry()
+			xys=QtWidgets.QApplication.primaryScreen().availableGeometry()
 			mx=xys.width()*2//3
 			my=xys.height()*2//3
 			
