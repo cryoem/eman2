@@ -5,8 +5,8 @@ from EMAN2 import *
 from EMAN2_utils import natural_sort
 import os
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -39,7 +39,7 @@ def main():
 	gui=TomoEvalGUI(options)
 	gui.show()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 	E2end(logid)
 	
 	
@@ -470,15 +470,15 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		if idx==None: return
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		else:
 			cmd="e2spt_boxer.py {} --ppid {}".format(info["filename"], os.getpid())
 			psel=[p for p in self.ptclcls.keys() if self.ptclcls[p][0]]
 			if len(psel)==1:
 				cmd+=f" --label {psel[0]}"
-				
-			if modifiers == QtCore.Qt.ControlModifier:
+			
+			if modifiers & QtCore.Qt.ControlModifier:
 				cmd+=" --clean"
 			subprocess.Popen(cmd,shell=True)
 		#launch_childprocess()

@@ -34,8 +34,8 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from .emdatastorage import ParamDef
-from PyQt5 import QtGui, QtWidgets,QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtCore import Qt
 import os
 from .emselector import EMSelectorDialog
 from .emapplication import get_application
@@ -77,7 +77,7 @@ class EMButtonDialog(object):
 		else: self.button = QtWidgets.QPushButton(self.desc_short)
 		self.button.setToolTip(self.desc_long)
 		layout.addWidget(self.button)
-		self.button.clicked[bool].connect(self.on_button)
+		self.button.clicked.connect(self.on_button)
 	
 	def on_button(self,unused=None): 
 		'''
@@ -110,7 +110,7 @@ class EMOrientationDistDialog(EMButtonDialog):
 		
 		from .emimage3dsym import EMSymChoiceDialog
 		dialog = EMSymChoiceDialog(symname)
-		result = dialog.exec_()
+		result = dialog.exec()
 		if result != None:
 			combo = name_map["orientgen"][0] # assume the first entry in the list is the combo
 			s = [combo.itemText(i) for i in range(combo.count())]
@@ -245,7 +245,7 @@ class EMParamTable(list):
 			item.setSelected(True)
 
 class EMFileTable(QtWidgets.QTableWidget):
-	updateform = QtCore.pyqtSignal()
+	updateform = QtCore.Signal()
 
 	def __init__(self,listed_names=[],name="filenames",desc_short="File Names",desc_long="A list of file names",single_selection=False,enable_save=True):
 		'''
@@ -267,7 +267,7 @@ class EMFileTable(QtWidgets.QTableWidget):
 		self.vartype = "file_table" # This is used by the EMFormWidget to insert this object correctly into a widget
 		self.name_conversions = {} # This is used to convert the displayed name to the real name of the file on the operating system
 		self.context_menu_data = {} # see self.get_context_menu_dict help
-		self.itemDoubleClicked[QtWidgets.QTableWidgetItem].connect(self.table_item_double_clicked)
+		self.itemDoubleClicked.connect(self.table_item_double_clicked)
 
 		if enable_save: self.context_menu_data["Save As"] = EMFileTable.save_as
 		self.context_menu_refs = [] # to keep a reference to context menus related objects - somebody has to
@@ -553,8 +553,8 @@ class EMFileTable(QtWidgets.QTableWidget):
 		cmenu = self.context_menu_data
 		for k in list(cmenu.keys()):
 			menu.addAction(k)
-		menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
-		menu.exec_(event.globalPos())
+		menu.triggered.connect(self.menu_action_triggered)
+		menu.exec(event.globalPos())
 		event.accept()
 	
 	def menu_action_triggered(self,action):
@@ -598,8 +598,8 @@ class EMFileTable(QtWidgets.QTableWidget):
 		for button_data in self.button_data:
 			button = QtWidgets.QPushButton(button_data.name,None)
 			layout.addWidget(button,0)
-			button.clicked[bool].connect(button_data.function)
-			button.clicked[bool].connect(self.sendupdate)
+			button.clicked.connect(button_data.function)
+			button.clicked.connect(self.sendupdate)
 	def sendupdate(self):
 		self.updateform.emit()
 		
@@ -897,17 +897,17 @@ class EMBrowseEventHandler(object):
 		warnings.warn("EMBrowseEventHandler.__init__()", DeprecationWarning)
 		self.browser = None
 		self.browser_title = "Set this to be clear"
-		browse_button.clicked[bool].connect(self.browse_pressed)
+		browse_button.clicked.connect(self.browse_pressed)
 		
 	def browse_pressed(self,bool):
 		if self.browser == None:
 			self.browser = EMSelectorDialog(False, False)
 			self.browser.setWindowTitle(self.browser_title)
-			self.browser.exec_()
+			result = self.browser.exec()
 			self.browser.ok.connect(self.on_browser_ok)
 			self.browser.cancel.connect(self.on_browser_cancel)
 		else:
-			self.browser.exec_()
+			result = self.browser.exec()
 
 	def on_browser_cancel(self):
 		self.browser = None
@@ -989,7 +989,7 @@ class EMEmanStrategyWidget(QtWidgets.QWidget):
 		
 		self.vbl.addWidget(groupbox)
 		
-		self.main_combo.currentIndexChanged[str].connect(self.selection_changed)
+		self.main_combo.currentIndexChanged.connect(self.selection_changed)
 		
 		if start_idx != None:
 			if start_idx != 0:
@@ -1087,10 +1087,10 @@ class EMFormWidget(QtWidgets.QWidget):
 	If ok is clicked the "emform_ok" signal is emitted along with a dictionary containing all of the form entries
 	If cancel is clicked the "emform_cancel" signal is emitted. No extra information is sent in this case
 	'''
-	emform_close = QtCore.pyqtSignal()
-	emform_ok = QtCore.pyqtSignal(dict)
-	emform_cancel = QtCore.pyqtSignal()
-	display_file = QtCore.pyqtSignal(str)
+	emform_close = QtCore.Signal()
+	emform_ok = QtCore.Signal(dict)
+	emform_cancel = QtCore.Signal()
+	display_file = QtCore.Signal(str)
 
 	def __init__(self,params=None,disable_ok_cancel=False):
 		QtWidgets.QWidget.__init__(self,None)
@@ -1326,8 +1326,8 @@ class EMFormWidget(QtWidgets.QWidget):
 		cancel_button = QtWidgets.QPushButton("Cancel")
 		hbl.addWidget(cancel_button,0)
 		layout.addLayout(hbl)
-		ok_button.clicked[bool].connect(self.ok_pressed)
-		cancel_button.clicked[bool].connect(self.cancel_pressed)
+		ok_button.clicked.connect(self.ok_pressed)
+		cancel_button.clicked.connect(self.cancel_pressed)
 		
 	def ok_pressed(self,bool):
 		ret = {}
@@ -1863,7 +1863,7 @@ class EMParamTableEventHandler(object):
 		self.table_widget = table_widget
 		table_widget.contextMenuEvent = self.contextMenuEvent
 				
-		table_widget.itemDoubleClicked[QtWidgets.QTableWidgetItem].connect(self.table_item_double_clicked)
+		table_widget.itemDoubleClicked.connect(self.table_item_double_clicked)
 		
 	def table_item_double_clicked(self,item):
 		if hasattr(self.table_widget,"convert_text"):
@@ -1875,8 +1875,8 @@ class EMParamTableEventHandler(object):
 			menu = QtWidgets.QMenu()
 			for k in list(self.table_widget.context_menu.keys()):
 				menu.addAction(k)
-			menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
-			menu.exec_(event.globalPos())
+			menu.triggered.connect(self.menu_action_triggered)
+			menu.exec(event.globalPos())
 	
 	def menu_action_triggered(self,action):
 		items = self.table_widget.selectedItems()
@@ -1916,7 +1916,7 @@ class UrlEventHandler(EMBrowseEventHandler):
 		EMBrowseEventHandler.__init__(self,browse_button)
 		self.browser_title = title
 		
-		clear_button.clicked[bool].connect(self.clear_pressed)
+		clear_button.clicked.connect(self.clear_pressed)
 		
 	def on_browser_ok(self,stringlist):
 		new_string = str(self.text_edit.toPlainText())
@@ -1944,7 +1944,7 @@ class DictEventHandler(object):
 		self.combo1 = combo1
 		self.combo2 = combo2
 		
-		self.combo1.currentIndexChanged[int].connect(self.combo1_index_changed)
+		self.combo1.currentIndexChanged.connect(self.combo1_index_changed)
 	
 	def combo1_index_changed(self,i):
 		
@@ -1970,7 +1970,7 @@ class BoolDependentsEventHandler(object):
 		self.checkbox = checkbox
 		self.dependents = dependents # a list of dependent names (ParamDef.name)
 		self.invert_logic = invert_logic
-		self.checkbox.stateChanged[int].connect(self.checkbox_state_changed)
+		self.checkbox.stateChanged.connect(self.checkbox_state_changed)
 		
 	def checkbox_state_changed(self,integer=0):
 		name_map = self.target().name_widget_map

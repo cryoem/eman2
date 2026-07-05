@@ -38,7 +38,7 @@ import sys
 import os
 
 try:
-	from PyQt5 import QtGui, QtWidgets, QtCore
+	from PySide6 import QtGui, QtWidgets, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emselector import EMSelectorDialog
@@ -861,7 +861,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile( os.path.join(self.default_dir, self.micrograph_name + "_boxes.txt") )
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.helices_coords_line_edit.setText(file_path)
@@ -869,7 +869,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.helices_images_line_edit.text())
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.helices_images_line_edit.setText(file_path)
@@ -886,7 +886,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_coords_line_edit.text())
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.ptcls_coords_line_edit.setText(file_path)
@@ -894,7 +894,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_images_line_edit.text())
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.ptcls_images_line_edit.setText(file_path)
@@ -1146,7 +1146,7 @@ if ENABLE_GUI:
 				keep_boxes_msgbox.setInformativeText(self.tr("Do you want to keep your current boxes?"))
 				keep_boxes_msgbox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
 				keep_boxes_msgbox.setDefaultButton(QtWidgets.QMessageBox.Yes)
-				keep_current_boxes = keep_boxes_msgbox.exec_()
+				keep_current_boxes = keep_boxes_msgbox.exec()
 
 				if keep_current_boxes == QtWidgets.QMessageBox.No:
 					self.main_image.shapes = EMShapeDict()
@@ -1242,7 +1242,7 @@ if ENABLE_GUI:
 			loads a file browser to select a micrograph or multiple microgrpahs to add to the micrograph table
 			"""
 			selector = EMSelectorDialog(single_selection=False,save_as_mode=False)
-			new_micrographs = selector.exec_()
+			new_micrographs = selector.exec()
 			if isinstance(new_micrographs, str): #Just one file was selected
 				if sys.version_info >= (2, 6):
 					new_micrographs = os.path.relpath(new_micrographs) #os.path.relpath is new in Python 2.6

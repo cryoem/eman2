@@ -35,14 +35,15 @@ from optparse import OptionParser
 import sys
 import os
 from EMAN2 import *
+
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimage3d import EMImage3DWidget
 from eman2_gui.valslider import ValSlider
 import weakref
 from eman2_gui.emshape import EMShape
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 #import EMAN2db
 
 reconmodes=["gauss_2","gauss_3","gauss_5"]
@@ -128,14 +129,14 @@ class TrackerControl(QtWidgets.QWidget):
 		self.gbl.addWidget(self.bmagics,1,2)
 		self.gbl.addWidget(self.bmagicc,1,3)
 		
-		self.bcenalign.clicked[bool].connect(self.do_cenalign)
-		self.bprojalign.clicked[bool].connect(self.do_projalign)
-		self.btiltaxis.clicked[bool].connect(self.do_tiltaxis)
-		self.bsavedata.clicked[bool].connect(self.do_savedata)
-		self.breconst.clicked[bool].connect(self.do_reconst)
-		self.bmagict.clicked[bool].connect(self.do_magict)
-		self.bmagics.clicked[bool].connect(self.do_magics)
-		self.bmagicc.clicked[bool].connect(self.do_magicc)
+		self.bcenalign.clicked.connect(self.do_cenalign)
+		self.bprojalign.clicked.connect(self.do_projalign)
+		self.btiltaxis.clicked.connect(self.do_tiltaxis)
+		self.bsavedata.clicked.connect(self.do_savedata)
+		self.breconst.clicked.connect(self.do_reconst)
+		self.bmagict.clicked.connect(self.do_magict)
+		self.bmagics.clicked.connect(self.do_magics)
+		self.magicc.clicked.connect(self.do_magicc)
 		self.vslpfilt.valueChanged.connect(self.do_filter)
 
 		# the single image display widget
@@ -227,7 +228,7 @@ class TrackerControl(QtWidgets.QWidget):
 		
 		self.imvol.set_data(self.filt3d)
 		self.imvol.show()
-		self.imvol.updateGL()
+		self.imvol.update()
 
 		sz=self.map3d["nx"]
 		xsum=self.filt3d.process("misc.directional_sum",{"axis":"x"})
@@ -239,17 +240,17 @@ class TrackerControl(QtWidgets.QWidget):
 		
 		self.improj.set_data([zsum,ysum,xsum])
 		self.improj.show()
-		self.improj.updateGL()
+		self.improj.update()
 
 		self.imslice.set_data(self.filt3d)
 		self.imslice.show()
-		self.imslice.updateGL()
+		self.imslice.update()
 	
 	def update_stack(self):
 		stack=self.get_boxed_stack()
 		self.imboxed.set_data(stack)
 		self.imboxed.show()
-		self.imboxed.updateGL()
+		self.imboxed.update()
 		
 
 	def set_image(self,fsp):
@@ -284,7 +285,7 @@ class TrackerControl(QtWidgets.QWidget):
 			self.im2d.set_origin(self.im2d.origin[0]-dx,self.im2d.origin[1]-dy)
 			self.oldtilt=self.curtilt
 			
-		self.im2d.updateGL()
+		self.im2d.update()
 
 	def change_tilt(self,direc):
 		"""When the user presses the up or down arrow"""
@@ -298,7 +299,7 @@ class TrackerControl(QtWidgets.QWidget):
 	def down(self,event,lc):
 		"""The event contains the x,y coordinates in window space, lc are the coordinates in image space"""
 
-		if event.buttons()&Qt.LeftButton:
+		if event.buttons()&Qt.MouseButton.LeftButton:
 			if event.modifiers()&Qt.ShiftModifier : 
 				self.downadjloc=(lc,self.tiltshapes[self.curtilt].getShape()[4:8])
 			else :
@@ -325,9 +326,9 @@ class TrackerControl(QtWidgets.QWidget):
 			s[7]=self.downadjloc[1][3]+dy
 			self.im2d.add_shape("box",EMShape(s))
 
-		self.im2d.updateGL()
+			self.im2d.update()
 	
-	def up(self,event,lc):
+		def up(self,event,lc):
 		if self.downloc!=None :
 			dx=abs(lc[0]-self.downloc[0])
 			dy=abs(lc[1]-self.downloc[1])

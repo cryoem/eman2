@@ -34,7 +34,7 @@
 from past.utils import old_div
 from builtins import range
 import os,sys
-from PyQt5 import QtGui, QtWidgets,QtCore
+from PySide6 import QtGui, QtWidgets,QtCore
 from eman2_gui.valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from

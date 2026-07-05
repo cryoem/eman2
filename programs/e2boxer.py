@@ -53,8 +53,8 @@ class nothing(object):
 		return
 
 try: 
-	from PyQt5 import QtCore, QtGui, QtWidgets
-	from PyQt5.QtCore import Qt
+	from PySide6 import QtCore, QtGui, QtWidgets
+	from PySide6.QtCore import Qt
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emplot2d import EMPlot2DWidget
 	from eman2_gui.emimagemx import EMImageMXWidget
@@ -311,14 +311,14 @@ def main():
 	if options.gui :
 		if isinstance(QtGui,nothing) :
 			print("=====================================")
-			print("ERROR: GUI mode unavailable without PyQt5")
+			print("ERROR: GUI mode unavailable without PySide6")
 			sys.exit(1)
 		from eman2_gui.emapplication import EMApp
 		app=EMApp()
 		gui=GUIBoxer(args,options.voltage,options.apix,options.cs,options.ac,options.boxsize,options.ptclsize,options.threads)
 		gui.show()
 		gui.raise_()
-		app.exec_()
+		app.exec()
 
 	if options.write_dbbox:
 		write_boxfiles(args,boxsize)
@@ -759,7 +759,7 @@ class boxerConvNet(QtCore.QObject):
 		boxerConvNet.bt_train=QtWidgets.QPushButton("Train")
 		boxerConvNet.bt_train.setToolTip("Train the network using references")
 		gridlay.addWidget(boxerConvNet.bt_train,1,0)
-		boxerConvNet.bt_train.clicked[bool].connect(boxerConvNet.do_training)
+		boxerConvNet.bt_train.clicked.connect(boxerConvNet.do_training)
 		#boxerConvNet.ck_train=QtWidgets.QCheckBox("Train from scratch")
 		#gridlay.addWidget(boxerConvNet.ck_train)
 		
@@ -1324,7 +1324,7 @@ class boxerTopaz(QtCore.QObject):
 		boxerTopaz.bt_train = QtWidgets.QPushButton("Train")
 		boxerTopaz.bt_train.setToolTip("Train Model")
 		gridlay.addWidget(boxerTopaz.bt_train,2,0)
-		boxerTopaz.bt_train.clicked[bool].connect(boxerTopaz.do_train)
+		boxerTopaz.bt_train.clicked.connect(boxerTopaz.do_train)
 
 		boxerTopaz.downsample = ValBox(label="Downsample", value=4)
 		gridlay.addWidget(boxerTopaz.downsample,4,0)
@@ -1781,7 +1781,7 @@ class GUIBoxer(QtWidgets.QWidget):
 			self.setlist.addItem(i)
 		self.gbl.addWidget(self.setlist,0,0,12,2)
 
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		
 		# Mouse Modes
 		self.mmode="manual"
@@ -1822,24 +1822,24 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.bmbgref.setCheckable(True)
 		self.hbl0.addWidget(self.bmbgref)
 
-		self.bmmanual.clicked[bool].connect(self.setMouseManual)
-		self.bmdel.clicked[bool].connect(self.setMouseDel)
-		self.bmgref.clicked[bool].connect(self.setMouseGoodRef)
-		self.bmbref.clicked[bool].connect(self.setMouseBadRef)
-		self.bmbgref.clicked[bool].connect(self.setMouseBgRef)
+		self.bmmanual.clicked.connect(self.setMouseManual)
+		self.bmdel.clicked.connect(self.setMouseDel)
+		self.bmgref.clicked.connect(self.setMouseGoodRef)
+		self.bmbref.clicked.connect(self.setMouseBadRef)
+		self.bmbgref.clicked.connect(self.setMouseBgRef)
 
 		self.bfilter=QtWidgets.QPushButton("Filter Disp.")
 		self.bfilter.setToolTip("Filter micrograph (display only)")
 		self.bfilter.setCheckable(True)
 		self.gbl.addWidget(self.bfilter,0,5,1,1)
-		self.bfilter.clicked[bool].connect(self.filterToggle)
+		self.bfilter.clicked.connect(self.filterToggle)
 
 		self.binvert=QtWidgets.QPushButton("Invert")
 		self.binvert.setToolTip("Invert Micrograph (also output)")
 		self.binvert.setCheckable(True)
 		self.binvert.setChecked(invert_on_read)		# in truly bad form, this is a global
 		self.gbl.addWidget(self.binvert,1,5,1,1)
-		self.binvert.clicked[bool].connect(self.invertToggle)
+		self.binvert.clicked.connect(self.invertToggle)
 
 		# Global parameters
 		self.boxparm=QtWidgets.QGroupBox("Parameters",self)
@@ -1891,9 +1891,9 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.rtclear.setToolTip("Clear all current good and bad refs")
 		self.hbl1.addWidget(self.rtclear)
 
-		self.rtload3d.clicked[bool].connect(self.reftoolLoad3D)
-		self.rtload2d.clicked[bool].connect(self.reftoolLoad2D)
-		self.rtclear.clicked[bool].connect(self.reftoolClear)
+		self.rtload3d.clicked.connect(self.reftoolLoad3D)
+		self.rtload2d.clicked.connect(self.reftoolLoad2D)
+		self.rtclear.clicked.connect(self.reftoolClear)
 		
 		
 		# Autoboxing Tabs
@@ -1914,19 +1914,19 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.bbclear=QtWidgets.QPushButton("Clear Boxes")
 		self.bbclear.setToolTip("Clear all boxes in current micrograph")
 		self.gbl.addWidget(self.bbclear,13,2)
-		self.bbclear.clicked[bool].connect(self.boxClear)
+		self.bbclear.clicked.connect(self.boxClear)
 
 		self.bcentera = QtWidgets.QPushButton("ACF Center All")
 		self.gbl.addWidget(self.bcentera,13,3)
-		self.bcentera.clicked[bool].connect(self.doCenterAll)
+		self.bcentera.clicked.connect(self.doCenterAll)
 		
 		self.bautoboxa = QtWidgets.QPushButton("Autobox All")
 		self.gbl.addWidget(self.bautoboxa,13,4)
-		self.bautoboxa.clicked[bool].connect(self.doAutoBoxAll)
+		self.bautoboxa.clicked.connect(self.doAutoBoxAll)
 		
 		self.bautobox = QtWidgets.QPushButton("Autobox")
 		self.gbl.addWidget(self.bautobox,13,5)
-		self.bautobox.clicked[bool].connect(self.doAutoBox)
+		self.bautobox.clicked.connect(self.doAutoBox)
 
 		self.setWindowTitle("e2boxer21 - Control Panel")
 
@@ -2595,7 +2595,7 @@ class GUIBoxer(QtWidgets.QWidget):
 
 		#self.writeCurParm()
 		event.accept()
-		QtWidgets.qApp.exit(0)
+		QtWidgets.QApplication.instance().exit(0)
 		#app=QtWidgets.qApp			if b[2] not in ("refgood","refbad"):
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)

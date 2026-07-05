@@ -41,8 +41,8 @@ from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
 from .emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
@@ -870,12 +870,12 @@ class EMLightsInspectorBase(object):
 		self.light_specular.r.valueChanged.connect(self.update_light)
 		self.light_specular.g.valueChanged.connect(self.update_light)
 		self.light_specular.b.valueChanged.connect(self.update_light)
-		self.light_x_dir.valueChanged[float].connect(self.update_light)
-		self.light_y_dir.valueChanged[float].connect(self.update_light)
-		self.light_z_dir.valueChanged[float].connect(self.update_light)
-		self.light_manip_check.stateChanged[int].connect(self.target().light_manipulation_toggled)
-		show_lights.stateChanged[int].connect(self.target().show_lights)
-		self.local_viewer_check.stateChanged[int].connect(self.local_viewer_checked)
+		self.light_x_dir.valueChanged.connect(self.update_light)
+		self.light_y_dir.valueChanged.connect(self.update_light)
+		self.light_z_dir.valueChanged.connect(self.update_light)
+		self.light_manip_check.stateChanged.connect(self.target().light_manipulation_toggled)
+		show_lights.stateChanged.connect(self.target().show_lights)
+		self.local_viewer_check.stateChanged.connect(self.local_viewer_checked)
 		#QtCore.QObject.connect(self.light_w_pos, QtCore.SIGNAL("valueChanged(int)"), self.update_light)
 	 
 		return light_tab
@@ -1141,7 +1141,7 @@ class EMLightsInspectorBase(object):
 		
 		new_light.clicked.connect(self.new_directional_light)
 		del_light.clicked.connect(self.del_directional_light)
-		self.light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.light_list_clicked)
+		self.light_list.itemPressed.connect(self.light_list_clicked)
 		
 		return self.directional_light_widget
 	
@@ -1291,13 +1291,13 @@ class EMLightsInspectorBase(object):
 		
 		
 		new_light.clicked.connect(self.new_pointsource_light)
-		self.point_light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.point_light_list_clicked)
-		self.light_x_pos.valueChanged[float].connect(self.update_light)
-		self.light_y_pos.valueChanged[float].connect(self.update_light)
-		self.light_z_pos.valueChanged[float].connect(self.update_light)
-		self.light_ps_xdir.valueChanged[float].connect(self.update_light)
-		self.light_ps_ydir.valueChanged[float].connect(self.update_light)
-		self.light_ps_zdir.valueChanged[float].connect(self.update_light)
+		self.point_light_list.itemPressed.connect(self.point_light_list_clicked)
+		self.light_x_pos.valueChanged.connect(self.update_light)
+		self.light_y_pos.valueChanged.connect(self.update_light)
+		self.light_z_pos.valueChanged.connect(self.update_light)
+		self.light_ps_xdir.valueChanged.connect(self.update_light)
+		self.light_ps_ydir.valueChanged.connect(self.update_light)
+		self.light_ps_zdir.valueChanged.connect(self.update_light)
 		self.spot_cutoff.valueChanged.connect(self.update_light)
 		self.spot_exponent.valueChanged.connect(self.update_light)
 		self.const_atten.valueChanged.connect(self.update_light)
@@ -1350,9 +1350,9 @@ class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		self.n3_showing = False
 		self.quiet = False
 
-		self.cbb.currentIndexChanged[str].connect(target.setColor)
-		self.wiretog.toggled[bool].connect(target.toggle_wire)
-		self.lighttog.toggled[bool].connect(target.toggle_light)
+		self.cbb.currentIndexChanged.connect(target.setColor)
+		self.wiretog.toggled.connect(target.toggle_wire)
+		self.lighttog.toggled.connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 

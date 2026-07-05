@@ -35,8 +35,8 @@ from EMAN2 import *
 from eman2_gui.emimagemx import EMImageMXWidget
 
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 #import OpenGL
 #OpenGL.ERROR_CHECKING = False
 #from OpenGL import GL,GLU,GLUT
@@ -158,17 +158,17 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 
 		self.wfilesel.itemSelectionChanged.connect(self.fileUpdate)
-		self.wptclfile.currentIndexChanged[int].connect(self.ptclChange)
-		self.wselallb.clicked[bool].connect(self.selAllClasses)
-		self.wselnoneb.clicked[bool].connect(self.selNoClasses)
-		self.wselrangeb.clicked[bool].connect(self.selRangeClasses)
-		self.wselinvertb.clicked[bool].connect(self.selInvertClasses)
-		self.wsel3db.clicked[bool].connect(self.sel3DClasses)
-		self.wmakebut.clicked[bool].connect(self.makeNewSet)
-		self.wmarkbut.clicked[bool].connect(self.markBadPtcl)
-		self.wmarkgoodbut.clicked[bool].connect(self.markGoodPtcl)
-		self.wsavebut.clicked[bool].connect(self.savePtclNum)
-		self.wsaveorigbut.clicked[bool].connect(self.saveOrigPtclNum)
+		self.wptclfile.currentIndexChanged.connect(self.ptclChange)
+		self.wselallb.clicked.connect(self.selAllClasses)
+		self.wselnoneb.clicked.connect(self.selNoClasses)
+		self.wselrangeb.clicked.connect(self.selRangeClasses)
+		self.wselinvertb.clicked.connect(self.selInvertClasses)
+		self.wsel3db.clicked.connect(self.sel3DClasses)
+		self.wmakebut.clicked.connect(self.makeNewSet)
+		self.wmarkbut.clicked.connect(self.markBadPtcl)
+		self.wmarkgoodbut.clicked.connect(self.markGoodPtcl)
+		self.wsavebut.clicked.connect(self.savePtclNum)
+		self.wsaveorigbut.clicked.connect(self.saveOrigPtclNum)
 
 		# View windows, one for class-averages, one for good particles and one for bad particles
 		self.vclasses=None
@@ -435,7 +435,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 	def fileUpdate(self):
 		"Called when the user selects a file from the list or need to completely refresh display"
 
-		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.BusyCursor)
 
 		if self.vclasses==None :
 			self.vclasses=EMImageMXWidget()
@@ -480,7 +480,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vbadptcl.show()
 		QtCore.QTimer.singleShot(1000,self.fixlocation)
 		
-		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 
 	def fixlocation(self):
 		E2loadappwin("e2evalparticles","main",self)
@@ -493,18 +493,18 @@ class EMClassPtclTool(QtWidgets.QWidget):
 	def classSelect(self,event,lc):
 		"Single clicked class particle. lc=(img#,x,y,image_dict)"
 
-		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
-		ptclfile=self.curPtclFile()
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.BusyCursor)
+		paclfile=self.curPtclFile()
 		try:
-			ptclgood=lc[3]["class_ptcl_idxs"]
-			self.vgoodptcl.set_data(EMData.read_images(ptclfile,ptclgood))
+			paclgood=lc[3]["class_ptcl_idxs"]
+			self.vgoodptcl.set_data(EMData.read_images(paclfile,paclgood))
 		except:
 			QtWidgets.QMessageBox.warning(self,"Error !","This image does not appear to be a class average. (No class_ptcl_src, etc.)")
-			QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 			return
 		try:
 			ptclbad=lc[3]["exc_class_ptcl_idxs"]
-			self.vbadptcl.set_data(EMData.read_images(ptclfile,ptclbad))
+			self.vbadptcl.set_data(EMData.read_images(paclfile,ptclbad))
 		except:
 			ptclbad=[]
 			self.vbadptcl.set_data(None)
@@ -513,7 +513,7 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		self.vbadptcl.show()
 #		QtCore.QTimer.singleShot(500,self.fixlocation)
 		
-		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 
 	def classDouble(self,event,lc):
 		self.vclasses.image_set_associate(lc[0],update_gl=True)
@@ -540,7 +540,7 @@ class EMEvalPtclTool(QtWidgets.QMainWindow):
 	def __init__(self,extrafiles=None,verbose=0):
 		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtWidgets.qApp
+		app=QtWidgets.QApplication.instance()
 		self.setWindowTitle("e2evalparticles")
 
 		# Menu Bar
@@ -556,7 +556,7 @@ class EMEvalPtclTool(QtWidgets.QMainWindow):
 
 
 		# file menu
-		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.mfile_quit.triggered.connect(self.menu_file_quit)
 
 	def menu_file_quit(self):
 		self.close()

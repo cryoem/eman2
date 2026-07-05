@@ -71,23 +71,23 @@ A simple CTF simulation program.
 	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples,options.apply)
 	gui.show_guis()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 
-#		print "done execution"
+#	print "done execution"
 
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider
 except:
-	print("Error: PyQt5 must be installed")
+	print("Error: PySide6 must be installed")
 	sys.exit(1)
 
 class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
@@ -100,7 +100,7 @@ class MyListWidget(QtWidgets.QListWidget):
 
 
 class GUIctfsim(QtWidgets.QWidget):
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self,application,apix=1.0,voltage=300.0,cs=4.1,ac=10.0,samples=256,apply=None):
 		"""CTF simulation dialog
@@ -235,11 +235,11 @@ class GUIctfsim(QtWidgets.QWidget):
 		self.svoltage.valueChanged.connect(self.newCTF)
 		self.scs.valueChanged.connect(self.newCTF)
 		self.ssamples.valueChanged.connect(self.newCTF)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
-		self.newbut.clicked[bool].connect(self.on_new_but)
+		self.newbut.clicked.connect(self.on_new_but)
 
 
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
@@ -482,7 +482,7 @@ class GUIctfsim(QtWidgets.QWidget):
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for ctf-only programs."""
-		self.app.exec_()
+		self.app.exec()
 
 #		E2saveappwin("boxer","imagegeom",self.guiim)
 #		try:

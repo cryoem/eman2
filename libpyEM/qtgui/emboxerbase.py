@@ -567,7 +567,7 @@ class ErasingPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt5 import QtWidgets
+			from PySide6 import QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QVBoxLayout(self.widget)
 			vbl.setContentsMargins(0, 0, 0, 0)
@@ -589,7 +589,7 @@ class ErasingPanel(object):
 			vbl.addLayout(hbl)
 			vbl.addWidget(self.unerase)
 			self.erase_rad_edit.sliderReleased.connect(self.new_erase_radius)
-			self.unerase.clicked[bool].connect(self.unerase_checked)
+			self.unerase.clicked.connect(self.unerase_checked)
 
 		return self.widget
 
@@ -608,7 +608,7 @@ class ManualBoxingPanel(object):
 
 	def get_widget(self):
 		if self.widget == None:
-			from PyQt5 import QtWidgets
+			from PySide6 import QtWidgets
 			self.widget = QtWidgets.QWidget()
 			vbl = QtWidgets.QGridLayout(self.widget)
 			vbl.setContentsMargins(0, 0, 0, 0)
@@ -623,7 +623,7 @@ class ManualBoxingPanel(object):
 			vbl.addWidget(self.clearfrom,3,1)
 			
 
-			self.clear.clicked[bool].connect(self.clear_clicked)
+			self.clear.clicked.connect(self.clear_clicked)
 		return self.widget
 
 	def clear_clicked(self,val):
@@ -651,7 +651,7 @@ class EraseTool(EMBoxingTool):
 	def unique_name(self): return "Erase"
 
 	def icon(self):
-		from PyQt5 import QtGui
+		from PySide6 import QtGui
 		return QtGui.QIcon(get_image_directory() + "boxer_erase.png")
 
 	def get_widget(self):
@@ -688,7 +688,7 @@ class EraseTool(EMBoxingTool):
 		self.panel_object.set_erase_radius(v)
 
 	def mouse_wheel(self,event):
-		from PyQt5.QtCore import Qt
+		from PySide6.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
 			self.adjust_erase_rad(event.angleDelta().y())
 			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
@@ -754,7 +754,7 @@ class ManualBoxingTool(object):
 
 
 	def icon(self):
-		from PyQt5 import QtGui
+		from PySide6 import QtGui
 		return QtGui.QIcon(get_image_directory() + "white_box.png")
 
 
@@ -771,10 +771,10 @@ class ManualBoxingTool(object):
 
 	def mouse_down(self,event) :
 		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
-		box_num = self.target().detect_box_collision(m)
-		from PyQt5.QtCore import Qt
-		if box_num == -1:
-			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
+			box_num = self.target().detect_box_collision(m)
+			from PySide6.QtCore import Qt
+			if box_num == -1:
+				if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			if self.get_2d_window().list_data!=None:
 				#print m[0], m[1], len(self.get_2d_window().list_data),self.get_2d_window().list_idx
 				box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE,z_idx=self.get_2d_window().list_idx)
@@ -798,9 +798,9 @@ class ManualBoxingTool(object):
 
 	def mouse_drag(self,event) :
 		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
-		from PyQt5.QtCore import Qt
+		from PySide6.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
-			box_num = self.target().detect_box_collision(m)
+		box_num = self.target().detect_box_collision(m)
 			if ( box_num != -1):
 				box = self.target().get_box(box_num)
 				if box.type ==  ManualBoxingTool.BOX_TYPE:
@@ -1109,8 +1109,8 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 	def box_released(self,event,lc):
 		if lc == None or lc[0] == None: return
 
-		import PyQt5
-		if event.modifiers()&PyQt5.QtCore.Qt.ShiftModifier:
+		import PySide6.QtCore as Qt
+		if event.modifiers()&Qt.ShiftModifier:
 			self.particle_window.remove_particle_image(lc[0],event,True)
 			self.particle_window.force_display_update()
 			return
@@ -1725,7 +1725,7 @@ class EMBoxerModuleVitals(object):
 		self.box_list.reset_shapes()
 		self.full_box_update()
 
-from PyQt5 import QtCore
+from PySide6 import QtCore
 class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 	'''
 	The EMBoxerModule is like a coordinator. It has 4 widgets: 1 inspector, 1 2D window viewer, and 2 particle
@@ -1734,7 +1734,7 @@ class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 	that would otherwise not necessary interact. Overall the interactions can be complicated and this class is an
 	attempt to correctly granulate the overall design and the complexity of the classes involved.
 	'''
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self,file_names=[],box_size=128):
 		'''
@@ -1941,8 +1941,8 @@ class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 		if len(self.file_names) == 0: raise RuntimeError("Will not make a thumbs window if the number of images is zero")
 
 		if self.thumbs_window == None:
-			from PyQt5 import QtCore
-			get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+			from PySide6 import QtCore
+			get_application().setOverrideCursor(QtCore.Qt.CursorShape.BusyCursor)
 
 
 			if self.image_thumbs == None or redo_thumbs:
@@ -2082,8 +2082,8 @@ class EMBoxerModule(EMBoxerModuleVitals, QtCore.QObject):
 	# 	self.main_2d_window.updateGL()
 
 	def set_current_file(self,file_name):
-		from PyQt5 import QtCore
-		get_application().setOverrideCursor(QtCore.Qt.BusyCursor)
+		from PySide6 import QtCore
+		get_application().setOverrideCursor(QtCore.Qt.CursorShape.BusyCursor)
 
 		if not file_exists(file_name): raise RuntimeError("The file %s does not exist" %file_name)
 
@@ -2152,7 +2152,7 @@ from .emsprworkflow import WorkFlowTask
 from .emapplication import error
 class EMBoxerWriteOutputTask(WorkFlowTask):
 	"""Use this form for writing boxed particles and/or coordinate files to disk."""
-	task_idle = QtCore.pyqtSignal()
+	task_idle = QtCore.Signal()
 
 	def __init__(self,file_names=[],output_formats=["hdf","spi","img","bdb"],dfl_boxsize=128, current_tool=None):
 		WorkFlowTask.__init__(self)
@@ -2348,7 +2348,8 @@ def get_coord_outnames(params):
 			output.append(base_name(name)+ '.box')
 	return output
 
-from PyQt5 import QtWidgets
+from PySide6 import QtWidgets
+
 class EMBoxerInspector(QtWidgets.QWidget):
 
 	PTCL_SHAPE_MAP = {}
@@ -2359,7 +2360,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 	PTCL_SHAPE_MAP["circle with marker"] = "rcirclepoint"
 
 	def __init__(self,target) :
-		from PyQt5 import QtGui, QtWidgets
+		from PySide6 import QtGui, QtWidgets
 		self.busy = True
 		self.tool_dynamic_vbl = None # this will be used to dynamic add widgets as the buttons are changed
 		self.dynamic_box_button_widget = None # this will be used to dynamic add widgets as the buttons are changed
@@ -2389,9 +2390,9 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.vbl.addWidget(self.status_bar)
 		self.status_bar.showMessage("Ready",10000)
 
-		self.status_bar.messageChanged[str].connect(self.on_status_msg_change)
-		self.done_but.clicked[bool].connect(self.on_done)
-		self.gen_output_but.clicked[bool].connect(self.write_output_clicked)
+		self.status_bar.messageChanged.connect(self.on_status_msg_change)
+		self.done_but.clicked.connect(self.on_done)
+		self.gen_output_but.clicked.connect(self.write_output_clicked)
 		self.busy = False
 
 	def on_status_msg_change(self,s):
@@ -2415,7 +2416,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.target().run_output_dialog()
 
 	def get_display_tab(self):
-		from PyQt5 import QtWidgets
+		from PySide6 import QtWidgets
 		widget = QtWidgets.QWidget()
 		vbl =  QtWidgets.QVBoxLayout(widget)
 
@@ -2463,12 +2464,12 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		vbl.addWidget(displayboxes)
 
 
-		self.viewboxes.clicked[bool].connect(self.view_particles_clicked)
-		self.viewimage.clicked[bool].connect(self.view_2d_window_clicked)
+		self.viewboxes.clicked.connect(self.view_particles_clicked)
+		self.viewimage.clicked.connect(self.view_2d_window_clicked)
 		if self.target().has_thumbs():
-			self.viewthumbs.clicked[bool].connect(self.view_thumbs_clicked)
+			self.viewthumbs.clicked.connect(self.view_thumbs_clicked)
 
-		self.boxformats.currentIndexChanged[str].connect(self.box_format_changed)
+		self.boxformats.currentIndexChanged.connect(self.box_format_changed)
 
 		return widget
 	def view_particles_clicked(self,val):
@@ -2505,7 +2506,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 
 
 	def get_main_tab(self):
-		from PyQt5 import QtGui, QtWidgets
+		from PySide6 import QtGui, QtWidgets
 		widget = QtWidgets.QWidget()
 		vbl = QtWidgets.QVBoxLayout(widget)
 		vbl.setContentsMargins(0, 0, 0, 0)
@@ -2533,7 +2534,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		return widget
 
 	def add_bottom_buttons(self,layout):
-		from PyQt5 import QtWidgets
+		from PySide6 import QtWidgets
 		hbl_t=QtWidgets.QHBoxLayout()
 
 		hbl_q=QtWidgets.QHBoxLayout()
@@ -2550,7 +2551,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		hbl_q.addWidget(self.image_qualities)
 		layout.addLayout(hbl_q)
 
-		self.image_qualities.currentIndexChanged[str].connect(self.image_quality_changed)
+		self.image_qualities.currentIndexChanged.connect(self.image_quality_changed)
 
 	def image_quality_changed(self,val):
 		if self.busy: return
@@ -2567,7 +2568,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.busy = False
 
 	def add_boxing_button_group(self,layout):
-		from PyQt5 import QtWidgets
+		from PySide6 import QtWidgets
 
 		self.tool_button_group_box = QtWidgets.QGroupBox("Tools")
 		self.tool_button_group_box_vbl = QtWidgets.QVBoxLayout(self.tool_button_group_box)
@@ -2585,7 +2586,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		self.tool_button_group_box_vbl.addLayout(self.tool_dynamic_vbl,1)
 		layout.addWidget(self.tool_button_group_box,0,)
 
-		self.current_tool_combobox.activated[int].connect(self.current_tool_combobox_changed)
+		self.current_tool_combobox.activated.connect(self.current_tool_combobox_changed)
 
 	def add_mouse_tool(self,mouse_tool,):
 #		icon = mouse_tool.icon()
@@ -2626,25 +2627,23 @@ class EMBoxerInspector(QtWidgets.QWidget):
 		if self.target(): self.target().set_box_size(box_size)
 
 	def keyPressEvent(self,event):
-		from PyQt5 import QtCore
-		if event.key() == QtCore.Qt.Key_F1:
+		from PySide6 import QtCore
+		if event.key() == QtCore.Qt.KeyFlag.Key_F1:
 			try:
 				import webbrowser
 				webbrowser.open("http://blake.bcm.edu/emanwiki/e2boxer")
 				return
 			except: pass
 
-			try: from PyQt5 import QtWebEngineWidgets
-			except: return
+			from PySide6.QtWebEngineWidgets import QWebEngineView
 			try:
-				try:
-					test = self.browser
-				except:
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
-					self.browser.resize(800,800)
+				test = self.browser
+			except:
+				self.browser = QWebEngineView()
+				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
+				self.browser.resize(800,800)
 
-				if not self.browser.isVisible(): self.browser.show()
+			if not self.browser.isVisible(): self.browser.show()
 			except: pass
 
 			

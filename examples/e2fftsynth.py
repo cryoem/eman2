@@ -38,10 +38,12 @@ import scipy.fft as fft
 import traceback
 import cmath
 import random
+import os
+import sys
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider,ValBox
 	from eman2_gui.emimage import EMImageWidget
@@ -110,7 +112,7 @@ This program allows the user to play around with Fourier synthesis graphically
 		win.raise_()
 		win.synthplot.raise_()
 	except: pass
-	app.exec_()
+	app.exec()
 
 #kaiser=np.kaiser(65536,15)	# precompute once
 
@@ -221,9 +223,9 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.vncells.valueChanged.connect(self.recompute)
 		self.voversamp.valueChanged.connect(self.recompute)
 		self.vnsin.valueChanged.connect(self.nsinchange)
-		self.cbshowall.stateChanged[int].connect(self.recompute)
-		self.cbshifted.stateChanged[int].connect(self.recompute)
-		self.cbtargfn.activated[int].connect(self.newtargfn)
+		self.cbshowall.stateChanged.connect(self.recompute)
+		self.cbshifted.stateChanged.connect(self.recompute)
+		self.cbtargfn.activated.connect(self.newtargfn)
 		self.bphaseleft.clicked.connect(self.phaseleft)
 		self.bphasecen.clicked.connect(self.phasecen)
 		self.bphaseright.clicked.connect(self.phaseright)
@@ -261,7 +263,7 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		E2saveappwin("e2fftsynth","main",self)
 		E2saveappwin("e2fftsynth","synth",self.synthplot.qt_parent)
 		E2saveappwin("e2fftsynth","fft",self.fftplot.qt_parent)
-		QtWidgets.qApp.exit(0)
+		QtWidgets.QApplication.instance().exit(0)
 
 	def phaseleft(self,v):	# fixed translation in minus direction
 		ss=self.vshftstep.getValue()
@@ -520,11 +522,11 @@ class GUIFourierSynth(QtWidgets.QWidget):
 				#if self.cbshifted.isChecked() : self.curves[i].add(csum)
 				self.synthplot.set_data((self.xvals,self.wamp[i].getValue()*np.cos(self.xvals/samples*i*2*pi+self.wpha[i].getValue()*pi/180.0)),"%d"%i,quiet=True,linewidth=1,color=2)
 
-		self.synthplot.updateGL()
+		self.synthplot.update()
 
 		self.fftplot.set_data((np.arange(len(self.svals)),np.abs(self.svals)),"Amp",color=0,linetype=0,linewidth=2)
 		self.fftplot.set_data((np.arange(len(self.svals)),np.angle(self.svals)),"Pha",color=1,linetype=0,linewidth=2)
-		self.fftplot.updateGL()
+		self.fftplot.update()
 
 #		self.assound=np.tile((self.total*10000.0).astype("int16"),200)
 

@@ -8,8 +8,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape

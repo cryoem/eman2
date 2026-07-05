@@ -88,7 +88,7 @@ act as a filter on the names of the algorithms."""
 				thehelp._helpchange(7)
 			elif args[0] in ("sym","symmetry","symmetries"):
 				thehelp._helpchange(8)
-		app.exec_()
+		app.exec()
 		exit(0)
 
 	if len(args)<1 : 

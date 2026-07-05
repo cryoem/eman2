@@ -6,9 +6,9 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
-from PyQt5.QtWidgets import QSplitter, QHBoxLayout
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+from PySide6.QtWidgets import QSplitter, QHBoxLayout
+from PySide6.QtCore import Qt
 from EMAN2 import *
 from EMAN2_utils import interp_points, base_name
 from eman2_gui.emapplication import get_application, EMApp
@@ -73,13 +73,13 @@ def main():
 	awin = EMAnnotateWindow(app,options)
 	awin.resize(1120,720)
 	awin.show()
-	x=app.exec_()
+	x=app.exec()
 	#E2end(logid)
 	sys.exit(0)
 
 
 class EMAnnotateWindow(QtWidgets.QMainWindow):
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 	def __init__(self, application,options,data=None,annotate=None):
 		super().__init__()
 		self.app = weakref.ref(application)

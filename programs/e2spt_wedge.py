@@ -32,7 +32,7 @@
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 from eman2_gui.emapplication import EMApp
 from eman2_gui import emscene3d
 from eman2_gui import emdataitem3d
@@ -65,7 +65,7 @@ def main():
 		em_app = EMApp()
 		wedgeviewer = MissingWedgeViewer(stack, options.wedgeangle, wedgei=options.wedgei, wedgef=options.wedgef)
 		wedgeviewer.show()
-		ret=em_app.exec_()
+		ret=em_app.exec()
 		sys.exit(ret)
 	else:
 		means=[]

@@ -131,8 +131,8 @@ try:
 except:
 	try:
 		if __IPYTHON__ : GUIMode="ipython"
-		from PyQt5 import QtGui, QtWidgets
-		app=QtWidgets.qApp
+		from PySide6 import QtGui, QtWidgets
+		app=QtWidgets.QApplication.instance()
 	except:
 		GUIMode=None
 		app = 0

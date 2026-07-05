@@ -31,8 +31,8 @@
 
 from past.utils import old_div
 from builtins import range
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import QTimer
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import QTimer
 
 import sys
 import os
@@ -93,11 +93,11 @@ def filtchange(name,value):
 
 class EMProcessorWidget(QtWidgets.QWidget):
 	"""A single processor with parameters"""
-	upPress = QtCore.pyqtSignal(int)
-	downPress = QtCore.pyqtSignal(int)
-	plusPress = QtCore.pyqtSignal(int)
-	minusPress = QtCore.pyqtSignal(int)
-	processorChanged = QtCore.pyqtSignal(int)
+	upPress = QtCore.Signal(int)
+	downPress = QtCore.Signal(int)
+	plusPress = QtCore.Signal(int)
+	minusPress = QtCore.Signal(int)
+	processorChanged = QtCore.Signal(int)
 
 	plist=dump_processors_list()
 
@@ -119,7 +119,7 @@ class EMProcessorWidget(QtWidgets.QWidget):
 	}
 
 	def __init__(self,parent=None,tag=None):
-		app=QtWidgets.qApp
+		app=QtWidgets.QApplication.instance()
 
 		QtWidgets.QWidget.__init__(self,parent)
 		self.gbl = QtWidgets.QGridLayout(self)
@@ -175,11 +175,11 @@ class EMProcessorWidget(QtWidgets.QWidget):
 
 		self.wcat.currentIndexChanged[int].connect(self.eventCatSel)
 		self.wsubcat.currentIndexChanged[int].connect(self.eventSubcatSel)
-		self.wup.clicked[bool].connect(self.butUp)
-		self.wdown.clicked[bool].connect(self.butDown)
-		self.wplus.clicked[bool].connect(self.butPlus)
-		self.wminus.clicked[bool].connect(self.butminus)
-		self.wenable.clicked[bool].connect(self.updateFilt)
+		self.wup.clicked.connect(self.butUp)
+		self.wdown.clicked.connect(self.butDown)
+		self.wplus.clicked.connect(self.butPlus)
+		self.wminus.clicked.connect(self.butminus)
+		self.wenable.clicked.connect(self.updateFilt)
 
 		self.parmw=[]
 
@@ -423,12 +423,12 @@ class EMProcessorWidget(QtWidgets.QWidget):
 
 class EMFilterTool(QtWidgets.QMainWindow):
 	"""This class represents the EMFilterTool application instance.  """
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self,datafile=None,apix=0.0,force2d=False,verbose=0, safemode=False, idx=-1):
 		QtWidgets.QMainWindow.__init__(self)
 
-		app=QtWidgets.qApp
+		app=QtWidgets.QApplication.instance()
 		self.apix=apix
 		self.force2d=force2d
 		self.dataidx=idx
@@ -888,7 +888,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 		for i in range(n):
 			im=EMData(self.datafile,i)
-			QtWidgets.qApp.processEvents()
+			QtWidgets.QApplication.instance().processEvents()
 			for p in pp: 
 				if p[0] in outplaceprocs:
 					im=im.process(p[0],p[1])

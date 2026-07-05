@@ -33,8 +33,8 @@
 
 
 from past.utils import old_div
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -481,9 +481,9 @@ class EM3DSliceInspector(QtWidgets.QWidget):
 		self.slice.valueChanged.connect(target.set_slice)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
-		self.axisCombo.currentIndexChanged[str].connect(target.setAxis)
-		self.cubetog.toggled[bool].connect(target.toggle_cube)
-		self.defaults.clicked[bool].connect(self.set_defaults)
+		self.axisCombo.currentIndexChanged.connect(target.setAxis)
+		self.cubetog.toggled.connect(target.toggle_cube)
+		self.defaults.clicked.connect(self.set_defaults)
 		self.contrast.valueChanged.connect(self.on_contrast_changed)
 		self.bright.valueChanged.connect(self.on_brightness_changed)
 	

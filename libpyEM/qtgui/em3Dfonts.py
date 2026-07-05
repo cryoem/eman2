@@ -33,8 +33,8 @@
 
 from past.utils import old_div
 from builtins import object
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -251,15 +251,15 @@ class EM3DFontModel(EMLightsDrawer,EM3DModel,DynamicFonts):
 			EM3DModel.mouseReleaseEvent(self, event)
 	def setColor(self,val):
 		self.currentcolor = str(val)
-		self.updateGL()
+		self.update()
 
 	def toggle_wire(self,val):
 		self.wire = not self.wire
-		self.updateGL()
+		self.update()
 
 	def toggle_light(self,val):
 		self.light = not self.light
-		self.updateGL()
+		self.update()
 
 	def update_inspector(self,t3d):
 		if not self.inspector or self.inspector ==None:
@@ -322,17 +322,17 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		self.vbl.addWidget(self.tabwidget2)
 		self.n3_showing = False
 
-		self.cbb.currentIndexChanged[str].connect(target.setColor)
-		self.wiretog.toggled[bool].connect(target.toggle_wire)
-		self.lighttog.toggled[bool].connect(target.toggle_light)
+		self.cbb.currentIndexChanged.connect(target.setColor)
+		self.wiretog.toggled.connect(target.toggle_wire)
+		self.lighttog.toggled.connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
-		self.combo.currentIndexChanged [str].connect(self.on_combo_change)
-		self.text.textChanged[str].connect(self.on_text_change)
+		self.combo.currentIndexChanged.connect(self.on_combo_change)
+		self.text.textChanged.connect(self.on_text_change)
 		self.lspacing.valueChanged.connect(self.set_GL_lspacing)
 		self.length.valueChanged.connect(self.set_GL_length)
-		self.tsize.valueChanged[int].connect(self.set_GL_tsize)
-		self.Dfont.currentIndexChanged [str].connect(self.on_Dfont_change)
+		self.tsize.valueChanged.connect(self.set_GL_tsize)
+		self.Dfont.currentIndexChanged.connect(self.on_Dfont_change)
 		self.bgR.valueChanged.connect(self.set_GL_bgR)
 		self.bgG.valueChanged.connect(self.set_GL_bgG)
 		self.bgB.valueChanged.connect(self.set_GL_bgB)
@@ -343,19 +343,19 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		
 	def set_GL_bgR(self,bgR):
 		self.target().set_bg_r(bgR)
-		self.target().updateGL()
+		self.target().update()
 
 	def set_GL_bgG(self,bgG):
 		self.target().set_bg_g(bgG)
-		self.target().updateGL()
+		self.target().update()
 
 	def set_GL_bgB(self,bgB):
 		self.target().set_bg_b(bgB)
-		self.target().updateGL()
+		self.target().update()
 
 	def set_GL_bg_a(self,bg_a):
 		self.target().set_bg_a(bg_a)
-		self.target().updateGL()
+		self.target().update()
 
 	def init_fonts(self):
 		self.d = {}
@@ -380,7 +380,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 
 	def on_Dfont_change(self,Dfont):
 		self.target().font_renderer.set_font_file_name(self.d[str(Dfont)])
-		self.target().updateGL()
+		self.target().update()
 
 	def set_GL_lspacing(self,lspacing):
 		self.target().set_lspacing(lspacing)
@@ -389,15 +389,15 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 			self.lspacing.setEnabled(True)
 		else:
 			self.lspacing.setEnabled(False)
-		self.target().updateGL()
+		self.target().update()
 
 	def set_GL_length(self,length):
 		self.target().font_renderer.set_depth(int(length))	
-		self.target().updateGL()
+		self.target().update()
 
 	def set_GL_tsize(self,tsize):
 		self.target().font_renderer.set_face_size(tsize)
-		self.target().updateGL()
+		self.target().update()
 
 	def on_text_change(self,text):
 		try:
@@ -410,7 +410,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 			self.lspacing.setEnabled(True)
 		else:
 			self.lspacing.setEnabled(False)
-		self.target().updateGL()
+		self.target().update()
 
 	def on_combo_change(self,mode):
 		d = {}
@@ -425,7 +425,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 			self.length.setEnabled(True)
 		else:
 			self.length.setEnabled(False)
-		self.target().updateGL()
+		self.target().update()
 
 	def update_rotations(self,t3d):
 		self.transform_panel.update_rotations(t3d)

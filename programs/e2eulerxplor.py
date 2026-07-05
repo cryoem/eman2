@@ -37,8 +37,8 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets,QtCore
-from PyQt5.QtCore import Qt, QEvent
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtCore import Qt, QEvent
 from eman2_gui.emanimationutil import OrientationListAnimation,Animator
 from eman2_gui.emapplication import EMApp, get_application, error
 from eman2_gui.emglobjects import EM3DModel
@@ -112,7 +112,7 @@ def sadd(d,a,b):
 	return d+"/"+a+b
 
 class EMEulerExplorer(EM3DSymModel,Animator):
-	point_selected = QtCore.pyqtSignal(int,QEvent)
+	point_selected = QtCore.Signal(int,QEvent)
 
 	def mousePressEvent(self,event):
 		if self.events_mode == "inspect":
@@ -249,7 +249,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		self.class_idx = None # This is the idx of the current class being studied in the interface
 
 		self.previous_len = -1 # To keep track of the number of class averages that were previously viewable. This helps to make sure we can switch to the same class average in the context of a different refinement iteration
-		module_closed = QtCore.pyqtSignal()
+		module_closed = QtCore.Signal()
 		self.mirror_eulers = False
 		if sparse_mode:
 			self.mirror_eulers = True # If True the drawn Eulers are are also rendered on the opposite side of the sphere - see EM3DSymModel.make_sym_dl_lis
@@ -709,7 +709,7 @@ def set_included_0(e):
 
 
 class EMAsymmetricUnitInspector(EMSymInspector):
-	au_selected = QtCore.pyqtSignal(str, str)
+	au_selected = QtCore.Signal(str, str)
 
 	def __init__(self,target,enable_trace=False,enable_og=False) :
 		EMSymInspector.__init__(self,target,enable_trace=enable_trace,enable_og=enable_og)
@@ -730,7 +730,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		for e in combo_entries:
 			self.combo.addItem(e)
 
-		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
+		self.combo.currentIndexChanged.connect(self.on_combo_change)
 		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
 
 		self.au_tab.vbl.addWidget(self.combo)
@@ -740,7 +740,7 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 
 		self.list_widget.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 		self.list_widget.setMouseTracking(True)
-		self.list_widget.itemClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_item_clicked)
+		self.list_widget.itemClicked.connect(self.list_widget_item_clicked)
 
 		self.update_classes_list(first_time=True)
 		self.au_tab.vbl.addWidget(self.list_widget)

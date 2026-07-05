@@ -9,8 +9,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -796,7 +796,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			return
 		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		skipexist=(modifiers == QtCore.Qt.ShiftModifier)
+		skipexist=(modifiers & QtCore.Qt.ShiftModifier)
 		if skipexist:
 			print("Skipping tomograms with particles")
 			

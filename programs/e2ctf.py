@@ -272,7 +272,7 @@ NOTE: This program should be run from the project directory, not from within the
 		gui.show_guis()
 		gui.show()
 		gui.raise_()
-		app.exec_()
+		app.exec()
 
 #		print "done execution"
 
@@ -2265,15 +2265,15 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 #	return ret
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
 	import OpenGL
 	OpenGL.ERROR_CHECKING = False
 	from OpenGL import GL,GLUT
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider,CheckBox
 except:
-	print("Warning: PyQt5 must be installed to use the --gui option")
+	print("Warning: PySide6 must be installed to use the --gui option")
 	class dummy(object):
 		pass
 	class QWidget(object):
@@ -2292,9 +2292,9 @@ def notzero(x):
 	if x==0 : return 1.0
 	return x
 
-class MyListWidget(QtWidgets.QListWidget):
+	class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
@@ -2306,8 +2306,12 @@ class MyListWidget(QtWidgets.QListWidget):
 #		event.key()==Qt.Key_I
 
 
+
+
 class GUIctf(QtWidgets.QWidget):
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
+
+	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 
 	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
@@ -2454,14 +2458,14 @@ class GUIctf(QtWidgets.QWidget):
 		self.scs.valueChanged.connect(self.newCTF)
 		self.squality.valueChanged.connect(self.newQual)
 		self.showzerorings.valueChanged.connect(self.update_plot)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
-		self.saveparms.clicked[bool].connect(self.on_save_params)
-		self.recallparms.clicked[bool].connect(self.on_recall_params)
-		self.refit.clicked[bool].connect(self.on_refit)
-		self.output.clicked[bool].connect(self.on_output)
+		self.saveparms.clicked.connect(self.on_save_params)
+		self.recallparms.clicked.connect(self.on_recall_params)
+		self.refit.clicked.connect(self.on_refit)
+		self.output.clicked.connect(self.on_output)
 
 		self.neednewps=False
 		self.update_data()
@@ -3017,7 +3021,7 @@ class GUIctf(QtWidgets.QWidget):
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for ctf-only programs."""
-		self.app.exec_()
+		self.app.exec()
 
 #		E2saveappwin("boxer","imagegeom",self.guiim)
 #		try:

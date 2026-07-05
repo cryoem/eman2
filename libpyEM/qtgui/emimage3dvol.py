@@ -34,7 +34,7 @@
 
 from past.utils import old_div
 from builtins import range
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -614,9 +614,9 @@ class EMVolumeInspector(QtWidgets.QWidget):
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 		self.bright.valueChanged.connect(target.set_brightness)
-		self.cubetog.toggled[bool].connect(target.toggle_cube)
-		self.defaults.clicked[bool].connect(self.set_defaults)
-		self.smp.valueChanged[int].connect(target.set_texture_sample)
+		self.cubetog.toggled.connect(target.toggle_cube)
+		self.defaults.clicked.connect(self.set_defaults)
+		self.smp.valueChanged.connect(target.set_texture_sample)
 	
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)

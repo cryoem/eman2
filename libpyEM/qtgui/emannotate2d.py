@@ -33,8 +33,8 @@
 
 from past.utils import old_div
 from builtins import range
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -69,15 +69,15 @@ from eman2_gui.emglobjects import EMOpenGLFlagsAndTools
 class EMAnnotate2DWidget(EMGLWidget):
 	"""
 	"""
-	origin_update = QtCore.pyqtSignal(tuple)
-	signal_set_scale = QtCore.pyqtSignal(float)
-	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousewheel = QtCore.pyqtSignal(QtGui.QWheelEvent)
-	signal_increment_list_data = QtCore.pyqtSignal(float)
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	origin_update = QtCore.Signal(tuple)
+	signal_set_scale = QtCore.Signal(float)
+	mousedown = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousedrag = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousemove = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mouseup = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousewheel = QtCore.Signal(QtGui.QWheelEvent)
+	signal_increment_list_data = QtCore.Signal(float)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 	#itemdrop = QtCore.pyqtSignal(QtGui.QDropEvent)
 
 
@@ -289,7 +289,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.disp_proc=procs
 		#self.force_display_update(set_clip=True)
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 
 
@@ -367,38 +367,38 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.curmin=x0
 		self.curmax=x1
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def set_density_min(self,val):
 		self.curmin=val
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def set_density_max(self,val):
 		self.curmax=val
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def set_alt(self,val):
 		#self.set_clip()
 		self.alt=val
 		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def set_az(self,val):
 		#self.set_clip()
 		self.az=val
 		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def set_n(self,val):
 		#self.set_clip()
 		self.zpos = val
 		#self.set_xform(self.nx//2,self.ny//2,self.nz//2+self.zpos,self.alt,self.az)
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def set_file_name(self,file_name):
 		self.file_name = file_name
@@ -499,7 +499,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		self.inspector_update()
 		self.force_display_update()
-		self.updateGL()
+		self.update()
 
 	def load_default_scale_origin(self,size_specified=None):
 		'''
@@ -551,7 +551,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if inspector_update: self.inspector_update()
 		if display_update:
 			self.force_display_update()
-			self.updateGL()
+			self.update()
 
 	def auto_contrast(self,boolv=False,inspector_update=True,display_update=True):
 		auto_contrast = E2getappval("display2d","autocontrast",True)
@@ -582,14 +582,14 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if inspector_update: self.inspector_update()
 		if display_update:
 			self.force_display_update()
-			self.updateGL()
+			self.update()
 
 	def set_origin(self,x,y,quiet=False):
 		"""Set the display origin within the image"""
 		if self.origin==(x,y) : return
 		self.origin=(x,y)
 		if not quiet : self.origin_update.emit((x,y))
-		self.updateGL()
+		self.update()
 
 	def get_origin(self) : return self.origin
 
@@ -635,17 +635,17 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.inspector_update()
 			#self.force_display_update(set_clip=True)
 			self.force_display_update()
-			self.updateGL()
+			self.update()
 		except: pass
 
 	def set_invert(self,val):
 		if val: self.invert=1
 		else : self.invert=0
-		self.updateGL()
+		self.update()
 
 	def set_histogram(self,mode):
 		self.histogram=mode
-		self.updateGL()
+		self.update()
 
 	# def __set_display_image(self,val,alt,az):
 	#
@@ -1415,7 +1415,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		self.del_shapes()
 		self.add_shapes(newshapes)
 		self.add_shapes(newshapes2)
-		self.updateGL()
+		self.update()
 
 	def add_shape(self,k,s):
 		"""Add an EMShape object to be overlaid on the image. Each shape is
@@ -1524,7 +1524,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		self.del_shape("PROBE")
 		self.add_shape("PROBE",EMShape(("rectpoint",.5,.5,.1,x-old_div(sz,2),y-old_div(sz,2),x+old_div((sz+1),2),y+old_div((sz+1),2),2)))
-		self.updateGL()
+		self.update()
 
 		clp=self.get_data().get_clip(Region(x-old_div(sz,2),y-old_div(sz,2),sz,sz))
 		self.inspector.ptpointval.setText("Point Value: %1.3f"%(self.get_data())[x,y])
@@ -1550,16 +1550,16 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def mousePressEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			print("Inspector is already showed as the right panel of the main window")
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			try:
-				get_application().setOverrideCursor(Qt.ClosedHandCursor)
+				get_application().setOverrideCursor(Qt.CursorShape.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				get_application().setOverrideCursor(Qt.SizeAllCursor)
+				get_application().setOverrideCursor(Qt.CursorShape.SizeAllCursor)
 			self.rmousedrag=(event.x(),event.y())
-			if event.buttons()&Qt.RightButton:
+			if event.buttons()&Qt.MouseButton.RightButton:
 				self.mousedrag.emit(event, lc)
 				#print("Rmousedrag:",self.rmousedrag)
 		else:
@@ -1567,18 +1567,18 @@ class EMAnnotate2DWidget(EMGLWidget):
 				lc=self.scr_to_img(event.x(),event.y())
 				self.mousedown.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
-					self.updateGL()
-###TO READ
+					self.update()
+	###TO READ
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
 					lc=self.scr_to_img(event.x(),event.y())
 					if inspector:
@@ -1588,9 +1588,9 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.drawv2=float(inspector.dtpenv2.text())
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
-						self.updateGL()
-			elif self.mouse_mode_dict[self.mouse_mode]=="seg":
-				if event.buttons()&Qt.LeftButton:
+						self.update()
+					elif self.mouse_mode_dict[self.mouse_mode]=="seg":
+					if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
 					lc=self.scr_to_img(event.x(),event.y())
 					if inspector:
@@ -1606,30 +1606,30 @@ class EMAnnotate2DWidget(EMGLWidget):
 						subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
 						self.full_annotation.set_rotated_clip(xform,subvol)
 						self.force_display_update()
-					self.updateGL()
+					self.update()
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
 		if self.rmousedrag:
 			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
 			self.rmousedrag=(event.x(),event.y())
-			if event.buttons()&Qt.RightButton:
+			if event.buttons()&Qt.MouseButton.RightButton:
 				self.mousedrag.emit(event, lc)
-			try: self.updateGL()
+			try: self.update()
 			except: pass
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
 				lc=self.scr_to_img(event.x(),event.y())
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.mousedrag.emit(event, lc)
 				else:
 					self.mousemove.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					current_shapes = self.get_shapes()
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
@@ -1650,17 +1650,17 @@ class EMAnnotate2DWidget(EMGLWidget):
 							idx=inspector.target().zpos
 							inspector.mtshowval.setText("Value: %1.4g"%inspector.target().list_data[idx][int(lc[0]),int(lc[1])])
 						inspector.mtshowval2.setText("  ")
-					self.update_inspector_texture()
-					self.updateGL()
+						self.update_inspector_texture()
+						self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 					self.force_display_update()
-					self.updateGL()
+					self.update()
 
-			elif self.mouse_mode_dict[self.mouse_mode] =="seg":
-				if event.buttons()&Qt.LeftButton:
+			elif self.mouse_mode_dict[self.mouse_mode]=="seg":
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
 					current_class = inspector.seg_tab.get_current_class()
 					pen_width = inspector.seg_tab.get_pen_width()
@@ -1673,7 +1673,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					subvol.process_inplace("mask.paint",{"x":pen_width,"y":pen_width,"z":pen_width,"r1":pen_width,"v1":current_class,"r2":pen_width,"v2":current_class})
 					self.full_annotation.set_rotated_clip(xform,subvol)
 					self.force_display_update()
-				self.updateGL()
+				self.update()
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -1686,17 +1686,17 @@ class EMAnnotate2DWidget(EMGLWidget):
 				lc=self.scr_to_img(event.x(),event.y())
 				self.mouseup.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.button()==Qt.LeftButton:
+				if event.button()==Qt.MouseButton.LeftButton:
 					self.force_display_update()
-					self.updateGL()
+					self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "seg":
-				if event.button()==Qt.LeftButton:
-					self.force_display_update()
-					self.updateGL()
-					self.mouseup.emit(event, lc)
+					if event.button()==Qt.MouseButton.LeftButton:
+						self.force_display_update()
+						self.update()
+						self.mouseup.emit(event, lc)
 
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
@@ -1747,7 +1747,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.inspector.ns.setValue(self.zpos)
 				#self.force_display_update(set_clip=True)
 				self.force_display_update()
-				self.updateGL()
+				self.update()
 				self.keypress.emit(event)
 
 #			else:
@@ -1764,7 +1764,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.inspector.ns.setValue(self.zpos)
 				#self.force_display_update(set_clip=True)
 				self.force_display_update()
-				self.updateGL()
+				self.update()
 				self.keypress.emit(event)
 
 #			else:
@@ -1785,7 +1785,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.__key_mvt_animation(-self.width(),0)
 		elif event.key()==Qt.Key_Space:
 			self.display_shapes = not self.display_shapes
-			self.updateGL()
+			self.update()
 		elif event.key()==Qt.Key_P :
 			try: self.get_inspector().do_pspec_single(0)
 			except: pass
@@ -1927,17 +1927,17 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.stmaxsb.setRange(0,0)
 		self.stmaxsb.setValue(0)
 
-		self.rngbl.addWidget(self.stmmlbl,Qt.AlignRight)
+		self.rngbl.addWidget(self.stmmlbl,Qt.AlignmentFlag.AlignRight)
 		self.rngbl.addWidget(self.stminsb)
 		self.rngbl.addWidget(self.stmaxsb)
 
 		self.mmtab.addTab(self.savetab,"Save")
 
-		self.stsnapbut.clicked[bool].connect(self.do_snapshot)
-		self.stwholebut.clicked[bool].connect(self.do_saveimg)
-		self.ststackbut.clicked[bool].connect(self.do_savestack)
-		self.stmoviebut.clicked[bool].connect(self.do_makemovie)
-		self.stanimgif.clicked[bool].connect(self.do_makegifanim)
+		self.stsnapbut.clicked.connect(self.do_snapshot)
+		self.stwholebut.clicked.connect(self.do_saveimg)
+		self.ststackbut.clicked.connect(self.do_savestack)
+		self.stmoviebut.clicked.connect(self.do_makemovie)
+		self.stanimgif.clicked.connect(self.do_makegifanim)
 
 		# # Filter tab
 		# self.filttab = QtWidgets.QWidget()
@@ -1974,31 +1974,31 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.ptlay.addWidget(self.ptareasize,0,0,1,2)
 
 		self.ptpointval= QtWidgets.QLabel("Point Value (ctr pix): ")
-		self.ptlay.addWidget(self.ptpointval,1,0,1,2,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptpointval,1,0,1,2,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptareaavg= QtWidgets.QLabel("Area Avg: ")
-		self.ptlay.addWidget(self.ptareaavg,2,0,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareaavg,2,0,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptareaavgnz= QtWidgets.QLabel("Area Avg (!=0): ")
-		self.ptlay.addWidget(self.ptareaavgnz,2,1,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareaavgnz,2,1,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptareasig= QtWidgets.QLabel("Area Sig: ")
-		self.ptlay.addWidget(self.ptareasig,3,0,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareasig,3,0,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptareasignz= QtWidgets.QLabel("Area Sig (!=0): ")
-		self.ptlay.addWidget(self.ptareasignz,3,1,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareasignz,3,1,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptareaskew= QtWidgets.QLabel("Skewness: ")
-		self.ptlay.addWidget(self.ptareaskew,4,0,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareaskew,4,0,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptcoord= QtWidgets.QLabel("Center Coord: ")
-		self.ptlay.addWidget(self.ptcoord,4,1,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptcoord,4,1,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptareakurt= QtWidgets.QLabel("Kurtosis: ")
-		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptareakurt,5,0,Qt.AlignmentFlag.AlignLeft)
 
 		self.ptcoord2= QtWidgets.QLabel("( ) ")
-		self.ptlay.addWidget(self.ptcoord2,5,1,Qt.AlignLeft)
+		self.ptlay.addWidget(self.ptcoord2,5,1,Qt.AlignmentFlag.AlignLeft)
 
 		# not really necessary since the pointbox accurately labels the pixel when zoomed in
 		#self.ptpixels= QtWidgets.QWidget()
@@ -2024,19 +2024,19 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 
 
 		self.mtshoworigin= QtWidgets.QLabel("Origin: 0,0")
-		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignLeft)
+		self.mtlay.addWidget(self.mtshoworigin,1,0,Qt.AlignmentFlag.AlignLeft)
 
 		self.mtshowend= QtWidgets.QLabel("End: 0,0")
-		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignLeft)
+		self.mtlay.addWidget(self.mtshowend,1,1,Qt.AlignmentFlag.AlignLeft)
 
 		self.mtshowlen= QtWidgets.QLabel("dx,dy: 0")
-		self.mtlay.addWidget(self.mtshowlen,2,0,Qt.AlignLeft)
+		self.mtlay.addWidget(self.mtshowlen,2,0,Qt.AlignmentFlag.AlignLeft)
 
 		self.mtshowlen2= QtWidgets.QLabel("Length: 0")
-		self.mtlay.addWidget(self.mtshowlen2,2,1,Qt.AlignLeft)
+		self.mtlay.addWidget(self.mtshowlen2,2,1,Qt.AlignmentFlag.AlignLeft)
 
 		self.mtshowval= QtWidgets.QLabel("Value: ?")
-		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignLeft)
+		self.mtlay.addWidget(self.mtshowval,3,0,1,2,Qt.AlignmentFlag.AlignLeft)
 
 		self.mtshowval2= QtWidgets.QLabel(" ")
 		self.mtlay.addWidget(self.mtshowval2,4,0,1,2,Qt.AlignLeft)
@@ -2251,20 +2251,20 @@ class EMAnnotateInspector2D(QtWidgets.QWidget):
 		self.highlim=1.0
 		self.busy=0
 
-		self.psbsing.clicked[bool].connect(self.do_pspec_single)
-		self.psbstack.clicked[bool].connect(self.do_pspec_stack)
-		self.psbaz.clicked[bool].connect(self.do_pspec_az)
+		self.psbsing.clicked.connect(self.do_pspec_single)
+		self.psbstack.clicked.connect(self.do_pspec_stack)
+		self.psbaz.clicked.connect(self.do_pspec_az)
 		self.scale.valueChanged.connect(target.set_scale)
 		self.mins.valueChanged.connect(self.new_min)
 		self.maxs.valueChanged.connect(self.new_max)
 		self.brts.valueChanged.connect(self.new_brt)
 		self.conts.valueChanged.connect(self.new_cont)
 		self.pyinp.returnPressed.connect(self.do_python)
-		self.invtog.toggled[bool].connect(target.set_invert)
-		self.histoequal.currentIndexChanged[int].connect(target.set_histogram)
-		self.mmtab.currentChanged[int].connect(target.set_mouse_mode)
-		self.auto_contrast_button.clicked[bool].connect(target.auto_contrast)
-		self.full_contrast_button.clicked[bool].connect(target.full_contrast)
+		self.invtog.toggled.connect(target.set_invert)
+		self.histoequal.currentIndexChanged.connect(target.set_histogram)
+		self.mmtab.currentChanged.connect(target.set_mouse_mode)
+		self.auto_contrast_button.clicked.connect(target.auto_contrast)
+		self.full_contrast_button.clicked.connect(target.full_contrast)
 		self.alts.valueChanged.connect(self.target().set_alt)
 		self.azs.valueChanged.connect(self.target().set_az)
 
@@ -2610,7 +2610,7 @@ class CustomTreeSet(QtWidgets.QTreeWidget):
 		self.target.update_sets()
 		#self.target.target.tree_sels = self.target.get_whole_branch(item)
 		self.target.target.force_display_update()
-		self.target.target.updateGL()
+		self.target.target.update()
 
 class GroupTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 	def __init__(self, str_l=[],color = None):
@@ -2737,27 +2737,27 @@ class EMSegTab(QtWidgets.QWidget):
 		segtab_vbl.addLayout(hbl)
 
 
-		self.new_class_button.clicked[bool].connect(self.new_class)
-		self.delete_sel_button.clicked[bool].connect(self.delete_sel)
-		self.load_mask_button.clicked[bool].connect(self.load_mask)
-		self.load_class_button.clicked[bool].connect(self.load_class)
-		self.save_mask_button.clicked[bool].connect(self.save_mask)
-		self.append_ann_button.clicked[bool].connect(self.append_ann)
-		self.load_all_button.clicked[bool].connect(self.load_all)
-		self.save_all_button.clicked[bool].connect(self.save_all)
-		self.cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_cb_group)
-		self.brush_3D_checkbox.stateChanged[int].connect(self.brush_3D_checkbox_changed)
+		self.new_class_button.clicked.connect(self.new_class)
+		self.delete_sel_button.clicked.connect(self.delete_sel)
+		self.load_mask_button.clicked.connect(self.load_mask)
+		self.load_class_button.clicked.connect(self.load_class)
+		self.save_mask_button.clicked.connect(self.save_mask)
+		self.append_ann_button.clicked.connect(self.append_ann)
+		self.load_all_button.clicked.connect(self.load_all)
+		self.save_all_button.clicked.connect(self.save_all)
+		self.cb_group.buttonClicked.connect(self.on_check_cb_group)
+		self.brush_3D_checkbox.stateChanged.connect(self.brush_3D_checkbox_changed)
 		# self.table_set.cellClicked[int,int].connect(self.on_table_set)
 
-		self.group_button.clicked[bool].connect(self.group_sel)
-		self.ungroup_button.clicked[bool].connect(self.ungroup_sel)
-		self.test_widget_button.clicked[bool].connect(self.test_widget_button_clicked)
+		self.group_button.clicked.connect(self.group_sel)
+		self.ungroup_button.clicked.connect(self.ungroup_sel)
+		self.test_widget_button.clicked.connect(self.test_widget_button_clicked)
 
-		self.tree_set.itemClicked[QtWidgets.QTreeWidgetItem,int].connect(self.on_tree_item_clicked)
-		self.tree_set.itemDoubleClicked[QtWidgets.QTreeWidgetItem,int].connect(self.on_tree_item_double_clicked)
+		self.tree_set.itemClicked.connect(self.on_tree_item_clicked)
+		self.tree_set.itemDoubleClicked.connect(self.on_tree_item_double_clicked)
 
-		self.tree_set.currentItemChanged[QtWidgets.QTreeWidgetItem,QtWidgets.QTreeWidgetItem].connect(self.on_tree_item_changed)
-		self.tree_set.itemCollapsed[QtWidgets.QTreeWidgetItem].connect(self.on_tree_item_collapsed)
+		self.tree_set.currentItemChanged.connect(self.on_tree_item_changed)
+		self.tree_set.itemCollapsed.connect(self.on_tree_item_collapsed)
 
 		#self.tree_set.itemChanged[QtWidgets.QTreeWidgetItem,int].connect(self.update_sets)
 
@@ -2821,8 +2821,8 @@ class EMSegTab(QtWidgets.QWidget):
 			# 	pass
 			for button in self.button_list:
 				button.setEnabled(True)
-		self.target.force_display_update()
-		self.target.updateGL()
+				self.target.force_display_update()
+				self.target.update()
 
 	def brush_3D_checkbox_changed(self,int):
 		self.target.brush_mode = int
@@ -2839,7 +2839,7 @@ class EMSegTab(QtWidgets.QWidget):
 			button.setEnabled(True)
 		#self.target.tree_sels = self.get_whole_branch(item)
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 
 	def get_selected_item(self):
 		sels = self.tree_set.selectedItems()
@@ -2934,7 +2934,7 @@ class EMSegTab(QtWidgets.QWidget):
 			self.update_sets()
 			self.target.ctable = self.target.create_RGB_list()
 			self.target.force_display_update()
-			self.target.updateGL()
+			self.target.update()
 
 			return
 			#self.update_sets()
@@ -2948,7 +2948,7 @@ class EMSegTab(QtWidgets.QWidget):
 		# except:
 		# 	self.target.tree_sels = []
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 	# def keyPressEvent(self,event):
 	# 	if event.key() == Qt.Key_Enter:
 	# 		self.tree_set.closePersistentEditor(item,col)
@@ -2960,7 +2960,7 @@ class EMSegTab(QtWidgets.QWidget):
 	def on_tree_item_collapsed(self,item):
 		self.tree_set.setCurrentItem(None)
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 
 
 		return
@@ -3099,7 +3099,7 @@ class EMSegTab(QtWidgets.QWidget):
 		self.target.full_annotation += temp
 		self.target.force_display_update()
 		self.update_sets()
-		self.target.updateGL()
+		self.target.update()
 
 	def group_sel(self):
 
@@ -3179,7 +3179,7 @@ class EMSegTab(QtWidgets.QWidget):
 		#self.recolor_by_group()
 		#self.target.tree_sels = []
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 
 		return
 
@@ -3250,7 +3250,7 @@ class EMSegTab(QtWidgets.QWidget):
 		self.update_sets()
 		#self.recolor_by_group()
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 
 
 
@@ -3315,7 +3315,7 @@ class EMSegTab(QtWidgets.QWidget):
 		msg_box.setInformativeText("Do you want to save these classes to disk as an annotation file?")
 		msg_box.setStandardButtons(QtWidgets.QMessageBox.Save |  QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Discard )
 		msg_box.setDefaultButton(QtWidgets.QMessageBox.Save)
-		msg_box.exec_()
+		msg_box.exec()
 		if msg_box.clickedButton().text() == "Save":
 			self.save_mask(multiple_class = True)
 		elif msg_box.clickedButton().text() == "Cancel":
@@ -3331,10 +3331,10 @@ class EMSegTab(QtWidgets.QWidget):
 
 
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 		self.update_sets()
 
-	def load_mask(self):
+def load_mask(self):
 		#Initiate loading a binary mask on the current annotation by popping up a EMBrowserWidget
 		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
 		self.openbrowser.ok.connect(self.load_mask_browser_ok)
@@ -3349,11 +3349,11 @@ class EMSegTab(QtWidgets.QWidget):
 		self.update_sets()
 		self.target.full_annotation *= in_f
 		self.target.force_display_update()
-		self.target.updateGL()
+		self.target.update()
 		del in_f
-		return
+	return
 
-	def load_class(self):
+def load_class(self):
 		#Initiate loading a binary mask on the current annotation by popping up a EMBrowserWidget
 		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
 		self.openbrowser.ok.connect(self.load_class_browser_ok)
@@ -3388,7 +3388,7 @@ class EMSegTab(QtWidgets.QWidget):
 		else:
 			self.target.full_annotation = self.target.full_annotation*bg_in_f + in_f*val
 			self.target.force_display_update()
-			self.target.updateGL()
+			self.target.update()
 			del in_f, bg_in_f
 		return
 
@@ -3504,7 +3504,7 @@ class EMSegTab(QtWidgets.QWidget):
 				pass
 			self.target.full_annotation += in_f
 			self.target.force_display_update()
-			self.target.updateGL()
+			self.target.update()
 			del in_f
 			return
 
@@ -3798,7 +3798,7 @@ def main():
 		window.set_data(a,None)
 	em_app.show()
 	window.optimally_resize()
-	sys.exit(em_app.exec_())
+	sys.exit(em_app.exec())
 
 if __name__ == '__main__':
 	main()

@@ -41,9 +41,9 @@ import os
 from eman2_gui.valslider import ValSlider, EMANToolButton, EMSpinWidget, EMQTColorWidget
 import weakref
 
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
-from PyQt5 import QtGui, QtWidgets
+from PySide6 import QtCore
+from PySide6.QtCore import Qt
+from PySide6 import QtGui, QtWidgets
 
 
 def main():
@@ -72,7 +72,7 @@ def main():
 	slices.show()
 	tools.show()
 	
-	app.exec_()
+	app.exec()
 
 	E2end(logid)
 
@@ -84,7 +84,7 @@ class TomoSegVolumeViewer(EMScene3D):
 		self.setWindowTitle("TomoSeg Subvolume Viewer")
 
 class TomoSegSliceViewer(QtWidgets.QMainWindow):
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self,data=None,datafile=None,yshort=False,apix=0.0,boxsize=32,shrink=1,contrast=None,center=None,mod=False,normalize=False):
 		QtWidgets.QWidget.__init__(self)
@@ -180,26 +180,26 @@ class TomoSegSliceViewer(QtWidgets.QMainWindow):
 		self.firsthbclick = None
 
 		# file menu
-		self.mfile_open.triggered[bool].connect(self.menu_file_open)
-		self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
-		self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
-		self.mfile_save_boxes.triggered[bool].connect(self.menu_file_save_boxes)
-		self.mfile_save_boxes_stack.triggered[bool].connect(self.menu_file_save_boxes_stack)
-		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.mfile_open.triggered.connect(self.menu_file_open)
+		self.mfile_read_boxloc.triggered.connect(self.menu_file_read_boxloc)
+		self.mfile_save_boxloc.triggered.connect(self.menu_file_save_boxloc)
+		self.mfile_save_boxes.triggered.connect(self.menu_file_save_boxes)
+		self.mfile_save_boxes_stack.triggered.connect(self.menu_file_save_boxes_stack)
+		self.mfile_quit.triggered.connect(self.menu_file_quit)
 
 		# window menu
-		self.mwin_boxes.triggered[bool].connect(self.menu_win_boxes)
-		self.mwin_single.triggered[bool].connect(self.menu_win_single)
+		self.mwin_boxes.triggered.connect(self.menu_win_boxes)
+		self.mwin_single.triggered.connect(self.menu_win_single)
 #		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
 
 		# all other widgets
-		self.wdepth.valueChanged[int].connect(self.event_depth)
-		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
+		self.wdepth.valueChanged.connect(self.event_depth)
+		self.wnlayers.valueChanged.connect(self.event_nlayers)
 		#QtCore.QObject.connect(self.wboxsize,QtCore.SIGNAL("valueChanged"),self.event_boxsize)
-		self.wmaxmean.clicked[bool].connect(self.event_projmode)
+		self.wmaxmean.clicked.connect(self.event_projmode)
 		self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
-		self.wlocalbox.stateChanged[int].connect(self.event_localbox)
+		self.wlocalbox.stateChanged.connect(self.event_localbox)
 
 		self.xyview.mousedown.connect(self.xy_down)
 		self.xyview.mousedrag.connect(self.xy_drag)
@@ -1940,12 +1940,12 @@ class TomoSegInspector(QtWidgets.QWidget):
 		When a use middle clicks
 		"""
 		nodedialog = NodeEditDialog(self, self.tree_widget.currentItem())
-		nodedialog.exec_()
+		nodedialog.exec()
 		self.activateWindow()
 	
 	def _on_add_button(self):
 		nodedialog =  NodeDialog(self, self.tree_widget.currentItem())
-		nodedialog.exec_()
+		nodedialog.exec()
 		self.activateWindow()
 		
 	def _tree_widget_remove(self):

@@ -4,8 +4,8 @@
 import sys
 import weakref
 import re
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from EMAN2 import *
 from EMAN2_utils import interp_points, base_name
 from eman2_gui.emapplication import EMApp
@@ -40,7 +40,7 @@ def main():
 	czi_loader = CZIDataLoader(em_app, options)
 	if not options.no_gui:
 		czi_loader.show()
-		x=em_app.exec_()
+		x=em_app.exec()
 		sys.exit(0)
 
 	if options.inquire_only:

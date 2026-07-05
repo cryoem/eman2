@@ -11,8 +11,7 @@
 # in either instance.
 #
 # This complete copyright notice must be included in any revised version of the
-# source code. Additional authorship citations may be added, but existing
-# author citations must be preserved.
+# source code. Additional authorship citations may be preserved.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,7 +19,7 @@
 # (at your option) any later version.
 #
 # This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
@@ -35,8 +34,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL import GLU
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 
 leftarrow = [
     '12 10 2 1',
@@ -79,17 +78,14 @@ class ValSlider(QtWidgets.QWidget):
 	setValue(float) - to programmatically change the value
 	emit valueChanged(float)
 	"""
-	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(object)
-	textChanged = QtCore.pyqtSignal(object)
-	sliderReleased = QtCore.pyqtSignal(object)
-	sliderPressed = QtCore.pyqtSignal(object)
+	enableChanged = QtCore.Signal(int)
+	valueChanged = QtCore.Signal(object)
+	textChanged = QtCore.Signal(object)
+	sliderReleased = QtCore.Signal(object)
+	sliderPressed = QtCore.Signal(object)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1,rounding=3):
-		#if not parent: raise Exception,"ValSliders must have parents"
 		QtWidgets.QWidget.__init__(self,parent)
-		
-		#print label, "allocated"
 		
 		if rng : self.rng=list(rng)
 		else : self.rng=[0,1.0]
@@ -103,27 +99,21 @@ class ValSlider(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-#		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			self.enablebox.toggled[bool].connect(self.setEnabled)
+			self.enablebox.toggled.connect(self.setEnabled)
 		
 		if label:
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
-#			sizePolicy.setHorizontalStretch(1)
-#			sizePolicy.setVerticalStretch(0)
-#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 			self.label.setSizePolicy(sizePolicy)
-#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-#			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -135,7 +125,6 @@ class ValSlider(QtWidgets.QWidget):
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
 		self.text.setMinimumSize(QtCore.QSize(80,0))
-#		self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
 		self.slider = QtWidgets.QSlider(self)
@@ -150,20 +139,15 @@ class ValSlider(QtWidgets.QWidget):
 		self.slider.setSingleStep(16)
 		self.slider.setPageStep(256)
 		self.slider.setOrientation(QtCore.Qt.Horizontal)
-#		self.slider.setObjectName("slider")
 		self.hboxlayout.addWidget(self.slider)
 		
 		self.text.editingFinished.connect(self.textChange)
-		self.slider.valueChanged[int].connect(self.sliderChange)
+		self.slider.valueChanged.connect(self.sliderChange)
 		self.slider.sliderReleased.connect(self.on_sliderReleased)
 		self.slider.sliderPressed.connect(self.on_sliderPressed)
 		
 		self.updateboth()
 		if showenable>=0 : self.setEnabled(showenable)
-		
-	#def __del__(self):
-		#print self.getLabel(), " freed"
-#		QtWidgets.QWidget.__del__(self)
 
 	def setEnabled(self,ena):
 		self.slider.setEnabled(ena)
@@ -181,7 +165,6 @@ class ValSlider(QtWidgets.QWidget):
 		if maxv==minv : minv=math.fabs(minv)*0.999
 		self.rng=[float(minv),float(maxv)]
 		self.updates()
-		#self.slider.setRange(*self.rng)
 		
 	def getRange(self): return self.rng
 
@@ -190,10 +173,8 @@ class ValSlider(QtWidgets.QWidget):
 
 		if val <= self.rng[0]:
 			self.rng[0] = val
-			#self.updates()
 		if val >= self.rng[1]:
 			self.rng[1] = val
-			#self.updates()
 		
 		if self.intonly : 
 			if self.value==int(val+.5) : return
@@ -202,7 +183,6 @@ class ValSlider(QtWidgets.QWidget):
 			if self.value==val : return
 			self.value=val
 
-#		if self.intonly : print self.value,val
 		self.updateboth()
 		if not quiet and self.value!=self.oldvalue: self.valueChanged.emit(self.value)
 		self.oldvalue=self.value
@@ -240,9 +220,7 @@ class ValSlider(QtWidgets.QWidget):
 					self.value=int(round(float(x)))
 				else : 
 					self.value=float(x)
-#				print "new text ",self.value
 
-				# If the user enters a value out of range, adjust the slider range
 				if self.value>self.rng[1] : self.rng[1]=self.value
 				if self.value<self.rng[0] : self.rng[0]=self.value
 				
@@ -279,13 +257,11 @@ class ValSlider(QtWidgets.QWidget):
 		
 	def updates(self):
 		self.ignore=1
-#		print "updates: ",self.value,self.rng
 		self.slider.setValue(clamp(0,(self.value-self.rng[0])/float(self.rng[1]-self.rng[0])*4095.0,4095.0))
 		self.ignore=0
 
 	def updatet(self):
 		self.ignore=1
-		#self.text.setText(str(self.value)[:self.text.width()/10-1]) # Stupido!!! This will turn a sci number to a real
 		if self.intonly : self.text.setText(str(int(self.value)))
 		else : self.text.setText(str(round(self.value,self.rounding)))
 		self.ignore=0
@@ -298,12 +274,11 @@ class ValBox(QtWidgets.QWidget):
 	"""A ValSlider without the slider part. Everything is the same except that the slider doesn't exist,
 	so for virtually all purposes it could be used as a drop-in replacement.
 	"""
-	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(object)
-	textChanged = QtCore.pyqtSignal(object)
+	enableChanged = QtCore.Signal(int)
+	valueChanged = QtCore.Signal(object)
+	textChanged = QtCore.Signal(object)
 
 	def __init__(self, parent=None, rng=None, label=None, value=0,labelwidth=30,showenable=-1):
-		#if not parent: raise Exception,"ValSliders must have parents"
 		QtWidgets.QWidget.__init__(self,parent)
 		
 		if rng : self.rng=list(rng)
@@ -312,32 +287,26 @@ class ValBox(QtWidgets.QWidget):
 		self.value=value
 		self.ignore=0
 		self.intonly=0
-		self.digits=5		# digits of precision to display
+		self.digits=5
 		
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-#		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			self.enablebox.toggled[bool].connect(self.setEnabled)
+			self.enablebox.toggled.connect(self.setEnabled)
 			
 		if label:
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
-#			sizePolicy.setHorizontalStretch(1)
-#			sizePolicy.setVerticalStretch(0)
-#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 			self.label.setSizePolicy(sizePolicy)
-#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-#			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -349,7 +318,6 @@ class ValBox(QtWidgets.QWidget):
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
 		self.text.setMinimumSize(QtCore.QSize(60,0))
-#		self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
 		self.text.editingFinished.connect(self.textChange)
@@ -369,7 +337,6 @@ class ValBox(QtWidgets.QWidget):
 		if maxv<=minv : maxv=minv+.001
 		self.rng=[float(minv),float(maxv)]
 		self.updates()
-		#self.slider.setRange(*self.rng)
 		
 	def getRange(self): return self.rng
 
@@ -382,10 +349,8 @@ class ValBox(QtWidgets.QWidget):
 			return
 		if val <= self.rng[0]:
 			self.rng[0] = val
-			#self.updates()
 		if val >= self.rng[1]:
 			self.rng[1] = val
-			#self.updates()
 		
 		if self.intonly : 
 			if self.value==int(val+.5) : return
@@ -394,7 +359,6 @@ class ValBox(QtWidgets.QWidget):
 			if self.value==val : return
 			self.value=val
 
-#		if self.intonly : print self.value,val
 		self.updateboth()
 		if not quiet : self.valueChanged.emit(self.value)
 	
@@ -425,7 +389,6 @@ class ValBox(QtWidgets.QWidget):
 					self.value=int(float(x)+.5)
 				else : 
 					self.value=float(x)
-#				print "new text ",self.value
 				self.valueChanged.emit(self.value)
 				self.textChanged.emit(self.value)
 			except:
@@ -449,12 +412,11 @@ class ValBox(QtWidgets.QWidget):
 class StringBox(QtWidgets.QWidget):
 	"""A ValBox but it takes arbitrary text. Basically maintains the label/enable functionality for a QLineEdit widget
 	"""
-	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(str)
-	textChanged = QtCore.pyqtSignal(str)
+	enableChanged = QtCore.Signal(int)
+	valueChanged = QtCore.Signal(str)
+	textChanged = QtCore.Signal(str)
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
-		#if not parent: raise Exception,"ValSliders must have parents"
 		QtWidgets.QWidget.__init__(self,parent)
 		
 		if value==None : value=""
@@ -463,27 +425,21 @@ class StringBox(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-		#self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			self.enablebox.toggled[bool].connect(self.setEnabled)
+			self.enablebox.toggled.connect(self.setEnabled)
 			
 		if label:
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
-#			sizePolicy.setHorizontalStretch(1)
-#			sizePolicy.setVerticalStretch(0)
-#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 			self.label.setSizePolicy(sizePolicy)
-#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-			#self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
@@ -496,7 +452,6 @@ class StringBox(QtWidgets.QWidget):
 		sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 		self.text.setSizePolicy(sizePolicy)
 		self.text.setMinimumSize(QtCore.QSize(80,0))
-		#self.text.setObjectName("text")
 		self.hboxlayout.addWidget(self.text)
 		
 		self.text.editingFinished.connect(self.textChange)
@@ -504,7 +459,6 @@ class StringBox(QtWidgets.QWidget):
 		if showenable>=0 : self.setEnabled(showenable)
 
 	def setEnabled(self,ena):
-#		self.text.setEnabled(ena)
 		self.enableChanged.emit(ena)
 
 	def getEnabled(self):
@@ -534,11 +488,10 @@ class StringBox(QtWidgets.QWidget):
 class CheckBox(QtWidgets.QWidget):
 	"""A QCheckBox with a label
 	"""
-	enableChanged = QtCore.pyqtSignal(int)
-	valueChanged = QtCore.pyqtSignal(bool)
+	enableChanged = QtCore.Signal(int)
+	valueChanged = QtCore.Signal(bool)
 
 	def __init__(self, parent=None, label=None, value="",labelwidth=30,showenable=-1):
-		#if not parent: raise Exception,"ValSliders must have parents"
 		QtWidgets.QWidget.__init__(self,parent)
 		
 		if value==None : value=False
@@ -549,36 +502,29 @@ class CheckBox(QtWidgets.QWidget):
 		self.hboxlayout = QtWidgets.QHBoxLayout(self)
 		self.hboxlayout.setContentsMargins(0, 0, 0, 0)
 		self.hboxlayout.setSpacing(6)
-#		self.hboxlayout.setObjectName("hboxlayout")
 		
 		if showenable>=0 :
 			self.enablebox=QtWidgets.QCheckBox(self)
 			self.enablebox.setChecked(showenable)
 			self.hboxlayout.addWidget(self.enablebox)
-			self.enablebox.toggled[bool].connect(self.setEnabled)
+			self.enablebox.toggled.connect(self.setEnabled)
 			
 		if label:
 			self.label = QtWidgets.QLabel(self)
 			self.setLabel(label)
 			
 			sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(0),QtWidgets.QSizePolicy.Policy(0))
-#			sizePolicy.setHorizontalStretch(1)
-#			sizePolicy.setVerticalStretch(0)
-#			sizePolicy.setHeightForWidth(self.text.sizePolicy().hasHeightForWidth())
 			self.label.setSizePolicy(sizePolicy)
-#			self.label.setAlignment(QtCore.Qt.AlignRight+QtCore.Qt.AlignVCenter)
 			self.label.setAlignment(QtCore.Qt.AlignRight|QtCore.Qt.AlignVCenter)
 			self.label.setMinimumSize(QtCore.QSize(labelwidth,20))
-#			self.label.setObjectName("label")
 			self.hboxlayout.addWidget(self.label)
 		
 		
 		self.check = QtWidgets.QCheckBox(self)
-#		print "'%s'"%str(value)
 		self.check.setChecked(value)
 		self.hboxlayout.addWidget(self.check)
 		
-		self.check.stateChanged[int].connect(self.boolChanged)
+		self.check.stateChanged.connect(self.boolChanged)
 		
 		if showenable>=0 : self.setEnabled(showenable)
 
@@ -623,10 +569,9 @@ class RangeSlider(QtWidgets.QWidget):
 	can be set individually or the pair can be moved up and down together. The values are displayed at
 	the top and bottom of the vertical slider.
 	"""
-	valueChanged = QtCore.pyqtSignal(tuple)
+	valueChanged = QtCore.Signal(tuple)
 
 	def __init__(self, parent=None, rng=(0,100), value=(25,75)):
-		#if not parent: raise Exception,"ValSliders must have parents"
 		QtWidgets.QWidget.__init__(self,parent)
 		
 		self.rng=tuple(rng)
@@ -639,18 +584,16 @@ class RangeSlider(QtWidgets.QWidget):
 		sizePolicy.setVerticalStretch(7)
 		sizePolicy.setHeightForWidth(False)
 		self.setSizePolicy(sizePolicy)
-#		self.setMinimumSize(QtCore.QSize(12,80))
 
 	def sizeHint(self): return QtCore.QSize(15,100)
 
 	def paintEvent(self,event):
-		"""Redraws the widget"""
 		p=QtGui.QPainter(self)
-		p.setPen(Qt.gray)
+		p.setPen(Qt.GlobalColor.gray)
 		p.drawRect(1,1,self.size().width()-2,self.size().height()-2)
-		p.setPen(Qt.black)
+		p.setPen(Qt.GlobalColor.black)
 		p.drawRect(0,0,self.size().width()-2,self.size().height()-2)
-		p.setPen(Qt.blue)
+		p.setPen(Qt.GlobalColor.blue)
 		p.drawLine(3,self.vtoy(self.value[0]),self.size().width()-4,self.vtoy(self.value[0]))
 		p.drawLine(3,self.vtoy(self.value[1]),self.size().width()-4,self.vtoy(self.value[1]))
 		p.drawLine(self.size().width()//2,self.vtoy(self.value[0]),self.size().width()//2,self.vtoy(self.value[1]))
@@ -660,21 +603,15 @@ class RangeSlider(QtWidgets.QWidget):
 		v0y=self.vtoy(self.value[0])
 		v1y=self.vtoy(self.value[1])
 		
-		#print(y,v0y,v1y)
-		
-		# outside the current range, no effect
 		if y>v0y+3 : return
 		if y<v1y-3 : return
 		
-		# middle region, drag both v0 and v1
 		if (v0y-v1y<6 and y<v0y and y>v1y) or (y<v0y-3 and y>v1y+3) :
 			self.mdownloc=(3,event.x(),event.y(),self.value[0],self.value[1])
 		
-		# drag v0
 		elif (y>=v0y-3) :
 			self.mdownloc=(1,event.x(),event.y(),self.value[0],self.value[1])
 		
-		# drag v1
 		else :
 			self.mdownloc=(2,event.x(),event.y(),self.value[0],self.value[1])
 			
@@ -691,19 +628,15 @@ class RangeSlider(QtWidgets.QWidget):
 				v1=self.ytov(y-self.mdownloc[2]+self.vtoy(self.mdownloc[4]))
 
 			if v0>=self.rng[0] and v1<=self.rng[1] : self.setValue(v0,v1)
-
-#			print self.value
 			
 	def mouseReleaseEvent(self,event):
 		self.mdownloc=None
 		
 	def vtoy(self,value):
-		"returns the y screen coordinate corresponding to value"
 		h=self.size().height()
 		return h-int((h-4)*(value-self.rng[0])//(self.rng[1]-self.rng[0])+3)
 		
 	def ytov(self,y):
-		"returns the value corresponding to the y screen coordinate"
 		h=self.size().height()
 		return int((h-y+3)*(self.rng[1]-self.rng[0])//(h-4)+self.rng[0])
 
@@ -734,7 +667,7 @@ class EMSpinWidget(QtWidgets.QWidget):
 	@param coeff is controls the exponential growth rate when the arrow is held down
 	@param maxarrowwidth is the size of the arrow buttons
 	"""
-	valueChanged = QtCore.pyqtSignal(int)
+	valueChanged = QtCore.Signal(int)
 
 	def __init__(self, value, coeff, rounding=2, maxarrowwidth=20, postivemode=False, wheelstep=1):
 		QtWidgets.QWidget.__init__(self)
@@ -832,8 +765,8 @@ class EMQTColorWidget(QtWidgets.QWidget):
 	A widget displaying a color box that is used to control colors
 	multiple boxes can be implemented
 	"""
-	newcolor = QtCore.pyqtSignal(QtGui.QColor)
-	newconnection = QtCore.pyqtSignal()
+	newcolor = QtCore.Signal(QtGui.QColor)
+	newconnection = QtCore.Signal()
 
 	def __init__(self, parent=None, red=255, green=255, blue=255, width=30, height=30):
 		QtWidgets.QWidget.__init__(self, parent)
@@ -881,9 +814,8 @@ class EMQTColorWidget(QtWidgets.QWidget):
 		if event.buttons() != QtCore.Qt.RightButton:
 			self.inicolor = self.color
 			self.colrodialog = EMQtColorDialog(self.color)
-			self.colrodialog.currentColorChanged[QtGui.QColor].connect(self._on_colorchange)
-			self.colrodialog.colorSelected[QtGui.QColor].connect(self._on_colorselect)
-			#self.colrodialog.canceled.connect(self._on_cancel)
+			self.colrodialog.currentColorChanged.connect(self._on_colorchange)
+			self.colrodialog.colorSelected.connect(self._on_colorselect)
 			self.colrodialog.accepted.connect(self._on_ok)
 			self.colrodialog.rejected.connect(self._on_cancel)
 			
@@ -924,7 +856,7 @@ class EMQtColorDialog(QtWidgets.QColorDialog):
 	"""
 	This is to create a non-modal color dialog. Only one color dialog is allowed at once, so I use the singleton pattern
 	"""
-	canceled = QtCore.pyqtSignal()
+	canceled = QtCore.Signal()
 
 	def __init__(self, inicolor):
 		QtWidgets.QColorDialog.__init__(self, inicolor)
@@ -937,17 +869,17 @@ class EMQtColorDialog(QtWidgets.QColorDialog):
 		self.canceled.emit()
 		self.hidden = True
 
-class EMLightControls(QtOpenGL.QGLWidget):
+class EMLightControls(QtOpenGLWidgets.QOpenGLWidget):
 	"""
 	Widget to set the position of a light in 3D. When the light position is moved  it emits
 	its position in spherical coordinates (theta and phi) as the signal: lightPositionMoved
 	Its position can be set via: setAngularPosition
 	@param light, the glLight the this widget uses
 	"""
-	lightPositionMoved = QtCore.pyqtSignal(list)
+	lightPositionMoved = QtCore.Signal(list)
 
 	def __init__(self, light, parent=None):
-		QtOpenGL.QGLWidget.__init__(self, parent)
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self, parent)
 		self.light = light
 		self.theta = 0
 		self.phi = 0
@@ -957,7 +889,7 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.specular = [1.0,1.0,1.0,1.0]
 	
 	def initializeGL(self):
-		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
+		glClearColor(0.0, 0.0, 0.0, 0.0)
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
 		glEnable(GL_LIGHTING)
@@ -966,10 +898,8 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		
 	def paintGL(self):
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		glColor3f(1.0, 1.0, 1.0)	# Default color is white
-		# Draw the flashlight
+		glColor3f(1.0, 1.0, 1.0)
 		self.drawFlashLight()
-		# Draw the sphere
 		glMaterialfv(GL_FRONT, GL_AMBIENT, [0.3,0.3,0.3,1.0])
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, [1.0,1.0,1.0,1.0])
 		glMaterialfv(GL_FRONT, GL_SPECULAR, [1.0,1.0,1.0,1.0])
@@ -1018,7 +948,6 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.init_y = event.y()
 		
 	def mouseMoveEvent(self, event):
-		""" When the mouse moves, move the light"""
 		self.theta -= event.x() - self.init_x
 		self.phi -= event.y() - self.init_y
 		self.theta = self.theta % 360
@@ -1040,7 +969,6 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		return [self.theta, self.phi]
 	
 	def setAngularPosition(self, theta, phi):
-		""" The position is in spherical coords"""
 		self.theta = theta
 		self.phi = phi
 		z = math.sin(math.radians(self.theta + 90))*math.cos(math.radians(self.phi))
@@ -1069,17 +997,17 @@ class EMLightControls(QtOpenGL.QGLWidget):
 		self.setLightColor()
 		self.update()
 		
-class CameraControls(QtOpenGL.QGLWidget):
+class CameraControls(QtOpenGLWidgets.QOpenGLWidget):
 	"""
 	Widget to set the camera position. When clipping planes are moved a farMoved(float) or nearMoved(float) signal is emitted.
 	This widget is an observer of the Camera object (used in the Scenegraph). To update call updateWidget
 	@param scenegraph, the scenegraph this widget observes
 	"""
-	farMoved = QtCore.pyqtSignal(float)
-	nearMoved = QtCore.pyqtSignal(float)
+	farMoved = QtCore.Signal(float)
+	nearMoved = QtCore.Signal(float)
 
 	def __init__(self, parent=None, scenegraph=None):
-		QtOpenGL.QGLWidget.__init__(self, parent)
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self, parent)
 		self.scenegraph = weakref.ref(scenegraph)
 		self.texture = glGenTextures(1)
 		
@@ -1087,14 +1015,14 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glDeleteTextures(self.texture)
 		
 	def initializeGL(self):
-		glClearColor(0.0, 0.0, 0.0, 0.0)		# Default clear color is black
+		glClearColor(0.0, 0.0, 0.0, 0.0)
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
 		try: glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-		except: pass # this is a hack.
-		glColor3f(1.0, 1.0, 1.0)	# Default color is white
+		except: pass
+		glColor3f(1.0, 1.0, 1.0)
 		self._drawZslice()
 		self._drawViewingVolume()
 		glFlush()
@@ -1102,8 +1030,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 	def resizeGL(self, width, height):
 		self.width = width
 		self.height = height
-		#self.setMaximumWidth(width)
-		#self.setMaximumHeight(height)
 		glViewport(0,0,width,height)
 		glMatrixMode(GL_PROJECTION)
 		glLoadIdentity()
@@ -1115,7 +1041,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.init_x = event.x()
 		
 	def mouseMoveEvent(self, event):
-		""" Move the clipping planes"""
 		self.movement = float(event.x() - self.init_x)*self.scale
 		if math.fabs(event.x()-(self.near_clipping + self.width//2)) > math.fabs(event.x()-(self.far_clipping + self.width//2)):
 			self.farMoved.emit(self.movement)
@@ -1124,8 +1049,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 		self.init_x = event.x()
 		
 	def _drawViewingVolume(self):
-		# These current scheme draws what looks like a frustrum, which is a bit of a lie, b/c usually a orthographic projection is used. But is it hard to depict such
-		#situation using a camera analogy
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		glColor3f(0.7, 0.7, 0.0)
@@ -1133,7 +1056,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 		size = min(self.width, self.height)
 		self.scale = float(self.scenegraph().camera.getWidth())/float(size)*self.scenegraph().camera.getViewPortWidthScaling()
 		origin = 0.0
-		#print self.scenegraph().camera.getClipNear()
 		self.near_clipping = origin + (self.scenegraph().camera.getClipNear() + self.scenegraph().camera.getZclip())/self.scale
 		self.far_clipping = origin + (self.scenegraph().camera.getClipFar() + self.scenegraph().camera.getZclip())/self.scale
 		glLineWidth(2*self.devicePixelRatio())
@@ -1145,8 +1067,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glEnd()
 		
 	def _drawZslice(self):
-		""" Draw the Z slice in a box as the texture"""
-		#glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
 		
@@ -1158,7 +1078,6 @@ class CameraControls(QtOpenGL.QGLWidget):
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self.pixels[2], self.pixels[3], 0, GL_RGBA, GL_UNSIGNED_BYTE, self.pixels[4])
-		
 		
 		glEnable(GL_TEXTURE_2D)
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
@@ -1187,7 +1106,7 @@ class EMANToolButton(QtWidgets.QToolButton):
 	The only weakness is only one of these button groups can be used at any given time. It is possible 
 	to fix this, but when I need such functionality
 	"""
-	clicked = QtCore.pyqtSignal(int)
+	clicked = QtCore.Signal(int)
 	toolpanellist = []
 	def __init__(self):
 		QtWidgets.QToolButton.__init__(self)
@@ -1210,7 +1129,6 @@ class EMANToolButton(QtWidgets.QToolButton):
 		if not quiet: self.clicked.emit(self.isDown())
 		
 	def mousePressEvent(self, event):
-		# Toggle the button on and off
 		if not self.isDown():
 			self.setSelfAsUnique()
 			self.setDown(True, quiet=False)

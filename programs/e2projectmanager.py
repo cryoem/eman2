@@ -33,7 +33,10 @@
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
+import os
+import sys
+
 from eman2_gui.pmicons import *
 import os, json, re, glob, signal
 import subprocess
@@ -247,7 +250,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 	def _on_editproject(self):
 		""" Open edit dialog """
 		np = ProjectDialog(self)
-		np.exec_()
+		np.exec()
 		self.activateWindow()
 
 	def makeTilteBarWidget(self):
@@ -338,9 +341,9 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		toolwidget.setLayout(tbox)
 
 		self.browsebutton.clicked.connect(self._on_browse)
-		self.helpbutton.stateChanged[bool].connect(self._on_helpbutton)
-		self.logbutton.stateChanged[bool].connect(self._on_logbutton)
-		self.taskmanagerbutton.stateChanged[bool].connect(self._on_taskmgrbutton)
+		self.helpbutton.stateChanged.connect(self._on_helpbutton)
+		self.logbutton.stateChanged.connect(self._on_logbutton)
+		self.taskmanagerbutton.stateChanged.connect(self._on_taskmgrbutton)
 
 		return toolwidget
 
@@ -450,7 +453,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		self.wikibutton.clicked.connect(self._on_wikibutton)
 		self.wizardbutton.clicked.connect(self._on_wizardbutton)
-		self.expertbutton.stateChanged[bool].connect(self._on_expertmodechanged)
+		self.expertbutton.stateChanged.connect(self._on_expertmodechanged)
 
 	#return programtoolwidget
 
@@ -659,7 +662,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 
-		QTree.itemClicked[QtWidgets.QTreeWidgetItem, int].connect(self._tree_widget_click)
+		QTree.itemClicked.connect(self._tree_widget_click)
 
 		return QTree
 
@@ -1583,7 +1586,7 @@ class TaskManager(QtWidgets.QWidget):
 	def _on_kill(self):
 		killsig=signal.SIGTERM
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			print("Shift held. Will force kill processes")
 			killsig=signal.SIGKILL
 
@@ -2056,7 +2059,7 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 
 class PMToolButton(QtWidgets.QToolButton):
 	""" Create a toggle button """
-	stateChanged = QtCore.pyqtSignal(bool)
+	stateChanged = QtCore.Signal(bool)
 
 	def __init__(self):
 		QtWidgets.QToolButton.__init__(self)
@@ -2219,4 +2222,4 @@ with output_only, and regenerate any sets/""")
 	pm.show()
 	try: pm.raise_()
 	except: pass
-	app.exec_()
+	app.exec()

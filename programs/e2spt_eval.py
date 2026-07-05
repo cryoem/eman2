@@ -3,8 +3,8 @@
 from past.utils import old_div
 from EMAN2 import *
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui import embrowser
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emscene3d import EMScene3D
@@ -26,7 +26,7 @@ def main():
 	gui=SptEvalGUI(options)
 	gui.show()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 	E2end(logid)
 	
 	

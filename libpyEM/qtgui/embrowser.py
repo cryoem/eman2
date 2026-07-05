@@ -34,8 +34,8 @@ from builtins import range
 from builtins import object
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, QTimer
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt, QTimer
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *
@@ -110,7 +110,7 @@ def askFileExists() :
 	b2 = box.addButton("Overwrite", QtWidgets.QMessageBox.AcceptRole)
 	b3 = box.addButton("Cancel", QtWidgets.QMessageBox.AcceptRole)
 
-	box.exec_()
+	box.exec()
 
 	if box.clickedButton() == b1 : return "append"
 	elif box.clickedButton() == b2 : return "overwrite"
@@ -530,10 +530,10 @@ class EMFileType(object) :
 				# data.append(EMData(self.path, 0, False, Region(0, 0, z, self.dim[0], self.dim[1], 1)))
 		# else : data = EMData.read_images(self.path)
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			#print("rotate x")
 			xyz="y"
-		elif modifiers == QtCore.Qt.ControlModifier:
+		elif modifiers & QtCore.Qt.ControlModifier:
 			#print("rotate y")
 			xyz="x"
 		else:
@@ -566,15 +566,15 @@ class EMFileType(object) :
 		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			self.showProjXYZ(brws)
 			return
 		
 		try:
-			ret=self.secparm.exec_()
+			ret=self.secparm.exec()
 		except:
 			self.secparm=EMSliceParamDialog(brws,self.nimg)
-			ret=self.secparm.exec_()
+			ret=self.secparm.exec()
 		
 		if not ret: return	# cancel
 	
@@ -713,10 +713,10 @@ class EMFileType(object) :
 		#### allow view from x/y/z axis
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			#print("rotate x")
 			xyz=0
-		elif modifiers == QtCore.Qt.ControlModifier:
+		elif modifiers & QtCore.Qt.ControlModifier:
 			#print("rotate y")
 			xyz=1
 		else:
@@ -823,7 +823,7 @@ class EMFileType(object) :
 		"""Open in e2filtertool.py"""
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		cmd="e2filtertool.py {}".format(self.path)
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			#print("Running filter tool in safe mode...")
 			cmd+=" --safemode"
 		
@@ -1349,7 +1349,7 @@ class EMJSONFileType(EMFileType) :
 		brws.busy()
 		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			inv=False
 		else:
 			inv=True
@@ -1399,7 +1399,7 @@ class EMJSONFileType(EMFileType) :
 	def histApp(self, brws, new=False) :
 		"""Make a new plot"""
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			inv=False
 		else:
 			inv=True
@@ -1438,10 +1438,10 @@ class EMJSONFileType(EMFileType) :
 	def show2dStack3sec(self, brws) :
 		"""A set of 2-D images derived from a stack of 3-D Volumes referenced from a JSON file"""
 		try:
-			ret=self.secparm.exec_()
+			ret=self.secparm.exec()
 		except:
 			self.secparm=EMSliceParamDialog(brws,len(self.js))
-			ret=self.secparm.exec_()
+			ret=self.secparm.exec()
 		
 		if not ret: return	# cancel
 	
@@ -1650,7 +1650,7 @@ class EMBdbFileType(EMFileType) :
 
 class EMImageFileType(EMFileType) :
 	"""FileType for files containing a single 2-D image"""
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self, path) :
 		if path[:2] == "./" : path = path[2:]
@@ -2987,7 +2987,7 @@ class EMBDBInfoPane(EMInfoPane) :
 
 		self.gbl.addLayout(self.hbl2, 2, 0, 1, 2)
 
-		self.wimnum.valueChanged[int].connect(self.imNumChange)
+		self.wimnum.valueChanged.connect(self.imNumChange)
 		self.wimlist.itemSelectionChanged.connect(self.imSelChange)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 
@@ -3165,10 +3165,10 @@ class EMJSONInfoPane(EMInfoPane) :
 		self.gbl.addLayout(self.hbl2, 2, 0, 1, 2)
 
 		self.wkeylist.itemSelectionChanged.connect(self.imSelChange)
-		self.wheadtree.itemExpanded[QtWidgets.QTreeWidgetItem].connect(self.treeExp)
-		self.wheadtree.itemCollapsed[QtWidgets.QTreeWidgetItem].connect(self.treeExp)
+		self.wheadtree.itemExpanded.connect(self.treeExp)
+		self.wheadtree.itemCollapsed.connect(self.treeExp)
 		self.wheadtree.itemSelectionChanged.connect(self.treeSel)
-		self.wheadtree.itemActivated[QtWidgets.QTreeWidgetItem, int].connect(self.treeAct)
+		self.wheadtree.itemActivated.connect(self.treeAct)
 ##		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d = []
 		self.view3d = []
@@ -3343,7 +3343,7 @@ class EMImageInfoPane(EMInfoPane) :
 
 
 class EMStackInfoPane(EMInfoPane) :
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 	maxim = 500
 
 	def __init__(self, parent = None) :
@@ -3423,7 +3423,7 @@ class EMStackInfoPane(EMInfoPane) :
 		# self.gbl.addLayout(self.hbl2, 2, 0, 1, 2) # JOHN
 		self.gbl.addLayout(self.hbl2, 3, 0, 1, 2) # Jesus
 
-		self.wimnum.valueChanged[int].connect(self.imNumChange)
+		self.wimnum.valueChanged.connect(self.imNumChange)
 		self.wimlist.itemSelectionChanged.connect(self.imSelChange)
 #		QtCore.QObject.connect(self.wbutedit, QtCore.SIGNAL('clicked(bool)'), self.buttonEdit)
 		self.view2d = []
@@ -3556,7 +3556,7 @@ class EMStackInfoPane(EMInfoPane) :
 
 class EMInfoWin(QtWidgets.QWidget) :
 	"""The info window"""
-	winclosed = QtCore.pyqtSignal()
+	winclosed = QtCore.Signal()
 
 	def __init__(self, parent = None) :
 		QtWidgets.QWidget.__init__(self, parent)
@@ -3590,7 +3590,7 @@ class EMInfoWin(QtWidgets.QWidget) :
 		else :
 			# If we got here, then we need to make a new instance of the appropriate pane
 			if cls == None : print("No class ! (%s)"%str(ftype))
-			#self.winclosed = QtCore.pyqtSignal()
+			#self.winclosed = QtCore.Signal()
 			pane = cls()
 			i = self.stack.addWidget(pane)		# add the new pane and get its index
 			pane.display(target)
@@ -3608,7 +3608,7 @@ class SortSelTree(QtWidgets.QTreeView) :
 	def __init__(self, parent = None) :
 		QtWidgets.QTreeView.__init__(self, parent)
 		self.header().setSectionsClickable(True)
-		self.header().sectionClicked[int].connect(self.colclick)
+		self.header().sectionClicked.connect(self.colclick)
 		self.scol = -1
 		self.sdir = 1
 
@@ -3772,9 +3772,9 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 	- embedding BDB: databases into the observed filesystem
 	- remote database access (EMEN2)*
 	"""
-	ok = QtCore.pyqtSignal()
-	cancel = QtCore.pyqtSignal()
-	module_closed = QtCore.pyqtSignal()
+	ok = QtCore.Signal()
+	cancel = QtCore.Signal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self, parent = None, withmodal = False, multiselect = False, startpath = ".", setsmode = None, dirregex="") :
 		"""withmodal - if specified will have ok/cancel buttons, and provide a mechanism for a return value (not truly modal)
@@ -3885,7 +3885,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.wbookmarks = QtWidgets.QToolBar()
 		# self.wbookmarks.setAutoFillBackground(True)
 		# self.wbookmarks.setBackgroundRole(QtGui.QPalette.Dark)
-		self.wbookmarks.setOrientation(2)
+		self.wbookmarks.setOrientation(Qt.Orientation.Vertical)
 		#self.addBookmark("EMEN2", "emen2:")
 		#self.wbookmarks.addSeparator()
 		#self.addBookmark("SSH", "ssh:")
@@ -3900,10 +3900,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		# This is the main window listing files and metadata
 		self.wtree = SortSelTree()
 
-		if multiselect : self.wtree.setSelectionMode(3)	# extended selection
-		else : self.wtree.setSelectionMode(1)			# single selection
+		if multiselect : self.wtree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+		else : self.wtree.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
 
-		self.wtree.setSelectionBehavior(1)		# select rows
+		self.wtree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)		# select rows
 		self.wtree.setAllColumnsShowFocus(True)
 		self.wtree.sortByColumn(-1, 0)			# start unsorted
 		self.gbl.addWidget(self.wtree, 2, 1)
@@ -3960,13 +3960,13 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		self.wbutrefresh.clicked.connect(self.buttonRefresh)
 		self.wbutinfo.clicked.connect(self.buttonInfo)
 		self.selectall.clicked.connect(self.selectAll)
-		self.wtree.clicked[QtCore.QModelIndex].connect(self.itemSel)
-		self.wtree.activated[QtCore.QModelIndex].connect(self.itemActivate)
-		self.wtree.doubleClicked[QtCore.QModelIndex].connect(self.itemDoubleClick)
-		self.wtree.expanded[QtCore.QModelIndex].connect(self.itemExpand)
+		self.wtree.clicked.connect(self.itemSel)
+		self.wtree.activated.connect(self.itemActivate)
+		self.wtree.doubleClicked.connect(self.itemDoubleClick)
+		self.wtree.expanded.connect(self.itemExpand)
 		self.wpath.returnPressed.connect(self.editPath)
-		self.wbookmarks.actionTriggered[QtWidgets.QAction].connect(self.bookmarkPress)
-		self.wfilter.currentIndexChanged[int].connect(self.editFilter)
+		self.wbookmarks.actionTriggered.connect(self.bookmarkPress)
+		self.wfilter.currentIndexChanged.connect(self.editFilter)
 
 		self.setsmode = setsmode	# The sets mode is used when selecting bad particles
 		self.curmodel = None	# The current data model displayed in the tree
@@ -4006,11 +4006,11 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 	def busy(self) :
 		"""display a busy cursor"""
-		QtWidgets.qApp.setOverrideCursor(Qt.BusyCursor)
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.BusyCursor)
 
 	def notbusy(self) :
 		"""normal arrow cursor"""
-		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 
 	def updateDetails(self) :
 		"""This is spawned as a thread to gradually fill in file details in the background"""
@@ -4051,9 +4051,10 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		# We emit only a single event here for efficiency
 		rid=[(r[0],i) for i,r in enumerate(rdr)]
-		rmin=rdr[min(rid)[1]]; rmax=rdr[max(rid)[1]]
-		self.curmodel.dataChanged.emit(self.curmodel.createIndex(rmin[0], 0, rmin[1]),
-				 self.curmodel.createIndex(rmax[0], 5, rmax[1]))
+		# In PySide6/Qt6, dataChanged requires valid contiguous index ranges.
+		# Stored internal pointers may become stale due to concurrent tree ops,
+		# so use layoutChanged instead which safely rebuilds cached indices.
+		self.curmodel.layoutChanged.emit()
 
 		self.needresize = 2
 

@@ -46,13 +46,13 @@ from numpy import array,arange
 import traceback
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
-	from PyQt5.QtCore import QTimer
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
+	from PySide6.QtCore import QTimer
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import *
 except:
-	print("Warning: PyQt5 must be installed")
+	print("Warning: PySide6 must be installed")
 	sys.exit(1)
 
 
@@ -373,9 +373,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.cxray=CheckBox(None,"X-ray Pixels")
 		self.bvbl.addWidget(self.cxray)
 
-		self.bimport.clicked[bool].connect(self.doImport)
-		self.brefit.clicked[bool].connect(self.doRefit)
-		self.bfilter.clicked[bool].connect(self.filterToggle)
+		self.bimport.clicked.connect(self.doImport)
+		self.brefit.clicked.connect(self.doRefit)
+		self.bfilter.clicked.connect(self.filterToggle)
 		self.cbgadj.valueChanged.connect(self.bgAdj)
 		self.sdefocus.valueChanged.connect(self.newCTF)
 		self.sbfactor.valueChanged.connect(self.newCTF)
@@ -389,12 +389,12 @@ class GUIEvalImage(QtWidgets.QWidget):
 #		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
 		self.sang45.valueChanged.connect(self.recalc_real)
 		self.squality.valueChanged.connect(self.newQualityFactor)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.scalcmode.currentIndexChanged[int].connect(self.newCalcMode)
-		self.s2dmode.currentIndexChanged[int].connect(self.new2DMode)
-		self.s2danmode.currentIndexChanged[int].connect(self.new2DAnMode)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.scalcmode.currentIndexChanged.connect(self.newCalcMode)
+		self.s2dmode.currentIndexChanged.connect(self.new2DMode)
+		self.s2danmode.currentIndexChanged.connect(self.new2DAnMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
 	   	#QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
 		#QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
@@ -452,7 +452,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		self.writeCurParm()
 		event.accept()
-		QtWidgets.qApp.exit(0)
+		QtWidgets.QApplication.instance().exit(0)
 		#app=QtWidgets.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)

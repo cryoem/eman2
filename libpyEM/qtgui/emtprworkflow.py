@@ -33,7 +33,7 @@
 
 from builtins import range
 from builtins import object
-from PyQt5 import QtCore, QtWidgets
+from PySide6 import QtCore, QtWidgets
 from .emsprworkflow import *
 from .emform import *
 from .emsave import EMFileTypeValidator
@@ -71,7 +71,7 @@ class EMBaseTomoChooseFilteredPtclsTask(WorkFlowTask):
 
 class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set you wish to filter. The available sets include the raw particles, and any filtered sets you have previously generated.""" 
-	replace_task = QtCore.pyqtSignal()
+	replace_task = QtCore.Signal()
 
 	def __init__(self):
 		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
@@ -95,7 +95,7 @@ class EMTomoChooseFilteredPtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 class E2TomoFilterParticlesTask(WorkFlowTask):	
 	"""This task is for Fourier filtering and/or rotating your data. If you choose to perform both of these operations, the Fourier filtering is performed before the rotation."""
 	
-	task_idle = QtCore.pyqtSignal()
+	task_idle = QtCore.Signal()
 	preprocessor_cache = None
 	def __init__(self,ptcls_list=[],name_map={}):
 		WorkFlowTask.__init__(self)
@@ -303,7 +303,7 @@ class E2TomoFilterParticlesTask(WorkFlowTask):
 
 class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the data you wish to filter""" 
-	replace_task = QtCore.pyqtSignal()
+	replace_task = QtCore.Signal()
 
 	def __init__(self,task_type=E2TomoFilterParticlesTask):
 		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
@@ -325,7 +325,7 @@ class EMTomoChooseFilteredPtclsForFiltTask(EMBaseTomoChooseFilteredPtclsTask):
 
 class EMTomoBootStapChoosePtclsTask(EMBaseTomoChooseFilteredPtclsTask):
 	"""Choose the particle set you wish to use to generate the bootstrapped probe. The sets available will include the raw particles and any filtered sets you have generated.""" 
-	replace_task = QtCore.pyqtSignal()
+	replace_task = QtCore.Signal()
 
 	def __init__(self):
 		EMBaseTomoChooseFilteredPtclsTask.__init__(self)
@@ -599,8 +599,8 @@ class EMTomoRawDataReportTask(EMRawDataReportTask):
 		
 class E2TomoBoxerGuiTask(WorkFlowTask):
 	"""Select the file you want to process and hit okay, this will launch e2spt_boxer. The yshort option sets the Z axis normal to the screen, and inmemory load the tomo into memory for fast access"""
-	task_idle = QtCore.pyqtSignal()
-	gui_exit = QtCore.pyqtSignal()
+	task_idle = QtCore.Signal()
+	gui_exit = QtCore.Signal()
 
 	def __init__(self):
 		WorkFlowTask.__init__(self)

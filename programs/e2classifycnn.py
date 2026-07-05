@@ -8,8 +8,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -223,9 +223,9 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		#self.gbl.addWidget(self.bt_apply, 4,0,1,2)
 				
 		#self.bt_new.clicked[bool].connect(self.new_nnet)
-		self.bt_load.clicked[bool].connect(self.load_nnet)
-		self.bt_train.clicked[bool].connect(self.train_nnet)
-		self.bt_save.clicked[bool].connect(self.save_set)
+		self.bt_load.clicked.connect(self.load_nnet)
+		self.bt_train.clicked.connect(self.train_nnet)
+		self.bt_save.clicked.connect(self.save_set)
 		#self.bt_apply.clicked[bool].connect(self.apply_nnet)
 		#self.bt_chgbx.clicked[bool].connect(self.change_boxsize)
 		#self.box_display.currentIndexChanged.connect(self.do_update)
@@ -251,7 +251,7 @@ class EMPtclClassify(QtWidgets.QMainWindow):
 		if is3d:
 			nimg=EMUtil.get_image_count(options.setname)
 			self.secparm=EMSliceParamDialog(self,nimg)
-			ret=self.secparm.exec_()
+			ret=self.secparm.exec()
 			print(ret)
 			
 			layers=self.secparm.wspinlayers.value()

@@ -33,6 +33,9 @@
 
 from future import standard_library
 standard_library.install_aliases()
+import os
+import sys
+
 from math import *
 import os
 import sys
@@ -176,7 +179,7 @@ def main():
 			im2d.sort(key=lambda x:x["zscore"])
 			imd.set_data(im2d)
 			app.show_specific(imd)
-			app.exec_()
+			app.exec()
 	"""
 	if options.newsets:
 		lstin=LSXFile(args[0])

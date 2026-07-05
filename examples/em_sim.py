@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Muyuan Chen 2017-08
+import sys
+import os
 from past.utils import old_div
 from builtins import range
 import numpy as np
@@ -8,7 +10,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+
 from eman2_gui.emimage2d import EMImage2DWidget
 from EMAN2 import *
 from eman2_gui.emapplication import EMApp
@@ -17,7 +20,7 @@ from eman2_gui.emplot2d import EMPlot2DWidget
 
 
 
-class Microscope(QtOpenGL.QGLWidget):
+class Microscope(QtOpenGLWidgets.QOpenGLWidget):
 	
 	
 	def lens_sets(self, mode=0):
@@ -75,7 +78,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				
 	
 	def __init__(self, parent=None, options=None, imgwindow=None, pltwindow=None, twodwindow=None):
-		QtOpenGL.QGLWidget.__init__(self, parent)
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self, parent)
 		
 		self.win_size=[500,1000]
 		self.setMinimumSize(self.win_size[0], self.win_size[1])
@@ -760,7 +763,7 @@ class Microscope(QtOpenGL.QGLWidget):
 		p=self.scr_to_img(QMouseEvent.pos())
 		self.startpy=p[1]
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			self.hold_shift=True
 		else:
 			self.hold_shift=False
@@ -839,7 +842,7 @@ class Microscope(QtOpenGL.QGLWidget):
 				f=old_div((d0*d1-d0*f1),(d1-f1+d0))
 				self.lens[0][1]=max(0.02, f)
 				
-			self.updateGL()
+				self.update()
 		
 	
 	

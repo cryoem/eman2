@@ -35,7 +35,7 @@ from past.utils import old_div
 from builtins import range
 from builtins import object
 from EMAN2 import *
-from PyQt5 import QtCore
+from PySide6 import QtCore
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emimage2d import EMImage2DWidget
@@ -504,7 +504,7 @@ class ParticlesWindow(object):
 				
 		if self.totparts != []:
 			self.window.set_data(self.totparts)
-			self.window.updateGL()
+			self.window.update()
 			
 	def connect_signals(self):
 		self.window.mx_image_selected.connect(self.box_selected)

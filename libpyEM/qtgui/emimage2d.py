@@ -32,8 +32,8 @@
 
 from past.utils import old_div
 from builtins import range
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -66,15 +66,15 @@ from .emglobjects import EMOpenGLFlagsAndTools
 class EMImage2DWidget(EMGLWidget):
 	"""
 	"""
-	origin_update = QtCore.pyqtSignal(tuple)
-	signal_set_scale = QtCore.pyqtSignal(float)
-	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousewheel = QtCore.pyqtSignal(QtGui.QWheelEvent)
-	signal_increment_list_data = QtCore.pyqtSignal(float)
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	origin_update = QtCore.Signal(tuple)
+	signal_set_scale = QtCore.Signal(float)
+	mousedown = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousedrag = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousemove = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mouseup = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousewheel = QtCore.Signal(QtGui.QWheelEvent)
+	signal_increment_list_data = QtCore.Signal(float)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	allim=WeakKeyDictionary()
 
@@ -1706,31 +1706,31 @@ class EMImage2DWidget(EMGLWidget):
 
 	def mousePressEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
 			try:
-				get_application().setOverrideCursor(Qt.ClosedHandCursor)
+				get_application().setOverrideCursor(Qt.CursorShape.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				get_application().setOverrideCursor(Qt.SizeAllCursor)
+				get_application().setOverrideCursor(Qt.CursorShape.SizeAllCursor)
 			self.rmousedrag=(event.x(),event.y() )
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
 				lc=self.scr_to_img(event.x(),event.y())
 				self.mousedown.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
-		#			self.del_shape("MEASL")
+# 		self.del_shape("MEASL")
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
-					self.updateGL()
+					self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
 					lc=self.scr_to_img(event.x(),event.y())
 					if inspector:
@@ -1740,7 +1740,7 @@ class EMImage2DWidget(EMGLWidget):
 						self.drawv2=float(inspector.dtpenv2.text())
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
-						self.updateGL()
+						self.update()
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
@@ -1753,16 +1753,16 @@ class EMImage2DWidget(EMGLWidget):
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
 				lc=self.scr_to_img(event.x(),event.y())
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.mousedrag.emit(event, lc)
 				else:
 					self.mousemove.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					current_shapes = self.get_shapes()
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
@@ -1819,32 +1819,32 @@ class EMImage2DWidget(EMGLWidget):
 						#except: pass
 
 					self.update_inspector_texture()
-					self.updateGL()
+					self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					lc=self.scr_to_img(event.x(),event.y())
 					self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 					self.force_display_update()
-					self.updateGL()
+					self.update()
 
-	def mouseReleaseEvent(self, event):
-		get_application().setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scr_to_img(event.x(),event.y())
-		current_shapes = self.get_shapes()
-		if self.rmousedrag:
-			self.rmousedrag=None
-		else:
-			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
-				self.mouseup.emit(event, lc)
-			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
-					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
-			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.button()==Qt.LeftButton:
-					self.redo_fft()
-					self.force_display_update()
-					self.updateGL()
+		def mouseReleaseEvent(self, event):
+			get_application().setOverrideCursor(Qt.ArrowCursor)
+			lc=self.scr_to_img(event.x(),event.y())
+			current_shapes = self.get_shapes()
+			if self.rmousedrag:
+				self.rmousedrag=None
+			else:
+				if self.mouse_mode_dict[self.mouse_mode] == "emit":
+					lc=self.scr_to_img(event.x(),event.y())
+					self.mouseup.emit(event, lc)
+				elif self.mouse_mode_dict[self.mouse_mode] == "measure":
+					if event.buttons()&Qt.MouseButton.LeftButton:
+						self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
+				elif self.mouse_mode_dict[self.mouse_mode] == "draw":
+					if event.button()==Qt.MouseButton.LeftButton:
+						self.redo_fft()
+						self.force_display_update()
+						self.update()
 
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
@@ -2069,11 +2069,11 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		self.mmtab.addTab(self.savetab,"Save")
 
-		self.stsnapbut.clicked[bool].connect(self.do_snapshot)
-		self.stwholebut.clicked[bool].connect(self.do_saveimg)
-		self.ststackbut.clicked[bool].connect(self.do_savestack)
-		self.stmoviebut.clicked[bool].connect(self.do_makemovie)
-		self.stanimgif.clicked[bool].connect(self.do_makegifanim)
+		self.stsnapbut.clicked.connect(self.do_snapshot)
+		self.stwholebut.clicked.connect(self.do_saveimg)
+		self.ststackbut.clicked.connect(self.do_savestack)
+		self.stmoviebut.clicked.connect(self.do_makemovie)
+		self.stanimgif.clicked.connect(self.do_makegifanim)
 
 		# Filter tab
 		self.filttab = QtWidgets.QWidget()
@@ -2356,9 +2356,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		#self.update_brightness_contrast()
 		self.busy=0
 
-		self.psbsing.clicked[bool].connect(self.do_pspec_single)
-		self.psbstack.clicked[bool].connect(self.do_pspec_stack)
-		self.psbaz.clicked[bool].connect(self.do_pspec_az)
+		self.psbsing.clicked.connect(self.do_pspec_single)
+		self.psbstack.clicked.connect(self.do_pspec_stack)
+		self.psbaz.clicked.connect(self.do_pspec_az)
 		self.scale.valueChanged.connect(target.set_scale)
 		self.mins.valueChanged.connect(self.new_min)
 		self.maxs.valueChanged.connect(self.new_max)
@@ -2366,12 +2366,12 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.conts.valueChanged.connect(self.new_cont)
 		self.gammas.valueChanged.connect(self.new_gamma)
 		self.pyinp.returnPressed.connect(self.do_python)
-		self.invtog.toggled[bool].connect(target.set_invert)
-		self.histoequal.currentIndexChanged[int].connect(target.set_histogram)
-		self.fftg.buttonClicked[int].connect(target.set_FFT)
-		self.mmtab.currentChanged[int].connect(target.set_mouse_mode)
-		self.auto_contrast_button.clicked[bool].connect(target.auto_contrast)
-		self.full_contrast_button.clicked[bool].connect(target.full_contrast)
+		self.invtog.toggled.connect(target.set_invert)
+		self.histoequal.currentIndexChanged.connect(target.set_histogram)
+		self.fftg.buttonClicked.connect(target.set_FFT)
+		self.mmtab.currentChanged.connect(target.set_mouse_mode)
+		self.auto_contrast_button.clicked.connect(target.auto_contrast)
+		self.full_contrast_button.clicked.connect(target.full_contrast)
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
@@ -2745,7 +2745,7 @@ def main():
 
 	em_app.show()
 	window.optimally_resize()
-	sys.exit(em_app.exec_())
+	sys.exit(em_app.exec())
 
 
 if __name__ == '__main__':

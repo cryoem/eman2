@@ -32,8 +32,8 @@
 
 from builtins import range
 from builtins import object
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -202,21 +202,17 @@ class EMMatrixPanel(object):
 
 class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
-	setsChanged = QtCore.pyqtSignal()
-	mx_boxdeleted = QtCore.pyqtSignal(QtGui.QMouseEvent, list, bool)
-	signal_set_scale = QtCore.pyqtSignal(float, float, bool)
-	origin_update = QtCore.pyqtSignal(float, float)
-	mx_image_selected = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
-	mx_image_double = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
-	mx_mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent, float)
-	mx_mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
-	set_origin = QtCore.pyqtSignal(float, float, bool)
+	setsChanged = QtCore.Signal()
+	mx_boxdeleted = QtCore.Signal(QtGui.QMouseEvent, list, bool)
+	signal_set_scale = QtCore.Signal(float, float, bool)
+	origin_update = QtCore.Signal(float, float)
+	mx_image_selected = QtCore.Signal(QtGui.QMouseEvent, tuple)
+	mx_image_double = QtCore.Signal(QtGui.QMouseEvent, tuple)
+	mx_mousedrag = QtCore.Signal(QtGui.QMouseEvent, float)
+	mx_mouseup = QtCore.Signal(QtGui.QMouseEvent, tuple)
+	set_origin = QtCore.Signal(float, float, bool)
 
 	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
-#		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
 		EMGLWidget.__init__(self,winid=winid)
 		EMGLProjectionViewMatrices.__init__(self)
 
@@ -1596,7 +1592,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		msg.setWindowTitle("Whoops")
 		if self.data==None or len(self.data)==0:
 			msg.setText("there is no data to save")
-			msg.exec_()
+			msg.exec()
 			return
 
 		self.data.set_excluded_ptcls(self.deletion_manager.deleted_ptcls())
@@ -1807,7 +1803,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			#drag.setPixmap(pm)
 			#drag.setHotSpot(QtCore.QPoint(12,12))
 
-			dropAction = drag.exec_()
+			dropAction = drag.exec()
 
 	def __drag_mode_mouse_double_click(self,event):
 		lc=self.scr_to_img((event.x(),event.y()))
@@ -2366,7 +2362,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.font_size.setValue(int(self.target().get_font_size()))
 		self.hbl.addWidget(self.font_size)
 
-		self.font_size.valueChanged[int].connect(self.target().set_font_size)
+		self.font_size.valueChanged.connect(self.target().set_font_size)
 
 
 		self.banim = QtWidgets.QPushButton("Animate")
@@ -2390,20 +2386,20 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 
 		self.busy=0
 
-		self.vals.triggered[QtWidgets.QAction].connect(self.newValDisp)
+		self.vals.triggered.connect(self.newValDisp)
 #		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.set_app_mode)
 #		QtCore.QObject.connect(self.mDel, QtCore.SIGNAL("clicked(bool)"), self.set_Del_mode)
 #		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
 #		QtCore.QObject.connect(self.mset, QtCore.SIGNAL("clicked(bool)"), self.set_set_mode)
-		self.mouse_mode_but_grp.buttonClicked[QtWidgets.QAbstractButton].connect(self.mouse_mode_button_clicked)
+		self.mouse_mode_but_grp.buttonClicked.connect(self.mouse_mode_button_clicked)
 
-		self.bsavedata.clicked[bool].connect(self.save_data)
-		self.bshow2d.clicked[bool].connect(self.show_2d)
+		self.bsavedata.clicked.connect(self.save_data)
+		self.bshow2d.clicked.connect(self.show_2d)
 		if allow_opt_button:
-			self.opt_fit.clicked[bool].connect(self.target().optimize_fit)
-		self.bsnapshot.clicked[bool].connect(self.snapShot)
+			self.opt_fit.clicked.connect(self.target().optimize_fit)
+		self.bsnapshot.clicked.connect(self.snapShot)
 		#QtCore.QObject.connect(self.bnorm, QtCore.SIGNAL("clicked(bool)"), self.setNorm)
-		self.banim.clicked[bool].connect(self.animation_clicked)
+		self.banim.clicked.connect(self.animation_clicked)
 	
 	def update_vals(self):
 		#try:
@@ -2444,7 +2440,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 			self.xyz.addItems(["x","y","z"])
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)
-			self.xyz.currentIndexChanged[str].connect(self.target().xyz_changed)
+			self.xyz.currentIndexChanged.connect(self.target().xyz_changed)
 
 	def disable_xyz(self):
 		if self.xyz != None:
@@ -2681,12 +2677,12 @@ class EMMXSetsPanel(QtWidgets.QWidget):
 
 		hbl.addLayout(vbl)
 
-		self.save_set_button.clicked[bool].connect(self.save_set)
-		self.save_sett_button.clicked[bool].connect(self.save_set_text)
-		self.new_set_button.clicked[bool].connect(self.new_set)
-		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
-		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.save_set_button.clicked.connect(self.save_set)
+		self.save_sett_button.clicked.connect(self.save_set_text)
+		self.new_set_button.clicked.connect(self.new_set)
+		self.delete_set_button.clicked.connect(self.delete_set)
+		self.setlist.itemChanged.connect(self.set_list_item_changed)
+		self.setlist.currentRowChanged.connect(self.set_list_row_changed)
 		self.target().setsChanged.connect(self.sets_changed)
 
 

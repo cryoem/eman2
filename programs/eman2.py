@@ -30,6 +30,9 @@
 #
 #
 
+import os
+import sys
+
 helpstring="""Hello and welcome to EMAN2 !
 
 EMAN2 is NOT a single central graphical program, but includes a large set of programs both graphical and command-line. 
@@ -58,8 +61,8 @@ helpstring+="\n\nYou are currently running %s"%(FULLVERSIONSTRING)
 
 try:
 	if os.getenv("DISPLAY")==None : raise Exception
-	from PyQt5 import QtCore, QtGui, QtWidgets
-	from PyQt5.QtCore import Qt
+	from PySide6 import QtCore, QtGui, QtWidgets
+	from PySide6.QtCore import Qt
 except:
 	print(helpstring)
 	eval(input("Please press <enter> to exit"))

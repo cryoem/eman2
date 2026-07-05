@@ -53,8 +53,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GLU
 from OpenGL.GL import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 
 
 #from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
@@ -731,10 +731,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	"""
 	Widget for rendering 3D objects. Uses a scene graph for rendering
 	"""
-	sgmousepress = QtCore.pyqtSignal(float, float)
-	sgmousemove = QtCore.pyqtSignal(float, float)
-	sgmouserelease = QtCore.pyqtSignal(float, float)
-	sgtransform = QtCore.pyqtSignal(Transform, Transform)
+	sgmousepress = QtCore.Signal(float, float)
+	sgmousemove = QtCore.Signal(float, float)
+	sgmouserelease = QtCore.Signal(float, float)
+	sgtransform = QtCore.Signal(Transform, Transform)
 	name = "SG"
 	def __init__(self, parent=None, SGactivenodeset=set(), scalestep=0.5):
 		"""
@@ -745,8 +745,6 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		EMItem3D.__init__(self, parent=None, transform=Transform())
 		EMGLWidget.__init__(self,parent)
-		QtOpenGL.QGLFormat().setDoubleBuffer(True)
-		QtOpenGL.QGLFormat().setDepth(True)
 		self.setSelectedItem(True)			# The root is selected by default
 		self.currentselecteditem = self
 		self.camera = EMCamera(1.0, 500.0)		# Default near,far
@@ -999,10 +997,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_y = self.previous_y
 		# Process mouse events
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
-			QtWidgets.qApp.setOverrideCursor(self.appcursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.appcursor)
 			self.sgmousepress.emit(event.x(), event.y())
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
-			QtWidgets.qApp.setOverrideCursor(self.datacursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.datacursor)
 			filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())[0]
 			if not filename: return
 			name = os.path.basename(str(filename))
@@ -1015,53 +1013,53 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
-			QtWidgets.qApp.setOverrideCursor(self.textcursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.textcursor)
 			text, ok = QtWidgets.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self._insert_shape(text, self.newnode)
 				self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
-			QtWidgets.qApp.setOverrideCursor(self.linecursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 20.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Line", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
-			QtWidgets.qApp.setOverrideCursor(self.cubecursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cube", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
-			QtWidgets.qApp.setOverrideCursor(self.spherecursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Sphere", self.newnode)
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
-			QtWidgets.qApp.setOverrideCursor(self.cylindercursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cylinder", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
-			QtWidgets.qApp.setOverrideCursor(self.conecursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.conecursor)
 			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cone", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
-			if  event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
-				QtWidgets.qApp.setOverrideCursor(self.zrotatecursor)
+			if event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
+				QtWidgets.QApplication.instance().setOverrideCursor(self.zrotatecursor)
 				self.zrotate = True
 			else:
-				QtWidgets.qApp.setOverrideCursor(self.xyrotatecursor)
-				self.zrotate = False
+				QtWidgets.QApplication.instance().setOverrideCursor(self.xyrotatecursor)
+			self.zrotate = False
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
 			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.getAPix(), self.camera.getViewPortWidthScaling(), transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Ruler", self.newnode, clearsel=False)
 			#self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
 		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
-			QtWidgets.qApp.setOverrideCursor(self.scalecursor)
+			QtWidgets.QApplication.instance().setOverrideCursor(self.scalecursor)
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
 			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = False
@@ -1083,14 +1081,14 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.selectArea((event.x()-2.0), event.x(), (event.y()-2.0), event.y()) # To enable selection just by clicking
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
-			QtWidgets.qApp.setOverrideCursor(self.zhaircursor)
-		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
-			QtWidgets.qApp.setOverrideCursor(self.crosshaircursor)
-		if event.buttons()&Qt.MidButton or (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ztranslate"):
+			QtWidgets.QApplication.instance().setOverrideCursor(self.zhaircursor)
+		if event.buttons()&Qt.MouseButton.RightButton or (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "xytranslate"):
+			QtWidgets.QApplication.instance().setOverrideCursor(self.crosshaircursor)
+		if event.buttons()&Qt.MouseButton.MiddleButton or (event.buttons()&Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.showInspector()
 			
-		if (event.buttons()&Qt.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
+		if (event.buttons()&Qt.MouseButton.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
 			### so one can open it from a linux remote controlled by a mac...
 			self.showInspector()
 	
@@ -1166,7 +1164,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
 			self.sgmouserelease.emit([event.x(), event.y()])
 			
-		QtWidgets.qApp.setOverrideCursor(Qt.ArrowCursor)
+		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 		# Select using the selection box
 		if self.toggle_render_selectedarea:
 			self.pickItem()
@@ -1376,8 +1374,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.reset_camera = True
 		current_xform = self.getTransform()
 		current_xform_side = Transform({"type":"spin","omega":90,"n1":0,"n2":1,"n3":0})*current_xform
-		self.setTransform(current_xform_side)
-		QtOpenGL.QGLWidget.updateGL(self)
+		self.setTransform(current_xform)
+		self.update()
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
 		pixeldata = glReadPixels(1,1,self.camera.width,self.camera.height,GL_RGBA,GL_UNSIGNED_BYTE)
 		# Then move back
@@ -2148,7 +2146,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		vbox.addWidget(self.inspectortab)
 		vbox.addWidget(toolframe)
 		
-		self.inspectortab.currentChanged[int].connect(self._on_load_camera)
+		self.inspectortab.currentChanged.connect(self._on_load_camera)
 		
 		self.setLayout(vbox)
 		self.updateGeometry()
@@ -2197,9 +2195,9 @@ class EMInspector3D(QtWidgets.QWidget):
 		tvbox.addWidget(self.tree_node_button_remove)
 		tvbox.addWidget(self.tree_node_slider)
 		
-		self.tree_widget.itemClicked[QtWidgets.QTreeWidgetItem, int].connect(self._tree_widget_click)
-		self.tree_widget.visibleItem[QtWidgets.QTreeWidgetItem].connect(self._tree_widget_visible)
-		self.tree_widget.editItem[QtWidgets.QTreeWidgetItem].connect(self._tree_widget_edit)
+		self.tree_widget.itemClicked.connect(self._tree_widget_click)
+		self.tree_widget.visibleItem.connect(self._tree_widget_visible)
+		self.tree_widget.editItem.connect(self._tree_widget_edit)
 		self.tree_node_button_remove.clicked.connect(self._tree_widget_remove)
 		self.tree_node_button_add.clicked.connect(self._on_add_button)
 		self.tree_node_slider.valueChanged.connect(self._slider_change)
@@ -2332,12 +2330,12 @@ class EMInspector3D(QtWidgets.QWidget):
 		When a use middle clicks
 		"""
 		nodedialog = NodeEditDialog(self, self.tree_widget.currentItem())
-		nodedialog.exec_()
+		nodedialog.exec()
 		self.activateWindow()
 	
 	def _on_add_button(self):
 		nodedialog =  NodeDialog(self, self.tree_widget.currentItem())
-		nodedialog.exec_()
+		nodedialog.exec()
 		self.activateWindow()
 		
 	def _tree_widget_remove(self):
@@ -2425,21 +2423,21 @@ class EMInspector3D(QtWidgets.QWidget):
 		tvbox.addWidget(self.apptool)
 		tvbox.setAlignment(QtCore.Qt.AlignLeft)
 		
-		self.rotatetool.clicked[int].connect(self._rotatetool_clicked)
-		self.translatetool.clicked[int].connect(self._transtool_clicked)
-		self.ztranslate.clicked[int].connect(self._ztranstool_clicked)
-		self.scaletool.clicked[int].connect(self._scaletool_clicked)
-		self.rulertool.clicked[int].connect(self._rulertool_clicked)
-		self.selectiontool.clicked[int].connect(self._seltool_clicked)
-		self.multiselectiontool.clicked[int].connect(self._multiseltool_clicked)
-		self.linetool.clicked[int].connect(self._linetool_clicked)
-		self.cubetool.clicked[int].connect(self._cubetool_clicked)
-		self.spheretool.clicked[int].connect(self._spheretool_clicked)
-		self.cylindertool.clicked[int].connect(self._cylindertool_clicked)
-		self.conetool.clicked[int].connect(self._conetool_clicked)
-		self.texttool.clicked[int].connect(self._texttool_clicked)
-		self.datatool.clicked[int].connect(self._datatool_clicked)
-		self.apptool.clicked[int].connect(self._apptool_clicked)
+		self.rotatetool.clicked.connect(self._rotatetool_clicked)
+		self.translatetool.clicked.connect(self._transtool_clicked)
+		self.ztranslate.clicked.connect(self._ztranstool_clicked)
+		self.scaletool.clicked.connect(self._scaletool_clicked)
+		self.rulertool.clicked.connect(self._rulertool_clicked)
+		self.selectiontool.clicked.connect(self._seltool_clicked)
+		self.multiselectiontool.clicked.connect(self._multiseltool_clicked)
+		self.linetool.clicked.connect(self._linetool_clicked)
+		self.cubetool.clicked.connect(self._cubetool_clicked)
+		self.spheretool.clicked.connect(self._spheretool_clicked)
+		self.cylindertool.clicked.connect(self._cylindertool_clicked)
+		self.conetool.clicked.connect(self._conetool_clicked)
+		self.texttool.clicked.connect(self._texttool_clicked)
+		self.datatool.clicked.connect(self._datatool_clicked)
+		self.apptool.clicked.connect(self._apptool_clicked)
 			
 		return tvbox
 	
@@ -2605,15 +2603,15 @@ class EMInspector3D(QtWidgets.QWidget):
 		grid.addWidget(frame, 3, 0, 1, 2)
 		cwidget.setLayout(grid)
 
-		self.near.valueChanged[int].connect(self._on_near)
-		self.far.valueChanged[int].connect(self._on_far)
-		self.camerawidget.nearMoved[float].connect(self._on_near_move)
-		self.camerawidget.farMoved[float].connect(self._on_far_move)
+		self.near.valueChanged.connect(self._on_near)
+		self.far.valueChanged.connect(self._on_far)
+		self.camerawidget.nearMoved.connect(self._on_near_move)
+		self.camerawidget.farMoved.connect(self._on_far_move)
 		self.orthoradio.clicked.connect(self._on_radio_click)
 		self.perspectiveradio.clicked.connect(self._on_radio_click)
 		self.capcb.clicked.connect(self._on_capping)
 		self.linkcb.clicked.connect(self._on_linking)
-		self.cappingcolor.newcolor[QtGui.QColor].connect(self._on_cap_color)
+		self.cappingcolor.newcolor.connect(self._on_cap_color)
 		
 		return cwidget
 		
@@ -2733,7 +2731,7 @@ class EMInspector3D(QtWidgets.QWidget):
 		uvbox.addWidget(self.moviebutton1)
 		uwidget.setLayout(uvbox)
 		
-		self.backgroundcolor.newcolor[QtGui.QColor].connect(self._on_bg_color)
+		self.backgroundcolor.newcolor.connect(self._on_bg_color)
 		self.hideselectionbutton.clicked.connect(self._on_hide)
 		self.savebutton.clicked.connect(self._on_save)
 		self.moviebutton0.clicked.connect(self._on_save_movie_rotate)
@@ -3016,17 +3014,17 @@ class EMQTreeWidget(QtWidgets.QTreeWidget):
 	"""
 	Subclassing the QTreeWidget to enable is_visible toggling
 	"""
-	visibleItem = QtCore.pyqtSignal(QtWidgets.QTreeWidgetItem)
-	editItem = QtCore.pyqtSignal(QtWidgets.QTreeWidgetItem)
+	visibleItem = QtCore.Signal(QtWidgets.QTreeWidgetItem)
+	editItem = QtCore.Signal(QtWidgets.QTreeWidgetItem)
 
 	def __init__(self, parent=None):
 		QtWidgets.QTreeWidget.__init__(self, parent)
 			
 	def mousePressEvent(self, e):
 		QtWidgets.QTreeWidget.mousePressEvent(self, e)
-		if e.button()==Qt.RightButton:
+		if e.button()==Qt.MouseButton.RightButton:
 			self.visibleItem.emit(self.currentItem())
-		if e.button()==Qt.MidButton or (e.buttons()&Qt.LeftButton and e.modifiers()&Qt.AltModifier):
+		if e.button()==Qt.MouseButton.MiddleButton or (e.buttons()&Qt.MouseButton.LeftButton and e.modifiers()&Qt.AltModifier):
 			self.editItem.emit(self.currentItem())
 			
 			
@@ -3202,7 +3200,7 @@ class NodeDialog(QtWidgets.QDialog):
 		
 		self.addnode_button.clicked.connect(self._on_add_node)
 		self.cancel_button.clicked.connect(self._on_cancel)
-		self.node_type_combo.activated[int].connect(self._node_combobox_changed)
+		self.node_type_combo.activated.connect(self._node_combobox_changed)
 	
 	def _on_add_node(self):
 		insertion_node = None
@@ -3319,7 +3317,7 @@ def main():
 	app = QtWidgets.QApplication(sys.argv)
 	window = GLdemo()
 	window.show()
-	app.exec_()
+	app.exec()
 
 
 if __name__ == "__main__":

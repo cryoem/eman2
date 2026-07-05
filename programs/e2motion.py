@@ -40,8 +40,8 @@ import threading
 import time
 from sys import argv
 from EMAN2 import *
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -619,7 +619,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		while 1:
 			time.sleep(0.2)
 			self.wpbprogress.setValue(int(old_div(lst.qsize()*100,maxl)))
-			QtWidgets.qApp.processEvents()
+			QtWidgets.QApplication.instance().processEvents()
 
 			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
 			for t in thrs:
@@ -635,7 +635,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		self.wpbprogress.setEnabled(True)
 		self.wpbprogress.reset()
-		QtWidgets.qApp.processEvents()
+		QtWidgets.QApplication.instance().processEvents()
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
 		print("bs1")

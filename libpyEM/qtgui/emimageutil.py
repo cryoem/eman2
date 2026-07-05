@@ -33,8 +33,8 @@
 from past.utils import old_div
 from builtins import range
 from builtins import object
-from PyQt5 import QtGui, QtWidgets,QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets,QtCore
+from PySide6.QtCore import Qt
 from math import *
 import numpy
 from EMAN2 import *
@@ -103,11 +103,11 @@ class EMTransformPanel(object):
 		self.az.valueChanged.connect(self.slider_rotate)
 		self.alt.valueChanged.connect(self.slider_rotate)
 		self.phi.valueChanged.connect(self.slider_rotate)
-		self.src.currentIndexChanged[str].connect(self.set_src)
+		self.src.currentIndexChanged.connect(self.set_src)
 		self.scale.valueChanged.connect(self.target().set_scale)
-		self.x_trans.valueChanged[float].connect(self.target().set_cam_x)
-		self.y_trans.valueChanged[float].connect(self.target().set_cam_y)
-		self.z_trans.valueChanged[float].connect(self.target().set_cam_z)
+		self.x_trans.valueChanged.connect(self.target().set_cam_x)
+		self.y_trans.valueChanged.connect(self.target().set_cam_y)
+		self.z_trans.valueChanged.connect(self.target().set_cam_z)
 		
 		
 	def set_defaults(self):
@@ -363,12 +363,12 @@ class EMParentWin(QtWidgets.QWidget,Animator):
 	
 class ImgHistogram(QtWidgets.QWidget):
 	""" A small fixed-size histogram widget"""
-	thresholdChanged = QtCore.pyqtSignal(float)
+	thresholdChanged = QtCore.Signal(float)
 
 	def __init__(self,parent):
 		QtWidgets.QWidget.__init__(self,parent)
 		
-		self.brush=QtGui.QBrush(Qt.black)
+		self.brush=QtGui.QBrush(Qt.GlobalColor.black)
 		self.font=QtGui.QFont("Helvetica", 12);
 		self.probe=None
 		self.histdata=None
@@ -512,7 +512,7 @@ class ImgHistogram(QtWidgets.QWidget):
 			#p.setPen(QtGui.QColor(self.upcolor[1][0],self.upcolor[1][1],self.upcolor[1][2]))
 			#p.setPen(QtGui.QColor(self.upcolor[2][0],self.upcolor[2][1],self.upcolor[2][2]))
 
-		p.setPen(Qt.black)
+		p.setPen(Qt.GlobalColor.black)
 		p.drawRect(0,0,258,128)
 		p.end()
 	

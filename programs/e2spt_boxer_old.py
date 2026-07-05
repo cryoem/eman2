@@ -37,8 +37,8 @@ from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
 import weakref
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -143,8 +143,8 @@ def main():
 
 class EMTomoBoxer(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
-	module_closed = QtCore.pyqtSignal()
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
+	module_closed = QtCore.Signal()
 
 	def __init__(self,application,options,datafile=None):
 		QtWidgets.QWidget.__init__(self)

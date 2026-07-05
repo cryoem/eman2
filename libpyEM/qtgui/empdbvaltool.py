@@ -31,7 +31,7 @@
 
 from EMAN2 import PDBReader, EMData
 from .emapplication import EMApp, get_application
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from .emimage3d import EMImage3DWidget
 from .emimage3diso import EMIsosurfaceModel
 from .empdbviewer import *
@@ -42,7 +42,7 @@ class EMPDBValWidget(QtWidgets.QWidget):
 	'''
 	EMPDB versus isosurface visual evaluation
 	'''
-	run_validate = QtCore.pyqtSignal(str, str, int, float)
+	run_validate = QtCore.Signal(str, str, int, float)
 
 	def __init__(self):
 		QtWidgets.QWidget.__init__(self)
@@ -140,7 +140,7 @@ class EMPDBValWidget(QtWidgets.QWidget):
 	
 	def browse_iso(self):
 		em_selector = EMSelectorDialog()
-		file_path = em_selector.exec_()
+		file_path = em_selector.exec()
 		get_application().detach_child(em_selector)
 		self.volume_line_edit.setText(file_path)
 		

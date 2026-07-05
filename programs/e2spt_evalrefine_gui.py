@@ -6,8 +6,12 @@ from builtins import range
 from builtins import range
 from EMAN2 import *
 import numpy as np
-from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtWidgets
+from PySide6.QtCore import Qt
+
+import os
+import sys
+
 from eman2_gui.emapplication import get_application, EMApp
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
@@ -40,13 +44,13 @@ def main():
 
 class MplCanvas(FigureCanvasQTAgg):
 
-    def __init__(self, parent=None):
-        fig = Figure(figsize=(4, 4))
-        self.axes = fig.add_subplot(111)
-        super(MplCanvas, self).__init__(fig)
-        
-        a=np.random.randn(1000,2)
-        self.axes.plot(a[:,0], a[:,1],'.')
+	def __init__(self, parent=None):
+		fig = Figure(figsize=(4, 4))
+		self.axes = fig.add_subplot(111)
+		super(MplCanvas, self).__init__(fig)
+		
+		a=np.random.randn(1000,2)
+		self.axes.plot(a[:,0], a[:,1],'.')
 
 
 class EMSptEval(QtWidgets.QMainWindow):

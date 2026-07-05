@@ -30,8 +30,10 @@
 #
 #
 
+import OpenGL
+from OpenGL import GL
 from builtins import object
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
 import sys
 from .emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
@@ -91,15 +93,15 @@ class ModuleEventsManager(object):
 		emitter.ok.disconnect(self.module_ok) # yes, redundant, but time is short
 		emitter.cancel.disconnect(self.module_cancel) # yes, redundant, but time is short
 
-class EMGLWidget(QtOpenGL.QGLWidget):
+class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	"""
 	This class encapsulates the use of the EMParentWin to provide a status bar with a size grip on Mac.
 	It also handles much of the inspector behavior, displays help in a web browser, and provides 
 	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in place. 
 	"""
 	
-	module_closed = QtCore.pyqtSignal()
-	inspector_shown = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
+	inspector_shown = QtCore.Signal()
 
 	def hide(self):
 		if self.qt_parent:
@@ -107,12 +109,12 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			
 	def resize(self, w, h):
 		if self.qt_parent:
-			QtOpenGL.QGLWidget.resize(self, int(w), int(h))
+			QtOpenGLWidgets.QOpenGLWidget.resize(self, int(w), int(h))
 			if get_platform()=="Darwin" : self.qt_parent.resize(int(w), int(h)+22)
 			else : self.qt_parent.resize(int(w+4), int(h+4))
 
 	def resizeGL(self, width, height):
-		QtOpenGL.QGLWidget.resizeGL(self,int(width),int(height))
+		QtOpenGLWidgets.QOpenGLWidget.resizeGL(self,int(width),int(height))
 			
 	def show(self):
 		if self.qt_parent:
@@ -132,7 +134,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 			self.qt_parent=parent
 			self.myparent=False			# we did not allocate our parent, so we should not get rid of it
 		
-		QtOpenGL.QGLWidget.__init__(self,self.qt_parent)
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self,self.qt_parent)
 		if self.myparent : self.qt_parent.setup(self)
 		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
@@ -161,7 +163,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 	def closeEvent(self, event):
 		if self.inspector:
 			self.inspector.close()
-		QtOpenGL.QGLWidget.closeEvent(self, event)
+		QtOpenGLWidgets.QOpenGLWidget.closeEvent(self, event)
 		if self.myparent : self.qt_parent.close()
 		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		self.closed=True
@@ -176,11 +178,12 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 				try:
 					test = self.browser
 				except: 
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl())
+					from PySide6.QtWebEngineWidgets import QWebEngineView
+					self.browser = QWebEngineView()
+					self.browser.load(QtCore.QUrl(url))
 					self.browser.resize(800,800)
 				
-				if not self.browser.isVisible(): self.browser.show(url)
+				if not self.browser.isVisible(): self.browser.show()
 		except:
 			pass
 
@@ -215,7 +218,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		if self.busy:
 			return
 		else:
-			QtOpenGL.QGLWidget.updateGL(self)
+			QtOpenGLWidgets.QOpenGLWidget.update(self)
 
 class EMInstance(object):
 	'''
@@ -309,7 +312,7 @@ class EMApp(QtWidgets.QApplication):
 		#print "couldn't close",child
 		
 	def execute(self, logid=None):
-		self.exec_()
+		self.exec()
 		print(logid)
 		if logid: E2end(logid) # We need to log the end of the process, don't we....
 		return sys.exit()
@@ -406,6 +409,6 @@ class EMErrorMessageDisplay(object):
 				# correct my own inconsistencies....AWESOME
 				mes += '.'
 		msg.setText(mes)
-		msg.exec_()
+		msg.exec()
 	
 	run = staticmethod(run)

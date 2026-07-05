@@ -59,8 +59,8 @@ def safe_float(x):
 	try: return float(x)
 	except: return 0.0
 
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU
@@ -122,11 +122,11 @@ class EMPlot2DWidget(EMGLWidget):
 	"""
 	
 	# Widget signals
-	selected_sg = QtCore.pyqtSignal()
-	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	selected_sg = QtCore.Signal()
+	mousedown = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousedrag = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mouseup = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	def __init__(self,application=None,winid=None,parent=None):
 
@@ -217,18 +217,15 @@ class EMPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt5 import QtWebEngineWidgets
-			except: return
+			from PySide6.QtWebEngineWidgets import QWebEngineView
 			try:
-				try:
-					test = self.browser
-				except:
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					self.browser.resize(800,800)
+				test = self.browser
+			except:
+				self.browser = QWebEngineView()
+				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+				self.browser.resize(800,800)
 
-				if not self.browser.isVisible(): self.browser.show()
-			except: pass
+			if not self.browser.isVisible(): self.browser.show()
 
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
@@ -1233,7 +1230,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	"""
 	A QT widget for plotting polar plots:
 	"""
-	clusterStats = QtCore.pyqtSignal(list)
+	clusterStats = QtCore.Signal(list)
 
 	def __init__(self,application=None,winid=None):
 		EMGLWidget.__init__(self, winid=winid)
@@ -1312,29 +1309,26 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt5 import QtWebEngineWidgets
-			except: return
+			from PySide6.QtWebEngineWidgets import QWebEngineView
 			try:
-				try:
-					test = self.browser
-				except:
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					self.browser.resize(800,800)
+				test = self.browser
+			except:
+				self.browser = QWebEngineView()
+				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+				self.browser.resize(800,800)
 
-				if not self.browser.isVisible(): self.browser.show()
-			except: pass
+			if not self.browser.isVisible(): self.browser.show()
 
-	def setWindowTitle(self,filename):
-		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
+		def setWindowTitle(self,filename):
+			EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
 
-	def clear_gl_memory(self):
-		if self.tex_name != 0:
-			GL.glDeleteTextures(self.tex_name)
-			self.tex_name = 0
-		if self.main_display_list != 0:
-			glDeleteLists(self.main_display_list,1)
-			self.main_display_list = 0
+		def clear_gl_memory(self):
+			if self.tex_name != 0:
+				GL.glDeleteTextures(self.tex_name)
+				self.tex_name = 0
+			if self.main_display_list != 0:
+				glDeleteLists(self.main_display_list,1)
+				self.main_display_list = 0
 
 	def mousePressEvent(self, event):
 		#Save a snapshot of the scene
@@ -2509,7 +2503,7 @@ class DragListWidget(QtWidgets.QListWidget):
 		drag.setMimeData(mimeData)
 #		drag.setPixmap(iconPixmap);
 
-		dropact = drag.exec_(Qt.CopyAction)
+		dropact = drag.exec(Qt.CopyAction)
 #		print "Dropped ",dropact
 
 
@@ -2538,7 +2532,7 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		# plot list
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
-		self.setlist.setSelectionMode(3)
+		self.setlist.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
@@ -2878,35 +2872,35 @@ class EMPlot2DInspector(QtWidgets.QWidget):
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
 
-		self.slidex.valueChanged[int].connect(self.newCols)
-		self.slidey.valueChanged[int].connect(self.newCols)
-		self.slidec.valueChanged[int].connect(self.newCols)
-		self.slides.valueChanged[int].connect(self.newCols)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
-		self.color.currentIndexChanged[str].connect(self.updPlotColor)
+		self.slidex.valueChanged.connect(self.newCols)
+		self.slidey.valueChanged.connect(self.newCols)
+		self.slidec.valueChanged.connect(self.newCols)
+		self.slides.valueChanged.connect(self.newCols)
+		self.setlist.currentRowChanged.connect(self.newSet)
+		self.setlist.itemChanged.connect(self.list_item_changed)
+		self.color.currentIndexChanged.connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.symtog.clicked.connect(self.updPlot)
 		self.ctrtog.clicked.connect(self.updPlot)
-		self.ctrsteps.valueChanged[int].connect(self.updPlot)
-		self.ctrlvls.valueChanged[int].connect(self.updPlot)		
+		self.ctrsteps.valueChanged.connect(self.updPlot)
+		self.ctrlvls.valueChanged.connect(self.updPlot)		
 		self.hsttog.clicked.connect(self.updPlot)
-		self.hststeps.valueChanged[int].connect(self.updPlot)
+		self.hststeps.valueChanged.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
 		#QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
-		self.symsel.currentIndexChanged[str].connect(self.updPlotSymsel)
-		self.symsize.valueChanged[int].connect(self.updPlotSymsize)
+		self.symsel.currentIndexChanged.connect(self.updPlotSymsel)
+		self.symsize.valueChanged.connect(self.updPlotSymsize)
 		self.xlogtog.clicked.connect(self.updPlot)
 		self.ylogtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.lintog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		self.linsel.currentIndexChanged[str].connect(self.updPlotLinsel)
-		self.linwid.valueChanged[int].connect(self.updPlotLinwid)
-		self.xlabel.textChanged[str].connect(self.updPlot)
-		self.ylabel.textChanged[str].connect(self.updPlot)
-		self.plottitle.textChanged[str].connect(self.updPlot)
+		self.linsel.currentIndexChanged.connect(self.updPlotLinsel)
+		self.linwid.valueChanged.connect(self.updPlotLinwid)
+		self.xlabel.textChanged.connect(self.updPlot)
+		self.ylabel.textChanged.connect(self.updPlot)
+		self.plottitle.textChanged.connect(self.updPlot)
 		self.stats.clicked.connect(self.openStatsWin)
 		self.regress.clicked.connect(self.openRegrWin)
 		self.saveb.clicked.connect(self.savePlot)

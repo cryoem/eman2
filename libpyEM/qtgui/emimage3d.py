@@ -38,8 +38,8 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from e2eulerxplor import EMEulerExplorer
 from .emglobjects import Camera, Camera2, EMGLWidget, EMViewportDepthTools, EMGLProjectionViewMatrices, EMOpenGLFlagsAndTools
 from .emimage3diso import EMIsosurfaceModel
@@ -56,7 +56,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 	""" 
 	A QT widget for rendering 3D EMData objects
 	"""
-	set_perspective = QtCore.pyqtSignal(bool)
+	set_perspective = QtCore.Signal(bool)
 	allim=weakref.WeakKeyDictionary()
 	def add_model(self,model,num=0):
 		model.set_gl_widget(self)
@@ -75,7 +75,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		self.viewables[-1].set_name(name)
 		self.viewables[-1].set_rank(len(self.viewables))
 		self.currentselection = len(self.viewables)-1
-		self.updateGL()
+		self.update()
 		
 	def __init__(self, parent=None, image=None,application=None,winid=None):
 		EMImage3DWidget.allim[self] = 0
@@ -297,19 +297,19 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 					model.mouseMoveEvent(event)
 				except AttributeError as e:
 					pass
-		self.updateGL()
-	def mousePressEvent(self, event):
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
-			self.show_inspector()
-		if self.current_mouse_mode:
-			EMLightsDrawer.mousePressEvent(self, event)
-		else:
-			for model in self.viewables:
-				try:
-					model.mousePressEvent(event)
-				except AttributeError as e:
-					pass
-		self.updateGL()
+		self.update()
+def mousePressEvent(self, event):
+	if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
+		self.show_inspector()
+	if self.current_mouse_mode:
+		EMLightsDrawer.mousePressEvent(self, event)
+	else:
+		for model in self.viewables:
+			try:
+				model.mousePressEvent(event)
+			except AttributeError as e:
+				pass
+	self.update()
 	def mouseReleaseEvent(self, event):
 		if self.current_mouse_mode:
 			EMLightsDrawer.mouseReleaseEvent(self, event)

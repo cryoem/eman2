@@ -39,8 +39,8 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from .emapplication import EMApp, get_application
 from .emglobjects import EM3DModel, EMGLWidget, Camera, Camera2, EMViewportDepthTools2, EMGLProjectionViewMatrices, get_default_gl_colors
 from .emimageutil import EMTransformPanel
@@ -1318,10 +1318,10 @@ class SparseSymChoicesWidgets(object):
 		vbl.addLayout(self.button_hbl2)
 		
 		
-		self.symtog.toggled[bool].connect(self.set_display_all_syms)
-		self.symtogdisplay.clicked[bool].connect(self.toggle_sym_display)
-		self.triangletog.clicked[bool].connect(self.triangle_tog)
-		self.arctog.clicked[bool].connect(self.arc_tog)
+		self.symtog.toggled.connect(self.set_display_all_syms)
+		self.symtogdisplay.clicked.connect(self.toggle_sym_display)
+		self.triangletog.clicked.connect(self.triangle_tog)
+		self.arctog.clicked.connect(self.arc_tog)
 		self.busy = False
 
 	def set_display_all_syms(self,val):
@@ -1457,14 +1457,14 @@ class SparseSymChoicesWidgets(object):
 			self.hbl_sym.addWidget(self.mirror_checkbox)
 			self.mirror_checkbox.setChecked(self.target().mirror_enabled())
 			
-		self.sym_combo.currentIndexChanged[str].connect(self.sym_changed)
+		self.sym_combo.currentIndexChanged.connect(self.sym_changed)
 		self.sym_text.editingFinished.connect(self.sym_number_changed)
 
 		if enable_orient_gen:
 			self.prop_text.editingFinished.connect(self.prop_changed)
-			self.angle_label.currentIndexChanged[str].connect(self.angle_label_changed)
-			self.strategy_label.currentIndexChanged[str].connect(self.strategy_changed)
-		self.mirror_checkbox.stateChanged[int].connect(self.set_mirror)
+			self.angle_label.currentIndexChanged.connect(self.angle_label_changed)
+			self.strategy_label.currentIndexChanged.connect(self.strategy_changed)
+		self.mirror_checkbox.stateChanged.connect(self.set_mirror)
 	
 		vbl.addWidget(maintab)
 		self.busy = False
@@ -1629,8 +1629,8 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 	
 		self.dialog_result = None
 	
-		self.ok.clicked[bool].connect(self.on_ok)
-		self.cancel.clicked[bool].connect(self.on_cancel)
+		self.ok.clicked.connect(self.on_ok)
+		self.cancel.clicked.connect(self.on_cancel)
 		
 
 		
@@ -1647,12 +1647,12 @@ class EMSymChoiceDialog(QtWidgets.QDialog):
 		'''
 		self.accept()
 	
-	def exec_(self):
+	def exec(self):
 		'''
 		Customized exec_ function
 		@return None if the user hit cancel or a dictionary containing important parameters if the user hit ok
 		'''
-		QtWidgets.QDialog.exec_(self)
+		QtWidgets.QDialog.exec(self)
 		return self.dialog_result
 		
 	
@@ -1722,8 +1722,8 @@ class EMSymInspector(QtWidgets.QWidget):
 			self.score_options_hbl.addWidget(self.cylinder_log)
 			self.display_tab.vbl.addLayout(self.score_options_hbl)
 			
-			self.score_options.currentIndexChanged[int].connect(self.score_option_changed)
-			self.cylinder_log.stateChanged[int].connect(self.cylinder_log_clicked)
+			self.score_options.currentIndexChanged.connect(self.score_option_changed)
+			self.cylinder_log.stateChanged.connect(self.cylinder_log_clicked)
 		else:
 			self.score_options.clear()
 			idx = 0
@@ -1857,10 +1857,10 @@ class EMSymInspector(QtWidgets.QWidget):
 		self.arc_width_scale.valueChanged.connect(self.target().set_arc_width_scale)
 #		QtCore.QObject.connect(self.glcontrast, QtCore.SIGNAL("valueChanged"), self.target().set_GL_contrast)
 #		QtCore.QObject.connect(self.glbrightness, QtCore.SIGNAL("valueChanged"), self.target().set_GL_brightness)
-		self.arc_color.currentIndexChanged[int].connect(self.arc_color_changed)
-		self.small_column_color.currentIndexChanged[int].connect(self.small_column_color_changed)
-		self.tall_column_color.currentIndexChanged[int].connect(self.tall_column_color_changed)
-		self.arc_divisions.valueChanged[int].connect(self.target().set_arc_segments)
+		self.arc_color.currentIndexChanged.connect(self.arc_color_changed)
+		self.small_column_color.currentIndexChanged.connect(self.small_column_color_changed)
+		self.tall_column_color.currentIndexChanged.connect(self.tall_column_color_changed)
+		self.arc_divisions.valueChanged.connect(self.target().set_arc_segments)
 		
 		return self.display_tab
 	
@@ -1927,8 +1927,8 @@ class EMSymInspector(QtWidgets.QWidget):
 			self.vbl.addLayout(self.hbl_pt)
 
 		if self.enable_trace:
-			self.tracetog.clicked[bool].connect(self.toggle_trace)
-			self.reducetog.clicked[bool].connect(self.target().reducetog)
+			self.tracetog.clicked.connect(self.toggle_trace)
+			self.reducetog.clicked.connect(self.target().reducetog)
 			self.lowrange.editingFinished.connect(self.trace_update)
 			self.highrange.editingFinished.connect(self.trace_update)
 			self.tracefile.editingFinished.connect(self.trace_update)
@@ -1944,7 +1944,7 @@ def main():
 	
 	#First demonstration
 	dialog = EMSymChoiceDialog()
-	choices_dict = dialog.exec_()
+	choices_dict = dialog.exec()
 	print(choices_dict)
 	
 	#Second demonstration

@@ -38,8 +38,8 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from .emapplication import EMGLWidget, get_application
 from libpyGLUtils2 import GLUtil
 from math import *
@@ -1383,7 +1383,7 @@ class Camera2(object):
 	def mousePressEvent(self, event):
 		self.mpressx = event.x()
 		self.mpressy = event.y()
-		if event.button()==Qt.LeftButton and self.allow_rotations:
+		if event.button()==Qt.MouseButton.LeftButton and self.allow_rotations:
 			if self.mmode==0:
 				# this is just a way of duplicating the last copy
 				tmp =self.t3d_stack.pop()
@@ -1392,7 +1392,7 @@ class Camera2(object):
 				self.t3d_stack.append(t3d)
 		
 	def mouseMoveEvent(self, event):
-		if event.buttons()&Qt.LeftButton and self.allow_rotations:
+		if event.buttons()&Qt.MouseButton.LeftButton and self.allow_rotations:
 			if self.mmode==0:
 				#if event.modifiers() == Qt.ControlModifier:
 					#self.motion_translate(event.x()-self.mpressx, self.mpressy - event.y())
@@ -1404,14 +1404,14 @@ class Camera2(object):
 				return True
 		elif self.mmode==0:
 			if self.allow_translations:
-				if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier and self.allow_z_mouse_trans:
+				if event.buttons()&Qt.MouseButton.RightButton and event.modifiers()&Qt.ShiftModifier and self.allow_z_mouse_trans:
 					
 						self.motion_translate_z_only(self.mpressx, self.mpressy,event)
 							
 						self.mpressx = event.x()
 						self.mpressy = event.y()
 						return True
-				elif event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and not self.allow_rotations):
+				elif event.buttons()&Qt.MouseButton.RightButton or (event.buttons()&Qt.MouseButton.LeftButton and not self.allow_rotations):
 					if self.mmode==0:
 						self.motion_translateLA(self.mpressx, self.mpressy,event)
 							
@@ -1423,10 +1423,10 @@ class Camera2(object):
 	
 	def mouseReleaseEvent(self, event):
 			
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			if self.mmode==0:
 				return False
-		elif event.button()==Qt.RightButton:
+		elif event.button()==Qt.MouseButton.RightButton:
 			if self.mmode==0:
 				return False
 			
@@ -1934,7 +1934,7 @@ def get_default_gl_colors():
 	return _gl_colors
 
 class EM3DModel(QtCore.QObject):
-	inspector_shown = QtCore.pyqtSignal()
+	inspector_shown = QtCore.Signal()
 	FTGL = "ftgl"
 	GLUT = "glut"
 	def __init__(self, gl_widget):
@@ -2060,15 +2060,15 @@ class EM3DModel(QtCore.QObject):
 			self.update_inspector_texture()
 			
 		if self.inspector != None:
-			if event.buttons()&Qt.LeftButton:
+			if event.buttons()&Qt.MouseButton.LeftButton:
 				self.inspector.update_rotations(self.get_current_transform())
-			elif event.buttons()&Qt.RightButton:
+			elif event.buttons()&Qt.MouseButton.RightButton:
 				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
 				#self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 	def mousePressEvent(self, event):
 #		lc=self.scrtoimg((event.x(),event.y()))
 	   	
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 			if self.inspector == None: return
 			self.inspector.update_rotations(self.cam.t3d_stack[len(self.cam.t3d_stack)-1])
