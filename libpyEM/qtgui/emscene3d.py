@@ -774,6 +774,9 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.textcursor = QtGui.QCursor(QtGui.QPixmap(textcursor),-1,-1)
 		self.appcursor = QtGui.QCursor(QtGui.QPixmap(appcursor),-1,-1)
 		self.rendercount=0
+		# Qt6 requires explicit focus policy for wheel events on QOpenGLWidget
+		self.setFocusPolicy(Qt.StrongFocus)
+		self.setMouseTracking(True)
 		
 	def getEvalString(self):
 		"""
@@ -790,18 +793,44 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.firstlight.enableLighting()
         
 	def paintGL(self):
-		#if self.reset_camera: self.camera.update()
-		self.camera.update()
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)		
-		glColor3f(1.0, 1.0, 1.0)	# Default color is white
-		#Call rendering
-		self.renderSelectedArea() 	# Draw the selection box if needed
-		self.render()			# SG nodes must have a render method
-		glFlush()			# Finish rendering
-		self.reset_camera = False
+		"""Render the 3D scene."""
+		try:
+			self.camera.update()
+			if not (hasattr(self.camera, "width") and hasattr(self.camera, "height")):
+				return
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)	
+			glColor3f(1.0, 1.0, 1.0)	# Default color is white
+			self.renderSelectedArea() 	# Draw the selection box if needed
+			self.render()			# SG nodes must have a render method
+			glFlush()			# Finish rendering
+		except Exception as e:
+			print("EMScene3D.paintGL error:", e)
+		finally:
+			self.reset_camera = False
 		
+	def showEvent(self, event):
+		"""Ensure camera dimensions are set before first paintGL in Qt6."""
+		QtOpenGLWidgets.QOpenGLWidget.showEvent(self, event)
+		dpr = self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		if w > 0 and h > 0:
+			self.camera.update(w, h)
+		self.update()
+	
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
+		self.updateInspector()
+	
+	def resizeEvent(self, event):
+		"""In PySide6/Qt6 resizeGL may not be called by Qt virtual dispatch.
+		Override resizeEvent to ensure camera gets correct dimensions."""
+		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		dpr = self.devicePixelRatio()
+		w = event.size().width() // dpr
+		h = event.size().height() // dpr
+		if w > 0 and h > 0:
+			self.camera.update(w, h)
 		self.updateInspector()
 	
 	def renderNode(self):
@@ -996,10 +1025,10 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
 		# Process mouse events
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "app"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.appcursor)
 			self.sgmousepress.emit(event.x(), event.y())
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "data"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "data"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.datacursor)
 			filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())[0]
 			if not filename: return
@@ -1012,35 +1041,35 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.isonode.setSelectedItem(True)
 			self.insertNewNode("Isosurface", self.isonode, parentnode=self.newnode)
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "text"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "text"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.textcursor)
 			text, ok = QtWidgets.QInputDialog.getText(self, 'Enter Text', '')
 			if ok:
 				self.newnode = EM3DText(str(text), 32.0, transform=self._gettransformbasedonscreen(event))
 				self._insert_shape(text, self.newnode)
 				self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "line"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.linecursor)
 			self.newnode = EMLine(0.0, 0.0, 0.0, 2.0, 2.0, 0.0, 20.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Line", self.newnode)
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "cube"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.cubecursor)
 			self.newnode = EMCube(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cube", self.newnode)
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "sphere"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.spherecursor)
 			self.newnode = EMSphere(2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Sphere", self.newnode)
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "cylinder"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.cylindercursor)
 			self.newnode = EMCylinder(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cylinder", self.newnode)
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "cone"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.conecursor)
 			self.newnode = EMCone(2.0,2.0, transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Cone", self.newnode)
@@ -1053,14 +1082,14 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			else:
 				QtWidgets.QApplication.instance().setOverrideCursor(self.xyrotatecursor)
 				self.zrotate = False
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ruler"):
 			self.newnode = EMRuler(0.0, 0.0, 0.0, 0.0, 0.0, 0.0, self.getAPix(), self.camera.getViewPortWidthScaling(), transform=self._gettransformbasedonscreen(event))
 			self._insert_shape("Ruler", self.newnode, clearsel=False)
 			#self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()
-		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
+		if event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "scale":
 			QtWidgets.QApplication.instance().setOverrideCursor(self.scalecursor)
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection"): 
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "selection"):
 			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = False
 			self.appendselection = False
@@ -1073,7 +1102,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.selectArea(event.x(), event.x() + 5, event.y(), event.y() + 5, togglearea=False)
 			self.pickItem()
 			self.updateSG()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "multiselection"):
 			#QtWidgets.qApp.setOverrideCursor(self.selectorcursor)
 			self.multiselect = True
 			self.appendselection = False
@@ -1114,25 +1143,30 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Qt event handler. Scales the SG depending on what mouse button(s) are pressed when dragged
 		"""
+		if not hasattr(self, 'previous_x'):
+			self.previous_x = event.x()
+			self.previous_y = event.y()
+			event.accept()
+			return
 		dx = (event.x() - self.previous_x)*self.camera.getViewPortWidthScaling()
 		dy = (event.y() - self.previous_y)*self.camera.getViewPortHeightScaling()
 		x = event.x()
 		y = event.y()
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "app"):
 			self.sgmousemove.emit(event.x(), event.y())
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "line"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "line"):
 			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0, 20.0)
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "ruler"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ruler"):
 			self.newnode.setRuler(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0)
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "cube"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "cube"):
 			self.newnode.setSize(math.sqrt((x - self.first_x)**2 + (y - self.first_y)**2))
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "sphere"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "sphere"):
 			self.newnode.setRadius(math.sqrt((x - self.first_x)**2 + (y - self.first_y)**2))
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "cylinder"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "cylinder"):
 			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "cone"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "cone"):
 			self.newnode.setRadiusAndHeight(math.fabs(x - self.first_x), math.fabs(y - self.first_y))
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "rotate"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "rotate"):
 			magnitude = math.sqrt(dx*dx + dy*dy)
 			# We want to remove the effect of self.camera.getViewPortWidthScaling() for rotation. For everything else the effect is desired
 			#Check to see if the cursor is in the 'virtual slider panel'
@@ -1143,15 +1177,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					self.updateMatrices([magnitude/self.camera.getViewPortWidthScaling(),-dy/magnitude,-dx/magnitude,0], "rotate")
 			except ValueError: pass
 			except ZeroDivisionError: pass
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
 			self.updateMatrices([dx,-dy,0], "translate")
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "multiselection"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "multiselection"):
 			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "ztranslate"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ztranslate"):
 			self.updateMatrices([0,0,(-dy)], "translate")
-		if event.buttons()&Qt.RightButton or (event.buttons()&Qt.LeftButton and self.mousemode == "xytranslate"):
+		if event.buttons()&Qt.MouseButton.RightButton or (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "xytranslate"):
 			self.updateMatrices([dx,-dy,0], "translate")
-		if event.buttons()&Qt.LeftButton and self.mousemode == "scale":
+		if event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "scale":
 			self.updateMatrices([self.scalestep*0.1*(dx+dy)], "scale")
 		self.previous_x =  x
 		self.previous_y =  y
@@ -1161,7 +1195,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		Qt event handler. Returns the cursor to arrow upon mouse button release
 		"""
-		if (event.buttons()&Qt.LeftButton and self.mousemode == "app"):
+		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "app"):
 			self.sgmouserelease.emit([event.x(), event.y()])
 			
 		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
@@ -1177,20 +1211,24 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""
 		# Originally the wheel scaled by zoom the viewport, but that caused all sorts of issues, so I now just scale the SG
 		# The 25 is a fudge factor that controls the speed of scaling, lower if slower scaling
-		if event.angleDelta().y() > 0:
-			if self.camera.getUseOrtho():
-				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
+		try:
+			if event.angleDelta().y() > 0:
+				if self.camera.getUseOrtho():
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()+old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
+				else:
+					self.camera.setFovy(self.camera.getFovy()+1.0)
 			else:
-				self.camera.setFovy(self.camera.getFovy()+1.0)
-		else:
-			if self.camera.getUseOrtho():
-				self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
-			else:
-				self.camera.setFovy(self.camera.getFovy()-1.0)
-		self.updateSG()
-		self.cameraNeedsanUpdate()
-			
-			
+				if self.camera.getUseOrtho():
+					self.camera.setPseudoFovy(self.camera.getPseudoFovyWidth()-old_div((self.camera.getPseudoFovyWidth()+self.camera.getWidth()),25))
+				else:
+					self.camera.setFovy(self.camera.getFovy()-1.0)
+			self.updateSG()
+			self.cameraNeedsanUpdate()
+		except Exception as e:
+			print("EMScene3D wheelEvent error:", e)
+		event.accept()
+		
+		
 	def mouseDoubleClickEvent(self,event):
 		print("Mouse Double Click Event")
 	
@@ -1898,7 +1936,7 @@ class EMCamera(object):
 		self.far = far
 		self.near = near
 		self.fovy = fovy
-		self.maxviewport = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
+		self.maxviewport = None  # Lazily initialized in update() when GL context is available
 		self.setCappingMode(False)
 		self.setCapColor(*(get_default_gl_colors()["bluewhite"]['ambient']))
 		self.setLinkingMode(False)
@@ -1918,6 +1956,9 @@ class EMCamera(object):
 		if height: self.height = height
 		if not (hasattr(self, "height") and hasattr(self, "width")):
 			return
+		# Lazily initialize maxviewport when GL context is available
+		if self.maxviewport is None:
+			self.maxviewport = glGetIntegerv(GL_MAX_VIEWPORT_DIMS)
 		self.aspectratio = old_div(float(self.height),float(self.width))
 		if self.usingortho:
 			# this deals with maxviewport better than the previous solution
@@ -1951,7 +1992,7 @@ class EMCamera(object):
 	def setViewPort(self, x, y, vpwidth, vpheight):
 		"""Set the viewport subject to openGL constraints """
 		if (vpwidth < self.maxviewport[0] and vpheight < self.maxviewport[1]):
-			glViewport(x, y, vpwidth, vpheight)
+			glViewport(int(x), int(y), int(vpwidth), int(vpheight))
 	#		print(x,y,vpwidth, vpheight)
 		
 	def setCameraPosition(self, sfactor=1):

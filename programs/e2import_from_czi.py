@@ -112,7 +112,7 @@ class CZIDataLoader(QtWidgets.QWidget):
 		gbl.addWidget(self.import_to_eman2_bt,9,0,1,1)
 		gbl.addWidget(self.binary_label_checkbox,9,1,1,1)
 		gbl.addWidget(self.multiclass_label_checkbox,9,2,1,1)
-		self.import_to_eman2_bt.clicked[bool].connect(self.import_data_to_eman)
+		self.import_to_eman2_bt.clicked.connect(self.import_data_to_eman)
 
 		self.annotate_eman2_bt = QtWidgets.QPushButton("Segmentation")
 		self.region_sz_sb = StringBox(label="Region Sz",value="500",showenable=-1)
@@ -125,12 +125,12 @@ class CZIDataLoader(QtWidgets.QWidget):
 		gbl.addWidget(self.zthick_sb,11,1,1,1)
 		gbl.addWidget(self.enable_undo_checkbox,11,2,1,1)
 
-		self.inquire_bt.clicked[bool].connect(self.inquire_dataset)
-		self.data_download_bt.clicked[bool].connect(self.download_dataset)
+		self.inquire_bt.clicked.connect(self.inquire_dataset)
+		self.data_download_bt.clicked.connect(self.download_dataset)
 		self.download_tomo_cb.stateChanged[int].connect(self.download_tomo_cb_changed)
 		self.download_anno_cb.stateChanged[int].connect(self.download_anno_cb_changed)
 		self.imod_data_cb.stateChanged[int].connect(self.imod_cb_changed)
-		self.annotate_eman2_bt.clicked[bool].connect(self.launch_e2tomo_annotate)
+		self.annotate_eman2_bt.clicked.connect(self.launch_e2tomo_annotate)
 
 	def show_question_box(self,msg):
 		msg = QMessageBox()

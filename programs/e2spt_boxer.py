@@ -251,17 +251,17 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.dragging=-1
 
 		
-		self.button_flat.clicked[bool].connect(self.flatten_tomo)
-		self.button_reset.clicked[bool].connect(self.reset_flatten_tomo)
+		self.button_flat.clicked.connect(self.flatten_tomo)
+		self.button_reset.clicked.connect(self.reset_flatten_tomo)
 
 		# file menu
 		#self.mfile_open.triggered[bool].connect(self.menu_file_open)
-		self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
-		self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
-		self.mfile_save_boxpdb.triggered[bool].connect(self.menu_file_save_boxpdb)
+		self.mfile_read_boxloc.triggered.connect(self.menu_file_read_boxloc)
+		self.mfile_save_boxloc.triggered.connect(self.menu_file_save_boxloc)
+		self.mfile_save_boxpdb.triggered.connect(self.menu_file_save_boxpdb)
 		
-		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
-		self.mfile_save_gif.triggered[bool].connect(self.save_gif)
+		self.mfile_save_boxes_stack.triggered.connect(self.save_boxes)
+		self.mfile_save_gif.triggered.connect(self.save_gif)
 		#self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
 		# all other widgets
@@ -1443,10 +1443,10 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 
 		hbl.addLayout(vbl)
 
-		self.save_set_button.clicked[bool].connect(self.save_set)
-		self.new_set_button.clicked[bool].connect(self.new_set)
-		self.rename_set_button.clicked[bool].connect(self.rename_set)
-		self.delete_set_button.clicked[bool].connect(self.delete_set)
+		self.save_set_button.clicked.connect(self.save_set)
+		self.new_set_button.clicked.connect(self.new_set)
+		self.rename_set_button.clicked.connect(self.rename_set)
+		self.delete_set_button.clicked.connect(self.delete_set)
 		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
 		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
 

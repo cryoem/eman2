@@ -505,13 +505,13 @@ class EMLightsDrawer(object):
 	
 	def mouseMoveEvent(self,event):
 		if self.current_mouse_mode == "point source":
-			if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier:
+			if event.buttons()&Qt.MouseButton.RightButton and event.modifiers()&Qt.ShiftModifier:
 				
 				self.motion_translate_z_only(self.mpressx, self.mpressy,event)
 				self.mpressx = event.x()
 				self.mpressy = event.y()
-	
-			elif event.buttons()&Qt.RightButton:
+
+			elif event.buttons()&Qt.MouseButton.RightButton:
 				self.motion_translate(self.mpressx, self.mpressy,event)
 				
 				self.mpressx = event.x()

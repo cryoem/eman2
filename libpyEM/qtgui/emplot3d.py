@@ -171,7 +171,7 @@ class EMPlot3DWidget(EMGLWidget):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
 		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -180,6 +180,13 @@ class EMPlot3DWidget(EMGLWidget):
 		GL.glLoadIdentity()
 
 		self.resize_event(width,height)
+
+	def resizeEvent(self, event):
+		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		dpr=self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		self.resize_event(w,h)
 
 	def closeEvent(self,event):
 		if self.particle_viewer!=None :
@@ -204,6 +211,10 @@ class EMPlot3DWidget(EMGLWidget):
 		if self.inspector :
 			self.inspector.closeEvent(event)
 
+	def showEvent(self, event):
+		super(EMPlot3DWidget, self).showEvent(event)
+		self.update()
+
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
@@ -217,8 +228,6 @@ class EMPlot3DWidget(EMGLWidget):
 				self.browser.resize(800,800)
 
 			if not self.browser.isVisible(): self.browser.show()
-
-		if not self.browser.isVisible(): self.browser.show()
 
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
@@ -992,6 +1001,7 @@ lc is the cursor selection point in plot coords"""
 				cmin=min(cmin,min(self.data[k][self.axes[k][3]]))
 				cmax=max(cmax,max(self.data[k][self.axes[k][3]]))
 			self.climits=(cmin,cmax)
+			if self.climits[0] >= self.climits[1]: self.climits = (0.0, 1.0)
 
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
@@ -1001,6 +1011,7 @@ lc is the cursor selection point in plot coords"""
 				smin=min(smin,min(self.data[k][self.axes[k][4]]))
 				smax=max(smax,max(self.data[k][self.axes[k][4]]))
 			self.slimits=(smin,smax)
+			if self.slimits[0] >= self.slimits[1]: self.slimits = (0.0, 1.0)
 
 		if self.inspector: self.inspector.update()
 
@@ -1024,6 +1035,7 @@ lc is the cursor selection point in plot coords"""
 		self.updateGL()
 		
 		if self.inspector: self.inspector.update()
+		event.accept()
 
 	def leaveEvent(self,event):
 		pass

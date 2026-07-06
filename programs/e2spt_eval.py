@@ -85,12 +85,12 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.bt_showbs=QtWidgets.QPushButton("ShowBrowser")
 		self.bt_showbs.setToolTip("Show Browser")
 		self.gbl.addWidget(self.bt_showbs, 2,1,1,2)
-		self.bt_showbs.clicked[bool].connect(self.show_browser)
+		self.bt_showbs.clicked.connect(self.show_browser)
 
 		self.bt_plotParms=QtWidgets.QPushButton("PlotParams")
 		self.bt_plotParms.setToolTip("Examine particle orientations")
 		self.gbl.addWidget(self.bt_plotParms, 3,1,1,2)
-		self.bt_plotParms.clicked[bool].connect(self.plot_params)
+		self.bt_plotParms.clicked.connect(self.plot_params)
 
 		self.paramplot = EMPlot2DWidget()
 		self.paramplot.show()
@@ -99,7 +99,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.bt_plotFSC=QtWidgets.QPushButton("PlotFSCs")
 		self.bt_plotFSC.setToolTip("Examine tightly masked FSCs from this SPT refinement")
 		self.gbl.addWidget(self.bt_plotFSC, 4,1,1,2)
-		self.bt_plotFSC.clicked[bool].connect(self.plot_fscs)
+		self.bt_plotFSC.clicked.connect(self.plot_fscs)
 
 		self.fscplot = EMPlot2DWidget()
 		self.fscplot.show()

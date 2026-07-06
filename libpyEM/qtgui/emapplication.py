@@ -34,6 +34,14 @@ import OpenGL
 from OpenGL import GL
 from builtins import object
 from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+
+# Set default OpenGL format globally BEFORE any QOpenGLWidget is created
+# Qt6 defaults to Core profile which doesn't support legacy GL functions (glMatrixMode, etc.)
+_fmt = QtGui.QSurfaceFormat()
+_fmt.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
+QtGui.QSurfaceFormat.setDefaultFormat(_fmt)
+del _fmt
+
 import sys
 from .emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
@@ -92,16 +100,8 @@ class ModuleEventsManager(object):
 	
 		emitter.ok.disconnect(self.module_ok) # yes, redundant, but time is short
 		emitter.cancel.disconnect(self.module_cancel) # yes, redundant, but time is short
-
-# Set default OpenGL format globally before any QOpenGLWidget is created
-# Qt6 defaults to Core profile which doesn't support legacy GL functions (glMatrixMode, etc.)
-def _set_gl_format():
-	from PySide6.QtGui import QSurfaceFormat
-	fmt = QSurfaceFormat()
-	fmt.setProfile(QSurfaceFormat.CompatibilityProfile)
-	QSurfaceFormat.setDefaultFormat(fmt)
-
-_set_gl_format()
+		
+	
 
 class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	"""

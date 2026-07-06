@@ -205,14 +205,19 @@ class EMImage2DWidget(EMGLWidget):
 
 	def paintGL(self):
 		try:
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+			dpr=self.devicePixelRatio()
+			w = self.width() // dpr
+			h = self.height() // dpr
+			if w == 0 or h == 0: return
+			GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
+			GL.glMatrixMode(GL.GL_PROJECTION)
+			GL.glLoadIdentity()
+			GLU.gluOrtho2D(0.0,w,0.0,h)
+
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
-			# glClear(GL_COLOR_BUFFER_BIT) # throws error.
-			glClearColor(0.0, 0.0, 0.0, 0.0)
-			if glIsEnabled(GL_DEPTH_TEST):
-				glClear(GL_DEPTH_BUFFER_BIT)
-			if glIsEnabled(GL_STENCIL_TEST):
-				glClear(GL_STENCIL_BUFFER_BIT)
 			#self.cam.position()
 			#context = OpenGL.contextdata.getContext(None)
 			#print "Image2D context is", context
@@ -224,21 +229,17 @@ class EMImage2DWidget(EMGLWidget):
 			import traceback; traceback.print_exc()
 
 	def resizeGL(self, width, height):
-		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
+		if width == 0 or height == 0: return
 		width = width // self.devicePixelRatio()
 		height = height // self.devicePixelRatio()
-		side = min(width, height)
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
-
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,width,0.0,height)
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
-
 		self.resize_event(width,height)
-		#except: pass
+
+	def resizeEvent(self, event):
+		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		dpr=self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		self.resize_event(w,h)
 
 	def optimally_resize(self):
 		if self.parent_geometry != None:
@@ -1850,6 +1851,7 @@ class EMImage2DWidget(EMGLWidget):
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
 			self.mousewheel.emit(event)
+			event.accept()
 			return
 		if event.angleDelta().y() > 0:
 			self.set_scale( self.scale * self.mag )
@@ -1857,6 +1859,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.set_scale(self.scale * self.invmag )
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
+		event.accept()
 
 
 	def mouseDoubleClickEvent(self,event):

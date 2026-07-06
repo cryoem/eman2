@@ -92,7 +92,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 		if not options.readonly:
 			self.bt_save=QtWidgets.QPushButton("Save")
 			self.gbl.addWidget(self.bt_save, 0,0,1,1)
-			self.bt_save.clicked[bool].connect(self.save_json)
+			self.bt_save.clicked.connect(self.save_json)
 			self.plotwiny.mpl_connect('button_press_event', self.onclick_ploty)
 			self.plotwinz.mpl_connect('button_press_event', self.onclick_plotz)
 		

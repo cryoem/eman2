@@ -518,7 +518,7 @@ class ImgHistogram(QtWidgets.QWidget):
 	
 	def mousePressEvent(self, event):
 
-		if (event.button()==Qt.LeftButton):
+		if (event.button()==Qt.MouseButton.LeftButton):
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
@@ -526,7 +526,7 @@ class ImgHistogram(QtWidgets.QWidget):
 				self.thresholdChanged.emit(self.threshold)
 			self.update()
 		
-		if (event.button()==Qt.LeftButton) and (self.volume):
+		if (event.button()==Qt.MouseButton.LeftButton) and (self.volume):
 			if ((event.x()-self.upposition[0][0])**2+(event.y()-self.upposition[0][1])**2)<49:
 				self.uppresent =0
 				self.mpressed = True
@@ -550,14 +550,14 @@ class ImgHistogram(QtWidgets.QWidget):
 			self.update()
 			
 	def mouseMoveEvent(self, event):
-		if (event.buttons()&Qt.LeftButton) and (self.volume==False):
+		if (event.buttons()&Qt.MouseButton.LeftButton) and (self.volume==False):
 			x=max(min(event.x()-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			self.thresholdChanged.emit(self.threshold)
 			self.update()
 		
-		if (Qt.LeftButton) and (self.volume):
+		if (Qt.MouseButton.LeftButton) and (self.volume):
 			if self.mpressed:
 				self.upposition[self.uppresent][0]=event.x()
 				self.upposition[self.uppresent][1]=event.y()

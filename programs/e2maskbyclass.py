@@ -227,7 +227,7 @@ def maskparmgui(classes):
 			self.snmax.valueChanged.connect(self.newParm)
 			self.sshells.valueChanged.connect(self.newParm)
 			self.ssigma.valueChanged.connect(self.newParm)
-			self.bok.clicked[bool].connect(self.close)
+			self.bok.clicked.connect(self.close)
 	
 			self.newParm()
 

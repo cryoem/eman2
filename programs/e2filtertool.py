@@ -481,12 +481,12 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 		# file menu
 #		QtCore.QObject.connect(self.mfile_save_processor,QtCore.SIGNAL("triggered(bool)")  ,self.menu_file_save_processor  )
-		self.mfile_save_stack.triggered[bool].connect(self.menu_file_save_stack)
-		self.mfile_save_map.triggered[bool].connect(self.menu_file_save_map)
-		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
-		self.mview_new_3dwin.triggered[bool].connect(self.menu_add_3dwin)
-		self.mview_new_2dwin.triggered[bool].connect(self.menu_add_2dwin)
-		self.mview_new_plotwin.triggered[bool].connect(self.menu_add_plotwin)
+		self.mfile_save_stack.triggered.connect(self.menu_file_save_stack)
+		self.mfile_save_map.triggered.connect(self.menu_file_save_map)
+		self.mfile_quit.triggered.connect(self.menu_file_quit)
+		self.mview_new_3dwin.triggered.connect(self.menu_add_3dwin)
+		self.mview_new_2dwin.triggered.connect(self.menu_add_2dwin)
+		self.mview_new_plotwin.triggered.connect(self.menu_add_plotwin)
 
 		self.wsetname.currentIndexChanged[int].connect(self.setChange)
 

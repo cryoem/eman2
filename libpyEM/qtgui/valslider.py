@@ -807,11 +807,11 @@ class EMQTColorWidget(QtWidgets.QWidget):
 
 	def mouseMoveEvent(self, e):
 
-		if e.buttons() != QtCore.Qt.LeftButton:
+		if e.buttons() != QtCore.Qt.MouseButton.LeftButton:
 			return
 
 	def mousePressEvent(self, event):
-		if event.buttons() != QtCore.Qt.RightButton:
+		if event.buttons() != QtCore.Qt.MouseButton.RightButton:
 			self.inicolor = self.color
 			self.colrodialog = EMQtColorDialog(self.color)
 			self.colrodialog.currentColorChanged.connect(self._on_colorchange)

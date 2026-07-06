@@ -201,6 +201,13 @@ class EMPlot2DWidget(EMGLWidget):
 
 		self.resize_event(width,height)
 
+	def resizeEvent(self, event):
+		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		dpr=self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		self.resize_event(w,h)
+
 	def closeEvent(self,event):
 		for pv in self.particle_viewers: 
 			if pv!=None : pv.closeEvent(event)

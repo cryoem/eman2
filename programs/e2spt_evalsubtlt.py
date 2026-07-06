@@ -96,7 +96,7 @@ class EMSptEval(QtWidgets.QMainWindow):
 		self.imglst.setMinimumSize(450, 100)
 		self.gbl.addWidget(self.imglst, 0,1,10,1)
 		self.imglst.cellClicked[int, int].connect(self.on_list_selected)
-		self.bt_submean.clicked[bool].connect(self.substract_mean)
+		self.bt_submean.clicked.connect(self.substract_mean)
 
 		self.update_list()
 		

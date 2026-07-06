@@ -418,13 +418,13 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.gbl.addWidget(self.box_display, 0,2,1,1)
 		
 		
-		self.bt_new.clicked[bool].connect(self.new_nnet)
-		self.bt_load.clicked[bool].connect(self.load_nnet)
-		self.bt_train.clicked[bool].connect(self.train_nnet)
-		self.bt_save.clicked[bool].connect(self.save_nnet)
-		self.bt_apply.clicked[bool].connect(self.apply_nnet)
-		self.bt_chgbx.clicked[bool].connect(self.change_boxsize)
-		self.bt_applyall.clicked[bool].connect(self.apply_nnet_all)
+		self.bt_new.clicked.connect(self.new_nnet)
+		self.bt_load.clicked.connect(self.load_nnet)
+		self.bt_train.clicked.connect(self.train_nnet)
+		self.bt_save.clicked.connect(self.save_nnet)
+		self.bt_apply.clicked.connect(self.apply_nnet)
+		self.bt_chgbx.clicked.connect(self.change_boxsize)
+		self.bt_applyall.clicked.connect(self.apply_nnet_all)
 		self.box_display.currentIndexChanged.connect(self.do_update)
 
 		self.val_targetsize=TextBox("TargetSize", 1)
@@ -941,7 +941,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))		
 		x,y =np.round(x), np.round(y)
 		
-		if not event.button()&Qt.LeftButton:
+		if not event.button()&Qt.MouseButton.LeftButton:
 			return
 		
 		mode=self.box_display.currentText()

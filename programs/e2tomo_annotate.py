@@ -101,10 +101,10 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.medit_undo=self.medit.addAction("Undo")
 		self.medit_undo.setEnabled(False)
 
-		self.mfile_del_all.triggered[bool].connect(self.menu_file_del_all)
-		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
-		self.mfile_new_full.triggered[bool].connect(self.menu_file_new_seg)
-		self.medit_undo.triggered[bool].connect(self.menu_edit_undo)
+		self.mfile_del_all.triggered.connect(self.menu_file_del_all)
+		self.mfile_quit.triggered.connect(self.menu_file_quit)
+		self.mfile_new_full.triggered.connect(self.menu_file_new_seg)
+		self.medit_undo.triggered.connect(self.menu_edit_undo)
 
 
 		self.tom_folder = options.folder
@@ -490,13 +490,13 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 		#self.basic_tab.tabBarClicked[int].connect(self.basic_tab_change)
 		self.basic_tab.currentChanged[int].connect(self.basic_tab_change)
-		self.interp_button.clicked[bool].connect(self.interp_bt_clicked)
-		self.clear_button.clicked[bool].connect(self.clear_points)
-		self.clear_contour_button.clicked[bool].connect(self.clear_points)
+		self.interp_button.clicked.connect(self.interp_bt_clicked)
+		self.clear_button.clicked.connect(self.clear_points)
+		self.clear_contour_button.clicked.connect(self.clear_points)
 		self.fill_contour_checkbox.stateChanged[int].connect(self.fill_contour_checkbox_changed)
-		self.random_bx_bt.clicked[bool].connect(self.random_bx_bt_clicked)
-		self.clear_bx_bt.clicked[bool].connect(self.clear_bx_bt_clicked)
-		self.extract_bt.clicked[bool].connect(self.extract_bt_clicked)
+		self.random_bx_bt.clicked.connect(self.random_bx_bt_clicked)
+		self.clear_bx_bt.clicked.connect(self.clear_bx_bt_clicked)
+		self.extract_bt.clicked.connect(self.extract_bt_clicked)
 		self.bsz_vs.valueChanged.connect(self.bsz_vs_value_changed)
 
 
@@ -561,7 +561,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.control_panel.setWindowTitle("Control Panel")
 		self.control_panel.show()
 
-		self.test_button.clicked[bool].connect(self.test_drawing_function)
+		self.test_button.clicked.connect(self.test_drawing_function)
 		#self.undo_button.clicked[bool].connect(self.reverse_to_saved_state)
 
 		#Need to fix
@@ -618,7 +618,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		return
 
 	def img_view_mouse_drag(self, event):
-		if event.buttons()&Qt.RightButton:
+		if event.buttons()&Qt.MouseButton.RightButton:
 			return
 		else:
 			return
@@ -1613,7 +1613,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 			x,y=self.img_view.scr_to_img((event.x(),event.y()))
 			z =self.img_view.zpos
 			print(x,y,self.img_view.zpos)
-			if not event.button()&Qt.LeftButton:
+			if not event.button()&Qt.MouseButton.LeftButton:
 				return
 			if event.modifiers()&Qt.ControlModifier:
 				color = [0,0,255]
@@ -1658,7 +1658,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 			#print("Mouse is to draw contour")
 			x,y=self.img_view.scr_to_img((event.x(),event.y()))
-			if not event.button()&Qt.LeftButton:
+			if not event.button()&Qt.MouseButton.LeftButton:
 				return
 			if event.modifiers()&Qt.ControlModifier or event.modifiers()&Qt.ShiftModifier:
 				#### check if clicking on an existing point
@@ -2175,11 +2175,11 @@ class Thumbnail(EMImage2DWidget):
 
 	def mouseMoveEvent(self, event):
 		lc=self.scr_to_img(event.x(),event.y())
-		if event.buttons()&Qt.LeftButton:
+		if event.buttons()&Qt.MouseButton.LeftButton:
 			self.box_size = self.get_box_size()
 			self.scale_fac = self.get_scale_fac()
 			self.add_box((lc[0]),(lc[1]), (self.box_size))
-		elif event.buttons()&Qt.RightButton:
+		elif event.buttons()&Qt.MouseButton.RightButton:
 			return
 		else:
 			return
@@ -2188,7 +2188,7 @@ class Thumbnail(EMImage2DWidget):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		#print("Mouse release")
 		lc=self.scr_to_img(event.x(),event.y())
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			lc=self.scr_to_img(event.x(),event.y())
 			xy = [lc[0],lc[1]]
 			#print("Box x,y,bound", lc[0], lc[1], self.box_size[0]/2, self.size-self.box_size[0]/2)

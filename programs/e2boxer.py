@@ -2097,7 +2097,7 @@ class GUIBoxer(QtWidgets.QWidget):
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
 		self.curbox=-1
 		self.downbut=event.buttons()
-		if not event.buttons()&Qt.LeftButton : return
+		if not event.buttons()&Qt.MouseButton.LeftButton : return
 		self.lastloc=m
 		boxsize2=self.vbbsize.getValue()//2
 		ptclsize=self.vbbpsize.getValue()
@@ -2128,7 +2128,7 @@ class GUIBoxer(QtWidgets.QWidget):
 
 	def imgmousedrag(self,event,m) :
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
-		if not event.buttons()&Qt.LeftButton : return
+		if not event.buttons()&Qt.MouseButton.LeftButton : return
 		boxsize2=self.vbbsize.getValue()//2
 		ptclsize=self.vbbpsize.getValue()
 		if boxsize2<4 : return
@@ -2158,7 +2158,7 @@ class GUIBoxer(QtWidgets.QWidget):
 			
 	def imgmouseup(self,event,m) :
 #		m=self.wimage.scr_to_img((event.x(),event.y()))
-		if not self.downbut&Qt.LeftButton : return
+		if not self.downbut&Qt.MouseButton.LeftButton : return
 		boxsize=self.vbbsize.getValue()
 		boxsize2=boxsize//2
 		ptclsize=self.vbbpsize.getValue()

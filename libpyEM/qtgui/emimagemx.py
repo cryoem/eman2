@@ -352,6 +352,14 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		try: self.resize_event(width,height)
 		except: pass
 
+	def resizeEvent(self, event):
+		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		dpr=self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		try: self.resize_event(w,h)
+		except: pass
+
 	def get_frame_buffer(self):
 		# THIS WILL FAIL ON WINDOWS APPARENTLY, because Windows requires a temporary context - but the True flag is stopping the creation of a temporary context
 		# (because display lists are involved)
@@ -1711,7 +1719,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def __app_mode_mouse_down(self, event):
 		self.downbutton=event.button()
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc:
 #				print "select ",lc[0]
@@ -1735,18 +1743,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					print("Angle: ", angle)
 
 	def __app_mode_mouse_double_click(self, event):
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc:
 #				print "dselect ",lc[0]
 				self.mx_image_double.emit(event, lc)
 
 	def __app_mode_mouse_move(self, event):
-		if event.buttons()&Qt.LeftButton:
+		if event.buttons()&Qt.MouseButton.LeftButton:
 			self.mx_mousedrag.emit(event, self.get_scale())
 
 	def __app_mode_mouse_up(self,event):
-		if self.downbutton==Qt.LeftButton:
+		if self.downbutton==Qt.MouseButton.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc!=None:
 
@@ -1761,11 +1769,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					#self.force_display_update()
 
 	def __del_mode_mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			self.lc=self.scr_to_img((event.x(),event.y()))
 
 	def __del_mode_mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
 				self.remove_particle_image(lc[0],event,True)
@@ -1776,7 +1784,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __drag_mode_mouse_down(self,event):
 #		return
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 #			print("drag begin ",str(event))
 			lc= self.scr_to_img((event.x(),event.y()))
 			if lc == None:
@@ -1907,11 +1915,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.class_window = None
 
 	def __set_mode_mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			self.lc= self.scr_to_img((event.x(),event.y()))
 
 	def __set_mode_mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 			lc=self.scr_to_img((event.x(),event.y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
 				self.image_set_associate(lc[0],event,True)
@@ -1933,12 +1941,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.scroll_bar.mousePressEvent(event)
 			return
 
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			if not self.draw_scroll: return # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			try:
 				get_application().setOverrideCursor(Qt.ClosedHandCursor)
@@ -1997,7 +2005,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				self.__set_mode_mouse_up(event)
 
 	def wheelEvent(self, event):
-		if not self.data: return
+		if not self.data:
+			event.ignore()
+			return
 		if event.angleDelta().y() > 0:
 			self.set_scale( self.scale * self.mag )
 		elif event.angleDelta().y() < 0:
@@ -2005,6 +2015,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#self.resize_event(self.width(),self.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
+		event.accept()
 
 	def leaveEvent(self,event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
