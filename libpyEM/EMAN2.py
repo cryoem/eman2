@@ -2312,17 +2312,11 @@ def get_3d_font_renderer():
 	try:
 		from libpyGLUtils2 import EMFTGL
 		font_renderer = EMFTGL()
-		font_renderer.set_face_size(32)
-		font_renderer.set_using_display_lists(True)
+		font_renderer.set_using_display_lists(False)
 		font_renderer.set_depth(2)
-		pfm = get_platform()
-		if pfm in ["Linux","Darwin"]:
-			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
-			#font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/SourceCodePro-Light.ttf")
-		elif pfm == "Windows":
-			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
-		else:
-			print("unknown platform:",pfm)
+		font_renderer.set_face_size(12)
+		font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/NotoSansMono-Medium.ttf")
 		return font_renderer
 	except ImportError:
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."

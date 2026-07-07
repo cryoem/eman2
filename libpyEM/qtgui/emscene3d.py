@@ -804,7 +804,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.render()			# SG nodes must have a render method
 			glFlush()			# Finish rendering
 		except Exception as e:
-			print("EMScene3D.paintGL error:", e)
+			pass
 		finally:
 			self.reset_camera = False
 		
@@ -1224,8 +1224,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 					self.camera.setFovy(self.camera.getFovy()-1.0)
 			self.updateSG()
 			self.cameraNeedsanUpdate()
-		except Exception as e:
-			print("EMScene3D wheelEvent error:", e)
+		except Exception:
+			pass
 		event.accept()
 		
 		

@@ -55,7 +55,7 @@ using std::endl;
 
 void EMFTGL::render_string(const string& message) {
 	
-	FTFont* font = fm.get_font(mode,font_file_name,face_size,depth,true);
+	FTFont* font = fm.get_font(mode,font_file_name,face_size,depth,use_display_lists);
 	
 	if (font == 0) {
 		cerr << "Couldn't open font, no action taken. Current font is " << font_file_name << endl;
@@ -67,7 +67,7 @@ void EMFTGL::render_string(const string& message) {
 
 vector<float> EMFTGL::bounding_box(const string& message)
 {
-	FTFont* font = fm.get_font(mode,font_file_name,face_size,depth,true);
+	FTFont* font = fm.get_font(mode,font_file_name,face_size,depth,use_display_lists);
 	if (font == 0) {
 		cerr << "Couldn't open font, no action taken. Current font is " << font_file_name << endl;
 		return vector<float>(); 
@@ -99,12 +99,14 @@ FTFont* EMFTGL::EMFTGLManager::get_font(EMFTGL::FontMode mode, const string& fil
 {
 	for (vector<EMFTGLFontInstance*>::const_iterator it = font_instances.begin(); it != font_instances.end(); ++it ) {
 		if ((*it)->params_match(mode,file_name,face_size,depth,use_dl)) {
+			// cout<<"old "<<file_name<<face_size<<depth<<endl;
 			return (*it)->get_font();
 		}
 	}
 	// If we make it here there was no match
 	EMFTGLFontInstance* fi = new EMFTGLFontInstance(mode,file_name,face_size,depth,use_dl);
 	font_instances.push_back(fi);
+	// cout<<"new "<<file_name<<face_size<<depth<<endl;
 	return fi->get_font();
 }
 

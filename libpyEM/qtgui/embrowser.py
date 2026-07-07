@@ -2425,7 +2425,7 @@ class EMDirEntry(object) :
 
 			for guess in guesses :
 				ret=guess.isValid(self.path(), head)
-				if ret==False: continue
+				if not ret: continue
 				size, n, dim = ret
 
 				# If we got here, we found a match

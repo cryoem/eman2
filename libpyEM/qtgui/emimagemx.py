@@ -247,7 +247,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
-		self.first_render = True # a hack, something is slowing us down in FTGL
+#		self.first_render = True # a hack, something is slowing us down in FTGL
 		self.scroll_bar = EMGLScrollBar(self)
 		self.draw_scroll = True
 		self.scroll_bar_has_mouse = False
@@ -277,8 +277,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#self.usetexture=True
 		self.usetexture=False
 		
-		self.font_size = 11
-		self.font_renderer.set_face_size(self.font_size)
+		self.font_size = 12
 
 
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a
@@ -294,42 +293,46 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.reroute_delete = False
 
-		if data:
-			self.set_data(data)
+		if data: self.tmp=data
+		else: self.tmp=None
 
 		self.auto_contrast = True
 		self.setAcceptDrops(True)
+		print("initmx") #DBG
 
 	def initializeGL(self):
+		super.initializeGL(self)
 		glClearColor(0,0,0,0)
 
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		#glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [1,1,1.,0.])
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.4, 0.4, 0.4, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [1,0,-1.,1.])
-		glLightfv(GL_LIGHT0, GL_POSITION, [40,40,100.,1.])
-		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intentionally turned off
-
+		# Lighting not needed in EMImageMXWidget - use glColor instead of materials
+		glDisable(GL_LIGHTING)
+		
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
+		if self.tmp is not None: 
+			self.set_data(self.tmp)
+			self.tmp=None
+		print("initGL") #DBG
 	
 	def paintGL(self):
+		print("paintGL") #DBG
 		try:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		except: pass
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		#context = OpenGL.contextdata.getContext(None)
-		#print "Matrix context is", context
+		# Ensure lighting is disabled every frame - QOpenGLWidget can reset GL state in Qt6
+		GL.glDisable(GL_LIGHTING)
+		dpr = self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		if w == 0 or h == 0: return
+		GL.glViewport(0, 0, int(self.width()*dpr), int(self.height()*dpr))
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GL.glOrtho(0.0, w, 0.0, h, -50, 50)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
 		self.render()
+		print("paintGL done") #DBG
 
 
 	def resizeGL(self, width, height):
@@ -338,15 +341,13 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		height = height // self.devicePixelRatio()
 		
 		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		GL.glOrtho(0.0,width,0.0,height,-50,50)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
-
-		glLightfv(GL_LIGHT0, GL_POSITION, [width//2,height//2,100.,1.])
 
 		self.set_projection_view_update()
 		try: self.resize_event(width,height)
@@ -1051,9 +1052,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#print "scale is",self.scale
 
 	def __draw_backdrop(self):
-		light = glIsEnabled(GL_LIGHTING)
-		glDisable(GL_LIGHTING)
-
 		glColor(.9,.9,.9)
 		glBegin(GL_QUADS)
 		glVertex(0,0,-1)
@@ -1064,7 +1062,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glColor(.9,.9,.9)
 		glVertex(0,self.height(),-1)
 		glEnd()
-		if light: glEnable(GL_LIGHTING)
 
 
 	def view_width(self):
@@ -1072,6 +1069,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def render(self):
 		if not self.data : return
+		print("render") #DBG
 		self.set_font_render_resolution()
 		try:
 			self.image_change_count = self.data[0]["changecount"] 		# this is important when the user has more than one display instance of the same image, for instance in e2.py if
@@ -1104,6 +1102,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
 
 		if render:
+			print("real render") #DBG
 			deleted_idxs = self.deletion_manager.deleted_ptcls()
 			visible_set_data = self.sets_visible
 			if self.draw_background:
@@ -1186,8 +1185,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							continue
 
 						
-						tw*=dpr
-						th*=dpr
+						tw=int(tw*dpr+0.5)
+						th=int(th*dpr+0.5)
 						self.coords[i]=(tx,ty,tw,th)
 
 						draw_tex = True
@@ -1222,8 +1221,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 						if draw_tex : self.nshown+=1
 
-						light = glIsEnabled(GL_LIGHTING)
-						glDisable(GL_LIGHTING)
 						iss = 0
 						for ii,kv in enumerate(sorted(self.sets.items())):
 							set_name,set_list=kv
@@ -1249,20 +1246,19 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 								self.__render_excluded_square()
 								glPopMatrix()
 								iss  += 1
-						if not light: glEnable(GL_LIGHTING)
-			for i in self.selected:
-				try:
-					data = self.coords[i]
-					glColor(0.5,0.5,1.0)
-					glBegin(GL_LINE_LOOP)
-					glVertex(data[0],data[1])
-					glVertex(data[0]+data[2],data[1])
-					glVertex(data[0]+data[2],data[1]+data[3])
-					glVertex(data[0],data[1]+data[3])
-					glEnd()
-				except:
-					# this means the box isn't visible!
-					pass
+				for i in self.selected:
+					try:
+						data = self.coords[i]
+						glColor(0.5,0.5,1.0)
+						glBegin(GL_LINE_LOOP)
+						glVertex(data[0],data[1])
+						glVertex(data[0]+data[2],data[1])
+						glVertex(data[0]+data[2],data[1]+data[3])
+						glVertex(data[0],data[1]+data[3])
+						glEnd()
+					except:
+						# this means the box isn't visible!
+						pass
 					
 			if self.inspector : self.inspector.set_hist(self.hist,self.minden,self.maxden)
 		else:
@@ -1276,9 +1272,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				glCallList(self.main_display_list)
 			except: 
 				pass
-			if self.first_render: #A hack, FTGL is slowing us down
-				self.display_states = []
-				self.first_render = False
+#			if self.first_render: #A hack, FTGL is slowing us down
+#				self.display_states = []
+#				self.first_render = False
 		if self.draw_scroll: 
 			try:
 				self.draw_scroll_bar()
@@ -1287,10 +1283,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def load_set_color(self,set):
 		color = BoxingTools.get_color(set+1)
-		c = [color[0],color[1],color[2],1.0]
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
-		glMaterial(GL_FRONT,GL_SPECULAR,c)
-		glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		# c = [color[0],color[1],color[2],1.0]
+		glColor3f(*color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
+		# glMaterial(GL_FRONT,GL_SPECULAR,c)
+		# glMaterial(GL_FRONT,GL_SHININESS,100.0)
 #		if set == 0:
 #			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 #			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
@@ -1378,23 +1375,22 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glNormal(1,-1,0.1)
 		glVertex(1-d,-1+d,0.1)
 
-
 		glEnd()
 
 	def __draw_mx_text(self,tx,ty,txtcol,i):
+		print("mx_text") #DBG
 		# try for a sensible background color
-		if txtcol[0]+txtcol[1]+txtcol[2]>.4 and txtcol[0]+txtcol[1]+txtcol[2]<.6 : bgcol=(0.0,0.0,0.0)
+		if txtcol[0]+txtcol[1]+txtcol[2]> .4 and txtcol[0]+txtcol[1]+txtcol[2]<.6 : bgcol=(0.0,0.0,0.0)
 		else : bgcol = (1.0-txtcol[0],1.0-txtcol[1],1.0-txtcol[2])
+		
+		if not self.font_renderer:
+			return
 
-		#glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		lighting = glIsEnabled(GL_LIGHTING)
-		glDisable(GL_LIGHTING)
-		#glEnable(GL_NORMALIZE)
+		# Make sure GL context is current - Qt6 may recreate contexts on show/resize
+		self.makeCurrent()
+
 		tagy = ty
 
-		#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-		#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-#		#glMaterial(GL_FRONT,GL_SHININESS,1.0)
 		for v in self.valstodisp:
 			glPushMatrix()
 			glTranslate(tx,tagy,0)
@@ -1403,15 +1399,15 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				idx = i+self.img_num_offset
 				if idx != 0: idx = idx%self.max_idx
 				sidx = str(idx)
-				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 				self.font_renderer.set_face_size(self.font_size)
+				# glDisable(GL_TEXTURE_2D)
+				# glDisable(GL_COLOR_MATERIAL)
+				# glDisable(GL_LIGHTING)
+				# glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 				bbox = self.font_renderer.bounding_box(sidx)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				GL.glEnable(GL_TEXTURE_2D)
-				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				GL.glColor(*txtcol)
+				glColor4f(1.0, 1.0, 1.0, 1.0)
 				self.font_renderer.render_string(sidx)
-				GL.glPopAttrib()
 
 			else :
 				try:
@@ -1432,23 +1428,19 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					except:avs ="???"
 				except: avs = ""
 
-				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
 				self.font_renderer.set_face_size(self.font_size)
 				bbox = self.font_renderer.bounding_box(avs)
+				glDisable(GL_TEXTURE_2D)
+				glDisable(GL_COLOR_MATERIAL)
+				glDisable(GL_LIGHTING)
+				glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				GL.glEnable(GL_TEXTURE_2D)
-				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				GL.glColor(*txtcol)
+				glColor4f(1.0, 1.0, 1.0, 1.0)
 				self.font_renderer.render_string(avs)
-				GL.glPopAttrib()
 
 			tagy+=self.font_renderer.get_face_size()
 
 			glPopMatrix()
-
-		if lighting:
-			glEnable(GL_LIGHTING)
-#			glDisable(GL_TEXTURE_2D)
 
 
 	def bounding_box(self,character):
@@ -2027,9 +2019,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def draw_scroll_bar(self):
 		width = self.width()
-		glEnable(GL_LIGHTING)
-		glEnable(GL_NORMALIZE)
-		glDisable(GL_TEXTURE_2D)
+		# glEnable(GL_LIGHTING)
+		# glEnable(GL_NORMALIZE)
+		# glDisable(GL_TEXTURE_2D)
 
 		glPushMatrix()
 		glTranslate(width-self.scroll_bar.width,0,0)
@@ -2121,26 +2113,26 @@ class EMGLScrollBar(object):
 		ex = self.width
 		ey = self.height
 
-		glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
-		glNormal(0,0,1) # this normal is fine for everything that is drawn here
-		# this provides some defaults for specular and shininess
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		# glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
+		# glNormal(0,0,1) # this normal is fine for everything that is drawn here
+		# # this provides some defaults for specular and shininess
+		# glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_SHININESS,20.0)
 
 		# The scroll bar - the long bar that defines the extent
 		glBegin(GL_QUADS)
-		glNormal(0,0,1)
+		#glNormal(0,0,1)
 		x1 = self.startx
 		x2 = self.width
 		y1 = self.starty
 		y2 = self.height
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
 		glVertex(x1,y1,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y1,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y2,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
 		glVertex(x1,y2,0)
 		glEnd()
 
@@ -2148,22 +2140,22 @@ class EMGLScrollBar(object):
 		glPushMatrix()
 		glTranslate(0,self.arrow_button_height,0)
 		glBegin(GL_TRIANGLES)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(self.width//2,self.arrow_button_height-self.arrow_part_offset,0)
 		glEnd()
 		glPopMatrix()
 
 		# the down pointing arrow
 		glBegin(GL_TRIANGLES)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(self.width//2,self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
 		glEnd()
 
@@ -2173,13 +2165,13 @@ class EMGLScrollBar(object):
 		x2 = ex
 		y1 = sy+self.scroll_bit_position
 		y2 = y1+self.scroll_bit_height
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(0,.5,0.5,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(0,.5,0.5,1.0))
 		glVertex(x1,y1,1)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y1,1)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y2,1)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
 		glVertex(x1,y2,1)
 		glEnd()
 		

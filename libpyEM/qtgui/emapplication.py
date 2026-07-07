@@ -124,6 +124,15 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 			else : self.qt_parent.resize(int(w+4), int(h+4))
 		self.update()
 
+	def initializeGL(self):
+		print("super initgl")  #DBG
+		self.font_renderer = get_3d_font_renderer()
+		if self.font_renderer == None :
+			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
+			sys.exit(1)
+		
+
+
 	def resizeGL(self, width, height):
 		QtOpenGLWidgets.QOpenGLWidget.resizeGL(self,int(width),int(height))
 		# Subclass resizeGL will be called by Qt after this
@@ -132,7 +141,8 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	def show(self):
 		if self.qt_parent:
 			self.qt_parent.show()
-			
+		super.show(self)
+		
 	def setWindowTitle(self, title):
 		if self.qt_parent:
 			self.qt_parent.setWindowTitle(title)
@@ -169,21 +179,56 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 		self._font_initialized = False
 		
 		self.busy = False #updateGL() does nothing when self.busy == True
+		print("App init_done") #DBG
 		
-	def _ensure_font(self):
-		"""Lazily initialize the font renderer with an active GL context.
-		Call this before using self.font_renderer in paintGL/render methods."""
-		if self._font_initialized:
-			return
-		self.makeCurrent()
-		self.font_renderer = get_3d_font_renderer()
-		if self.font_renderer == None :
-			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
-			sys.exit(1)
-		self.font_renderer.set_face_size(16)
-		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-		self._font_initialized = True
-		return self.font_renderer
+	# def _ensure_font(self):
+	# 	"""Lazily initialize the font renderer with an active GL context.
+	# 	Call this before using self.font_renderer in paintGL/render methods."""
+	# 	print("ensure_font") #DBG
+	# 	if self._font_initialized:
+	# 		return
+
+	# 	print("ensure font actual") #DBG
+	# 	try:
+	# 		self.makeCurrent()
+	# 		# ctx = QOpenGLContext.currentContext() #DBG
+	# 		# print("created", ctx, ctx.shareGroup()) #DBG
+	# 		# Comprehensive GL state reset before FTGL initialization.
+	# 		# FTGL TEXTURE mode queries GL capabilities and creates texture atlas
+	# 		# pages. If GL state is dirty (wrong matrices, bound textures, etc.),
+	# 		# the atlas pages get wrong dimensions, causing assertion failures:
+	# 		# "xOffset + destWidth <= w" / "yOffset + destHeight <= h"
+	# 		GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
+	# 		# GL.glDisable(GL.GL_LIGHTING)
+	# 		# GL.glDisable(GL.GL_TEXTURE_2D)
+	# 		# GL.glDisable(GL.GL_BLEND)
+	# 		# GL.glDisable(GL.GL_CULL_FACE)
+	# 		# GL.glDisable(GL.GL_DEPTH_TEST)
+	# 		# GL.glDisable(GL.GL_STENCIL_TEST)
+	# 		# GL.glDisable(GL.GL_SCISSOR_TEST)
+	# 		# GL.glDisable(GL.GL_DITHER)
+	# 		# GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
+	# 		# GL.glMatrixMode(GL.GL_PROJECTION)
+	# 		# GL.glLoadIdentity()
+	# 		# GL.glMatrixMode(GL.GL_MODELVIEW)
+	# 		# GL.glLoadIdentity()
+	# 		# GL.glViewport(0, 0, 1, 1)
+	# 		# GL.glColor3f(1.0, 1.0, 1.0)
+	# 		# GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
+	# 		self.font_renderer = get_3d_font_renderer()
+	# 		if self.font_renderer == None :
+	# 			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
+	# 			sys.exit(1)
+	# 		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+	# 		# self.font_renderer.set_face_size(4)
+	# 		# self.font_renderer.render_string(" ")
+	# 		# TEXTURE mode renders glyphs as textured quads - no winding/culling issues
+	# 		GL.glPopAttrib()
+	# 		self._font_initialized = True
+	# 		print("ensure font actual complete") #DBG
+	# 	except Exception:
+	# 		return
+	# 	return #self.font_renderer
 		
 	def showEvent(self, event):
 		"""Force an update when shown to ensure initial paintGL fires in Qt6."""
