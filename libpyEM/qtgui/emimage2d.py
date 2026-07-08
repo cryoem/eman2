@@ -90,7 +90,6 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
-		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
 
 		#sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(7))
 		#sizePolicy.setHorizontalStretch(7)
@@ -181,10 +180,10 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
 
-		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
 
-		if image : self.set_data(image)
+		if image is not None : self.tmp=image
+		else: self.tmp=None
 #		else:self.__load_display_settings_from_db()
 
 #	def __del__(self):
@@ -192,7 +191,7 @@ class EMImage2DWidget(EMGLWidget):
 #		self.qt_parent.deleteLater()
 
 	def initializeGL(self):
-		self._ensure_font()
+		EMGLWidget.initializeGL(self)
 		GL.glClearColor(0,0,0,0)
 
 		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
@@ -202,7 +201,13 @@ class EMImage2DWidget(EMGLWidget):
 
 		enable(GL_LIGHTING)
 		enable(GL_LIGHT0)
+		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
+		if self.tmp is not None: 
+			self.set_data(tmp)
+			self.tmp=None
 
+		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
+		
 	def paintGL(self):
 		try:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -709,7 +714,7 @@ class EMImage2DWidget(EMGLWidget):
 		data["scale"] = self.scale
 
 		try:
-			data["parent_geometry"] = self.qt_parent.saveGeometry()
+			data["parent_geometry"] = self.saveGeometry()
 		except: pass
 
 		db = DB.image_2d_display_settings
@@ -746,7 +751,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.image_range_changed(z)
 			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
-		self.qt_parent.register_animatable(animation)
+		self.register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale,quiet=False):
@@ -1613,7 +1618,7 @@ class EMImage2DWidget(EMGLWidget):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
 
-			self.qt_parent.register_animatable(animation)
+			self.register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
@@ -1873,7 +1878,7 @@ class EMImage2DWidget(EMGLWidget):
 		if self.key_mvt_animation == None:
 			new_origin=(self.origin[0]+dx,self.origin[1]+dy)
 			self.key_mvt_animation = LineAnimation(self,self.origin,new_origin)
-			self.qt_parent.register_animatable(self.key_mvt_animation)
+			self.register_animatable(self.key_mvt_animation)
 		else:
 			new_origin = self.key_mvt_animation.get_end()
 			new_origin = (new_origin[0]+dx,new_origin[1]+dy)

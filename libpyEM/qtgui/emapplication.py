@@ -43,7 +43,7 @@ QtGui.QSurfaceFormat.setDefaultFormat(_fmt)
 del _fmt
 
 import sys
-from .emimageutil import EMParentWin
+#from .emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import weakref
 from libpyGLUtils2 import *
@@ -113,52 +113,54 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	module_closed = QtCore.Signal()
 	inspector_shown = QtCore.Signal()
 
-	def hide(self):
-		if self.qt_parent:
-			self.qt_parent.hide()
+	# def hide(self):
+	# 	if self.qt_parent:
+	# 		self.qt_parent.hide()
 			
-	def resize(self, w, h):
-		if self.qt_parent:
-			QtOpenGLWidgets.QOpenGLWidget.resize(self, int(w), int(h))
-			if get_platform()=="Darwin" : self.qt_parent.resize(int(w), int(h)+22)
-			else : self.qt_parent.resize(int(w+4), int(h+4))
-		self.update()
+	# def resize(self, w, h):
+	# 	if self.qt_parent:
+	# 		QtOpenGLWidgets.QOpenGLWidget.resize(self, int(w), int(h))
+	# 		if get_platform()=="Darwin" : self.qt_parent.resize(int(w), int(h)+22)
+	# 		else : self.qt_parent.resize(int(w+4), int(h+4))
+	# 	self.update()
 
+	# Note that QT6 apparently swallows exceptions in initializeGL
 	def initializeGL(self):
-		print("super initgl")  #DBG
-		self.font_renderer = get_3d_font_renderer()
-		if self.font_renderer == None :
-			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
+		try:
+			self.font_renderer = get_3d_font_renderer()
+			if self.font_renderer is None :
+				print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
+				sys.exit(1)
+		except:
+			print_exc()
 			sys.exit(1)
-		
 
-
-	def resizeGL(self, width, height):
-		QtOpenGLWidgets.QOpenGLWidget.resizeGL(self,int(width),int(height))
-		# Subclass resizeGL will be called by Qt after this
-		self.update()
+	# def resizeGL(self, width, height):
+	# 	QtOpenGLWidgets.QOpenGLWidget.resizeGL(self,int(width),int(height))
+	# 	# Subclass resizeGL will be called by Qt after this
+	# 	self.update()
 			
-	def show(self):
-		if self.qt_parent:
-			self.qt_parent.show()
-		super.show(self)
+	# def show(self):
+	# 	if self.qt_parent:
+	# 		self.qt_parent.show()
+	# 	super.show(self)
 		
-	def setWindowTitle(self, title):
-		if self.qt_parent:
-			self.qt_parent.setWindowTitle(title)
-		else:
-			self.setWindowTitle(title)
+	# def setWindowTitle(self, title):
+	# 	if self.qt_parent:
+	# 		self.qt_parent.setWindowTitle(title)
+	# 	else:
+	# 		self.setWindowTitle(title)
 			
 	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
-		if parent==None : 
-			self.qt_parent = EMParentWin(enable_timer)
-			self.myparent=True			# we allocated the parent, responsible for cleaning it up
-		else: 
-			self.qt_parent=parent
-			self.myparent=False			# we did not allocate our parent, so we should not get rid of it
+		# if parent==None : 
+		# 	self.qt_parent = EMParentWin(enable_timer)
+		# 	self.myparent=True			# we allocated the parent, responsible for cleaning it up
+		# else: 
+		# 	self.qt_parent=parent
+		# 	self.myparent=False			# we did not allocate our parent, so we should not get rid of it
 		
-		QtOpenGLWidgets.QOpenGLWidget.__init__(self,self.qt_parent)
-		if self.myparent : self.qt_parent.setup(self)
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self)
+		# if self.myparent : self.qt_parent.setup(self)
 		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
 		self.inspector = None # a Qt Widget for changing display parameters, setting the data, accessing metadata, etc.
@@ -179,67 +181,11 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 		self._font_initialized = False
 		
 		self.busy = False #updateGL() does nothing when self.busy == True
-		print("App init_done") #DBG
-		
-	# def _ensure_font(self):
-	# 	"""Lazily initialize the font renderer with an active GL context.
-	# 	Call this before using self.font_renderer in paintGL/render methods."""
-	# 	print("ensure_font") #DBG
-	# 	if self._font_initialized:
-	# 		return
-
-	# 	print("ensure font actual") #DBG
-	# 	try:
-	# 		self.makeCurrent()
-	# 		# ctx = QOpenGLContext.currentContext() #DBG
-	# 		# print("created", ctx, ctx.shareGroup()) #DBG
-	# 		# Comprehensive GL state reset before FTGL initialization.
-	# 		# FTGL TEXTURE mode queries GL capabilities and creates texture atlas
-	# 		# pages. If GL state is dirty (wrong matrices, bound textures, etc.),
-	# 		# the atlas pages get wrong dimensions, causing assertion failures:
-	# 		# "xOffset + destWidth <= w" / "yOffset + destHeight <= h"
-	# 		GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
-	# 		# GL.glDisable(GL.GL_LIGHTING)
-	# 		# GL.glDisable(GL.GL_TEXTURE_2D)
-	# 		# GL.glDisable(GL.GL_BLEND)
-	# 		# GL.glDisable(GL.GL_CULL_FACE)
-	# 		# GL.glDisable(GL.GL_DEPTH_TEST)
-	# 		# GL.glDisable(GL.GL_STENCIL_TEST)
-	# 		# GL.glDisable(GL.GL_SCISSOR_TEST)
-	# 		# GL.glDisable(GL.GL_DITHER)
-	# 		# GL.glBindTexture(GL.GL_TEXTURE_2D, 0)
-	# 		# GL.glMatrixMode(GL.GL_PROJECTION)
-	# 		# GL.glLoadIdentity()
-	# 		# GL.glMatrixMode(GL.GL_MODELVIEW)
-	# 		# GL.glLoadIdentity()
-	# 		# GL.glViewport(0, 0, 1, 1)
-	# 		# GL.glColor3f(1.0, 1.0, 1.0)
-	# 		# GL.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA)
-	# 		self.font_renderer = get_3d_font_renderer()
-	# 		if self.font_renderer == None :
-	# 			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
-	# 			sys.exit(1)
-	# 		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-	# 		# self.font_renderer.set_face_size(4)
-	# 		# self.font_renderer.render_string(" ")
-	# 		# TEXTURE mode renders glyphs as textured quads - no winding/culling issues
-	# 		GL.glPopAttrib()
-	# 		self._font_initialized = True
-	# 		print("ensure font actual complete") #DBG
-	# 	except Exception:
-	# 		return
-	# 	return #self.font_renderer
-		
-	def showEvent(self, event):
-		"""Force an update when shown to ensure initial paintGL fires in Qt6."""
-		QtOpenGLWidgets.QOpenGLWidget.showEvent(self, event)
-		self.update()
 		
 	def closeEvent(self, event):
 		if self.inspector:
 			self.inspector.close()
 		QtOpenGLWidgets.QOpenGLWidget.closeEvent(self, event)
-		if self.myparent : self.qt_parent.close()
 		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		self.closed=True
 		event.accept()

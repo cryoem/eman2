@@ -262,6 +262,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.mmode="App"
 		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
 		self.downbutton=None
+		self.rc=0
 
 		self.sets={}			# All available sets for the current data, key is set name, value is set of ints
 		self.sets_visible={}	# A copy of the elements from self.sets which are currently visible
@@ -298,10 +299,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.auto_contrast = True
 		self.setAcceptDrops(True)
-		print("initmx") #DBG
 
 	def initializeGL(self):
-		super.initializeGL(self)
+		EMGLWidget.initializeGL(self)
 		glClearColor(0,0,0,0)
 
 		# Lighting not needed in EMImageMXWidget - use glColor instead of materials
@@ -312,10 +312,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if self.tmp is not None: 
 			self.set_data(self.tmp)
 			self.tmp=None
-		print("initGL") #DBG
-	
+		
 	def paintGL(self):
-		print("paintGL") #DBG
 		try:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		except: pass
@@ -332,8 +330,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
-		print("paintGL done") #DBG
-
 
 	def resizeGL(self, width, height):
 		if width <= 0 or height <= 0: return
@@ -924,7 +920,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if self.animation_enabled:
 			if self.line_animation != None and self.line_animation.animated: return # this is so the current animation has to end before starting another one. It could be the other way but I like it this way
 			self.line_animation = LineAnimation(self,self.origin,(x,y))
-			self.qt_parent.register_animatable(self.line_animation)
+			self.register_animatable(self.line_animation)
 			return True
 		else:
 			self.origin=(x,y)
@@ -1045,12 +1041,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		return False
 
-
-	def set_font_render_resolution(self):
-		" "
-		#self.font_renderer.set_face_size(int(self.height()*0.015))
-		#print "scale is",self.scale
-
 	def __draw_backdrop(self):
 		glColor(.9,.9,.9)
 		glBegin(GL_QUADS)
@@ -1069,8 +1059,16 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def render(self):
 		if not self.data : return
-		print("render") #DBG
-		self.set_font_render_resolution()
+		self.rc+=1
+
+		# DO NOT DELETE THIS APPARENTLY USELESS BLOCK
+		# this forces FTGL to pre-render the font before any other drawing is done
+		# without this the labels may appear black 
+		if self.rc==1: 
+			self.font_renderer.set_face_size(self.font_size)
+			bbox = self.font_renderer.bounding_box(" 0123456789,.")
+#			print(bbox)
+
 		try:
 			self.image_change_count = self.data[0]["changecount"] 		# this is important when the user has more than one display instance of the same image, for instance in e2.py if
 		except:
@@ -1078,8 +1076,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			except: pass
 
 		render = False
-
 		update = False
+		
 		if self.display_state_changed():
 			update = True
 
@@ -1087,7 +1085,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
 
 		if self.use_display_list:
-
 			if update:
 				if self.main_display_list != 0:
 					glDeleteLists(self.main_display_list,1)
@@ -1102,7 +1099,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.matrix_panel.update_panel_params(self.view_width(),self.height(),self.scale,self.data,self.origin[1],self)
 
 		if render:
-			print("real render") #DBG
 			deleted_idxs = self.deletion_manager.deleted_ptcls()
 			visible_set_data = self.sets_visible
 			if self.draw_background:
@@ -1113,7 +1109,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 			if not self.invert : pixden=(0,255)
 			else: pixden=(255,0)
-
+				
 			n=len(self.data)
 			self.hist=numpy.zeros(256)
 			#if len(self.coords)>n : self.coords=self.coords[:n] # don't know what this does? Had to comment out, changing from a list to a dictionary
@@ -1216,8 +1212,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							self.__render_excluded_square()
 							glPopMatrix()
 
-						if drawlabel:
-							self.__draw_mx_text(tx,ty,txtcol,i)
+						self.__draw_mx_text(tx,ty,txtcol,i)
 
 						if draw_tex : self.nshown+=1
 
@@ -1378,7 +1373,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glEnd()
 
 	def __draw_mx_text(self,tx,ty,txtcol,i):
-		print("mx_text") #DBG
 		# try for a sensible background color
 		if txtcol[0]+txtcol[1]+txtcol[2]> .4 and txtcol[0]+txtcol[1]+txtcol[2]<.6 : bgcol=(0.0,0.0,0.0)
 		else : bgcol = (1.0-txtcol[0],1.0-txtcol[1],1.0-txtcol[2])
@@ -1395,18 +1389,18 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			glPushMatrix()
 			glTranslate(tx,tagy,0)
 			glTranslate(0,1,0.2)
+			glEnable(GL_TEXTURE_2D)
+			self.font_renderer.set_face_size(self.font_size)
+			# glDisable(GL_COLOR_MATERIAL)
+			# glDisable(GL_LIGHTING)
+			# glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 			if v=="Img #" and not self.data[i].has_attr("Img #") :
 				idx = i+self.img_num_offset
 				if idx != 0: idx = idx%self.max_idx
 				sidx = str(idx)
-				self.font_renderer.set_face_size(self.font_size)
-				# glDisable(GL_TEXTURE_2D)
-				# glDisable(GL_COLOR_MATERIAL)
-				# glDisable(GL_LIGHTING)
-				# glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 				bbox = self.font_renderer.bounding_box(sidx)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				glColor4f(1.0, 1.0, 1.0, 1.0)
+				glColor3f(*txtcol)
 				self.font_renderer.render_string(sidx)
 
 			else :
@@ -1428,14 +1422,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					except:avs ="???"
 				except: avs = ""
 
-				self.font_renderer.set_face_size(self.font_size)
 				bbox = self.font_renderer.bounding_box(avs)
-				glDisable(GL_TEXTURE_2D)
-				glDisable(GL_COLOR_MATERIAL)
-				glDisable(GL_LIGHTING)
-				glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				glColor4f(1.0, 1.0, 1.0, 1.0)
+				glColor3f(*txtcol)
 				self.font_renderer.render_string(avs)
 
 			tagy+=self.font_renderer.get_face_size()

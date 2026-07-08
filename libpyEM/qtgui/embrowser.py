@@ -291,7 +291,7 @@ class EMFileType(object) :
 			brws.viewplot2d.append(target)
 			target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -308,7 +308,7 @@ class EMFileType(object) :
 		brws.viewplot2d.append(target)
 		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -461,7 +461,7 @@ class EMFileType(object) :
 #			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Random Avg Stack - "+display_path(self.path))
+		target.setWindowTitle("Random Avg Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -492,7 +492,7 @@ class EMFileType(object) :
 			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
+		target.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -514,7 +514,7 @@ class EMFileType(object) :
 		# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 		brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
+		target.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -555,7 +555,7 @@ class EMFileType(object) :
 			# if self.getSetsDB() : target.set_single_active_set(self.getSetsDB())
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
+		target.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -695,7 +695,7 @@ class EMFileType(object) :
 			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
+		target.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -813,7 +813,7 @@ class EMFileType(object) :
 			#target = EMImage2DWidget(data)
 		#brws.view2d.append(target)
 
-		#target.qt_parent.setWindowTitle(display_path(self.path))
+		#target.setWindowTitle(display_path(self.path))
 
 		#brws.notbusy()
 		#target.show()
@@ -1122,7 +1122,7 @@ class EMPlotFileType(EMFileType) :
 			brws.viewplot2d.append(target)
 			target.set_data_from_file(self.path)
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1150,7 +1150,7 @@ class EMPlotFileType(EMFileType) :
 		target.set_data_from_file(self.path)
 		#target.set_data(data, remove_directories_from_name(self.path, 1))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1177,7 +1177,7 @@ class EMPlotFileType(EMFileType) :
 		brws.viewhist.append(target)
 		target.set_data(data, remove_directories_from_name(self.path, 1))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1211,7 +1211,7 @@ class EMPlotFileType(EMFileType) :
 			brws.viewhist.append(target)
 			target.set_data(data, remove_directories_from_name(self.path, 1))
 		
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1233,7 +1233,7 @@ class EMPlotFileType(EMFileType) :
 			brws.viewplot3d.append(target)
 			target.set_data_from_file(self.path)
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1248,7 +1248,7 @@ class EMPlotFileType(EMFileType) :
 		target.set_data_from_file(self.path)
 		#target.set_data(data, remove_directories_from_name(self.path, 1))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1387,7 +1387,7 @@ class EMJSONFileType(EMFileType) :
 		
 		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1429,7 +1429,7 @@ class EMJSONFileType(EMFileType) :
 			
 		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1548,7 +1548,7 @@ class EMJSONFileType(EMFileType) :
 			target.mx_image_double.connect(target.mouse_double_click)		# this makes class average viewing work in app mode
 			brws.view2ds.append(target)
 
-		target.qt_parent.setWindowTitle("Stack - "+display_path(self.path))
+		target.setWindowTitle("Stack - "+display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1631,7 +1631,7 @@ class EMBdbFileType(EMFileType) :
 		target = EMImage2DWidget(data)
 		brws.view2d.append(target)
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1721,7 +1721,7 @@ class EMImageFileType(EMFileType) :
 		target = EMImage2DWidget(data)
 		brws.view2d.append(target)
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1872,7 +1872,7 @@ class EMStackFileType(EMFileType) :
 				
 		for i,d in enumerate(data): target.set_data(d, f"{i},{display_path(self.path)}")
 		
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()
@@ -1923,7 +1923,7 @@ class EMStackFileType(EMFileType) :
 		
 		target.set_data(data, display_path(self.path))
 
-		target.qt_parent.setWindowTitle(display_path(self.path))
+		target.setWindowTitle(display_path(self.path))
 
 		brws.notbusy()
 		target.show()

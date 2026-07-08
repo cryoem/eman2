@@ -2166,7 +2166,7 @@ def test_image_3d(type=0,size=(128,128,128)):
 # get a font renderer
 def get_3d_font_renderer():
 	try:
-		from libpyGLUtils2 import EMFTGL
+		from libpyGLUtils2 import EMFTGL,FTGLFontMode
 		font_renderer = EMFTGL()
 		font_renderer.set_using_display_lists(False)
 		font_renderer.set_depth(2)
@@ -2174,7 +2174,8 @@ def get_3d_font_renderer():
 		font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
 		font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/NotoSansMono-Medium.ttf")
 		return font_renderer
-	except ImportError:
+	except:
+		#traceback.print_exc()
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
 		return None
 
