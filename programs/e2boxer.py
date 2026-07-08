@@ -2094,7 +2094,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		self.newSet()
 		
 	def imgmousedown(self,event,m) :
-#		m=self.wimage.scr_to_img((event.x(),event.y()))
+#		m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 		self.curbox=-1
 		self.downbut=event.buttons()
 		if not event.buttons()&Qt.MouseButton.LeftButton : return
@@ -2127,7 +2127,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event,m) :
-#		m=self.wimage.scr_to_img((event.x(),event.y()))
+#		m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 		if not event.buttons()&Qt.MouseButton.LeftButton : return
 		boxsize2=self.vbbsize.getValue()//2
 		ptclsize=self.vbbpsize.getValue()
@@ -2157,7 +2157,7 @@ class GUIBoxer(QtWidgets.QWidget):
 
 			
 	def imgmouseup(self,event,m) :
-#		m=self.wimage.scr_to_img((event.x(),event.y()))
+#		m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 		if not self.downbut&Qt.MouseButton.LeftButton : return
 		boxsize=self.vbbsize.getValue()
 		boxsize2=boxsize//2
@@ -2211,7 +2211,7 @@ class GUIBoxer(QtWidgets.QWidget):
 				
 	def ptclmousedrag(self,event,x) :
 		
-		m=self.wparticles.scr_to_img((event.x(),event.y()))
+		m=self.wparticles.scr_to_img((event.position().x(),event.position().y()))
 		if m==None:  ### clicking empty place..
 			return
 		if self.mmode=="manual":
@@ -3035,7 +3035,7 @@ class GUIBoxer(QtWidgets.QWidget):
 
 
 	#def fftmousedown(self,event,m) :
-		##m=self.wfft.scr_to_img((event.x(),event.y()))
+		##m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 		#if self.f2danmode==1:
 			#self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
@@ -3049,7 +3049,7 @@ class GUIBoxer(QtWidgets.QWidget):
 		##self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	#def fftmousedrag(self,event,m) :
-		##m=self.wfft.scr_to_img((event.x(),event.y()))
+		##m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 		#if self.f2danmode==1:
 			#self.ringrad=hypot(m[0]-self.fft["nx"]/2,m[1]-self.fft["ny"]/2)
@@ -3064,12 +3064,12 @@ class GUIBoxer(QtWidgets.QWidget):
 
 	#def fftmouseup(self,event,m) :
 		#"up"
-		##m=self.wfft.scr_to_img((event.x(),event.y()))
+		##m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 
 	#def plotmousedown(self,event) :
 		#"mousedown in plot"
-##		m=self.guiim.scr_to_img((event.x(),event.y()))
+##		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 #def tiled(img,box):
 	#imgc=img.process("math.meanshrink",{"n":2})		# shrink image by 2 for boxing

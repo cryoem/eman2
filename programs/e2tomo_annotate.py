@@ -1610,7 +1610,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 	def img_view_mouse_up(self, event):
 		if self.basic_tab_num == 3:
-			x,y=self.img_view.scr_to_img((event.x(),event.y()))
+			x,y=self.img_view.scr_to_img((event.position().x(),event.position().y()))
 			z =self.img_view.zpos
 			print(x,y,self.img_view.zpos)
 			if not event.button()&Qt.MouseButton.LeftButton:
@@ -1657,7 +1657,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		elif self.basic_tab_num == 1:
 
 			#print("Mouse is to draw contour")
-			x,y=self.img_view.scr_to_img((event.x(),event.y()))
+			x,y=self.img_view.scr_to_img((event.position().x(),event.position().y()))
 			if not event.button()&Qt.MouseButton.LeftButton:
 				return
 			if event.modifiers()&Qt.ControlModifier or event.modifiers()&Qt.ShiftModifier:
@@ -1706,7 +1706,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#Curve tab
 		elif self.basic_tab_num == 2:
 			# self.save_current_state()
-			x,y=self.img_view.scr_to_img((event.x(),event.y()))
+			x,y=self.img_view.scr_to_img((event.position().x(),event.position().y()))
 			#if event.button()&Qt.LeftButton:
 			if event.modifiers()&Qt.ControlModifier:
 				#### interpolate curve from previous slices
@@ -1739,12 +1739,12 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 
 			#self.save_current_state()
 			# get_application().setOverrideCursor(Qt.ArrowCursor)
-			# lc=self.img_view.scr_to_img(event.x(),event.y())
+			# lc=self.img_view.scr_to_img(event.position().x(),event.position().y())
 			# current_shapes = self.img_view.get_shapes()
 			# if self.img_view.rmousedrag:
 			# 	self.rmousedrag=None
 			# if self.img_view.mouse_mode_dict[self.img_view.mouse_mode] == "emit":
-			# 	#lc=self.scr_to_img(event.x(),event.y())
+			# 	#lc=self.scr_to_img(event.position().x(),event.position().y())
 			# 	self.img_view.mouseup.emit(event, lc)
 			# elif self.img_view.mouse_mode_dict[self.img_view.mouse_mode] == "measure":
 			# 	if event.buttons()&Qt.LeftButton:
@@ -2174,7 +2174,7 @@ class Thumbnail(EMImage2DWidget):
 		return
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if event.buttons()&Qt.MouseButton.LeftButton:
 			self.box_size = self.get_box_size()
 			self.scale_fac = self.get_scale_fac()
@@ -2187,9 +2187,9 @@ class Thumbnail(EMImage2DWidget):
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
 		#print("Mouse release")
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if event.button()==Qt.MouseButton.LeftButton:
-			lc=self.scr_to_img(event.x(),event.y())
+			lc=self.scr_to_img(event.position().x(),event.position().y())
 			xy = [lc[0],lc[1]]
 			#print("Box x,y,bound", lc[0], lc[1], self.box_size[0]/2, self.size-self.box_size[0]/2)
 			if lc[0] <= self.box_size[0]/2:

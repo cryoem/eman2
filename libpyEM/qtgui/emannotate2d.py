@@ -1556,7 +1556,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 
 	def mousePressEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			print("Inspector is already showed as the right panel of the main window")
 			self.show_inspector(1)
@@ -1565,21 +1565,21 @@ class EMAnnotate2DWidget(EMGLWidget):
 				get_application().setOverrideCursor(Qt.CursorShape.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
 				get_application().setOverrideCursor(Qt.CursorShape.SizeAllCursor)
-			self.rmousedrag=(event.x(),event.y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 			if event.buttons()&Qt.MouseButton.RightButton:
 				self.mousedrag.emit(event, lc)
 				#print("Rmousedrag:",self.rmousedrag)
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				self.mousedown.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
 					self.update()
@@ -1587,7 +1587,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
 				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					if inspector:
 						self.drawr1=int(float(inspector.dtpen.text()))
 						self.drawv1=float(inspector.dtpenv.text())
@@ -1599,7 +1599,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 					elif self.mouse_mode_dict[self.mouse_mode]=="seg":
 					if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					if inspector:
 						self.mousedown.emit(event, lc)
 						current_class = inspector.seg_tab.get_current_class()
@@ -1616,28 +1616,28 @@ class EMAnnotate2DWidget(EMGLWidget):
 					self.update()
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if self.rmousedrag:
-			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
-			self.rmousedrag=(event.x(),event.y())
+			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.position().x(),self.origin[1]-self.rmousedrag[1]+event.position().y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 			if event.buttons()&Qt.MouseButton.RightButton:
 				self.mousedrag.emit(event, lc)
 			try: self.update()
 			except: pass
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.mousedrag.emit(event, lc)
 				else:
 					self.mousemove.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					current_shapes = self.get_shapes()
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 					dx=lc[0]-current_shapes["MEAS"].shape[4]
@@ -1661,7 +1661,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 					self.force_display_update()
 					self.update()
@@ -1684,13 +1684,13 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		current_shapes = self.get_shapes()
 		if self.rmousedrag:
 			self.rmousedrag=None
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				self.mouseup.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 				if event.buttons()&Qt.MouseButton.LeftButton:

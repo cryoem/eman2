@@ -938,7 +938,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 		return
 	
 	def on_tomo_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))		
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))		
 		x,y =np.round(x), np.round(y)
 		
 		if not event.button()&Qt.MouseButton.LeftButton:

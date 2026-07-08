@@ -58,6 +58,7 @@ from .emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasi
 from .emapplication import EMGLWidget, get_application, EMApp
 from .emanimationutil import LineAnimation
 import weakref
+import gc
 
 from .emapplication import EMProgressDialog
 
@@ -1618,7 +1619,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		f.close()
 
 	def dropEvent(self,event):
-		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
+		lc=self.scr_to_img((event.position().x(),event.position().y()))
 #		print("drop drag",str(event),lc,event.source(),self,self.parent())
 		try:
 			if event.source()==self or event.source()==self.parent():
@@ -1701,7 +1702,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __app_mode_mouse_down(self, event):
 		self.downbutton=event.button()
 		if event.button()==Qt.MouseButton.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc:
 #				print "select ",lc[0]
 				#print "setting selected"
@@ -1725,7 +1726,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def __app_mode_mouse_double_click(self, event):
 		if event.button()==Qt.MouseButton.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc:
 #				print "dselect ",lc[0]
 				self.mx_image_double.emit(event, lc)
@@ -1736,7 +1737,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def __app_mode_mouse_up(self,event):
 		if self.downbutton==Qt.MouseButton.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc!=None:
 
 				self.mx_mouseup.emit(event, lc)
@@ -1751,11 +1752,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def __del_mode_mouse_down(self,event):
 		if event.button()==Qt.MouseButton.LeftButton:
-			self.lc=self.scr_to_img((event.x(),event.y()))
+			self.lc=self.scr_to_img((event.position().x(),event.position().y()))
 
 	def __del_mode_mouse_up(self,event):
 		if event.button()==Qt.MouseButton.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
 				self.remove_particle_image(lc[0],event,True)
 				#self.force_display_update()
@@ -1767,7 +1768,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
 		if event.button()==Qt.MouseButton.LeftButton:
 #			print("drag begin ",str(event))
-			lc= self.scr_to_img((event.x(),event.y()))
+			lc= self.scr_to_img((event.position().x(),event.position().y()))
 			if lc == None:
 #				print("strange lc error")
 				return
@@ -1795,7 +1796,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			dropAction = drag.exec()
 
 	def __drag_mode_mouse_double_click(self,event):
-		lc=self.scr_to_img((event.x(),event.y()))
+		lc=self.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_double_click(event,lc)
 		
 	def mouse_double_click(self,event,lc=None):
@@ -1897,11 +1898,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def __set_mode_mouse_down(self,event):
 		if event.button()==Qt.MouseButton.LeftButton:
-			self.lc= self.scr_to_img((event.x(),event.y()))
+			self.lc= self.scr_to_img((event.position().x(),event.position().y()))
 
 	def __set_mode_mouse_up(self,event):
 		if event.button()==Qt.MouseButton.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
 				self.image_set_associate(lc[0],event,True)
 				#self.force_display_update()
@@ -1917,7 +1918,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def mousePressEvent(self, event):
 		if not self.data: return
-		if (self.width()-event.x() <= self.scroll_bar.width):
+		if (self.width()-event.position().x() <= self.scroll_bar.width):
 			self.scroll_bar_has_mouse = True
 			self.scroll_bar.mousePressEvent(event)
 			return
@@ -1934,7 +1935,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
 				get_application().setOverrideCursor(Qt.SizeAllCursor)
 
-			self.mousedrag=(event.x(),event.y())
+			self.mousedrag=(event.position().x(),event.position().y())
 		else:
 			if self.mmode == "App":
 				self.__app_mode_mouse_down(event)
@@ -1953,13 +1954,13 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		if self.mousedrag and self.draw_scroll: # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			oldy = self.origin[1]
-			newy = self.origin[1]+self.mousedrag[1]-event.y()
+			newy = self.origin[1]+self.mousedrag[1]-event.position().y()
 			newy = self.check_newy(newy)
 			if newy == oldy: return # this won't hold if the zoom level is great and an image occupies more than the size of the display
 
-			#self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
+			#self.origin=(self.origin[0]+self.mousedrag[0]-event.position().x(),self.origin[1]-self.mousedrag[1]+event.position().y())
 			self.origin=(self.matrix_panel.xoffset,newy)
-			self.mousedrag=(event.x(),event.y())
+			self.mousedrag=(event.position().x(),event.position().y())
 			try:self.updateGL()
 			except: pass
 		else:
@@ -1974,7 +1975,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			return
 
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scr_to_img((event.x(),event.y()))
+		lc=self.scr_to_img((event.position().x(),event.position().y()))
 		if self.mousedrag:
 			self.mousedrag=None
 		else:
@@ -2210,8 +2211,8 @@ class EMGLScrollBar(object):
 		self.target().updateGL()
 
 	def mousePressEvent(self,event):
-		x = self.target().width()-event.x()
-		y = self.target().height()-event.y()
+		x = self.target().width()-event.position().x()
+		y = self.target().height()-event.position().y()
 		if x < 0 or x > self.width: return # this shouldn't happen but it's nice to check I guess
 
 		if y < self.arrow_button_height:
@@ -2234,7 +2235,7 @@ class EMGLScrollBar(object):
 
 	def mouseMoveEvent(self,event):
 		if self.mouse_scroll_pos != None:
-			y = self.target().height()-event.y()
+			y = self.target().height()-event.position().y()
 			dy = y - self.mouse_scroll_pos
 			self.scroll_move(dy)
 			self.mouse_scroll_pos = y

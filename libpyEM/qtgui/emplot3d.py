@@ -91,6 +91,7 @@ from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
+import gc
 
 #plt.style.use('ggplot')
 
@@ -161,12 +162,14 @@ class EMPlot3DWidget(EMGLWidget):
 		GL.glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
+		gc.disable()
 		try: GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		except: pass # this is a hack.
 
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
+		gc.enable()
 
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
@@ -865,46 +868,46 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
 
 	def mousePressEvent(self, event):
-#		lc=self.scr2plot(event.x(),event.y())
+#		lc=self.scr2plot(event.position().x(),event.position().y())
 		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
 			self.updateGL()
-			self.rmousedrag=(event.x(),event.y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 		elif event.button()==Qt.MouseButton.LeftButton:
-			self.lmousedrag=(event.x(),event.y())
+			self.lmousedrag=(event.position().x(),event.position().y())
 
 	def mouseMoveEvent(self, event):
-#		lc=self.scr2plot(event.x(),event.y())
+#		lc=self.scr2plot(event.position().x(),event.position().y())
 
 		if  self.rmousedrag:
-			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
+			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.position().x(),self.height()-event.position().y(),1)))
 			self.updateGL()
 		if self.lmousedrag:
-			daz=event.x()-self.lmousedrag[0]
-			delev=event.y()-self.lmousedrag[1]
+			daz=event.position().x()-self.lmousedrag[0]
+			delev=event.position().y()-self.lmousedrag[1]
 #			print self.lmousedrag,daz,delev
-			self.lmousedrag=(event.x(),event.y())
+			self.lmousedrag=(event.position().x(),event.position().y())
 			self.viewang=(self.viewang[0]+delev,self.viewang[1]-daz)
 			self.needupd=True
 			self.updateGL()
 		elif event.buttons()&Qt.MouseButton.LeftButton:
-			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.position().y(),self.scrlim[2]+self.scrlim[0],self.height()-event.position().y(),1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
+			self.update_selected((event.position().x(),event.position().y()),lc)
 			self.updateGL()
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 
 	def mouseReleaseEvent(self, event):
-#		lc =self.scr2plot(event.x(),event.y())
+#		lc =self.scr2plot(event.position().x(),event.position().y())
 		if self.rmousedrag:
 #			lc2=self.scr2plot(*self.rmousedrag)
-			#if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0,0,0)
+			#if fabs(event.position().x()-self.rmousedrag[0])+fabs(event.position().y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0,0,0)
 			#else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
 		if self.lmousedrag:

@@ -1381,8 +1381,8 @@ class Camera2(object):
 		return cam
 	
 	def mousePressEvent(self, event):
-		self.mpressx = event.x()
-		self.mpressy = event.y()
+		self.mpressx = event.position().x()
+		self.mpressy = event.position().y()
 		if event.button()==Qt.MouseButton.LeftButton and self.allow_rotations:
 			if self.mmode==0:
 				# this is just a way of duplicating the last copy
@@ -1395,12 +1395,12 @@ class Camera2(object):
 		if event.buttons()&Qt.MouseButton.LeftButton and self.allow_rotations:
 			if self.mmode==0:
 				#if event.modifiers() == Qt.ControlModifier:
-					#self.motion_translate(event.x()-self.mpressx, self.mpressy - event.y())
+					#self.motion_translate(event.position().x()-self.mpressx, self.mpressy - event.position().y())
 				#else:
-				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y(),sqrt(old_div(1.0,self.scale)))
+				self.motion_rotate(self.mpressx - event.position().x(), self.mpressy - event.position().y(),sqrt(old_div(1.0,self.scale)))
 				
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
 				return True
 		elif self.mmode==0:
 			if self.allow_translations:
@@ -1408,15 +1408,15 @@ class Camera2(object):
 					
 						self.motion_translate_z_only(self.mpressx, self.mpressy,event)
 							
-						self.mpressx = event.x()
-						self.mpressy = event.y()
+						self.mpressx = event.position().x()
+						self.mpressy = event.position().y()
 						return True
 				elif event.buttons()&Qt.MouseButton.RightButton or (event.buttons()&Qt.MouseButton.LeftButton and not self.allow_rotations):
 					if self.mmode==0:
 						self.motion_translateLA(self.mpressx, self.mpressy,event)
 							
-						self.mpressx = event.x()
-						self.mpressy = event.y()
+						self.mpressx = event.position().x()
+						self.mpressy = event.position().y()
 						return True
 				
 		return False
@@ -1436,10 +1436,10 @@ class Camera2(object):
 	
 	def motion_translate_z_only(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
-			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
+			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.position().x(),viewport_height()-event.position().y())
 		else:
 			print("Camera2 (object).basicmapping==True")
-			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+			[dx,dy] = [event.position().x()-prev_x,prev_y-event.position().y()]
 
 		d = abs(dx) + abs(dy)
 		if dy > 0: d = -d 
@@ -1448,16 +1448,16 @@ class Camera2(object):
 	
 	def motion_translateLA(self,prev_x,prev_y,event):
 		if (self.basicmapping == False):
-			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.x(),viewport_height()-event.y())
+			[dx,dy] = self.parent().eye_coords_dif(prev_x,viewport_height()-prev_y,event.position().x(),viewport_height()-event.position().y())
 		else:
 			print("Camera2 (object).basicmapping==True")
-			[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+			[dx,dy] = [event.position().x()-prev_x,prev_y-event.position().y()]
 
-		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.x(),self.parent.parentHeight()-event.y())
-		#[wx2,wy2,wz2] =  self.parent.mouseViewportMovement(event.x(),self.parent.parentHeight()-event.y(),wx1,wy1,wz1,zprime)
+		#[wx2,wy2,wz2] = self.parent.eyeCoords(event.position().x(),self.parent.parentHeight()-event.position().y())
+		#[wx2,wy2,wz2] =  self.parent.mouseViewportMovement(event.position().x(),self.parent.parentHeight()-event.position().y(),wx1,wy1,wz1,zprime)
 		#self.parent.mouseViewportMovement(1,2,3,4)
 		#[wx1,wy1] = self.parent.mouseinwin(prev_x,self.parent.parentHeight()-prev_y)
-		#[wx2,wy2] = self.parent.mouseinwin(event.x(),self.parent.parentHeight()-event.y())
+		#[wx2,wy2] = self.parent.mouseinwin(event.position().x(),self.parent.parentHeight()-event.position().y())
 		#self.cam_x += dx
 		#self.cam_y += dy
 
@@ -2066,7 +2066,7 @@ class EM3DModel(QtCore.QObject):
 				self.inspector.set_xy_trans(self.cam.cam_x,self.cam.cam_y)
 				#self.inspector.set_xyz_trans(self.cam.cam_x,self.cam.cam_y,self.cam.cam_z)
 	def mousePressEvent(self, event):
-#		lc=self.scrtoimg((event.x(),event.y()))
+#		lc=self.scrtoimg((event.position().x(),event.position().y()))
 	   	
 		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)

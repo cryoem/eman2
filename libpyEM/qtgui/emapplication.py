@@ -47,7 +47,9 @@ import sys
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import weakref
 from libpyGLUtils2 import *
+import gc
 
+gc.set_threshold(10000, 500, 500)
 #try: from PyQt5 import QtWebEngineWidgets
 #except: pass
 

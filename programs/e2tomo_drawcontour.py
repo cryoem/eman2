@@ -280,7 +280,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			self.imgview.updateGL()
 
 	def on_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))
 		#if event.button()&Qt.LeftButton:
 
 		if event.modifiers()&Qt.ControlModifier:

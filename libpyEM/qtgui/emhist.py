@@ -72,6 +72,7 @@ import struct, math
 from .valslider import *
 from io import StringIO
 import re
+import gc
 #import emimage2d
 
 import matplotlib.pyplot as plt
@@ -151,15 +152,18 @@ class EMHistogramWidget(EMGLWidget):
 		GL.glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
+		gc.disable()	# to avoid garbage collection crashes during rendering
 		try: GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		except: pass # this is a hack.
 
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
+		gc.enable()
 
 	def resizeGL(self, width, height):
 #		side = min(width, height)
+		gc.disable()
 		GL.glViewport(0,0,self.width(),self.height())
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -168,6 +172,7 @@ class EMHistogramWidget(EMGLWidget):
 		GL.glLoadIdentity()
 
 		self.resize_event(width,height)
+		gc.enable()
 
 	def resizeEvent(self, event):
 		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
@@ -674,16 +679,16 @@ lc is the cursor selection point in plot coords"""
 		return
 
 	def mousePressEvent(self, event):
-		lc=self.scr2plot(event.x(),event.y())
+		lc=self.scr2plot(event.position().x(),event.position().y())
 		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
 			self.update()
-			self.rmousedrag=(event.x(),event.y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 		elif event.button()==Qt.MouseButton.LeftButton:
 			self.del_shapes()
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			histlabel = ""
 			idx = self.getBinIndex(lc[0])
 			if idx != None:
@@ -693,21 +698,21 @@ lc is the cursor selection point in plot coords"""
 				histlabel = ""
 			self.add_shape("lcrosshist0",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
 			self.add_shape("lcrosshist",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
+			self.update_selected((event.position().x(),event.position().y()),lc)
 			self.update()
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr2plot(event.x(),event.y())
+		lc=self.scr2plot(event.position().x(),event.position().y())
 		if  self.rmousedrag:
 			self.add_shape("xzoom1",EMShape(("scrline",0,0,0,self.rmousedrag[0],self.scrlim[1],self.rmousedrag[0],self.scrlim[3]+self.scrlim[1],1)))
-			self.add_shape("xzoom2",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("xzoom2",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			zm = self.scr2plot(self.rmousedrag[0],self.rmousedrag[1])
 			zoomlabel = "{:1.5g}; ({:1.5g},{:1.5g})".format(np.abs(lc[0]-zm[0]),zm[0],lc[0])
 			self.add_shape("lzoom",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,zoomlabel,120.0,-1)))
 			self.update()
 		elif event.buttons()&Qt.MouseButton.LeftButton:
 			self.del_shapes()
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			histlabel = ""
 			idx = self.getBinIndex(lc[0])
 			if idx != None:
@@ -716,7 +721,7 @@ lc is the cursor selection point in plot coords"""
 			else:
 				histlabel = ""
 			self.add_shape("lcrosshist",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
+			self.update_selected((event.position().x(),event.position().y()),lc)
 			self.update()
 
 	def getBinIndex(self,x):
@@ -769,10 +774,10 @@ lc is the cursor selection point in plot coords"""
 			self.needupd = 1
 
 	def mouseReleaseEvent(self, event):
-		lc =self.scr2plot(event.x(),event.y())
+		lc =self.scr2plot(event.position().x(),event.position().y())
 		if self.rmousedrag:
 			lc2=self.scr2plot(*self.rmousedrag)
-			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
+			if fabs(event.position().x()-self.rmousedrag[0])+fabs(event.position().y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
 			else :
 				self.autoscale(True)
 				self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),self.ylimits[0],self.ylimits[1])

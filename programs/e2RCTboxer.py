@@ -515,14 +515,14 @@ class ParticlesWindow(object):
 			
 	def box_selected(self,event,lc):
 		if lc == None or lc[0] == None: return
-		self.moving_box_data = [event.x(),event.y(),lc[0]]
+		self.moving_box_data = [event.position().x(),event.position().y(),lc[0]]
 	
 	def box_moved(self,event,scale):
 		winidx = self.moving_box_data[2] % self.numlists
 		ppidx = int(old_div(self.moving_box_data[2],self.numlists))
 		if self.moving_box_data:
-			dx = 0.2*(event.x() - self.moving_box_data[0])
-			dy = 0.2*(self.moving_box_data[1] - event.y())
+			dx = 0.2*(event.position().x() - self.moving_box_data[0])
+			dy = 0.2*(self.moving_box_data[1] - event.position().y())
 			self.rctwidget.windowlist[winidx].boxes.move_box(ppidx,dx,dy)
 			self.rctwidget.windowlist[winidx].update_mainwin()
 			self.rctwidget.windowlist[winidx].update_particles()
@@ -622,7 +622,7 @@ class MainWin(object):
 		
 	def mouse_down(self, event):
 		#print window.parentobj.test
-		m = self.window.scr_to_img((event.x(),event.y()))
+		m = self.window.scr_to_img((event.position().x(),event.position().y()))
 		box_num = self.boxes.detect_collision(m[0],m[1],self.rctwidget.boxsize)
 		if(box_num == -1):
 			if event.modifiers()&QtCore.Qt.ShiftModifier: return 	# the user tried to delete nothing	
@@ -639,7 +639,7 @@ class MainWin(object):
 		
 	def mouse_drag(self, event):
 		if self.moving != None:
-			m=self.window.scr_to_img((event.x(),event.y()))
+			m=self.window.scr_to_img((event.position().x(),event.position().y()))
 			oldm = self.moving[0]
 			if not self.rctwidget.handle_move_event(): return	# The move failed
 			self.boxes.move_box(self.moving[1],m[0]-oldm[0],m[1]-oldm[1])

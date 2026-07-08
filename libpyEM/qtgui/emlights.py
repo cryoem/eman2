@@ -402,7 +402,7 @@ class EMLightsDrawer(object):
 		if self.display_lights:
 			self.draw_lights()
 	def motion_translate_z_only(self,prev_x,prev_y,event):
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		[dx,dy] = [event.position().x()-prev_x,prev_y-event.position().y()]
 		dx /= 10.0
 		dy /= 10.0
 		d = abs(dx) + abs(dy)
@@ -424,7 +424,7 @@ class EMLightsDrawer(object):
 		
 	def motion_translate(self,prev_x,prev_y,event):
 		
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		[dx,dy] = [event.position().x()-prev_x,prev_y-event.position().y()]
 		dx /= 10.0
 		dy /= 10.0
 		pos = glGetLightfv(self.current_light,GL_POSITION)
@@ -499,8 +499,8 @@ class EMLightsDrawer(object):
 
 	def mousePressEvent(self,event):
 		if self.current_mouse_mode != None:
-			self.mpressx = event.x()
-			self.mpressy = event.y()
+			self.mpressx = event.position().x()
+			self.mpressy = event.position().y()
 			self.updateGL()
 	
 	def mouseMoveEvent(self,event):
@@ -508,23 +508,23 @@ class EMLightsDrawer(object):
 			if event.buttons()&Qt.MouseButton.RightButton and event.modifiers()&Qt.ShiftModifier:
 				
 				self.motion_translate_z_only(self.mpressx, self.mpressy,event)
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
 
 			elif event.buttons()&Qt.MouseButton.RightButton:
 				self.motion_translate(self.mpressx, self.mpressy,event)
 				
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
 			else:
-				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+				self.motion_rotate(self.mpressx - event.position().x(), self.mpressy - event.position().y())
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
 			self.updateGL()
 		elif self.current_mouse_mode == "directional":
-			self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-			self.mpressx = event.x()
-			self.mpressy = event.y()
+			self.motion_rotate(self.mpressx - event.position().x(), self.mpressy - event.position().y())
+			self.mpressx = event.position().x()
+			self.mpressy = event.position().y()
 			self.updateGL()
 	
 	def mouseReleaseEvent(self,event):

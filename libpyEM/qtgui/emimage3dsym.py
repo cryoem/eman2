@@ -444,7 +444,7 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			glMatrixMode(GL_PROJECTION)
 			glPushMatrix()
 			glLoadIdentity()
-			gluPickMatrix(event.x(),v[-1]-event.y(),2,2,v)
+			gluPickMatrix(event.position().x(),v[-1]-event.position().y(),2,2,v)
 			self.get_gl_widget().load_perspective()
 			glMatrixMode(GL_MODELVIEW)
 			glInitNames()

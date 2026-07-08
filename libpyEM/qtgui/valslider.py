@@ -599,7 +599,7 @@ class RangeSlider(QtWidgets.QWidget):
 		p.drawLine(self.size().width()//2,self.vtoy(self.value[0]),self.size().width()//2,self.vtoy(self.value[1]))
 		
 	def mousePressEvent(self,event):
-		y=event.y()
+		y=event.position().y()
 		v0y=self.vtoy(self.value[0])
 		v1y=self.vtoy(self.value[1])
 		
@@ -607,16 +607,16 @@ class RangeSlider(QtWidgets.QWidget):
 		if y<v1y-3 : return
 		
 		if (v0y-v1y<6 and y<v0y and y>v1y) or (y<v0y-3 and y>v1y+3) :
-			self.mdownloc=(3,event.x(),event.y(),self.value[0],self.value[1])
+			self.mdownloc=(3,event.position().x(),event.position().y(),self.value[0],self.value[1])
 		
 		elif (y>=v0y-3) :
-			self.mdownloc=(1,event.x(),event.y(),self.value[0],self.value[1])
+			self.mdownloc=(1,event.position().x(),event.position().y(),self.value[0],self.value[1])
 		
 		else :
-			self.mdownloc=(2,event.x(),event.y(),self.value[0],self.value[1])
+			self.mdownloc=(2,event.position().x(),event.position().y(),self.value[0],self.value[1])
 			
 	def mouseMoveEvent(self,event):
-		y=event.y()
+		y=event.position().y()
 		if self.mdownloc!=None :
 			v0=self.mdownloc[3]
 			v1=self.mdownloc[4]
@@ -944,17 +944,17 @@ class EMLightControls(QtOpenGLWidgets.QOpenGLWidget):
 		glTranslate(0,0,-10.0)
 	
 	def mousePressEvent(self, event):
-		self.init_x = event.x()
-		self.init_y = event.y()
+		self.init_x = event.position().x()
+		self.init_y = event.position().y()
 		
 	def mouseMoveEvent(self, event):
-		self.theta -= event.x() - self.init_x
-		self.phi -= event.y() - self.init_y
+		self.theta -= event.position().x() - self.init_x
+		self.phi -= event.position().y() - self.init_y
 		self.theta = self.theta % 360
 		self.phi = self.phi % 360
 
-		self.init_x = event.x()
-		self.init_y = event.y()
+		self.init_x = event.position().x()
+		self.init_y = event.position().y()
 		self.update()
 		self.lightPositionMoved.emit([self.theta, self.phi])
 		
@@ -1038,15 +1038,15 @@ class CameraControls(QtOpenGLWidgets.QOpenGLWidget):
 		glLoadIdentity()
 	
 	def mousePressEvent(self, event):
-		self.init_x = event.x()
+		self.init_x = event.position().x()
 		
 	def mouseMoveEvent(self, event):
-		self.movement = float(event.x() - self.init_x)*self.scale
-		if math.fabs(event.x()-(self.near_clipping + self.width//2)) > math.fabs(event.x()-(self.far_clipping + self.width//2)):
+		self.movement = float(event.position().x() - self.init_x)*self.scale
+		if math.fabs(event.position().x()-(self.near_clipping + self.width//2)) > math.fabs(event.position().x()-(self.far_clipping + self.width//2)):
 			self.farMoved.emit(self.movement)
 		else:
 			self.nearMoved.emit(self.movement)
-		self.init_x = event.x()
+		self.init_x = event.position().x()
 		
 	def _drawViewingVolume(self):
 		glMatrixMode(GL_MODELVIEW)

@@ -148,8 +148,8 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 	def get_hit(self,event):
 		v = self.vdtools.wview.tolist()
 		self.get_gl_widget().makeCurrent() # prevents a stack underflow
-#		x = event.x()
-#		y = v[-1]-event.y()
+#		x = event.position().x()
+#		y = v[-1]-event.position().y()
 #		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT )
 #		vals = self.render(color_picking=True)
 #		glFlush()
@@ -171,7 +171,7 @@ class EMEulerExplorer(EM3DSymModel,Animator):
 		glMatrixMode(GL_PROJECTION)
 		glPushMatrix()
 		glLoadIdentity()
-		gluPickMatrix(event.x()*self.get_gl_widget().devicePixelRatio(),v[-1]-event.y()*self.get_gl_widget().devicePixelRatio(),5,5,v)
+		gluPickMatrix(event.position().x()*self.get_gl_widget().devicePixelRatio(),v[-1]-event.position().y()*self.get_gl_widget().devicePixelRatio(),5,5,v)
 		self.get_gl_widget().load_perspective()
 		glMatrixMode(GL_MODELVIEW)
 		glInitNames()

@@ -1118,7 +1118,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.do_deletion(delids)
 
 	def xy_down(self,event):
-		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 		x,y=int(x),int(y)
 		z=int(self.get_z())
 		self.xydown=None
@@ -1159,7 +1159,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	def xy_drag(self,event):
 		
-		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 		x,y=int(x),int(y)
 		if self.optionviewer.erasercheckbox.isChecked():
 			self.del_region_xy(x,y)
@@ -1208,7 +1208,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	def xy_move(self,event):
 		if self.optionviewer.erasercheckbox.isChecked():
-			x,y=self.xyview.scr_to_img((event.x(),event.y()))
+			x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 			#print x,y
 			self.xyview.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
 			self.xyview.shapechange=1
@@ -1217,7 +1217,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			self.xyview.eraser_shape=None
 
 	def xz_down(self,event):
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 		x,z=int(x),int(z)
 		y=int(self.get_y())
 		self.xzdown=None
@@ -1256,7 +1256,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	def xz_drag(self,event):
 		if self.xzdown==None : return
 
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 		x,z=int(x),int(z)
 
 		dx=x-self.xzdown[1]
@@ -1299,7 +1299,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 
 	def zy_down(self,event):
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 		z,y=int(z),int(y)
 		x=int(self.get_x())
 		self.xydown=None
@@ -1337,7 +1337,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	def zy_drag(self,event):
 		if self.zydown==None : return
 
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 		z,y=int(z),int(y)
 
 		dz=z-self.zydown[1]

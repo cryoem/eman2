@@ -1128,7 +1128,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 	def imgmousedown(self,event) :
 		if self.calcmode in (0,2,3):
-			m=self.wimage.scr_to_img((event.x(),event.y()))
+			m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 			parms=self.parms[self.curset]
 			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
 			self.recalc()
@@ -1137,7 +1137,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 	def imgmousedrag(self,event) :
 		if self.calcmode in (0,2,3):
-			m=self.wimage.scr_to_img((event.x(),event.y()))
+			m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 			parms=self.parms[self.curset]
 			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
 			self.needredisp=True
@@ -1148,7 +1148,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			#for i,j in enumerate(self.boxes):
 
 	def imgmouseup(self,event) :
-		m=self.wimage.scr_to_img((event.x(),event.y()))
+		m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 		if self.calcmode==1:
 			parms=self.parms[self.curset]
 			nx=(self.data["nx"]-128)//parms[0]
@@ -1160,7 +1160,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 
 	def fftmousedown(self,event,m) :
-		#m=self.wfft.scr_to_img((event.x(),event.y()))
+		#m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 		if self.f2danmode==1:
 			self.ringrad=hypot(m[0]-self.fft["nx"]//2,m[1]-self.fft["ny"]//2)
@@ -1174,7 +1174,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def fftmousedrag(self,event,m) :
-		#m=self.wfft.scr_to_img((event.x(),event.y()))
+		#m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 		if self.f2danmode==1:
 			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
@@ -1189,7 +1189,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 	def fftmouseup(self,event,m) :
 		"up"
-		#m=self.wfft.scr_to_img((event.x(),event.y()))
+		#m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 
 if __name__ == "__main__":

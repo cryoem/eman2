@@ -217,7 +217,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		
 		
 	def on_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))
 		self.select_landmark(x,y)
 		
 		#if event.button()&Qt.LeftButton:

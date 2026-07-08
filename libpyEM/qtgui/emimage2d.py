@@ -60,6 +60,7 @@ from .emimageutil import EMMetaDataTable
 from .emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
 import platform
+import gc
 
 from .emglobjects import EMOpenGLFlagsAndTools
 
@@ -773,7 +774,8 @@ class EMImage2DWidget(EMGLWidget):
 		self.histogram=mode
 		self.updateGL()
 
-	def set_FFT(self,val):
+	def set_FFT(self,btn):
+		val=self.fftg.id(btn)
 		if self.data != None and self.data.is_complex():
 			print(" I am returning")
 			return
@@ -1712,7 +1714,7 @@ class EMImage2DWidget(EMGLWidget):
 		self.inspector.ptcoord2.setText("dcen (%d, %d)"%(x-self.data["nx"]//2,y-self.data["ny"]//2))
 
 	def mousePressEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
@@ -1720,18 +1722,18 @@ class EMImage2DWidget(EMGLWidget):
 				get_application().setOverrideCursor(Qt.CursorShape.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
 				get_application().setOverrideCursor(Qt.CursorShape.SizeAllCursor)
-			self.rmousedrag=(event.x(),event.y() )
+			self.rmousedrag=(event.position().x(),event.position().y() )
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				self.mousedown.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 # 		self.del_shape("MEASL")
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
@@ -1739,7 +1741,7 @@ class EMImage2DWidget(EMGLWidget):
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
 				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					if inspector:
 						self.drawr1=int(float(inspector.dtpen.text()))
 						self.drawv1=float(inspector.dtpenv.text())
@@ -1750,27 +1752,27 @@ class EMImage2DWidget(EMGLWidget):
 						self.update()
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if self.rmousedrag:
-			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
-			self.rmousedrag=(event.x(),event.y())
+			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.position().x(),self.origin[1]-self.rmousedrag[1]+event.position().y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 #			self.emit(QtCore.SIGNAL("origin_update"),self.origin)
 			#try: self.updateGL()
 			#except: pass
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.mousedrag.emit(event, lc)
 				else:
 					self.mousemove.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					current_shapes = self.get_shapes()
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 
@@ -1829,20 +1831,20 @@ class EMImage2DWidget(EMGLWidget):
 					self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
 				if event.buttons()&Qt.MouseButton.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 					self.force_display_update()
 					self.update()
 
 		def mouseReleaseEvent(self, event):
 			get_application().setOverrideCursor(Qt.ArrowCursor)
-			lc=self.scr_to_img(event.x(),event.y())
+			lc=self.scr_to_img(event.position().x(),event.position().y())
 			current_shapes = self.get_shapes()
 			if self.rmousedrag:
 				self.rmousedrag=None
 			else:
 				if self.mouse_mode_dict[self.mouse_mode] == "emit":
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.mouseup.emit(event, lc)
 				elif self.mouse_mode_dict[self.mouse_mode] == "measure":
 					if event.buttons()&Qt.MouseButton.LeftButton:
@@ -2371,7 +2373,7 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.pyinp.returnPressed.connect(self.do_python)
 		self.invtog.toggled.connect(target.set_invert)
 		self.histoequal.currentIndexChanged.connect(target.set_histogram)
-		self.fftg.buttonClicked.connect(lambda btn: target.set_FFT(self.fftg.id(btn)))
+		self.fftg.buttonClicked.connect(target.set_FFT)
 		self.mmtab.currentChanged.connect(target.set_mouse_mode)
 		self.auto_contrast_button.clicked.connect(target.auto_contrast)
 		self.full_contrast_button.clicked.connect(target.full_contrast)

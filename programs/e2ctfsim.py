@@ -463,21 +463,21 @@ class GUIctfsim(QtWidgets.QWidget):
 		self.update_plot()
 
 	def imgmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 
 	def imgmouseup(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def plotmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use

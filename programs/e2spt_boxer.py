@@ -1004,15 +1004,15 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	#### mouse click
 	def xy_down(self,event):
-		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_down(event, x,y,self.z_loc, "z")
 		
 	def xz_down(self,event):
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_down(event,x,self.y_loc,z, "y")
 			
 	def zy_down(self,event):
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_down(event,self.x_loc,y,z, "x")
 		
 	def mouse_down(self,event, x, y, z, axis):
@@ -1080,7 +1080,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		if self.optionviewer.erasercheckbox.isChecked(): 
 			self.xyview.eraser_shape=self.xzview.eraser_shape=self.zyview.eraser_shape=None
-			x,y=view.scr_to_img((event.x(),event.y()))
+			x,y=view.scr_to_img((event.position().x(),event.position().y()))
 			view.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
 			view.shapechange=1
 			view.update()
@@ -1111,17 +1111,17 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	def xy_drag(self,event):
 		if self.dragging>=0:
-			x,y=self.xyview.scr_to_img((event.x(),event.y()))
+			x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 			self.mouse_drag(x,y,self.z_loc)
 
 	def xz_drag(self,event):
 		if self.dragging>=0:
-			x,z=self.xzview.scr_to_img((event.x(),event.y()))
+			x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 			self.mouse_drag(x,self.y_loc,z)
 	
 	def zy_drag(self,event):
 		if self.dragging>=0:
-			z,y=self.zyview.scr_to_img((event.x(),event.y()))
+			z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 			self.mouse_drag(self.x_loc,y,z)
 		
 	def mouse_up(self,event):

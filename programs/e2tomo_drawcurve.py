@@ -421,7 +421,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		return
 
 	def on_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))
 		if not event.button()&Qt.MouseButton.LeftButton:
 			return
 

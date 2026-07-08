@@ -1238,7 +1238,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
 			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
 			#self.wplot2d.update()
-##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
+##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.position().x(),event.position().y(),self.wplot2d.scrlim,rad)
 
 			##Limit ourselves to a random subset of ~500 of the points to average
 			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]

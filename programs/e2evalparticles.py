@@ -484,10 +484,10 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 	def fixlocation(self):
 		E2loadappwin("e2evalparticles","main",self)
-		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses.qt_parent)
+		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses)
 		if self.vgoodptcl: 
-			E2loadappwin("e2evalparticles","good",self.vgoodptcl.qt_parent)
-			E2loadappwin("e2evalparticles","bad",self.vbadptcl.qt_parent)
+			E2loadappwin("e2evalparticles","good",self.vgoodptcl)
+			E2loadappwin("e2evalparticles","bad",self.vbadptcl)
 
 
 	def classSelect(self,event,lc):
@@ -520,9 +520,9 @@ class EMClassPtclTool(QtWidgets.QWidget):
 
 	def closeEvent(self,event):
 		E2saveappwin("e2evalparticles","main",self)
-		E2saveappwin("e2evalparticles","classes",self.vclasses.qt_parent)
-		E2saveappwin("e2evalparticles","good",self.vgoodptcl.qt_parent)
-		E2saveappwin("e2evalparticles","bad",self.vbadptcl.qt_parent)
+		E2saveappwin("e2evalparticles","classes",self.vclasses)
+		E2saveappwin("e2evalparticles","good",self.vgoodptcl)
+		E2saveappwin("e2evalparticles","bad",self.vbadptcl)
 		try :
 			self.vclasses.commit_sets()
 			self.vclasses.close()

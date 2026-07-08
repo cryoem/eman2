@@ -92,6 +92,7 @@ from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
+import gc
 
 def scatter_hist(x, y, ax, ax_histx, ax_histy,bins, col):
 	# no labels
@@ -1059,21 +1060,21 @@ lc is the cursor selection point in plot coords"""
 
 	def mousePressEvent(self, event):
 		if self.scrlim is None: return
-		lc=self.scr2plot(event.x(),event.y())
+		lc=self.scr2plot(event.position().x(),event.position().y())
 		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
 			self.updateGL()
-			self.rmousedrag=(event.x(),event.y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 		elif event.button()==Qt.MouseButton.LeftButton:
-			self.lmousedrag=(event.x(),event.y())
-			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.lmousedrag=(event.position().x(),event.position().y())
+			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.position().y(),self.scrlim[2]+self.scrlim[0],self.height()-event.position().y(),1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
-			if self.selectpoints: self.update_selected((event.x(),event.y()),lc)
+			if self.selectpoints: self.update_selected((event.position().x(),event.position().y()),lc)
 			self.updateGL()
 			
 			if self.mouseemit : self.mousedown.emit(event,lc)
@@ -1087,32 +1088,32 @@ lc is the cursor selection point in plot coords"""
 				#self.add_shape("MEAS",("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2))
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr2plot(event.x(),event.y())
+		lc=self.scr2plot(event.position().x(),event.position().y())
 
 		if  self.rmousedrag:
-			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
+			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.position().x(),self.height()-event.position().y(),1)))
 			self.updateGL()
 		elif event.buttons()&Qt.MouseButton.LeftButton:
-			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.position().y(),self.scrlim[2]+self.scrlim[0],self.height()-event.position().y(),1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
+			self.update_selected((event.position().x(),event.position().y()),lc)
 			self.updateGL()
-			if self.mouseemit : self.mousedrag.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mousedrag.emit(event,self.scr2plot(event.position().x(),event.position().y()))
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 
 	def mouseReleaseEvent(self, event):
-		lc =self.scr2plot(event.x(),event.y())
+		lc =self.scr2plot(event.position().x(),event.position().y())
 		if self.rmousedrag:
 			lc2=self.scr2plot(*self.rmousedrag)
-			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
+			if fabs(event.position().x()-self.rmousedrag[0])+fabs(event.position().y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
 			else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
 		elif self.lmousedrag:
-			if self.mouseemit : self.mouseup.emit(event,self.scr2plot(event.x(),event.y()))
+			if self.mouseemit : self.mouseup.emit(event,self.scr2plot(event.position().x(),event.position().y()))
 			self.lmousedrag=None
 
 		#elif event.button()==Qt.LeftButton:
@@ -1349,9 +1350,9 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.clusterorigin_rad = None
 		self.clusterradius = None
 		self.clusterorigin_theta = None
-		lc=self.scr2plot(event.x(),event.y())
-		self.lastcx = self.firstcx = event.x()
-		self.lastcy = self.firstcy = event.y()
+		lc=self.scr2plot(event.position().x(),event.position().y())
+		self.lastcx = self.firstcx = event.position().x()
+		self.lastcy = self.firstcy = event.position().y()
 		x = self.firstcx - old_div(self.width(),2.0)
 		y = self.firstcy - old_div(self.height(),2.0)
 		if event.buttons()&Qt.MouseButton.MiddleButton:
@@ -1426,17 +1427,17 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 	def mouseMoveEvent(self, event):
 		if event.buttons()&Qt.MouseButton.LeftButton:
-			lc=self.scr2plot(event.x(),event.y())
-			disp = (self.lastcx - event.x()) + (self.lastcy - event.y())
+			lc=self.scr2plot(event.position().x(),event.position().y())
+			disp = (self.lastcx - event.position().x()) + (self.lastcy - event.position().y())
 			self.valradius += disp
 			self.add_shape("Circle",EMShape(("scrcircle",1,0,0,self.firstcx,self.height()-self.firstcy,self.valradius,2.0)))
 			self.updateGL()
-			self.lastcx = event.x()
-			self.lastcy = event.y()
+			self.lastcx = event.position().x()
+			self.lastcy = event.position().y()
 			#If we are drawing a cluster circle, then compute its radius for use in find circumscribed particles
 			if self.clusterorigin_rad:
-				x = event.x() - old_div(self.width(),2.0)
-				y = event.y() - old_div(self.height(),2.0)
+				x = event.position().x() - old_div(self.width(),2.0)
+				y = event.position().y() - old_div(self.height(),2.0)
 				rad = self._computeRadius(x,y)
 				self.clusterradius = self.clusterorigin_rad**2 + rad**2 - 2*self.clusterorigin_rad*rad*math.cos(self._computeTheta(x,y) - self.clusterorigin_theta)
 

@@ -2292,7 +2292,7 @@ def notzero(x):
 	if x==0 : return 1.0
 	return x
 
-	class MyListWidget(QtWidgets.QListWidget):
+class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
 	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
@@ -2310,8 +2310,6 @@ def notzero(x):
 
 class GUIctf(QtWidgets.QWidget):
 	module_closed = QtCore.Signal()
-
-	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 
 	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
@@ -2474,9 +2472,9 @@ class GUIctf(QtWidgets.QWidget):
 
 
 		E2loadappwin("e2ctf","main",self)
-		E2loadappwin("e2ctf","image",self.guiim.qt_parent)
-		E2loadappwin("e2ctf","realimage",self.guirealim.qt_parent)
-		E2loadappwin("e2ctf","plot",self.guiplot.qt_parent)
+		E2loadappwin("e2ctf","image",self.guiim)
+		E2loadappwin("e2ctf","realimage",self.guirealim)
+		E2loadappwin("e2ctf","plot",self.guiplot)
 
 		self.setWindowTitle("CTF")
 
@@ -2604,14 +2602,14 @@ class GUIctf(QtWidgets.QWidget):
 		E2saveappwin("e2ctf","main",self)
 
 		if self.guiim != None:
-			E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			E2saveappwin("e2ctf","image",self.guiim)
 			self.app().close_specific(self.guiim)
 			self.guiim = None
 		if self.guiplot != None:
-			E2saveappwin("e2ctf","plot",self.guiplot.qt_parent)
+			E2saveappwin("e2ctf","plot",self.guiplot)
 			self.app().close_specific(self.guiplot)
 		if self.guirealim != None:
-			E2saveappwin("e2ctf","realimage",self.guirealim.qt_parent)
+			E2saveappwin("e2ctf","realimage",self.guirealim)
 			self.app().close_specific(self.guirealim)
 
 		event.accept()
@@ -2930,9 +2928,9 @@ class GUIctf(QtWidgets.QWidget):
 #		print "self.data[val]=",self.data[val][0].split('#')[-1]
 
 
-		self.guiim.qt_parent.setWindowTitle("e2ctf - 2D FFT - "+self.data[val][0].split('#')[-1])
-		self.guirealim.qt_parent.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
-		self.guiplot.qt_parent.setWindowTitle("e2ctf - Plot - "+self.data[val][0].split('#')[-1])
+		self.guiim.setWindowTitle("e2ctf - 2D FFT - "+self.data[val][0].split('#')[-1])
+		self.guirealim.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
+		self.guiplot.setWindowTitle("e2ctf - Plot - "+self.data[val][0].split('#')[-1])
 
 		n=EMUtil.get_image_count(self.data[val][0])
 		if n>1:
@@ -3002,21 +3000,21 @@ class GUIctf(QtWidgets.QWidget):
 
 
 	def imgmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 
 	def imgmouseup(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def plotmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use

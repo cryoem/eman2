@@ -674,7 +674,7 @@ class EraseTool(EMBoxingTool):
 	def get_2d_window(self): return self.target().get_2d_window()
 
 	def mouse_move(self,event):
-		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
+		m = self.get_2d_window().scr_to_img((event.position().x(),event.position().y()))
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 		self.get_2d_window().updateGL()
 
@@ -691,18 +691,18 @@ class EraseTool(EMBoxingTool):
 		from PySide6.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
 			self.adjust_erase_rad(event.angleDelta().y())
-			m= self.get_2d_window().scr_to_img((event.x(),event.y()))
+			m= self.get_2d_window().scr_to_img((event.position().x(),event.position().y()))
 			self.get_2d_window().add_eraser_shape("eraser",["circle",.1,.1,.1,m[0],m[1],self.erase_radius,3])
 			self.get_2d_window().updateGL()
 
 	def mouse_down(self,event) :
-		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		m=self.get_2d_window().scr_to_img((event.position().x(),event.position().y()))
 		#self.boxable.add_exclusion_area("circle",m[0],m[1],self.erase_radius)
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
 
 	def mouse_drag(self,event) :
-		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		m=self.get_2d_window().scr_to_img((event.position().x(),event.position().y()))
 		self.get_2d_window().add_eraser_shape("eraser",["circle",.9,.9,.9,m[0],m[1],self.erase_radius,3])
 		self.target().exclusion_area_added("circle",m[0],m[1],self.erase_radius,self.erase_value)
 		# exclusion_area_added does the OpenGL update calls, so there is no need to do so here
@@ -770,11 +770,11 @@ class ManualBoxingTool(object):
 	def get_2d_window(self): return self.target().get_2d_window()
 
 	def mouse_down(self,event) :
-		m = self.get_2d_window().scr_to_img((event.x(),event.y()))
-			box_num = self.target().detect_box_collision(m)
-			from PySide6.QtCore import Qt
-			if box_num == -1:
-				if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
+		m = self.get_2d_window().scr_to_img((event.position().x(),event.position().y()))
+		box_num = self.target().detect_box_collision(m)
+		from PySide6.QtCore import Qt
+		if box_num == -1:
+			if event.modifiers()&Qt.ShiftModifier : return # the user tried to delete nothing
 			if self.get_2d_window().list_data!=None:
 				#print m[0], m[1], len(self.get_2d_window().list_data),self.get_2d_window().list_idx
 				box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE,z_idx=self.get_2d_window().list_idx)
@@ -782,7 +782,7 @@ class ManualBoxingTool(object):
 				box_num = self.target().add_box(m[0],m[1],ManualBoxingTool.BOX_TYPE)
 			if self.panel_object.auto_center_checkbox.isChecked():
 				self.try_to_center_ref(box_num)
-
+	
 			self.moving=[m,box_num]
 		else:
 			box = self.target().get_box(box_num)
@@ -797,10 +797,10 @@ class ManualBoxingTool(object):
 				raise EMUnknownBoxType(box.type)
 
 	def mouse_drag(self,event) :
-		m=self.get_2d_window().scr_to_img((event.x(),event.y()))
+		m=self.get_2d_window().scr_to_img((event.position().x(),event.position().y()))
 		from PySide6.QtCore import Qt
 		if event.modifiers()&Qt.ShiftModifier:
-		box_num = self.target().detect_box_collision(m)
+			box_num = self.target().detect_box_collision(m)
 			if ( box_num != -1):
 				box = self.target().get_box(box_num)
 				if box.type ==  ManualBoxingTool.BOX_TYPE:
@@ -1081,14 +1081,14 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 
 		if lc == None or lc[0] == None: return
 		im=lc[0]
-		self.moving_box_data = [event.x(),event.y(),im]
+		self.moving_box_data = [event.position().x(),event.position().y(),im]
 		self.first_clicked = im
 
-		try: self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
+		try: self.mouse_handler.moving_ptcl_established(im,event.position().x(),event.position().y())
 		except EMUnknownBoxType as data:
 			self.change_event_handler(data.type)
-			self.mouse_handler.moving_ptcl_established(im,event.x(),event.y())
-		#self.target().moving_ptcl_established(im,event.x(),event.y())
+			self.mouse_handler.moving_ptcl_established(im,event.position().x(),event.position().y())
+		#self.target().moving_ptcl_established(im,event.position().x(),event.position().y())
 		#self.target().get_2d_window().set_active(im,.9,.9,.4)
 		try:
 			self.target().get_2d_window().updateGL()
@@ -1098,13 +1098,13 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 		if self.mouse_handler == None: return
 
 		if self.moving_box_data:
-			try: self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
+			try: self.mouse_handler.move_ptcl(self.moving_box_data[2],event.position().x(),event.position().y(),scale)
 			except EMUnknownBoxType as data:
 				self.change_event_handler(self.box_to_tool_dict[data.type])
-				self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
-			#self.target().move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
+				self.mouse_handler.move_ptcl(self.moving_box_data[2],event.position().x(),event.position().y(),scale)
+			#self.target().move_ptcl(self.moving_box_data[2],event.position().x(),event.position().y(),scale)
 
-#			self.moving_box_data = [event.x(),event.y(),self.moving_box_data[2]]
+#			self.moving_box_data = [event.position().x(),event.position().y(),self.moving_box_data[2]]
 
 	def box_released(self,event,lc):
 		if lc == None or lc[0] == None: return
@@ -1117,13 +1117,13 @@ class ParticlesWindowEventHandler(BoxEventsHandler):
 
 		if self.mouse_handler == None: return
 
-		try: self.mouse_handler.release_moving_ptcl(self.first_clicked,event.x(),event.y())
+		try: self.mouse_handler.release_moving_ptcl(self.first_clicked,event.position().x(),event.position().y())
 		except EMUnknownBoxType as data:
 			self.change_event_handler(self.box_to_tool_dict[data.type])
-			self.mouse_handler.move_ptcl(self.moving_box_data[2],event.x(),event.y(),scale)
-		#self.target().release_moving_ptcl(self.first_clicked,event.x(),event.y())
+			self.mouse_handler.move_ptcl(self.moving_box_data[2],event.position().x(),event.position().y(),scale)
+		#self.target().release_moving_ptcl(self.first_clicked,event.position().x(),event.position().y())
 		if self.moving_box_data:
-			if event.x() == self.moving_box_data[0] and event.y() == self.moving_box_data[1]:
+			if event.position().x() == self.moving_box_data[0] and event.position().y() == self.moving_box_data[1]:
 				self.target().scroll_2d_window_to_box(self.first_clicked)
 
 		self.first_clicked = None

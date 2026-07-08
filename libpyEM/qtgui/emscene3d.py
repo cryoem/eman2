@@ -55,6 +55,7 @@ from OpenGL import GLU
 from OpenGL.GL import *
 from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 from PySide6.QtCore import Qt
+import gc
 
 
 #from emdataitem3d import EMDataItem3D, EMIsosurface, EMSliceItem3D, EMVolumeItem3D
@@ -785,6 +786,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		return "SG"
 		
 	def initializeGL(self):
+		EMGLWidget.initializeGL(self)
 		glClearColor(self.clearcolor[0], self.clearcolor[1], self.clearcolor[2], self.clearcolor[3])		# Default clear color is black
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
@@ -807,7 +809,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			pass
 		finally:
 			self.reset_camera = False
-		
+
 	def showEvent(self, event):
 		"""Ensure camera dimensions are set before first paintGL in Qt6."""
 		QtOpenGLWidgets.QOpenGLWidget.showEvent(self, event)
@@ -821,7 +823,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def resizeGL(self, width, height):
 		self.camera.update(width, height)
 		self.updateInspector()
-	
+
 	def resizeEvent(self, event):
 		"""In PySide6/Qt6 resizeGL may not be called by Qt virtual dispatch.
 		Override resizeEvent to ensure camera gets correct dimensions."""
@@ -1019,15 +1021,15 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		QT event handler. Records the coords when a mouse button is pressed and sets the cursor depending on what button(s) are pressed
 		"""
 		# The previous x,y records where the mouse was prior to mouse move, rest upon mouse move
-		self.previous_x = event.x()
-		self.previous_y = event.y()
+		self.previous_x = event.position().x()
+		self.previous_y = event.position().y()
 		# The first x,y records where the mouse was first pressed
 		self.first_x = self.previous_x
 		self.first_y = self.previous_y
 		# Process mouse events
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "app"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.appcursor)
-			self.sgmousepress.emit(event.x(), event.y())
+			self.sgmousepress.emit(event.position().x(), event.position().y())
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "data"):
 			QtWidgets.QApplication.instance().setOverrideCursor(self.datacursor)
 			filename = QtWidgets.QFileDialog.getOpenFileName(self, 'Get file', os.getcwd())[0]
@@ -1076,7 +1078,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.newnode.updateMatrices([90,1,0,0], "rotate")
 			self.updateSG()	
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "rotate"):
-			if event.y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
+			if event.position().y() > 0.95*self.size().height(): # The lowest 5% of the screen is reserved from the Z spin virtual slider
 				QtWidgets.QApplication.instance().setOverrideCursor(self.zrotatecursor)
 				self.zrotate = True
 			else:
@@ -1099,7 +1101,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			if event.modifiers()&Qt.ControlModifier:
 				self.toggleselection = True
 			# 5 seems a big enough selection box
-			self.selectArea(event.x(), event.x() + 5, event.y(), event.y() + 5, togglearea=False)
+			self.selectArea(event.position().x(), event.position().x() + 5, event.position().y(), event.position().y() + 5, togglearea=False)
 			self.pickItem()
 			self.updateSG()
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "multiselection"):
@@ -1107,7 +1109,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 			self.multiselect = True
 			self.appendselection = False
 			self.toggleselection = False
-			self.selectArea((event.x()-2.0), event.x(), (event.y()-2.0), event.y()) # To enable selection just by clicking
+			self.selectArea((event.position().x()-2.0), event.position().x(), (event.position().y()-2.0), event.position().y()) # To enable selection just by clicking
 			if event.modifiers()&Qt.ShiftModifier:
 				self.appendselection = True
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ztranslate"):
@@ -1131,8 +1133,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		
 	def _gettransformbasedonscreen(self, event, rescale=True):
 		""" Helper function to for mousePressEvent"""
-		x = self.camera.getViewPortWidthScaling()*(event.x() - old_div(self.camera.getWidth(),2))
-		y = self.camera.getViewPortHeightScaling()*(-event.y() + old_div(self.camera.getHeight(),2))
+		x = self.camera.getViewPortWidthScaling()*(event.position().x() - old_div(self.camera.getWidth(),2))
+		y = self.camera.getViewPortHeightScaling()*(-event.position().y() + old_div(self.camera.getHeight(),2))
 		
 		if rescale:
 			return Transform({"type":"eman","tx":x,"ty":y,"scale":self.camera.getViewPortWidthScaling()})
@@ -1144,16 +1146,16 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Qt event handler. Scales the SG depending on what mouse button(s) are pressed when dragged
 		"""
 		if not hasattr(self, 'previous_x'):
-			self.previous_x = event.x()
-			self.previous_y = event.y()
+			self.previous_x = event.position().x()
+			self.previous_y = event.position().y()
 			event.accept()
 			return
-		dx = (event.x() - self.previous_x)*self.camera.getViewPortWidthScaling()
-		dy = (event.y() - self.previous_y)*self.camera.getViewPortHeightScaling()
-		x = event.x()
-		y = event.y()
+		dx = (event.position().x() - self.previous_x)*self.camera.getViewPortWidthScaling()
+		dy = (event.position().y() - self.previous_y)*self.camera.getViewPortHeightScaling()
+		x = event.position().x()
+		y = event.position().y()
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "app"):
-			self.sgmousemove.emit(event.x(), event.y())
+			self.sgmousemove.emit(event.position().x(), event.position().y())
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "line"):
 			self.newnode.setEndAndWidth(0.0, 0.0, 0.0, x - self.first_x, self.first_y - y, 0.0, 20.0)
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ruler"):
@@ -1180,7 +1182,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "selection") and not event.modifiers()&Qt.ControlModifier:
 			self.updateMatrices([dx,-dy,0], "translate")
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "multiselection"):
-			self.selectArea(self.first_x, event.x(), self.first_y, event.y())
+			self.selectArea(self.first_x, event.position().x(), self.first_y, event.position().y())
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "ztranslate"):
 			self.updateMatrices([0,0,(-dy)], "translate")
 		if event.buttons()&Qt.MouseButton.RightButton or (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "xytranslate"):
@@ -1196,7 +1198,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Qt event handler. Returns the cursor to arrow upon mouse button release
 		"""
 		if (event.buttons()&Qt.MouseButton.LeftButton and self.mousemode == "app"):
-			self.sgmouserelease.emit([event.x(), event.y()])
+			self.sgmouserelease.emit([event.position().x(), event.position().y()])
 			
 		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 		# Select using the selection box
