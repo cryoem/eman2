@@ -483,9 +483,11 @@ class EMClassPtclTool(QtWidgets.QWidget):
 		QtWidgets.QApplication.instance().setOverrideCursor(Qt.ArrowCursor)
 
 	def fixlocation(self):
-		E2loadappwin("e2evalparticles","main",self)
+		# Don't call E2loadappwin on this widget - it's layout-managed inside a QTabWidget
+		# and win.move() causes undefined positioning behavior in PySide6.
+		# E2loadappwin("e2evalparticles","main",self)
 		if self.vclasses: E2loadappwin("e2evalparticles","classes",self.vclasses)
-		if self.vgoodptcl: 
+		if self.vgoodptcl:
 			E2loadappwin("e2evalparticles","good",self.vgoodptcl)
 			E2loadappwin("e2evalparticles","bad",self.vbadptcl)
 

@@ -392,7 +392,7 @@ class RCTboxer(object):
 	def init_particles_window(self):
 		self.particles_window = ParticlesWindow(self)
 		self.parent_window.show_specific(self.particles_window.window)
-		E2loadappwin("e2rctboxer","particles",self.particles_window.window.qt_parent)
+		E2loadappwin("e2rctboxer","particles",self.particles_window.window)
 		self.widgetlist.append(self.particles_window.window)
 		
 	# initialize tilited and untilted windows, if desired for tilted windows can be easily added
@@ -402,7 +402,7 @@ class RCTboxer(object):
 		self.widgetlist.append(self.untilt_win.window)
 		self.windowlist.append(self.untilt_win)
 		self.particles_window.addlist("untilted")
-		E2loadappwin("e2rctboxer","untilted",self.untilt_win.window.qt_parent)
+		E2loadappwin("e2rctboxer","untilted",self.untilt_win.window)
 		
 	def load_untilt_image(self, filename):
 		self.untilt_win.load_image(filename)
@@ -413,7 +413,7 @@ class RCTboxer(object):
 		self.widgetlist.append(self.tilt_win.window)
 		self.windowlist.append(self.tilt_win)
 		self.particles_window.addlist("tilted")
-		E2loadappwin("e2rctboxer","tilted",self.tilt_win.window.qt_parent)
+		E2loadappwin("e2rctboxer","tilted",self.tilt_win.window)
 
 		
 	def load_tilt_image(self, filename):
@@ -541,7 +541,7 @@ class ParticlesWindow(object):
 			window.update_particles()
 		
 	def on_module_closed(self):
-		E2saveappwin("e2rctboxer","particles",self.window.qt_parent)
+		E2saveappwin("e2rctboxer","particles",self.window)
 		pass
 		#if not self.closed:
 			#print "Saving particles"
@@ -666,7 +666,7 @@ class MainWin(object):
 		
 	def on_module_closed(self):
 
-		E2saveappwin("e2rctboxer",self.name,self.window.qt_parent)
+		E2saveappwin("e2rctboxer",self.name,self.window)
 		self.boxes.close_db()
 		#print "Main module closed"
 	

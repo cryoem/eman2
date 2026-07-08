@@ -421,9 +421,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.wfft.show()
 		self.wplot.show()
 		E2loadappwin("e2evalimage","main",self)
-		E2loadappwin("e2evalimage","image",self.wimage.qt_parent)
-		E2loadappwin("e2evalimage","fft",self.wfft.qt_parent)
-		E2loadappwin("e2evalimage","plot",self.wplot.qt_parent)
+		E2loadappwin("e2evalimage","image",self.wimage)
+		E2loadappwin("e2evalimage","fft",self.wfft)
+		E2loadappwin("e2evalimage","plot",self.wplot)
 #		self.recalc()
 
 	def listkey(self,event):
@@ -446,9 +446,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 	def closeEvent(self,event):
 #		QtWidgets.QWidget.closeEvent(self,event)
 		E2saveappwin("e2evalimage","main",self)
-		E2saveappwin("e2evalimage","image",self.wimage.qt_parent)
-		E2saveappwin("e2evalimage","fft",self.wfft.qt_parent)
-		E2saveappwin("e2evalimage","plot",self.wplot.qt_parent)
+		E2saveappwin("e2evalimage","image",self.wimage)
+		E2saveappwin("e2evalimage","fft",self.wfft)
+		E2saveappwin("e2evalimage","plot",self.wplot)
 
 		self.writeCurParm()
 		event.accept()

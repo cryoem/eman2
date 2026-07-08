@@ -626,7 +626,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 			self.ns_changed(z)
 			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
-		self.qt_parent.register_animatable(animation)
+		self.register_animatable(animation)
 		return True
 
 
@@ -1457,7 +1457,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
 
-			self.qt_parent.register_animatable(animation)
+			self.register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
@@ -1736,7 +1736,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		if self.key_mvt_animation == None:
 			new_origin=(self.origin[0]+dx,self.origin[1]+dy)
 			self.key_mvt_animation = LineAnimation(self,self.origin,new_origin)
-			self.qt_parent.register_animatable(self.key_mvt_animation)
+			self.register_animatable(self.key_mvt_animation)
 		else:
 			new_origin = self.key_mvt_animation.get_end()
 			new_origin = (new_origin[0]+dx,new_origin[1]+dy)

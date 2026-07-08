@@ -1952,11 +1952,11 @@ class GUIBoxer(QtWidgets.QWidget):
 #		self.wfft.show()
 #		self.wplot.show()
 		E2loadappwin("e2boxer21","main",self)
-		E2loadappwin("e2boxer21","image",self.wimage.qt_parent)
-		E2loadappwin("e2boxer21","particles",self.wparticles.qt_parent)
-		E2loadappwin("e2boxer21","refs",self.wrefs.qt_parent)
-		E2loadappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
-		E2loadappwin("e2boxer21","bgrefs",self.wbgrefs.qt_parent)
+		E2loadappwin("e2boxer21","image",self.wimage)
+		E2loadappwin("e2boxer21","particles",self.wparticles)
+		E2loadappwin("e2boxer21","refs",self.wrefs)
+		E2loadappwin("e2boxer21","badrefs",self.wbadrefs)
+		E2loadappwin("e2boxer21","bgrefs",self.wbgrefs)
 
 		self.newSet(0)
 
@@ -2289,7 +2289,7 @@ class GUIBoxer(QtWidgets.QWidget):
 
 		self.micrograph=load_micrograph(newfilename)
 		self.__show_image()
-		if first : E2loadappwin("e2boxer21","image",self.wimage.qt_parent)
+		if first : E2loadappwin("e2boxer21","image",self.wimage)
 		self.curfilename=newfilename
 		self.restore_boxes()
 
@@ -2587,11 +2587,11 @@ class GUIBoxer(QtWidgets.QWidget):
 #		QtWidgets.QWidget.closeEvent(self,event)
 		self.save_boxes()
 		E2saveappwin("e2boxer21","main",self)
-		E2saveappwin("e2boxer21","image",self.wimage.qt_parent)
-		E2saveappwin("e2boxer21","particles",self.wparticles.qt_parent)
-		E2saveappwin("e2boxer21","refs",self.wrefs.qt_parent)
-		E2saveappwin("e2boxer21","badrefs",self.wbadrefs.qt_parent)
-		E2saveappwin("e2boxer21","bgrefs",self.wbgrefs.qt_parent)
+		E2saveappwin("e2boxer21","image",self.wimage)
+		E2saveappwin("e2boxer21","particles",self.wparticles)
+		E2saveappwin("e2boxer21","refs",self.wrefs)
+		E2saveappwin("e2boxer21","badrefs",self.wbadrefs)
+		E2saveappwin("e2boxer21","bgrefs",self.wbgrefs)
 
 		#self.writeCurParm()
 		event.accept()

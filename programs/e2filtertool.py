@@ -795,7 +795,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		if self.nz>1 : self.mfile_save_map.setEnabled(True)
 		else : self.mfile_save_map.setEnabled(False)
 
-		E2loadappwin("e2filtertool","image",self.viewer[0].qt_parent)
+		E2loadappwin("e2filtertool","image",self.viewer[0])
 		if self.origdata[0].has_attr("source_path"):
 			winname=str(self.origdata[0]["source_path"])
 		else:
@@ -926,7 +926,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 
 #		print "Exiting"
 		if self.viewer!=None :
-			E2saveappwin("e2filtertool","image",self.viewer[0].qt_parent)
+			E2saveappwin("e2filtertool","image",self.viewer[0])
 			for v in self.viewer:
 				v.close()
 		event.accept()

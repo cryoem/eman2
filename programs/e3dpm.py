@@ -811,7 +811,7 @@ class EMDPM(QtWidgets.QMainWindow):
 			#self.maplist = None
 
 		#if self.guiim != None:
-			#E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			#E2saveappwin("e2ctf","image",self.guiim)
 			#self.app().close_specific(self.guiim)
 			#self.guiim = None
 

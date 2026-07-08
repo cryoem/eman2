@@ -731,7 +731,6 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 			self.combo.addItem(e)
 
 		self.combo.currentIndexChanged.connect(self.on_combo_change)
-		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
 
 		self.au_tab.vbl.addWidget(self.combo)
 		self.refine_dir = combo_entries[0]
@@ -747,8 +746,8 @@ class EMAsymmetricUnitInspector(EMSymInspector):
 		self.tabwidget.insertTab(0,self.au_tab,"Refinement")
 		self.tabwidget.setCurrentIndex(0)
 
-	def on_combo_change(self,s):
-		self.refine_dir = str(s)
+	def on_combo_change(self, index):
+		self.refine_dir = self.combo.itemText(index)
 		self.update_classes_list()
 
 	def update_classes_list(self,first_time=False):

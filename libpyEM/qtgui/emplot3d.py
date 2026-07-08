@@ -162,14 +162,12 @@ class EMPlot3DWidget(EMGLWidget):
 		GL.glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
-		gc.disable()
 		try: GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		except: pass # this is a hack.
 
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
-		gc.enable()
 
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()

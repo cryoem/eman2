@@ -152,18 +152,15 @@ class EMHistogramWidget(EMGLWidget):
 		GL.glEnable(GL_DEPTH_TEST)
 
 	def paintGL(self):
-		gc.disable()	# to avoid garbage collection crashes during rendering
 		try: GL.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT)
 		except: pass # this is a hack.
 
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 		self.render()
-		gc.enable()
 
 	def resizeGL(self, width, height):
 #		side = min(width, height)
-		gc.disable()
 		GL.glViewport(0,0,self.width(),self.height())
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -172,7 +169,6 @@ class EMHistogramWidget(EMGLWidget):
 		GL.glLoadIdentity()
 
 		self.resize_event(width,height)
-		gc.enable()
 
 	def resizeEvent(self, event):
 		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)

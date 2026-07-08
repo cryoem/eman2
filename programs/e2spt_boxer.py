@@ -116,7 +116,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	module_closed = QtCore.Signal()
 
 	def __init__(self,application,options,datafile):
-		QtWidgets.QWidget.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		self.initialized=False
 		self.app=weakref.ref(application)
 		self.options=options
@@ -178,8 +178,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.splitter_bottom.addWidget(self.grid_widget)
 		self.splitter_bottom.addWidget(self.xzview)
 
-		self.splitter_top.splitterMoved.connect(lambda pos, index: self.sync_splitters(self.splitter_top, self.splitter_bottom))
-		self.splitter_bottom.splitterMoved.connect(lambda pos, index: self.sync_splitters(self.splitter_bottom, self.splitter_top))
+		self.splitter_top.splitterMoved.connect(self._on_top_splitter_moved)
+		self.splitter_bottom.splitterMoved.connect(self._on_bottom_splitter_moved)
 
 #########################################################################
 		
@@ -407,7 +407,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		info.close()
 		
 		E2loadappwin("e2sptboxer","main",self)
-		E2loadappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
+		E2loadappwin("e2sptboxer","boxes",self.boxesviewer)
 		E2loadappwin("e2sptboxer","option",self.optionviewer)
 		
 		#### particle classes
@@ -452,6 +452,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		target_splitter.blockSignals(True)
 		target_splitter.setSizes(source_splitter.sizes())
 		target_splitter.blockSignals(False)
+
+	def _on_top_splitter_moved(self, pos, index):
+		self.sync_splitters(self.splitter_top, self.splitter_bottom)
+
+	def _on_bottom_splitter_moved(self, pos, index):
+		self.sync_splitters(self.splitter_bottom, self.splitter_top)
 		
 	def set_data(self,data):
 
@@ -1355,7 +1361,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.SaveJson()
 		
 		E2saveappwin("e2sptboxer","main",self)
-		E2saveappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
+		E2saveappwin("e2sptboxer","boxes",self.boxesviewer)
 		E2saveappwin("e2sptboxer","option",self.optionviewer)
 		
 		#self.boxviewer.close()

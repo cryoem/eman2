@@ -246,9 +246,9 @@ class GUIctfsim(QtWidgets.QWidget):
 
 
 		E2loadappwin("e2ctfsim","main",self)
-		E2loadappwin("e2ctfsim","image",self.guiim.qt_parent)
-#		E2loadappwin("e2ctf","realimage",self.guirealim.qt_parent)
-		E2loadappwin("e2ctfsim","plot",self.guiplot.qt_parent)
+		E2loadappwin("e2ctfsim","image",self.guiim)
+#		E2loadappwin("e2ctf","realimage",self.guirealim)
+		E2loadappwin("e2ctfsim","plot",self.guiplot)
 
 		self.setWindowTitle("CTF")
 
@@ -296,17 +296,17 @@ class GUIctfsim(QtWidgets.QWidget):
 		E2saveappwin("e2ctf","main",self)
 
 		if self.guiim != None:
-			E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			E2saveappwin("e2ctf","image",self.guiim)
 			self.app().close_specific(self.guiim)
 			self.guiim = None
 		if self.applyim != None:
 			self.app().close_specific(self.applyim)
 			self.applyim = None
 		if self.guiplot != None:
-			E2saveappwin("e2ctf","plot",self.guiplot.qt_parent)
+			E2saveappwin("e2ctf","plot",self.guiplot)
 			self.app().close_specific(self.guiplot)
 		#if self.guirealim != None:
-			#E2saveappwin("e2ctf","realimage",self.guirealim.qt_parent)
+			#E2saveappwin("e2ctf","realimage",self.guirealim)
 			#self.app().close_specific(self.guirealim)
 
 		event.accept()
@@ -400,9 +400,9 @@ class GUIctfsim(QtWidgets.QWidget):
 #		print "self.data[val]=",self.data[val][0].split('#')[-1]
 
 
-		self.guiim.qt_parent.setWindowTitle("e2ctfsim - 2D FFT - "+self.data[val][0])
-#		self.guirealim.qt_parent.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
-		self.guiplot.qt_parent.setWindowTitle("e2ctfsim - Plot ")
+		self.guiim.setWindowTitle("e2ctfsim - 2D FFT - "+self.data[val][0])
+#		self.guirealim.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
+		self.guiplot.setWindowTitle("e2ctfsim - Plot ")
 
 		#n=EMUtil.get_image_count(self.data[val][0])
 		#if n>1:

@@ -503,9 +503,9 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.imgview.shapes = {0:self.boxshapes}
 
 		E2loadappwin("e2sptconvnet","main",self)
-		E2loadappwin("e2sptconvnet","positive",self.boxesviewer[1].qt_parent)
-		E2loadappwin("e2sptconvnet","negative",self.boxesviewer[0].qt_parent)
-		E2loadappwin("e2sptconvnet","particles",self.ptclviewer.qt_parent)
+		E2loadappwin("e2sptconvnet","positive",self.boxesviewer[1])
+		E2loadappwin("e2sptconvnet","negative",self.boxesviewer[0])
+		E2loadappwin("e2sptconvnet","particles",self.ptclviewer)
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable(GL_LINE_SMOOTH );
@@ -524,9 +524,9 @@ class EMTomobox(QtWidgets.QMainWindow):
 		print("Exiting")
 
 		E2saveappwin("e2sptconvnet","main",self)
-		E2saveappwin("e2sptconvnet","positive",self.boxesviewer[1].qt_parent)
-		E2saveappwin("e2sptconvnet","negative",self.boxesviewer[0].qt_parent)
-		E2saveappwin("e2sptconvnet","particles",self.ptclviewer.qt_parent)
+		E2saveappwin("e2sptconvnet","positive",self.boxesviewer[1])
+		E2saveappwin("e2sptconvnet","negative",self.boxesviewer[0])
+		E2saveappwin("e2sptconvnet","particles",self.ptclviewer)
 
 		self.boxesviewer[0].close()
 		self.boxesviewer[1].close()

@@ -371,10 +371,13 @@ def E2loadappwin(app,key,win):
 		geom=list(E2getappval(app,key))
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
-		geom[0]=max(32,geom[0])
-		geom[1]=max(60,geom[1])
-		win.move(geom[0],geom[1])
-#		print(app,key,geom)
+		# Only move top-level windows. Calling move() on widgets managed by a layout
+		# manager causes undefined positioning behavior in PySide6.
+		if win.window() == win or not hasattr(win, 'parent') or win.parent() is None:
+			geom[0]=max(32,geom[0])
+			geom[1]=max(60,geom[1])
+			win.move(geom[0],geom[1])
+# 		print(app,key,geom)
 	except: return
 
 def E2saveprojtype(app,key,win):
