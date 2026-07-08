@@ -1796,7 +1796,7 @@ class EMStackFileType(EMFileType) :
 				("Avg All", "Unaligned average of entire stack",self.show2dAvg),("Avg Rnd Subset","Averages random min(1/4 of images,1000) multiple times",self.show2dAvgRnd),
 				("FilterTool", "Open in e2filtertool.py", self.showFilterTool), ("Save As", "Saves images in new file format", self.saveAs)]
 			if self.dim[0]>=3 and self.dim[0]<=5: rtr.append(("Spheres","Each X line is X-Y-Z[-A[-S]]. Show as spheres in 3-D",self.showSpheres))
-			else: print("Nope ",self.dim)
+			# else: print("Nope ",self.dim)
 			
 		# 1-D stack
 		elif self.nimg > 1:

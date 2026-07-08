@@ -354,7 +354,6 @@ class EMShape(object):
 					else : bgcol = (1.0-col[0],1.0-col[1],1.0-col[2])
 					bbox = EMShape.font_renderer.bounding_box(s[6])
 					GLUtil.mx_bbox(bbox,col,bgcol)
-				glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 				GL.glEnable(GL.GL_TEXTURE_2D)
 				GL.glTexEnvi (GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 				GL.glColor(*col)
@@ -456,7 +455,6 @@ class EMShape(object):
 						else : bgcol = (1.0-col[0],1.0-col[1],1.0-col[2])
 						bbox = EMShape.font_renderer.bounding_box(s[6])
 						GLUtil.mx_bbox(bbox,col,(1.0-col[0],1.0-col[1],1.0-col[2]))
-					glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 					GL.glEnable(GL.GL_TEXTURE_2D)
 					GL.glTexEnvi (GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_REPLACE)
 					GL.glColor(*col)

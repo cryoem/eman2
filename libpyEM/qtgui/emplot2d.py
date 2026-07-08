@@ -173,6 +173,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.scrlim=None		# detect that plot hasn't been displayed yet
 
 	def initializeGL(self):
+		EMGLWidget.initializeGL(self)
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 

@@ -156,6 +156,7 @@ class EMPlot3DWidget(EMGLWidget):
 		self.alpha = 0.5
 
 	def initializeGL(self):
+		EMGLWidget.initializeGL(self)
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
