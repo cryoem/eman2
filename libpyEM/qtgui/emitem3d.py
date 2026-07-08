@@ -168,8 +168,9 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@type children: list
 		@param children: the child nodes
 		@type transform: Transform or None
-		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
+		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children
 		"""
+		super().__init__()
 		self.label = None	# Customizable label, used to label the inspector in the tree
 		self.setParent(parent)
 		self.setChildren(children)

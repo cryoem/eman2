@@ -744,8 +744,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		@param SGactivenodeset: a set enumerating the list of active nodes
 		@param scalestep: The step to increment the object scaling
 		"""
-		EMItem3D.__init__(self, parent=None, transform=Transform())
-		EMGLWidget.__init__(self,parent)
+		super().__init__(parent=None, transform=Transform())
 		self.setSelectedItem(True)			# The root is selected by default
 		self.currentselecteditem = self
 		self.camera = EMCamera(1.0, 500.0)		# Default near,far
@@ -786,7 +785,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		return "SG"
 		
 	def initializeGL(self):
-		EMGLWidget.initializeGL(self)
+		super().initializeGL()
 		glClearColor(self.clearcolor[0], self.clearcolor[1], self.clearcolor[2], self.clearcolor[3])		# Default clear color is black
 		glShadeModel(GL_SMOOTH)
 		glEnable(GL_DEPTH_TEST)
@@ -812,7 +811,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 
 	def showEvent(self, event):
 		"""Ensure camera dimensions are set before first paintGL in Qt6."""
-		QtOpenGLWidgets.QOpenGLWidget.showEvent(self, event)
+		super().showEvent(event)
 		dpr = self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -827,7 +826,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def resizeEvent(self, event):
 		"""In PySide6/Qt6 resizeGL may not be called by Qt virtual dispatch.
 		Override resizeEvent to ensure camera gets correct dimensions."""
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr = self.devicePixelRatio()
 		w = event.size().width() // dpr
 		h = event.size().height() // dpr
@@ -1770,7 +1769,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		Close the main inspector
 		"""
 		if self.main_3d_inspector: self.main_3d_inspector.close()
-		EMGLWidget.closeEvent(self,event)
+		super().closeEvent(event)
 	
 	def showEvent(self, event):
 		QtWidgets.QWidget.showEvent(self, event)

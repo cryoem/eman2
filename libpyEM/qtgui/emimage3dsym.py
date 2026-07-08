@@ -1153,7 +1153,7 @@ class EMSymViewerWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __init__(self, sym="c1", filename=None):
 		EMSymViewerWidget.allim[self]=0
 		
-		EMGLWidget.__init__(self)
+		super().__init__()
 		EMGLProjectionViewMatrices.__init__(self)
 
 		self.filename = filename

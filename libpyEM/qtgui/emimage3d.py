@@ -79,7 +79,7 @@ class EMImage3DWidget(EMGLWidget, EMLightsDrawer, EMGLProjectionViewMatrices):
 		
 	def __init__(self, parent=None, image=None,application=None,winid=None):
 		EMImage3DWidget.allim[self] = 0
-		EMGLWidget.__init__(self,parent)
+		super().__init__(parent)
 		EMLightsDrawer.__init__(self)
 		EMGLProjectionViewMatrices.__init__(self)
 		
@@ -371,7 +371,7 @@ def mousePressEvent(self, event):
 			glMatrixMode(GL_MODELVIEW)
 	def resizeEvent(self, event):
 		self.vdtools.set_update_P_inv()
-		EMGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 	def resizeGL(self, width, height):
 		# just use the whole window for rendering
 		

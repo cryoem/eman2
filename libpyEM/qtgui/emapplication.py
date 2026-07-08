@@ -154,14 +154,14 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	# 		self.setWindowTitle(title)
 			
 	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
-		# if parent==None : 
-		# 	self.qt_parent = EMParentWin(enable_timer)
-		# 	self.myparent=True			# we allocated the parent, responsible for cleaning it up
+		# if parent==None :
+		#	self.qt_parent = EMParentWin(enable_timer)
+		#	self.myparent=True			# we allocated the parent, responsible for cleaning it up
 		# else: 
-		# 	self.qt_parent=parent
-		# 	self.myparent=False			# we did not allocate our parent, so we should not get rid of it
+		#	self.qt_parent=parent
+		#	self.myparent=False			# we did not allocate our parent, so we should not get rid of it
 		
-		QtOpenGLWidgets.QOpenGLWidget.__init__(self)
+		super().__init__(parent)
 		# if self.myparent : self.qt_parent.setup(self)
 		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
@@ -187,7 +187,7 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	def closeEvent(self, event):
 		if self.inspector:
 			self.inspector.close()
-		QtOpenGLWidgets.QOpenGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		self.closed=True
 		event.accept()

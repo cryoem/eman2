@@ -87,7 +87,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 		print("Using local version pf emannotate widget")
-		EMGLWidget.__init__(self,parent)
+		super().__init__(parent, winid=None)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
@@ -262,7 +262,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		#except: pass
 
 	def resizeEvent(self, event):
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr=self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -1500,7 +1500,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def closeEvent(self,event) :
 
-		EMGLWidget.closeEvent(self,event)
+		super().closeEvent(event)
 		try:
 			os.rmdir('./segs/temp')
 		except:

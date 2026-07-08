@@ -214,7 +214,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	set_origin = QtCore.Signal(float, float, bool)
 
 	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
-		EMGLWidget.__init__(self,winid=winid)
+		super().__init__(winid=winid)
 		EMGLProjectionViewMatrices.__init__(self)
 
 
@@ -302,7 +302,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.setAcceptDrops(True)
 
 	def initializeGL(self):
-		EMGLWidget.initializeGL(self)
+		super().initializeGL()
 		glClearColor(0,0,0,0)
 
 		# Lighting not needed in EMImageMXWidget - use glColor instead of materials
@@ -351,7 +351,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		except: pass
 
 	def resizeEvent(self, event):
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr=self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -366,7 +366,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def closeEvent(self,event):
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 
 	def set_current_set(self,name):
 		"""Makes the named set the target of any mouse interactions"""

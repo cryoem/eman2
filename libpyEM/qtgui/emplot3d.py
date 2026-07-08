@@ -114,7 +114,7 @@ class EMPlot3DWidget(EMGLWidget):
 
 	def __init__(self,application=None,winid=None,parent=None):
 
-		EMGLWidget.__init__(self, parent=parent, winid=winid)
+		super().__init__(parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		emshape.pixelratio=self.devicePixelRatio()
 
@@ -157,7 +157,7 @@ class EMPlot3DWidget(EMGLWidget):
 		self.alpha = 0.5
 
 	def initializeGL(self):
-		EMGLWidget.initializeGL(self)
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
@@ -184,7 +184,7 @@ class EMPlot3DWidget(EMGLWidget):
 		self.resize_event(width,height)
 
 	def resizeEvent(self, event):
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr=self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -208,7 +208,7 @@ class EMPlot3DWidget(EMGLWidget):
 			self.particle_viewer5.close()
 
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 
 		if self.inspector :
 			self.inspector.closeEvent(event)

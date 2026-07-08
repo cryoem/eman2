@@ -3597,7 +3597,7 @@ class EMInfoWin(QtWidgets.QWidget) :
 			self.stack.setCurrentIndex(i)		# put the new pane on top
 
 	def closeEvent(self, event) :
-		QtWidgets.QWidget.closeEvent(self, event)
+		super().closeEvent(event)
 		self.winclosed.emit()
 
 

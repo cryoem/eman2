@@ -1138,7 +1138,7 @@ class EMFormWidget(QtWidgets.QWidget):
 	
 	def closeEvent(self, event):
 		self.emform_close.emit()
-		QtWidgets.QWidget.closeEvent(self, event)
+		super().closeEvent(event)
 	
 	def incorporate_params(self,params,layout):
 		for param in params:

@@ -83,7 +83,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
-		EMGLWidget.__init__(self,parent)
+		super().__init__(parent, winid=winid)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
@@ -192,16 +192,17 @@ class EMImage2DWidget(EMGLWidget):
 #		self.qt_parent.deleteLater()
 
 	def initializeGL(self):
-		EMGLWidget.initializeGL(self)
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
+		# glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		# glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		# glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		# glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
 
-		enable(GL_LIGHTING)
-		enable(GL_LIGHT0)
+		# enable(GL_LIGHTING)
+		# enable(GL_LIGHT0)
+		glDisable(GL_LIGHTING)
 		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
 		if self.tmp is not None: 
 			self.set_data(tmp)
@@ -234,14 +235,14 @@ class EMImage2DWidget(EMGLWidget):
 			print("EMImage2DWidget.paintGL error:", e)
 			import traceback; traceback.print_exc()
 
-	def resizeGL(self, width, height):
-		if width == 0 or height == 0: return
-		width = width // self.devicePixelRatio()
-		height = height // self.devicePixelRatio()
-		self.resize_event(width,height)
+	# def resizeGL(self, width, height):
+	# 	if width == 0 or height == 0: return
+	# 	width = width // self.devicePixelRatio()
+	# 	height = height // self.devicePixelRatio()
+	# 	self.resize_event(width,height)
 
 	def resizeEvent(self, event):
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr=self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -1669,7 +1670,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
-		EMGLWidget.closeEvent(self,event)
+		super().closeEvent(event)
 		try:
 			for w in self.inspector.pspecwins: w.close()
 		except: pass

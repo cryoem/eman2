@@ -2158,7 +2158,7 @@ class EM3DModel(QtCore.QObject):
 			self.inspector.set_scale(self.cam.scale)
 class EM3DGLWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __init__(self, model=None): #Usually model will be None, because a GL context must be created before a EM3DGLWidget
-		EMGLWidget.__init__(self)
+		super().__init__()
 		EMGLProjectionViewMatrices.__init__(self)
 		
 		self.fov = 30.0 # field of view angle used by gluPerspective

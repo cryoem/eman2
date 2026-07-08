@@ -114,7 +114,7 @@ class EMHistogramWidget(EMGLWidget):
 	"""
 
 	def __init__(self,application=None,winid=None,parent=None):
-		EMGLWidget.__init__(self, parent=parent, winid=winid)
+		super().__init__(parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.axes={}
 		self.pparm={}			# nbins,color,histtype,orient,align,alpha,width,norm,cumul,logy,stacked
@@ -147,7 +147,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.logy = False #self.inspector.logtogy.isChecked()
 
 	def initializeGL(self):
-		EMGLWidget.initializeGL(self)
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
@@ -171,7 +171,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.resize_event(width,height)
 
 	def resizeEvent(self, event):
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr=self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -179,7 +179,7 @@ class EMHistogramWidget(EMGLWidget):
 
 	def closeEvent(self,event):
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 		if self.inspector : self.inspector.closeEvent(event)
 
 	def keyPressEvent(self,event):

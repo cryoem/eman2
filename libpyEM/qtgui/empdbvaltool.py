@@ -150,7 +150,7 @@ class EMPDBValWidget(QtWidgets.QWidget):
 		
 	def closeEvent(self, event):
 		self.viewer_window.close()
-		QtWidgets.QWidget.closeEvent(self, event)
+		super().closeEvent(event)
 		
 	def draw_objects(self):
 		if self.iso_model == None: 

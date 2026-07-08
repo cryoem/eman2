@@ -55,6 +55,8 @@ from eman2_gui.emshape import EMShape
 from eman2_gui.valslider import ValSlider, ValBox
 from sklearn.decomposition import PCA
 
+import faulthandler
+faulthandler.enable()
 	
 def run(cmd):
 	print(cmd)

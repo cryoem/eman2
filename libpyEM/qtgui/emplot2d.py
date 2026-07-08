@@ -130,7 +130,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 	def __init__(self,application=None,winid=None,parent=None):
 
-		EMGLWidget.__init__(self, parent=parent, winid=winid)
+		super().__init__(parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.setMinimumWidth(120)
 		self.setMinimumHeight(80)
@@ -174,7 +174,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.scrlim=None		# detect that plot hasn't been displayed yet
 
 	def initializeGL(self):
-		EMGLWidget.initializeGL(self)
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
@@ -187,7 +187,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.render()
 
 	def resizeGL(self, width, height):
-		EMGLWidget.resizeGL(self,width,height)
+		super().resizeGL(width,height)
 		#print "resize ",self.width(), self.height()
 #\t\twidth = width
 #\t\theight = height
@@ -204,7 +204,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.resize_event(width,height)
 
 	def resizeEvent(self, event):
-		QtOpenGLWidgets.QOpenGLWidget.resizeEvent(self, event)
+		super().resizeEvent(event)
 		dpr=self.devicePixelRatio()
 		w = self.width() // dpr
 		h = self.height() // dpr
@@ -216,7 +216,7 @@ class EMPlot2DWidget(EMGLWidget):
 		self.particle_viewers=[]
 
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 
 		if self.inspector :
 			self.inspector.closeEvent(event)
@@ -1248,7 +1248,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	clusterStats = QtCore.Signal(list)
 
 	def __init__(self,application=None,winid=None):
-		EMGLWidget.__init__(self, winid=winid)
+		super().__init__(winid=winid)
 		self.resize(640,480)
 		self.setWindowIcon(QtGui.QIcon(QtGui.QPixmap(ploticon)))
 
@@ -1317,7 +1317,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 
 	def closeEvent(self,event):
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 
 
 	def keyPressEvent(self,event):
