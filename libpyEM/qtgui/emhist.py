@@ -146,6 +146,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.logy = False #self.inspector.logtogy.isChecked()
 
 	def initializeGL(self):
+		EMGLWidget.initializeGL(self)
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
