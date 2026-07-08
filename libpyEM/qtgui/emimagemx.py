@@ -2047,12 +2047,12 @@ class EMGLScrollBar(object):
 
 		self.min_scroll_bar_size = 30
 
-		self.scroll_bar_press_color = (.2,.2,.3,0)
-		self.scroll_bar_idle_color = (0,0,0,0)
+		self.scroll_bar_press_color = (0.2,0.2,0.2)
+		self.scroll_bar_idle_color = (0.2,0.2,0.2)
 		self.scroll_bar_color = self.scroll_bar_idle_color
 
-		self.scroll_bit_press_color = (0,0,.5,0)
-		self.scroll_bit_idle_color = (.5,0,0,0)
+		self.scroll_bit_press_color = (0.8,0.8,0.8)
+		self.scroll_bit_idle_color = (0.5,0.5,0.5)
 		self.scroll_bit_color = self.scroll_bit_idle_color
 
 		self.up_arrow_color = self.scroll_bar_idle_color
@@ -2116,6 +2116,7 @@ class EMGLScrollBar(object):
 		y1 = self.starty
 		y2 = self.height
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		glColor3f(*self.scroll_bar_color)
 		glVertex(x1,y1,0)
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y1,0)
@@ -2130,6 +2131,7 @@ class EMGLScrollBar(object):
 		glTranslate(0,self.arrow_button_height,0)
 		glBegin(GL_TRIANGLES)
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		glColor3f(*self.up_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_part_offset,0)
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
@@ -2141,6 +2143,7 @@ class EMGLScrollBar(object):
 		# the down pointing arrow
 		glBegin(GL_TRIANGLES)
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		glColor3f(*self.down_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(self.width//2,self.arrow_part_offset,0)
@@ -2155,6 +2158,7 @@ class EMGLScrollBar(object):
 		y1 = sy+self.scroll_bit_position
 		y2 = y1+self.scroll_bit_height
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(0,.5,0.5,1.0))
+		glColor3f(*self.scroll_bit_color)
 		glVertex(x1,y1,1)
 		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y1,1)

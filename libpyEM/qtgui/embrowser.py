@@ -3879,7 +3879,8 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 		# Bookmarks implemented with a toolbar in a frame
 
 		self.wbookmarkfr = QtWidgets.QFrame()
-		self.wbookmarkfr.setFrameStyle(QtWidgets.QFrame.StyledPanel|QtWidgets.QFrame.Raised)
+		self.wbookmarkfr.setFrameShape(QtWidgets.QFrame.StyledPanel)
+		self.wbookmarkfr.setFrameShadow(QtWidgets.QFrame.Raised)
 		self.wbmfrbl = QtWidgets.QVBoxLayout(self.wbookmarkfr)
 
 		self.wbookmarks = QtWidgets.QToolBar()

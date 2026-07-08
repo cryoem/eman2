@@ -152,7 +152,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		# File menu
 		filemenu = menubar.addMenu('&File')
 		# exit
-		exit = QtWidgets.QAction('Exit', self)
+		exit = QtGui.QAction('Exit', self)
 		exit.setShortcut('Ctrl+Q')
 		exit.setStatusTip('Exit application')
 		exit.triggered.connect(self.close)
@@ -160,12 +160,12 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		# Project
 		projectmenu = menubar.addMenu('&Project')
-		openproject = QtWidgets.QAction('Open Project', self)
+		openproject = QtGui.QAction('Open Project', self)
 		openproject.setShortcut('Ctrl+O')
 		openproject.setStatusTip('Open Project')
 		openproject.triggered.connect(self._on_openproject)
 		projectmenu.addAction(openproject)
-		editproject = QtWidgets.QAction('Edit Project', self)
+		editproject = QtGui.QAction('Edit Project', self)
 		editproject.setShortcut('Ctrl+E')
 		editproject.setStatusTip('Edit Project')
 		editproject.triggered.connect(self._on_editproject)
@@ -175,13 +175,13 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		# Utils
 		utilsmenu = menubar.addMenu('&Utilities')
-		filebrowser = QtWidgets.QAction('File Browser', self)
+		filebrowser = QtGui.QAction('File Browser', self)
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
 		utilsmenu.addAction(filebrowser)
 		utilsmenu.addSeparator()
 		filebrowser.triggered.connect(self._on_browse)
-		self.dumpterminal = QtWidgets.QAction('Dump Terminal', self)
+		self.dumpterminal = QtGui.QAction('Dump Terminal', self)
 		self.dumpterminal.setCheckable(True)
 		self.dumpterminal.setChecked(False)
 		utilsmenu.addAction(self.dumpterminal)
@@ -190,10 +190,10 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		# Help
 		helpmenu = menubar.addMenu('&Help')
-		about = QtWidgets.QAction('About', self)
+		about = QtGui.QAction('About', self)
 		about.setStatusTip('About')
 		helpmenu.addAction(about)
-		helpdoc = QtWidgets.QAction('Help', self)
+		helpdoc = QtGui.QAction('Help', self)
 		helpdoc.setStatusTip('Help')
 		helpmenu.addAction(helpdoc)
 
@@ -951,7 +951,8 @@ class EMAN2StatusBar(QtWidgets.QTextEdit):
 	"""
 	def __init__(self, text, style):
 		QtWidgets.QTextEdit.__init__(self)
-		self.setFrameShape(QtWidgets.QFrame.Panel | QtWidgets.QFrame.Sunken)
+		self.setFrameShape(QtWidgets.QFrame.Panel)
+		self.setFrameShadow(QtWidgets.QFrame.Sunken)
 		self.setLineWidth(2)
 		#self.setContentsMargins(4, 4, 4, 4)
 		self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
