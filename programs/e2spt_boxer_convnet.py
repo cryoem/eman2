@@ -358,7 +358,7 @@ class EMImageList(QtWidgets.QWidget):
 class EMTomobox(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
-		QtWidgets.QWidget.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		self.setMinimumSize(700,200)
 		
 		#### load references first
