@@ -777,6 +777,7 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		# Qt6 requires explicit focus policy for wheel events on QOpenGLWidget
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 		
 	def getEvalString(self):
 		"""
@@ -812,9 +813,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def showEvent(self, event):
 		"""Ensure camera dimensions are set before first paintGL in Qt6."""
 		super().showEvent(event)
-		dpr = self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
+		w = self.width()
+		h = self.height()
 		if w > 0 and h > 0:
 			self.camera.update(w, h)
 		self.update()
@@ -827,9 +827,8 @@ class EMScene3D(EMItem3D, EMGLWidget):
 		"""In PySide6/Qt6 resizeGL may not be called by Qt virtual dispatch.
 		Override resizeEvent to ensure camera gets correct dimensions."""
 		super().resizeEvent(event)
-		dpr = self.devicePixelRatio()
-		w = event.size().width() // dpr
-		h = event.size().height() // dpr
+		w = self.width()
+		h = self.height()
 		if w > 0 and h > 0:
 			self.camera.update(w, h)
 		self.updateInspector()

@@ -300,6 +300,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.auto_contrast = True
 		self.setAcceptDrops(True)
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 
 	def initializeGL(self):
 		super().initializeGL()
@@ -320,11 +321,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		except: pass
 		# Ensure lighting is disabled every frame - QOpenGLWidget can reset GL state in Qt6
 		GL.glDisable(GL_LIGHTING)
-		dpr = self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
+		w = self.width()
+		h = self.height()
 		if w == 0 or h == 0: return
-		GL.glViewport(0, 0, int(self.width()*dpr), int(self.height()*dpr))
+		GL.glViewport(0, 0, w, h)
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		GL.glOrtho(0.0, w, 0.0, h, -50, 50)
@@ -334,28 +334,24 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def resizeGL(self, width, height):
 		if width <= 0 or height <= 0: return
-		width = width // self.devicePixelRatio()
-		height = height // self.devicePixelRatio()
 		
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
+		GL.glViewport(0, 0, self.width(), self.height())
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GL.glOrtho(0.0,width,0.0,height,-50,50)
+		GL.glOrtho(0.0, width, 0.0, height, -50, 50)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 
 		self.set_projection_view_update()
-		try: self.resize_event(width,height)
+		try: self.resize_event(width, height)
 		except: pass
 
 	def resizeEvent(self, event):
 		super().resizeEvent(event)
-		dpr=self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
-		try: self.resize_event(w,h)
+		w = self.width()
+		h = self.height()
+		try: self.resize_event(w, h)
 		except: pass
 
 	def get_frame_buffer(self):

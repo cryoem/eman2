@@ -209,19 +209,19 @@ class EMImage2DWidget(EMGLWidget):
 			self.tmp=None
 
 		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 		
 	def paintGL(self):
 		try:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-			dpr=self.devicePixelRatio()
-			w = self.width() // dpr
-			h = self.height() // dpr
+			w = self.width()
+			h = self.height()
 			if w == 0 or h == 0: return
-			GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
+			GL.glViewport(0, 0, w, h)
 			GL.glMatrixMode(GL.GL_PROJECTION)
 			GL.glLoadIdentity()
-			GLU.gluOrtho2D(0.0,w,0.0,h)
+			GLU.gluOrtho2D(0.0, w, 0.0, h)
 
 			glMatrixMode(GL_MODELVIEW)
 			glLoadIdentity()
@@ -243,10 +243,9 @@ class EMImage2DWidget(EMGLWidget):
 
 	def resizeEvent(self, event):
 		super().resizeEvent(event)
-		dpr=self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
-		self.resize_event(w,h)
+		w = self.width()
+		h = self.height()
+		self.resize_event(w, h)
 
 	def optimally_resize(self):
 		if self.parent_geometry != None:

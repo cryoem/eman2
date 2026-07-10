@@ -172,6 +172,7 @@ class EMPlot2DWidget(EMGLWidget):
 
 		self.alpha = 0.5
 		self.scrlim=None		# detect that plot hasn't been displayed yet
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 
 	def initializeGL(self):
 		super().initializeGL()
@@ -192,8 +193,7 @@ class EMPlot2DWidget(EMGLWidget):
 #\t\twidth = width
 #\t\theight = height
 #
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
+		GL.glViewport(0, 0, self.width(), self.height())
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -205,10 +205,9 @@ class EMPlot2DWidget(EMGLWidget):
 
 	def resizeEvent(self, event):
 		super().resizeEvent(event)
-		dpr=self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
-		self.resize_event(w,h)
+		w = self.width()
+		h = self.height()
+		self.resize_event(w, h)
 
 	def closeEvent(self,event):
 		for pv in self.particle_viewers: 
@@ -1282,6 +1281,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 		self.pointsizes = None		# Default is to use const sizes. Overrides constant size
 		self.yticklabels = True		# Default is to draw Y tick labels
 		self.xticklabels = True		# Default is to draw X tick labels
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 
 	def set_yticklabels(self, boolvalue):
 		self.yticklabels = boolvalue
@@ -1304,8 +1304,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
+		GL.glViewport(0, 0, self.width(), self.height())
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()

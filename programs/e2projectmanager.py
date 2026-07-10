@@ -33,7 +33,9 @@
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
+from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
 import os
 import sys
 

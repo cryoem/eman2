@@ -192,6 +192,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 		#self.external_seg_tab = None
 
 		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
 
 		if image :
@@ -246,27 +247,23 @@ class EMAnnotate2DWidget(EMGLWidget):
 
 	def resizeGL(self, width, height):
 		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
-		width = width // self.devicePixelRatio()
-		height = height // self.devicePixelRatio()
 		side = min(width, height)
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0, 0, self.width(), self.height())
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,width,0.0,height)
+		GLU.gluOrtho2D(0.0, width, 0.0, height)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 
-		self.resize_event(width,height)
+		self.resize_event(width, height)
 		#except: pass
 
 	def resizeEvent(self, event):
 		super().resizeEvent(event)
-		dpr=self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
-		self.resize_event(w,h)
+		w = self.width()
+		h = self.height()
+		self.resize_event(w, h)
 
 	def optimally_resize(self):
 		if self.parent_geometry != None:

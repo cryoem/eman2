@@ -145,6 +145,7 @@ class EMHistogramWidget(EMGLWidget):
 		self.alignment="edge" #alignments[self.inspector.align.currentIndex()]
 		self.cumulative = False #self.inspector.cumulative.isChecked()
 		self.logy = False #self.inspector.logtogy.isChecked()
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 
 	def initializeGL(self):
 		super().initializeGL()
@@ -172,10 +173,9 @@ class EMHistogramWidget(EMGLWidget):
 
 	def resizeEvent(self, event):
 		super().resizeEvent(event)
-		dpr=self.devicePixelRatio()
-		w = self.width() // dpr
-		h = self.height() // dpr
-		self.resize_event(w,h)
+		w = self.width()
+		h = self.height()
+		self.resize_event(w, h)
 
 	def closeEvent(self,event):
 		self.clear_gl_memory()
