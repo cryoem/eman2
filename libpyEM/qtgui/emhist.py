@@ -162,7 +162,7 @@ class EMHistogramWidget(EMGLWidget):
 
 	def resizeGL(self, width, height):
 #		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		GL.glViewport(0,0,int(self.width() * self.devicePixelRatio()),int(self.height() * self.devicePixelRatio()))
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		GL.glOrtho(0.0,self.width(),0.0,self.height(),-10,10)

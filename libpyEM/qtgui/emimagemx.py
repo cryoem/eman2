@@ -321,10 +321,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		except: pass
 		# Ensure lighting is disabled every frame - QOpenGLWidget can reset GL state in Qt6
 		GL.glDisable(GL_LIGHTING)
+		dpr = self.devicePixelRatio()
 		w = self.width()
 		h = self.height()
 		if w == 0 or h == 0: return
-		GL.glViewport(0, 0, w, h)
+		GL.glViewport(0, 0, int(w * dpr), int(h * dpr))
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		GL.glOrtho(0.0, w, 0.0, h, -50, 50)
@@ -335,7 +336,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def resizeGL(self, width, height):
 		if width <= 0 or height <= 0: return
 		
-		GL.glViewport(0, 0, self.width(), self.height())
+		dpr = self.devicePixelRatio()
+		GL.glViewport(0, 0, int(self.width() * dpr), int(self.height() * dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()

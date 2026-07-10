@@ -215,10 +215,11 @@ class EMImage2DWidget(EMGLWidget):
 		try:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+			dpr = self.devicePixelRatio()
 			w = self.width()
 			h = self.height()
 			if w == 0 or h == 0: return
-			GL.glViewport(0, 0, w, h)
+			GL.glViewport(0, 0, int(w * dpr), int(h * dpr))
 			GL.glMatrixMode(GL.GL_PROJECTION)
 			GL.glLoadIdentity()
 			GLU.gluOrtho2D(0.0, w, 0.0, h)

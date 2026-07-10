@@ -193,7 +193,7 @@ class EMPlot2DWidget(EMGLWidget):
 #\t\twidth = width
 #\t\theight = height
 #
-		GL.glViewport(0, 0, self.width(), self.height())
+		GL.glViewport(0, 0, int(self.width() * self.devicePixelRatio()), int(self.height() * self.devicePixelRatio()))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -1304,7 +1304,7 @@ class EMPolarPlot2DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
-		GL.glViewport(0, 0, self.width(), self.height())
+		GL.glViewport(0, 0, int(self.width() * self.devicePixelRatio()), int(self.height() * self.devicePixelRatio()))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()

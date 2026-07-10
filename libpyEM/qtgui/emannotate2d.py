@@ -248,7 +248,7 @@ class EMAnnotate2DWidget(EMGLWidget):
 	def resizeGL(self, width, height):
 		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
 		side = min(width, height)
-		GL.glViewport(0, 0, self.width(), self.height())
+		GL.glViewport(0, 0, int(self.width() * self.devicePixelRatio()), int(self.height() * self.devicePixelRatio()))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
