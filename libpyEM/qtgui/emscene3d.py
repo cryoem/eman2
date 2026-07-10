@@ -813,22 +813,25 @@ class EMScene3D(EMItem3D, EMGLWidget):
 	def showEvent(self, event):
 		"""Ensure camera dimensions are set before first paintGL in Qt6."""
 		super().showEvent(event)
-		w = self.width()
-		h = self.height()
+		dpr = self.devicePixelRatio()
+		w = self.width() * dpr
+		h = self.height() * dpr
 		if w > 0 and h > 0:
 			self.camera.update(w, h)
 		self.update()
 	
 	def resizeGL(self, width, height):
-		self.camera.update(width, height)
+		dpr = self.devicePixelRatio()
+		self.camera.update(width * dpr, height * dpr)
 		self.updateInspector()
 
 	def resizeEvent(self, event):
 		"""In PySide6/Qt6 resizeGL may not be called by Qt virtual dispatch.
 		Override resizeEvent to ensure camera gets correct dimensions."""
 		super().resizeEvent(event)
-		w = self.width()
-		h = self.height()
+		dpr = self.devicePixelRatio()
+		w = self.width() * dpr
+		h = self.height() * dpr
 		if w > 0 and h > 0:
 			self.camera.update(w, h)
 		self.updateInspector()
