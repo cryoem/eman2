@@ -1380,11 +1380,25 @@ if ENABLE_GUI:
 			removes the coordinates for a helix in the e2helixboxer database for the current micrograph
 			"""
 			assert len(box_coords) == 5, "box_coords must have 5 items"
-#			db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+	#            db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
 			db = js_open_dict(info_name(self.micrograph_filepath))
 
 			boxList = db["helixboxes"] #Get a copy of the db in memory
-			boxList.remove(list(box_coords))
+			box_to_remove = list(box_coords)
+			# Exact match may fail due to float serialization differences, so try approximate match
+			found = False
+			for i, item in enumerate(boxList):
+				if item == box_to_remove:
+					boxList.pop(i)
+					found = True
+					break
+				# Try approximate match (all 5 floats within tolerance)
+				if all(abs(a - b) < 0.5 for a, b in zip(item, box_to_remove)):
+					boxList.pop(i)
+					found = True
+					break
+			if not found:
+				print(f"Warning: could not find box_coords {box_coords} in database")
 			db["helixboxes"] = boxList #Needed to save changes to disk
 
 		def mouse_down(self, event, click_loc):
@@ -1451,7 +1465,8 @@ if ENABLE_GUI:
 			elif self.edit_mode == "delete":
 				box_coords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
 				self.remove_box_from_db(box_coords)
-				self.helices_dict.pop(tuple(box_coords))
+				try: self.helices_dict.pop(tuple(box_coords))
+				except: print("error ",self.helices_dict)
 				self.main_image.del_shape(box_key)
 				self.main_image.updateGL()
 				self.current_boxkey = None

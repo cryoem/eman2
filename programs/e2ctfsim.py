@@ -274,7 +274,7 @@ class GUIctfsim(QtWidgets.QWidget):
 		ctf.cs=self.df_cs
 		ctf.ac=self.df_ac
 		ctf.samples=self.df_samples
-		self.data.append((str(len(self.setlist)+1),ctf))
+		self.data.append((str(self.setlist.count()+1),ctf))
 		self.curset=len(self.data)
 		self.update_data()
 		
@@ -345,7 +345,7 @@ class GUIctfsim(QtWidgets.QWidget):
 		if self.plotmode in (2,3) :
 			self.guiplot.set_data((s,avg),"Sum",False,True,color=0)
 			
-		self.guiplot.setAxisParms("s (1/$\AA$)","CTF")
+		self.guiplot.setAxisParms(r"s (1/$\AA$)","CTF")
 
 		ctf.compute_2d_complex(self.img,Ctf.CtfType.CTF_AMP,None)
 		self.guiim.set_data(self.img)

@@ -302,7 +302,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def __init__(self,application,opt):
 		self.options=opt
 		"""application is an QApplication instance. path is the path for ouput files"""
-		QtWidgets.QWidget.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
 		self.particles=None
 

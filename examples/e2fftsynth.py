@@ -255,14 +255,14 @@ class GUIFourierSynth(QtWidgets.QWidget):
 		self.nsinchange()
 		
 		E2loadappwin("e2fftsynth","main",self)
-		E2loadappwin("e2fftsynth","synth",self.synthplot.qt_parent)
-		E2loadappwin("e2fftsynth","fft",self.fftplot.qt_parent)
+		E2loadappwin("e2fftsynth","synth",self.synthplot)
+		E2loadappwin("e2fftsynth","fft",self.fftplot)
 
 	def closeEvent(self,event):
 #		QtWidgets.QWidget.closeEvent(self,event)
 		E2saveappwin("e2fftsynth","main",self)
-		E2saveappwin("e2fftsynth","synth",self.synthplot.qt_parent)
-		E2saveappwin("e2fftsynth","fft",self.fftplot.qt_parent)
+		E2saveappwin("e2fftsynth","synth",self.synthplot)
+		E2saveappwin("e2fftsynth","fft",self.fftplot)
 		QtWidgets.QApplication.instance().exit(0)
 
 	def phaseleft(self,v):	# fixed translation in minus direction

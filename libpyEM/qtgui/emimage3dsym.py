@@ -433,19 +433,23 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 		self.image_display_window = None
 	
 	def mouseReleaseEvent(self,event):
-		
+	
+		self.gl_widget().makeCurrent()
 		if self.euler_data != None: #and (event.modifiers()&Qt.ShiftModifier or self.mouse_mode == "pick"):
 			
-			v = self.vdtools.wview.tolist()
-				
-			glSelectBuffer(512)
+			# Query the actual current viewport from OpenGL instead of cached data
+			v = list(glGetIntegerv(GL_VIEWPORT))
+			select_buffer = glSelectBuffer(4096)
 			glRenderMode(GL_SELECT)
 			glInitNames()
 			glMatrixMode(GL_PROJECTION)
+			# Save the current projection matrix so we can combine it with pick frustum
+			current_proj = glGetDoublev(GL_PROJECTION_MATRIX).flatten()
 			glPushMatrix()
 			glLoadIdentity()
 			gluPickMatrix(event.position().x(),v[-1]-event.position().y(),2,2,v)
-			self.get_gl_widget().load_perspective()
+			# Multiply pick frustum with the actual projection (not replace it)
+			glMultMatrixd(current_proj)
 			glMatrixMode(GL_MODELVIEW)
 			glInitNames()
 			self.render()
@@ -453,20 +457,22 @@ class EM3DSymModel(EM3DModel,Orientations,ColumnGraphics):
 			glPopMatrix()
 			glMatrixMode(GL_MODELVIEW)
 			glFlush()
-		
-			hits = list(glRenderMode(GL_RENDER))
-			for hit in hits:
-				a,b,c=hit
-				if len(c) > 0:
-					self.object_picked(int(c[0]-1))
-					break
-#			else:
-#				if self.special_euler != None:
-#					self.special_euler = None
-#					self.regen_dl()
+
+			hits = glRenderMode(GL_RENDER)
+			if len(hits) > 0:
+				for hit in hits:
+					# print(hit,dir(hit))
+					# print(hit.names,hit.near,hit.far)
+					if len(hit.names) > 0:
+						self.object_picked(int(hit.names[0]-1))
+						break
+#-			else:
+#-				if self.special_euler != None:
+#-					self.special_euler = None
+#-					self.regen_dl()
 			#return
 		
-		
+		self.gl_widget().doneCurrent()
 		EM3DModel.mouseReleaseEvent(self,event)
 	
 	def get_type(self):
