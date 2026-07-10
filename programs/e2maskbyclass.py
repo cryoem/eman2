@@ -171,6 +171,7 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 
 def maskparmgui(classes):
 	try:
+		from OpenGL import GL
 		from eman2_gui.emapplication import EMApp
 		from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 		import OpenGL

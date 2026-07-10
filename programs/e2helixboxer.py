@@ -38,6 +38,7 @@ import sys
 import os
 
 try:
+	from OpenGL import GL
 	from PySide6 import QtGui, QtWidgets, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
 	from eman2_gui.emimage2d import EMImage2DWidget

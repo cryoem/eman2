@@ -46,6 +46,7 @@ from numpy import array,arange
 import traceback
 
 try:
+	from OpenGL import GL
 	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 	from PySide6.QtCore import Qt
 	from PySide6.QtCore import QTimer

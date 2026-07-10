@@ -31,6 +31,7 @@
 
 from past.utils import old_div
 from builtins import range
+from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import QTimer
 

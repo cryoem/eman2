@@ -2265,6 +2265,7 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 #	return ret
 
 try:
+	from OpenGL import GL
 	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 	from PySide6.QtCore import Qt
 	import OpenGL

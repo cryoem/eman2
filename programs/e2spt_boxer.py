@@ -42,6 +42,7 @@ from EMAN2_utils import numpy2pdb
 import numpy as np
 
 import weakref
+from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtWidgets import QSplitter, QHBoxLayout # Erik add for Qsplitter
 from PySide6.QtCore import Qt

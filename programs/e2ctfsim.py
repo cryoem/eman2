@@ -77,6 +77,7 @@ A simple CTF simulation program.
 
 
 try:
+	from OpenGL import GL
 	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 	from PySide6.QtCore import Qt
 	from eman2_gui.emshape import *

@@ -37,6 +37,7 @@ from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
 import weakref
+from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp

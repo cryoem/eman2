@@ -3,6 +3,7 @@
 from past.utils import old_div
 from EMAN2 import *
 import numpy as np
+from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 from eman2_gui import embrowser

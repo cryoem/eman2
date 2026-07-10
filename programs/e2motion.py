@@ -40,6 +40,7 @@ import threading
 import time
 from sys import argv
 from EMAN2 import *
+from OpenGL import GL
 from PySide6 import QtCore, QtGui, QtWidgets
 from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
