@@ -519,7 +519,7 @@ class ImgHistogram(QtWidgets.QWidget):
 	def mousePressEvent(self, event):
 
 		if (event.button()==Qt.MouseButton.LeftButton):
-			x=max(min(event.position().x()-1,255),0)
+			x=max(min(int(event.position().x())-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			if (self.volume == False):
@@ -540,8 +540,8 @@ class ImgHistogram(QtWidgets.QWidget):
 				self.mpressed = False
 				
 			if (self.mpressed) :
-				self.upposition[self.uppresent][0]=event.position().x()
-				self.upposition[self.uppresent][1]=event.position().y()
+				self.upposition[self.uppresent][0]=int(event.position().x())
+				self.upposition[self.uppresent][1]=int(event.position().y())
 				if self.upposition[self.uppresent][0] > 255: self.upposition[self.uppresent][0] =255 
 				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
 				if self.upposition[self.uppresent][1] > 125: self.upposition[self.uppresent][1] =125 
@@ -551,7 +551,7 @@ class ImgHistogram(QtWidgets.QWidget):
 			
 	def mouseMoveEvent(self, event):
 		if (event.buttons()&Qt.MouseButton.LeftButton) and (self.volume==False):
-			x=max(min(event.position().x()-1,255),0)
+			x=max(min(int(event.position().x())-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			self.thresholdChanged.emit(self.threshold)
@@ -559,8 +559,8 @@ class ImgHistogram(QtWidgets.QWidget):
 		
 		if (Qt.MouseButton.LeftButton) and (self.volume):
 			if self.mpressed:
-				self.upposition[self.uppresent][0]=event.position().x()
-				self.upposition[self.uppresent][1]=event.position().y()
+				self.upposition[self.uppresent][0]=int(event.position().x())
+				self.upposition[self.uppresent][1]=int(event.position().y())
 				if self.upposition[self.uppresent][0] > 255: self.upposition[self.uppresent][0] =255 
 				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
 				if self.upposition[self.uppresent][1] > 125:self.upposition[self.uppresent][1] =125 
