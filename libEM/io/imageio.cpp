@@ -148,8 +148,9 @@ FILE *ImageIO::sfopen(const string & filename, IOMode mode,
 			f = fopen(filename.c_str(), "r+b");
 			if (!f) {
 				FILE *f1 = fopen(filename.c_str(), "wb");
-				if (!f1)
+				if (!f1) {
 					throw FileAccessException(filename);
+				}
 				else {
 					if (is_new)
 						*is_new = true;
