@@ -5,14 +5,20 @@ from EMAN2 import *
 from EMAN2_utils import natural_sort
 import os
 import numpy as np
-from PySide6 import QtCore, QtGui, QtWidgets
-from PySide6.QtCore import Qt
+
+import OpenGL
+OpenGL.ERROR_CHECKING = False
+from OpenGL import GL, GLU
+from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import ValSlider,CheckBox,ValBox
 from eman2_gui.emshape import EMShape
 from eman2_gui.emapplication import EMApp
+from PySide6.QtCore import Qt
+from PySide6 import QtCore
+from PySide6 import QtWidgets
 import subprocess
 
 
