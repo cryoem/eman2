@@ -129,7 +129,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			self.iterlst.addItem(item)
 			
 		
-		self.iterlst.currentRowChanged[int].connect(self.update_list)
+		self.iterlst.currentRowChanged.connect(self.update_list)
 		self.gbl.addWidget(self.iterlst,1,0,1,2)
 		
 

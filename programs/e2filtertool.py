@@ -174,8 +174,8 @@ class EMProcessorWidget(QtWidgets.QWidget):
 		self.gbl2.addWidget(self.wminus,0,1)
 
 
-		self.wcat.currentIndexChanged[int].connect(self.eventCatSel)
-		self.wsubcat.currentIndexChanged[int].connect(self.eventSubcatSel)
+		self.wcat.currentIndexChanged.connect(self.eventCatSel)
+		self.wsubcat.currentIndexChanged.connect(self.eventSubcatSel)
 		self.wup.clicked.connect(self.butUp)
 		self.wdown.clicked.connect(self.butDown)
 		self.wplus.clicked.connect(self.butPlus)
@@ -489,7 +489,7 @@ class EMFilterTool(QtWidgets.QMainWindow):
 		self.mview_new_2dwin.triggered.connect(self.menu_add_2dwin)
 		self.mview_new_plotwin.triggered.connect(self.menu_add_plotwin)
 
-		self.wsetname.currentIndexChanged[int].connect(self.setChange)
+		self.wsetname.currentIndexChanged.connect(self.setChange)
 
 
 		self.viewer=None			# viewer window for data

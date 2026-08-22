@@ -261,11 +261,11 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.tx_interp.setText("20")
 		self.gbl.addWidget(self.tx_interp, 5,1,1,1)
 
-		self.classidbox.valueChanged[int].connect(self.classid_change)
-		self.bt_showimg.clicked[bool].connect(self.show_tomo)
-		self.bt_savepdb.clicked[bool].connect(self.save_pdb)
-		self.bt_interp.clicked[bool].connect(self.interp_points)
-		self.bt_clear.clicked[bool].connect(self.clear_points)
+		self.classidbox.valueChanged.connect(self.classid_change)
+		self.bt_showimg.clicked.connect(self.show_tomo)
+		self.bt_savepdb.clicked.connect(self.save_pdb)
+		self.bt_interp.clicked.connect(self.interp_points)
+		self.bt_clear.clicked.connect(self.clear_points)
 
 		#self.gbl.addWidget(self.imgview,0,0)
 		self.options=options

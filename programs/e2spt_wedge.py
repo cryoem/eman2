@@ -169,7 +169,7 @@ class MissingWedgeViewer(QtWidgets.QWidget):
 			self.volcombobox.addItem(str(i))
 			
 		#Add actions
-		self.volcombobox.activated[int].connect(self.onVolChange)
+		self.volcombobox.activated.connect(self.onVolChange)
 		self.wedgei.editingFinished.connect(self.onWedgeChange)
 		self.wedgef.editingFinished.connect(self.onWedgeChange)
 		self.setwedgestats.clicked.connect(self.onOneVolStats)

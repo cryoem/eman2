@@ -489,11 +489,11 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		basic_vbl.addLayout(basic_button_l)
 
 		#self.basic_tab.tabBarClicked[int].connect(self.basic_tab_change)
-		self.basic_tab.currentChanged[int].connect(self.basic_tab_change)
+		self.basic_tab.currentChanged.connect(self.basic_tab_change)
 		self.interp_button.clicked.connect(self.interp_bt_clicked)
 		self.clear_button.clicked.connect(self.clear_points)
 		self.clear_contour_button.clicked.connect(self.clear_points)
-		self.fill_contour_checkbox.stateChanged[int].connect(self.fill_contour_checkbox_changed)
+		self.fill_contour_checkbox.stateChanged.connect(self.fill_contour_checkbox_changed)
 		self.random_bx_bt.clicked.connect(self.random_bx_bt_clicked)
 		self.clear_bx_bt.clicked.connect(self.clear_bx_bt_clicked)
 		self.extract_bt.clicked.connect(self.extract_bt_clicked)
@@ -526,7 +526,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		#self.assisted_tab.addTab(self.ext_tab,"Extrapolate")
 		self.assisted_tab.addTab(self.templ_tab,"Template")
 
-		self.assisted_tab.currentChanged[int].connect(self.assisted_tab_changed)
+		self.assisted_tab.currentChanged.connect(self.assisted_tab_changed)
 
 		#assisted tab setup + function
 		assisted_vbl = QtWidgets.QVBoxLayout()
@@ -583,7 +583,7 @@ class EMAnnotateWindow(QtWidgets.QMainWindow):
 		self.img_view.mousedrag.connect(self.img_view_mouse_drag)
 		self.zt_spinbox.valueChanged.connect(self.z_spinbox_changed)
 		self.zc_spinbox.valueChanged.connect(self.z_spinbox_changed)
-		self.show_vol_bt.clicked[bool].connect(self.show_vol)
+		self.show_vol_bt.clicked.connect(self.show_vol)
 		self.previous_z = self.get_zpos()
 
 		E2loadappwin("e2annotate","main",self)
@@ -2984,17 +2984,17 @@ class Simple_NNet_Tab(QtWidgets.QWidget):
 		apply_gbl.addWidget(self.prob_maps_browser_bt,2,3,1,1)
 		apply_gbl.addWidget(self.merger_tool_bt,3,0,1,4)
 
-		self.trainset_browser_bt.clicked[bool].connect(self.load_trainset)
-		self.start_nnet_browser_bt.clicked[bool].connect(self.load_start_nnet)
+		self.trainset_browser_bt.clicked.connect(self.load_trainset)
+		self.start_nnet_browser_bt.clicked.connect(self.load_start_nnet)
 
-		self.box_training_bt.clicked[bool].connect(self.box_training_bt_clicked)
-		self.prob_maps_browser_bt.clicked[bool].connect(self.load_masks)
-		self.merger_tool_bt.clicked[bool].connect(self.merger_tool_bt_clicked)
-		self.train_nnet_bt.clicked[bool].connect(self.train_nnet_bt_clicked)
-		self.train_nnet_launch_bt.clicked[bool].connect(self.train_nnet_launched)
-		self.trained_nnet_browser_bt.clicked[bool].connect(self.load_trained_nnet)
-		self.apply_nnet_bt.clicked[bool].connect(self.apply_nnet_bt_clicked)
-		self.apply_nnet_launch_bt.clicked[bool].connect(self.apply_nnet_launched)
+		self.box_training_bt.clicked.connect(self.box_training_bt_clicked)
+		self.prob_maps_browser_bt.clicked.connect(self.load_masks)
+		self.merger_tool_bt.clicked.connect(self.merger_tool_bt_clicked)
+		self.train_nnet_bt.clicked.connect(self.train_nnet_bt_clicked)
+		self.train_nnet_launch_bt.clicked.connect(self.train_nnet_launched)
+		self.trained_nnet_browser_bt.clicked.connect(self.load_trained_nnet)
+		self.apply_nnet_bt.clicked.connect(self.apply_nnet_bt_clicked)
+		self.apply_nnet_launch_bt.clicked.connect(self.apply_nnet_launched)
 
 
 	def load_trainset(self):
@@ -3200,10 +3200,10 @@ class Boxer_Widget(QtWidgets.QWidget):
 
 		self.set_table.currentItemChanged[QtWidgets.QTableWidgetItem,QtWidgets.QTableWidgetItem].connect(self.set_table_item_changed)
 		self.set_table.itemClicked[QtWidgets.QTableWidgetItem].connect(self.on_item_clicked)
-		self.extract_train_bt.clicked[bool].connect(self.extract_boxes)
-		self.show_train_bt.clicked[bool].connect(self.show_train_data)
-		self.browse_seg_file_bt.clicked[bool].connect(self.browse_seg_bt_clicked)
-		self.visualize_seg_bt.clicked[bool].connect(self.visualize_seg_bt_clicked)
+		self.extract_train_bt.clicked.connect(self.extract_boxes)
+		self.show_train_bt.clicked.connect(self.show_train_data)
+		self.browse_seg_file_bt.clicked.connect(self.browse_seg_bt_clicked)
+		self.visualize_seg_bt.clicked.connect(self.visualize_seg_bt_clicked)
 		self.setWindowTitle("Boxer Widget")
 		self.show()
 
@@ -3410,8 +3410,8 @@ class Merger_Tool(QtWidgets.QWidget):
 		mt_gbl.addWidget(self.merger_full_bt,len(self.maps)+1,0,1,1)
 		mt_gbl.addWidget(self.merger_full_le,len(self.maps)+1,1,1,1)
 		self.bts_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_bts_group)
-		self.create_class_bt.clicked[bool].connect(self.create_class_from_merge)
-		self.merger_full_bt.clicked[bool].connect(self.merge_full)
+		self.create_class_bt.clicked.connect(self.create_class_from_merge)
+		self.merger_full_bt.clicked.connect(self.merge_full)
 		self.setWindowTitle("Merger Tool Widget")
 		self.show()
 		#self.setCentralWidget(QtWidgets.QWidget)
@@ -3512,14 +3512,14 @@ class NNet_Tab(QtWidgets.QWidget):
 		nnet_gbl.addWidget(self.apply_button,4,0,1,1)
 		nnet_gbl.addWidget(self.apply_all_button,4,1,1,1)
 
-		self.bg_button.clicked[bool].connect(self.bg_bt_clicked)
-		self.ann_button.clicked[bool].connect(self.ann_bt_clicked)
+		self.bg_button.clicked.connect(self.bg_bt_clicked)
+		self.ann_button.clicked.connect(self.ann_bt_clicked)
 
 		self.nn_cb_group.buttonClicked[QtWidgets.QAbstractButton].connect(self.on_check_nn_cb_group)
-		self.train_class_button.clicked[bool].connect(self.train_class_bt_clicked)
-		self.apply_button.clicked[bool].connect(self.apply_bt_clicked)
-		self.build_ts_button.clicked[bool].connect(self.build_trainset)
-		self.vis_ts_button.clicked[bool].connect(self.visualize_trainset)
+		self.train_class_button.clicked.connect(self.train_class_bt_clicked)
+		self.apply_button.clicked.connect(self.apply_bt_clicked)
+		self.build_ts_button.clicked.connect(self.build_trainset)
+		self.vis_ts_button.clicked.connect(self.visualize_trainset)
 
 	def extract_region(self, iter=3,thresh=0.5):
 		reg_list = []
@@ -3695,11 +3695,11 @@ class Morp_Tab(QtWidgets.QWidget):
 		morp_gbl.addWidget(self.morp_dilate_bt, 2,1,1,1)
 		morp_gbl.addWidget(self.morp_convex_bt, 3,0,1,1)
 
-		self.morp_close_bt.clicked[bool].connect(self.do_morp_close)
-		self.morp_open_bt.clicked[bool].connect(self.do_morp_open)
-		self.morp_erode_bt.clicked[bool].connect(self.do_morp_erode)
-		self.morp_dilate_bt.clicked[bool].connect(self.do_morp_dilate)
-		self.morp_convex_bt.clicked[bool].connect(self.calc_convex_hull)
+		self.morp_close_bt.clicked.connect(self.do_morp_close)
+		self.morp_open_bt.clicked.connect(self.do_morp_open)
+		self.morp_erode_bt.clicked.connect(self.do_morp_erode)
+		self.morp_dilate_bt.clicked.connect(self.do_morp_dilate)
+		self.morp_convex_bt.clicked.connect(self.calc_convex_hull)
 		#self.morp_label_bt.clicked[bool].connect(self.do_morp_label)
 
 	def get_target_selected(self):
@@ -3996,8 +3996,8 @@ class Extrapolate_Tab(QtWidgets.QWidget):
 		ext_gbl.addWidget(self.ext_from_spinbox,2,1,1,1)
 
 
-		self.ext_class_bt.clicked[bool].connect(self.extrapolate_classes)
-		self.ext_all_bt.clicked[bool].connect(self.extrapolate_all)
+		self.ext_class_bt.clicked.connect(self.extrapolate_classes)
+		self.ext_all_bt.clicked.connect(self.extrapolate_all)
 
 	def set_target_z(self,value):
 		self.target.zt_spinbox.setValue(value)
@@ -4077,9 +4077,9 @@ class Binary_Tab(QtWidgets.QWidget):
 		bin_gbl.addWidget(self.bin_threshold_vs,2,0,1,2)
 		bin_gbl.addWidget(self.bin_fill_bt,3,0,1,1)
 		bin_gbl.addWidget(self.bin_trim_bt,3,1,1,1)
-		self.bin_detect_bt.clicked[bool].connect(self.bin_detect_bt_clicked)
-		self.bin_fill_bt.clicked[bool].connect(self.fill_hole_bin)
-		self.bin_trim_bt.clicked[bool].connect(self.do_area_opening)
+		self.bin_detect_bt.clicked.connect(self.bin_detect_bt_clicked)
+		self.bin_fill_bt.clicked.connect(self.fill_hole_bin)
+		self.bin_trim_bt.clicked.connect(self.do_area_opening)
 		self.bin_low_pass_vs.valueChanged.connect(self.update_mask_from_vs)
 		self.bin_threshold_vs.valueChanged.connect(self.update_mask_from_vs)
 
@@ -4261,20 +4261,20 @@ class Tmplt_Match_Tab(QtWidgets.QWidget):
 
 		self.setLayout(templ_gbl)
 		# self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm)
-		self.calc_ccm_bt.clicked[bool].connect(self.calc_ccm_test)
-		self.show_ccm_bt.clicked[bool].connect(self.show_ccm)
-		self.find_peaks_bt.clicked[bool].connect(self.find_peaks_to_show)
-		self.show_peaks_bt.clicked[bool].connect(self.show_peaks)
-		self.show_peaks_2D_bt.clicked[bool].connect(self.show_peaks_2D)
+		self.calc_ccm_bt.clicked.connect(self.calc_ccm_test)
+		self.show_ccm_bt.clicked.connect(self.show_ccm)
+		self.find_peaks_bt.clicked.connect(self.find_peaks_to_show)
+		self.show_peaks_bt.clicked.connect(self.show_peaks)
+		self.show_peaks_2D_bt.clicked.connect(self.show_peaks_2D)
 		self.peaks_lb_vs.valueChanged.connect(self.refine_ptcls)
 		self.peaks_ub_vs.valueChanged.connect(self.refine_ptcls)
 
-		self.do_local_search_bt.clicked[bool].connect(self.do_local_search_test)
+		self.do_local_search_bt.clicked.connect(self.do_local_search_test)
 
-		self.test_function_bt.clicked[bool].connect(self.test_search_function)
-		self.insert_vol_bt.clicked[bool].connect(self.insert_vol)
-		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
-		self.insert_vol_browser_bt.clicked[bool].connect(self.load_insert_vol)
+		self.test_function_bt.clicked.connect(self.test_search_function)
+		self.insert_vol_bt.clicked.connect(self.insert_vol)
+		self.tmplt_browser_bt.clicked.connect(self.load_template)
+		self.insert_vol_browser_bt.clicked.connect(self.load_insert_vol)
 		self.ccc_file = "tmplt_match_ccc.hdf"
 		self.owner_id_file = "tmplt_match_owner_id.hdf"
 		self.orts_file = "tmplt_match_orts.txt"
@@ -5246,10 +5246,10 @@ class Templ_Match_Tab(QtWidgets.QWidget):
 		tml_layout.addWidget(self.tplt_launch_bt)
 		self.tplt_match_launcher.setLayout(tml_layout)
 
-		self.tmplt_browser_bt.clicked[bool].connect(self.load_template)
-		self.template_match_bt.clicked[bool].connect(self.tplt_match)
-		self.create_template_bt.clicked[bool].connect(self.create_tplt)
-		self.tplt_launch_bt.clicked[bool].connect(self.tplt_match_launched)
+		self.tmplt_browser_bt.clicked.connect(self.load_template)
+		self.template_match_bt.clicked.connect(self.tplt_match)
+		self.create_template_bt.clicked.connect(self.create_tplt)
+		self.tplt_launch_bt.clicked.connect(self.tplt_match_launched)
 		self.tplt_threshold_vs.valueChanged.connect(self.binarize_tplt_match)
 
 
@@ -5358,9 +5358,9 @@ class Fila_Tab(QtWidgets.QWidget):
 		self.gbl.addWidget(self.p_button,1,3,1,1)
 		self.gbl.addWidget(self.c_button,2,3,1,1)
 
-		self.t_button.clicked[bool].connect(self.t_button_clicked)
-		self.p_button.clicked[bool].connect(self.p_button_clicked)
-		self.c_button.clicked[bool].connect(self.c_button_clicked)
+		self.t_button.clicked.connect(self.t_button_clicked)
+		self.p_button.clicked.connect(self.p_button_clicked)
+		self.c_button.clicked.connect(self.c_button_clicked)
 
 
 
@@ -5445,10 +5445,10 @@ class Subtom_Tab(QtWidgets.QWidget):
 		mpl_layout.addWidget(self.map_ptcls_launch_bt)
 		self.map_ptcls_launcher.setLayout(mpl_layout)
 
-		self.vol_browser_bt.clicked[bool].connect(self.load_vol)
-		self.map_ptcls_bt.clicked[bool].connect(self.show_map_launcher)
-		self.show_ptcls_bt.clicked[bool].connect(self.show_ptcls_on_tom)
-		self.map_ptcls_launch_bt.clicked[bool].connect(self.map_ptcls_launched)
+		self.vol_browser_bt.clicked.connect(self.load_vol)
+		self.map_ptcls_bt.clicked.connect(self.show_map_launcher)
+		self.show_ptcls_bt.clicked.connect(self.show_ptcls_on_tom)
+		self.map_ptcls_launch_bt.clicked.connect(self.map_ptcls_launched)
 		self.show_ptcls_vs.valueChanged.connect(self.show_ptcls_vs_changed)
 
 	def load_vol(self):
@@ -5575,10 +5575,10 @@ class Statistics_Tab(QtWidgets.QWidget):
 		self.stat_tab.addTab(self.fila_tab,"Filament-like")
 		stat_gbl.addWidget(self.stat_tab)
 
-		self.stat_bt.clicked[bool].connect(self.calc_stat)
+		self.stat_bt.clicked.connect(self.calc_stat)
 		#self.convex_bt.clicked[bool].connect(self.show_convex_hull)
 		self.n_obj_thres_vs.valueChanged.connect(self.thres_vs_changed)
-		self.label_objs_bt.clicked[bool].connect(self.label_objs)
+		self.label_objs_bt.clicked.connect(self.label_objs)
 
 
 	def get_selected_item(self):
@@ -5884,8 +5884,8 @@ class Specific_Tab(QtWidgets.QWidget):
 		self.atlay.addWidget(self.detect_plane_bt,1,1,1,1)
 
 
-		self.detect_plane_bt.clicked[bool].connect(self.detect_plane)
-		self.select_anchors_bt.clicked[bool].connect(self.select_anchors_bt_clicked)
+		self.detect_plane_bt.clicked.connect(self.detect_plane)
+		self.select_anchors_bt.clicked.connect(self.select_anchors_bt_clicked)
 
 
 		self.gra_tab = QtWidgets.QWidget()

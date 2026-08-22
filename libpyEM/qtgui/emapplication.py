@@ -47,6 +47,7 @@ import sys
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import weakref
 from libpyGLUtils2 import *
+from .emanimationutil import Animator
 import gc
 
 gc.set_threshold(10000, 500, 500)
@@ -161,7 +162,8 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 		#	self.qt_parent=parent
 		#	self.myparent=False			# we did not allocate our parent, so we should not get rid of it
 		
-		super().__init__(parent)
+		# Animator provides register_animatable/update/animation_done_event via mixin pattern
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self, parent)
 		# if self.myparent : self.qt_parent.setup(self)
 		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
@@ -183,6 +185,15 @@ class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 		self._font_initialized = False
 		
 		self.busy = False #updateGL() does nothing when self.busy == True
+
+	def register_animatable(self, animatable):
+		# Animation is disabled — jump to end position immediately
+		if hasattr(animatable, 'end') and hasattr(self, 'set_line_animation'):
+			x, y = animatable.end[0], animatable.end[1]
+			self.set_line_animation(x, y)
+
+	def animation_done_event(self, animated):
+		pass
 		
 	def closeEvent(self, event):
 		if self.inspector:

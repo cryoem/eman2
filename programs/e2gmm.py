@@ -720,7 +720,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbthk.valueChanged.connect(self.slice_update)
 		self.wsbcen.valueChanged.connect(self.slice_update)
 		self.wview3d.sgtransform.connect(self.slice_update)
-		self.wlistgmm.currentRowChanged[int].connect(self.sel_gmm)
+		self.wlistgmm.currentRowChanged.connect(self.sel_gmm)
 		self.wbutnmap.clicked.connect(self.new_3d_opt)
 		self.wbutnmdl.clicked.connect(self.new_3d_opt)
 		self.wbutdmap.clicked.connect(self.new_3d_opt)
@@ -737,7 +737,7 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutnewgmm.clicked.connect(self.add_gmm)
 		self.wbutnewmangmm.clicked.connect(self.add_gmm_man)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
-		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
+		self.wlistrun.currentRowChanged.connect(self.sel_run)
 		self.wbutnewrun.clicked.connect(self.new_run)
 		#self.wbutrerun.clicked[bool].connect(self.do_run)
 		self.wbutrerun2.clicked.connect(self.do_run_new)
@@ -756,8 +756,8 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutres.clicked.connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
 		#self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
-		self.wsbxcol.valueChanged[int].connect(self.update_axes_x)
-		self.wsbycol.valueChanged[int].connect(self.update_axes_y)
+		self.wsbxcol.valueChanged.connect(self.update_axes_x)
+		self.wsbycol.valueChanged.connect(self.update_axes_y)
 		#self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll) #sequencing issue with this approach
 		#self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
 		#self.wsbxcol.valueChanged[int].connect(self.update_maps_plot)		# also connect to update map locations when axes change

@@ -128,9 +128,9 @@ class CZIDataLoader(QtWidgets.QWidget):
 
 		self.inquire_bt.clicked.connect(self.inquire_dataset)
 		self.data_download_bt.clicked.connect(self.download_dataset)
-		self.download_tomo_cb.stateChanged[int].connect(self.download_tomo_cb_changed)
-		self.download_anno_cb.stateChanged[int].connect(self.download_anno_cb_changed)
-		self.imod_data_cb.stateChanged[int].connect(self.imod_cb_changed)
+		self.download_tomo_cb.stateChanged.connect(self.download_tomo_cb_changed)
+		self.download_anno_cb.stateChanged.connect(self.download_anno_cb_changed)
+		self.imod_data_cb.stateChanged.connect(self.imod_cb_changed)
 		self.annotate_eman2_bt.clicked.connect(self.launch_e2tomo_annotate)
 
 	def show_question_box(self,msg):

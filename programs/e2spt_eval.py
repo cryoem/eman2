@@ -61,7 +61,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.imglst_srtby=0
 		hdr=self.imglst.horizontalHeader()
 		self.imglst.cellClicked[int, int].connect(self.select_folder)
-		hdr.sectionPressed[int].connect(self.sortlst)
+		hdr.sectionPressed.connect(self.sortlst)
 		
 		self.dp_folder=QtWidgets.QComboBox()
 		self.dp_folder.setToolTip("Folder suffix")
@@ -70,7 +70,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.paramfile={"spt":"spt", "sptsgd":"spt", "subtlt":"subtlt"}
 		for i in sfxlst:
 			self.dp_folder.addItem(i)
-		self.dp_folder.currentIndexChanged[int].connect(self.set_sfx)
+		self.dp_folder.currentIndexChanged.connect(self.set_sfx)
 
 		self.wg_thumbnail=EMScene3D()#parent=self)
 		#self.wg_thumbnail.set_scale(1)

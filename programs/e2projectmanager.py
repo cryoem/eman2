@@ -217,7 +217,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		box.addWidget(self.modeCB)
 		widget.setLayout(box)
 
-		self.modeCB.activated[int].connect(self._onModeChange)
+		self.modeCB.activated.connect(self._onModeChange)
 
 		return widget
 
@@ -1107,7 +1107,7 @@ class TheHelp(QtWidgets.QWidget):
 		self.helptopics.append(["symmetries", dump_symmetries_list()])
 
 
-		self.helpcb.activated[int].connect(self._helpchange)
+		self.helpcb.activated.connect(self._helpchange)
 		self.dosearch = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self)
 		self.dosearch.activated.connect(self.search)
 		self.cur_search=""
@@ -1249,11 +1249,11 @@ class NoteBook(QtWidgets.QWidget):
 			self._load_fontsizes()
 
 		# Connect signals
-		self.fontfamily.activated[int].connect(self._fontfamilychange)
-		self.fontsizecb.activated[int].connect(self._fontchange)
-		self.boldbutton.stateChanged[bool].connect(self._fontchange)
-		self.italicbutton.stateChanged[bool].connect(self._fontchange)
-		self.underlinebutton.stateChanged[bool].connect(self._fontchange)
+		self.fontfamily.activated.connect(self._fontfamilychange)
+		self.fontsizecb.activated.connect(self._fontchange)
+		self.boldbutton.stateChanged.connect(self._fontchange)
+		self.italicbutton.stateChanged.connect(self._fontchange)
+		self.underlinebutton.stateChanged.connect(self._fontchange)
 		self.fontcolor.newcolor[QtGui.QColor].connect(self._fontchange)
 
 		return tbwidget
@@ -1708,7 +1708,7 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 
 		self.previoustab = 0
 
-		self.currentChanged[int].connect(self._on_tabchange)
+		self.currentChanged.connect(self._on_tabchange)
 
 	def updateWidget(self):
 		""" Delegate to guiwidget """
@@ -1794,7 +1794,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 				widget = PMFSCTableWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 
 			# Setup each widget
-			widget.pmmessage[str].connect(self._on_message)
+			widget.pmmessage.connect(self._on_message)
 			widget.setToolTip(option['help'])
 			self.widgethash[option['name']] = widget
 			self.widgetlist.append(widget)

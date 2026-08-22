@@ -17,8 +17,7 @@ from eman2_gui.valslider import ValSlider,CheckBox,ValBox
 from eman2_gui.emshape import EMShape
 from eman2_gui.emapplication import EMApp
 from PySide6.QtCore import Qt
-from PySide6 import QtCore
-from PySide6 import QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 import subprocess
 
 
@@ -86,7 +85,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		hdr=self.imglst.horizontalHeader()
 		#self.imglst.cellClicked[int, int].connect(self.selimg)
 		self.imglst.itemSelectionChanged.connect(self.selimg)
-		hdr.sectionPressed[int].connect(self.sortlst)
+		hdr.sectionPressed.connect(self.sortlst)
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
@@ -137,16 +136,16 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.gbl.addWidget(self.bt_clearptcl, 8,2)
 		
 
-		self.bt_show2d.clicked[bool].connect(self.show2d)
-		self.bt_runboxer.clicked[bool].connect(self.runboxer)
-		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
-		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
-		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
-		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
-		self.bt_refresh.clicked[bool].connect(self.update_files)
-		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
-		self.bt_evalimage.clicked[bool].connect(self.eval_image)
-		self.bt_clearptcl.clicked[bool].connect(self.clear_ptcls)
+		self.bt_show2d.clicked.connect(self.show2d)
+		self.bt_runboxer.clicked.connect(self.runboxer)
+		self.bt_plotloss.clicked.connect(self.plot_loss)
+		self.bt_plottpm.clicked.connect(self.plot_tltparams)
+		self.bt_showtlts.clicked.connect(self.show_tlts)
+		self.bt_showatlts.clicked.connect(self.show_ali_tlts)
+		self.bt_refresh.clicked.connect(self.update_files)
+		self.bt_plotctf.clicked.connect(self.plot_ctf)
+		self.bt_evalimage.clicked.connect(self.eval_image)
+		self.bt_clearptcl.clicked.connect(self.clear_ptcls)
 		
 		self.wg_2dimage=EMImage2DWidget()
 		self.wg_2dimage.setWindowTitle("Tomo2D")

@@ -282,13 +282,13 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 #		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
 
 		# all other widgets
-		self.wdepth.valueChanged[int].connect(self.event_depth)
-		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
+		self.wdepth.valueChanged.connect(self.event_depth)
+		self.wnlayers.valueChanged.connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
 		self.wmaxmean.clicked.connect(self.event_projmode)
 		self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
-		self.wlocalbox.stateChanged[int].connect(self.event_localbox)
+		self.wlocalbox.stateChanged.connect(self.event_localbox)
 
 		self.xyview.mousemove.connect(self.xy_move)
 		self.xyview.mousedown.connect(self.xy_down)
@@ -1664,7 +1664,7 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 		self.rename_set_button.clicked.connect(self.rename_set)
 		self.delete_set_button.clicked.connect(self.delete_set)
 		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
-		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.setlist.currentRowChanged.connect(self.set_list_row_changed)
 
 
 	def sets_changed(self):

@@ -1007,8 +1007,8 @@ if ENABLE_GUI:
 				self.micrograph_filepath_set = set(micrograph_filepaths) # [micrograph1_filepath, micrograph2_filepath, ...]
 			self.update_micrograph_table()
 
-			self.box_width_spinbox.valueChanged[int].connect(self.width_changed)
-			self.img_quality_combobox.currentIndexChanged[int].connect(self.set_image_quality)
+			self.box_width_spinbox.valueChanged.connect(self.width_changed)
+			self.img_quality_combobox.currentIndexChanged.connect(self.set_image_quality)
 			self.load_boxes_action.triggered.connect(self.load_boxes)
 			self.load_micrograph_action.triggered.connect(self.open_micrograph)
 	#        self.connect(self.write_coords_action, QtCore.SIGNAL("triggered()"), self.write_coords)
