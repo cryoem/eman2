@@ -775,8 +775,8 @@ class EMImage2DWidget(EMGLWidget):
 		self.histogram=mode
 		self.updateGL()
 
-	def set_FFT(self,btn):
-		val=self.fftg.id(btn)
+	def set_FFT(self, btn_id):
+		val = btn_id
 		if self.data != None and self.data.is_complex():
 			print(" I am returning")
 			return
@@ -1837,24 +1837,24 @@ class EMImage2DWidget(EMGLWidget):
 					self.force_display_update()
 					self.update()
 
-		def mouseReleaseEvent(self, event):
-			get_application().setOverrideCursor(Qt.ArrowCursor)
-			lc=self.scr_to_img(event.position().x(),event.position().y())
-			current_shapes = self.get_shapes()
-			if self.rmousedrag:
-				self.rmousedrag=None
-			else:
-				if self.mouse_mode_dict[self.mouse_mode] == "emit":
-					lc=self.scr_to_img(event.position().x(),event.position().y())
-					self.mouseup.emit(event, lc)
-				elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-					if event.buttons()&Qt.MouseButton.LeftButton:
-						self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
-				elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-					if event.button()==Qt.MouseButton.LeftButton:
-						self.redo_fft()
-						self.force_display_update()
-						self.update()
+	def mouseReleaseEvent(self, event):
+		get_application().setOverrideCursor(Qt.ArrowCursor)
+		lc=self.scr_to_img(event.position().x(),event.position().y())
+		current_shapes = self.get_shapes()
+		if self.rmousedrag:
+			self.rmousedrag=None
+		else:
+			if self.mouse_mode_dict[self.mouse_mode] == "emit":
+				lc=self.scr_to_img(event.position().x(),event.position().y())
+				self.mouseup.emit(event, lc)
+			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
+				if event.buttons()&Qt.MouseButton.LeftButton:
+					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
+			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
+				if event.button()==Qt.MouseButton.LeftButton:
+					self.redo_fft()
+					self.force_display_update()
+					self.update()
 
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
@@ -1868,7 +1868,6 @@ class EMImage2DWidget(EMGLWidget):
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
 		event.accept()
-
 
 	def mouseDoubleClickEvent(self,event):
 		return
@@ -2374,14 +2373,18 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.pyinp.returnPressed.connect(self.do_python)
 		self.invtog.toggled.connect(target.set_invert)
 		self.histoequal.currentIndexChanged.connect(target.set_histogram)
-		self.fftg.buttonClicked.connect(target.set_FFT)
+		self.fftg.buttonClicked.connect(self.__on_fft_button_clicked)
 		self.mmtab.currentChanged.connect(target.set_mouse_mode)
 		self.auto_contrast_button.clicked.connect(target.auto_contrast)
 		self.full_contrast_button.clicked.connect(target.full_contrast)
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
-	def do_pspec_single(self,ign):
+	def __on_fft_button_clicked(self, button):
+		btn_id = self.fftg.id(button)
+		self.target().set_FFT(btn_id)
+
+	def do_pspec_single(self, ign):
 		"""Compute 1D power spectrum of single image and plot"""
 		try: 
 			data=self.target().list_data[self.target().list_idx]
