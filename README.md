@@ -1,4 +1,4 @@
-Home: http://blake.bcm.edu/emanwiki
+Home: https://eman2.org
 
 License: GPL2, BSD 3-Clause
 
