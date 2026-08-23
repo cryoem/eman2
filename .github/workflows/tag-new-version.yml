@@ -85,8 +85,7 @@ jobs:
         run: |
           cd eman-feedstock
           
-          # Safely downloads the archive using clean versioning strings
-          curl -L -o release.tar.gz "https://github.com{PASSED_VERSION}.tar.gz"
+          curl -L -o release.dar.gz "https://github.com/cryoem/eman2/archive/v${PASSED_VERSION}.tar.gz"
           
           calculated_hash=$(sha256sum release.tar.gz | awk '{ print $1 }')
           echo "Calculated SHA256: ${calculated_hash}"
@@ -98,7 +97,6 @@ jobs:
 
           git add recipe/meta.yaml
           git commit -m "v${PASSED_VERSION} and hash updates"
+          git remote set-url origin "https://x-access-token:${FEEDSTOCK_AUTH}@github.com/cryoem/eman-feedstock.git"
           
-          # Direct credential override to completely bypass environment stripping bugs
-          git remote set-url origin "https://x-access-token:${FEEDSTOCK_AUTH}@://github.com"
           git push origin master
