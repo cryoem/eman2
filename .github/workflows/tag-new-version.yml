@@ -91,7 +91,7 @@ jobs:
         run: |
           cd eman-feedstock
           
-          # 1. Download the new archive payload directly from the newly created tag
+          # 1. Download the new archive payload using correct GitHub Action syntax
           curl -L -o release.tar.gz "https://github.com{{ env.new_version }}.tar.gz"
           
           # 2. Calculate the raw SHA256 checksum string
