@@ -89,10 +89,23 @@ jobs:
       - name: Update version in eman-feedstock
         if: ${{ env.bump }}
         run: |
-          cd eman-feedstock # Move into the feedstock directory
+          cd eman-feedstock
+          
+          # 1. Download the new archive payload directly from the newly created tag
+          curl -L -o release.tar.gz "https://github.com{{ env.new_version }}.tar.gz"
+          
+          # 2. Calculate the raw SHA256 checksum string
+          calculated_hash=$(sha256sum release.tar.gz | awk '{ print $1 }')
+          echo "Calculated SHA256: $calculated_hash"
+          rm release.tar.gz
+
+          # 3. Use sed to swap in the new version number and calculated hash string
           sed -i 's/set\s*version\s*=\s*"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"/set version = "${{ env.new_version }}"/' recipe/meta.yaml
+          sed -i "s/set\s*sha256\s*=\s*\"[^\"]*\"/set sha256 = \"$calculated_hash\"/" recipe/meta.yaml
           sed -i 's/set\s*build\s*=\s*[0-9][0-9]*/set build = 0/' recipe/meta.yaml
 
+          # 4. Commit and push directly using the secure FEEDSTOCK_TOKEN
           git add recipe/meta.yaml
-          git commit -m v${{ env.new_version }}
+          git commit -m "v${{ env.new_version }} and hash updates"
           git push origin master
+
