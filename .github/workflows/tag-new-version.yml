@@ -24,7 +24,7 @@ jobs:
         if: ${{ env.bump }}
         uses: actions/checkout@v4
         with:
-          path: 'eman2' # Isolates the main repo into its own subdirectory
+          path: 'eman2'
 
       - name: Set up Git user
         if: ${{ env.bump }}
@@ -35,7 +35,7 @@ jobs:
       - name: Bump and tag new version
         if: ${{ env.bump }}
         run: |
-          cd eman2 # Move into the isolated repository folder
+          cd eman2
           git fetch --tags
           version=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
 
@@ -85,14 +85,14 @@ jobs:
           repository: cryoem/eman-feedstock
           token: ${{ secrets.FEEDSTOCK_TOKEN }}
           path: 'eman-feedstock'
-          persist-credentials: false # Stops the runner from bleeding local tokens into Git configs
+          persist-credentials: false
 
       - name: Update version in eman-feedstock
         if: ${{ env.bump }}
         run: |
           cd eman-feedstock
           
-          # 1. Fixed URL namespace path and set to standard GitHub Action environment bracket syntax
+          # 1. Download the new archive payload using correct GitHub Action environment variables
           curl -L -o release.tar.gz "https://github.com{{ env.new_version }}.tar.gz"
           
           # 2. Calculate the raw SHA256 checksum string
@@ -101,13 +101,12 @@ jobs:
           rm release.tar.gz
 
           # 3. Use sed to swap in the new version number and calculated hash string
-          sed -i 's/set\s*version\s*=\s*"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"/set version = "${{ env.new_version }}"/' recipe/meta.yaml
-          sed -i "s/set\s*sha256\s*=\s*\"[^\"]*\"/set sha256 = \"$calculated_hash\"/" recipe/meta.yaml
+          sed -i "s/set\\s*version\\s*=\\s*\"[0-9][0-9]*\\.[0-9][0-9]*\\.[0-9][0-9]*\"/set version = \"${{ env.new_version }}\"/" recipe/meta.yaml
+          sed -i "s/set\\s*sha256\\s*=\\s*\"[^\"]*\"/set sha256 = \"$calculated_hash\"/" recipe/meta.yaml
           sed -i 's/set\s*build\s*=\s*[0-9][0-9]*/set build = 0/' recipe/meta.yaml
 
-          # 4. Commit and push directly, explicitly injecting your FEEDSTOCK_TOKEN into the complete URL path
+          # 4. Commit and push directly, explicitly injecting your FEEDSTOCK_TOKEN into the URL path
           git add recipe/meta.yaml
           git commit -m "v${{ env.new_version }} and hash updates"
           
-          # Fixed complete target address to ensure it routes correctly to your feedstock
           git push https://x-access-token:${{ secrets.FEEDSTOCK_TOKEN }}@://github.com master
