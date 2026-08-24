@@ -38,9 +38,16 @@ jobs:
         run: |
           cd eman2
           git fetch --tags
-          latest_tag=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+          
+          # Find the highest semantic version tag, ignoring any corrupted text leftovers
+          latest_tag=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          
+          # Fallback if no clean tag is found
+          if [ -z "$latest_tag" ]; then
+            latest_tag="v2.99.80"
+          fi
+          
           raw_version=${latest_tag#v}
-
           IFS='.' read -r major minor patch <<< "$raw_version"
 
           case "${{ env.bump }}" in
@@ -59,12 +66,15 @@ jobs:
           esac
 
           new_version="${major}.${minor}.${patch}"
-          echo "NEW_VERSION_STRING=$new_version" >> $GITHUB_ENV
+          echo "NEW_VERSION_STRING=${new_version}" >> $GITHUB_ENV
+
+          echo "Current valid tag found: ${latest_tag}"
+          echo "New bumped version     : ${new_version}"
           
           sed -i "s/VERSION\s*[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
 
           git add CMakeLists.txt
-          git commit -m "v${new_version}"
+          git commit -m "v${new_version}" || echo "No changes to commit in CMakeLists"
           git tag -f "v${new_version}"
           git push origin master "v${new_version}"
 
