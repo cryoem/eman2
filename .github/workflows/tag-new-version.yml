@@ -71,7 +71,8 @@ jobs:
           echo "Current valid tag found: ${latest_tag}"
           echo "New bumped version     : ${new_version}"
           
-          sed -i "s/VERSION\s*[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
+          # FIXED: Clears any invalid 'v' character from CMakeLists.txt dynamically
+          sed -i "s/VERSION\s*v\?[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
 
           git add CMakeLists.txt
           git commit -m "v${new_version}" || echo "No changes to commit in CMakeLists"
