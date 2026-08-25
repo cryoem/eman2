@@ -1274,11 +1274,7 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 		return -1;
 	}
 
-#if H5_VERS_MINOR > 6 || (H5_VERS_MINOR == 6 && H5_VERS_RELEASE >= 4)
 	hsize_t offset[3];
-#else
-	hssize_t offset[3];
-#endif
 
 	hsize_t count[3];
 
@@ -1288,9 +1284,9 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 	EMUtil::get_region_origins(area, &x0, &y0, &z0, nz, image_index);
 	EMUtil::get_region_dims(area, nx, &xlen, ny, &ylen, nz, &zlen);
 
-	offset[0] = static_cast < hssize_t > (x0);
-	offset[1] = static_cast < hssize_t > (y0);
-	offset[2] = static_cast < hssize_t > (z0);
+	offset[0] = static_cast < hsize_t > (x0);
+	offset[1] = static_cast < hsize_t > (y0);
+	offset[2] = static_cast < hsize_t > (z0);
 
 	count[0] = static_cast < hsize_t > (xlen);
 	count[1] = static_cast < hsize_t > (ylen);
@@ -1303,11 +1299,7 @@ int HdfIO::create_region_space(hid_t * p_dataspace_id, hid_t * p_memspace_id,
 	if (err >= 0) {
 		*p_memspace_id = H5Screate_simple(3, count, NULL);
 
-#if H5_VERS_MINOR > 6 || (H5_VERS_MINOR == 6 && H5_VERS_RELEASE >= 4)
 		hsize_t offset_out[3];
-#else
-		hssize_t offset_out[3];
-#endif
 
 		offset_out[0] = 0;
 		offset_out[1] = 0;
