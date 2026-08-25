@@ -542,9 +542,13 @@ class PMDirectoryWidget(PMBaseWidget):
 
 	def setValue(self, value, quiet=False):
 		self.updateDirs()
-		idx = self.combobox.findText(str(value))
-		if idx > -1:
-			self.combobox.setCurrentIndex(idx)
+		if isinstance(value, int) and value > -1:
+			# Called from activated signal with an index
+			self.combobox.setCurrentIndex(value)
+		else:
+			idx = self.combobox.findText(str(value))
+			if idx > -1:
+				self.combobox.setCurrentIndex(idx)
 		self.setErrorMessage(None)
 
 class PMComboWidget(PMBaseWidget):
@@ -583,6 +587,12 @@ class PMComboWidget(PMBaseWidget):
 		return self.datatype(self.combobox.currentText())
 
 	def setValue(self, value, quiet=False):
+		if isinstance(value, int) and value > -1:
+			# Called from activated signal with an index
+			self.combobox.setCurrentIndex(value)
+			self.setErrorMessage(None)
+			return
+
 		if value == '': value = "None"
 		idx = self.combobox.findText(str(value))
 		if idx > -1:
@@ -641,6 +651,12 @@ class PMComboParamsWidget(PMBaseWidget):
 
 	def setValue(self, value, quiet=False):
 		# First parse the value, as it may contain both options and params
+		if isinstance(value, int) and value > -1:
+			# Called from activated signal with an index
+			self.combobox.setCurrentIndex(value)
+			self.setErrorMessage(None)
+			return
+
 		if value == '': value = "None"
 		values = self._parsedefault(str(value))
 		# Next process the parsed value
