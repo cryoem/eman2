@@ -636,7 +636,7 @@ metadata in the new object."""
 		"""returns an Orientations object and (normalized by ny) tytx array for the current images if available or None if not. If postxf is a Transform
 		object, it will be applied to each Transform before generating the Orientations object"""
 		orts=Orientations(self._meta[:,2:5])
-		return orts,self._meta[:,0:1].copy()
+		return orts,self._meta[:,0:2].copy()
 
 	@property
 	def ctf(self):
@@ -1541,8 +1541,7 @@ def point_project_ctf_single_fn(pointary,mx,ctf_info,apix,boxsize,tytx,astig):
 	fproj=jnp.fft.rfft2(proj)
 	fproj=jnp.concatenate((fproj[:,:boxsize//2,:],fproj[:,fproj.shape[1]-boxsize//2:,:]),axis=1)
 	proj=jnp.fft.irfft2(fproj[:,:,:boxsize//2+1])
-	# return jnp.squeeze(jit_apply_ctf(ctf_info, proj, jnp.reshape(astig[0], (1,)), astig, apix, beamtiltZ, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny,ny)
-	return jnp.squeeze(jit_apply_ctf(ctf_info, proj,  jnp.reshape(astig[0], (1,)), astig, apix, beamtiltZ, False), 0) # Went back to full amplitude because of beamshift--put back to just phase flipping?
+	return jnp.squeeze(jit_apply_ctf(ctf_info, proj,  jnp.reshape(astig[0], (1,)), astig, apix, True), 0) # Squeeze turns it from shape (1, ny, ny) back to (ny, ny)
 
 # A jit compiled and vmapped over orientations version of point_project_ctf_single_fn. Makes multiple projections
 # Also same as point_project_simple_fn only with single defocus value CTF modification

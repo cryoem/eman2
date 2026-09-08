@@ -483,7 +483,9 @@ def main():
 			orts=jnp.array(cache._meta[:,2:5])
 
 			ort_optim = optax.adam(.001)
-			ort_optim_state=ort_optim.init((orts, tytx))		# initialize with data
+			tytx_optim=optax.adam(.001)
+			ort_optim_state=ort_optim.init(orts)
+			tytx_optim_state=tytx_optim.init(tytx)
 
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
 			fout=open(f"{options.path}/fscs.txt","w")
@@ -532,8 +534,8 @@ def main():
 						ortstd+=ortstd0
 						dydxstd+=dydxstd0
 
-					ort_grads = ort_grads.at[jnp.arange(j, min(j+batchsize, nptcl))].add(ort_step)
-					tytx_grads = tytx_grads.at[jnp.arange(j, min(j+batchsize, nptcl))].add(tytx_step)
+					ort_grads = ort_grads.at[selimg[range(j, min(j+batchsize, nptcl))]].add(ort_step)
+					tytx_grads = tytx_grads.at[selimg[range(j, min(j+batchsize, nptcl))]].add(tytx_step)
 
 				# TODO: again, nan_to_num shouldn't be necessary. What is causing it?'
 				ort_grads=jnp.nan_to_num(ort_grads)
@@ -561,16 +563,16 @@ def main():
 						out=None
 						continue
 
-				ort_update, ort_optim_state = ort_optim.update((ort_grads, tytx_grads), ort_optim_state, (orts, tytx))
-				(orts, tytx) = optax.apply_updates((orts, tytx), ort_update)
+				ort_update, ort_optim_state = ort_optim.update(ort_grads, ort_optim_state, orts)
+				tytx_update, tytx_optim_state = tytx_optim.update(tytx_grads, tytx_optim_state, tytx)
+				orts=optax.apply_updates(orts, ort_update)
+				tytx=optax.apply_updates(tytx, tytx_update)
 
-				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
-#				all_frcs.append((i, qual))
+				print(f"{i}: {qual*1000:1.8f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
 
 			# Save the changes we've made to the np array so it goes to all levels of downsampling
 			cache._meta[:,:2]=np.array(tytx)
 			cache._meta[:,2:5]=np.array(orts)
-#		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -689,6 +691,9 @@ def main():
 			except:
 				outf.write("\t0.0\t0.0\t0.0")
 		outf.write("\n")
+	outf.close()
+
+
 
 	# this is just to save some extra processing steps
 	if options.fscdebug is not None:
