@@ -2178,7 +2178,8 @@ class EMDirEntry(object) :
 		"""Recursive sorting"""
 		if self.__children == None or len(self.__children) == 0 or isinstance(self.__children[0], str) : return
 
-		self.__children.sort(key = self.__class__.col[column], reverse = order)
+		reverse = (order == Qt.SortOrder.DescendingOrder)
+		self.__children.sort(key = self.__class__.col[column], reverse = reverse)
 
 		# This keeps the row numbers consistent
 		for i, child in enumerate(self.__children) :
@@ -3622,10 +3623,11 @@ class SortSelTree(QtWidgets.QTreeView) :
 			self.scol = col
 			self.sdir = 1
 
-		self.header().setSortIndicator(self.scol, self.sdir)
+		order = Qt.SortOrder.AscendingOrder if self.sdir == 1 else Qt.SortOrder.DescendingOrder
+		self.header().setSortIndicator(self.scol, order)
 		self.header().setSortIndicatorShown(True)
 
-		self.sortByColumn(self.scol, self.sdir)
+		self.sortByColumn(self.scol, order)
 
 	def sortByColumn(self, col, ascend) :
 		if col == -1 : return
@@ -3906,7 +3908,7 @@ class EMBrowserWidget(QtWidgets.QWidget) :
 
 		self.wtree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)		# select rows
 		self.wtree.setAllColumnsShowFocus(True)
-		self.wtree.sortByColumn(-1, 0)			# start unsorted
+		self.wtree.sortByColumn(-1, Qt.SortOrder.AscendingOrder)			# start unsorted
 		self.gbl.addWidget(self.wtree, 2, 1)
 
 		# Lower region has buttons for actions
