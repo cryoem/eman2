@@ -1,4 +1,4 @@
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 class MouseAndKeyModifiers(QtWidgets.QWidget):
 	def __init__(self, parent = None):
@@ -15,11 +15,11 @@ class MouseAndKeyModifiers(QtWidgets.QWidget):
 	def mousePressEvent(self, event):
 		self.text_browser.clear()
 		self.text_browser.append("Mouse press info...")
-		if event.buttons()&QtCore.Qt.LeftButton:
+		if event.buttons()&QtCore.Qt.MouseButton.LeftButton:
 			self.text_browser.append("Left Button")
-		if event.buttons()&QtCore.Qt.MidButton:
+		if event.buttons()&QtCore.Qt.MouseButton.MiddleButton:
 			self.text_browser.append("Middle Button")
-		if event.buttons()&QtCore.Qt.RightButton:
+		if event.buttons()&QtCore.Qt.MouseButton.RightButton:
 			self.text_browser.append("Right Button")
 		if event.modifiers()&QtCore.Qt.ShiftModifier:
 			self.text_browser.append("Shift Modifier")
@@ -40,4 +40,4 @@ if __name__ == "__main__":
 	window = MouseAndKeyModifiers()
 	window.show()
 	window.raise_()
-	sys.exit(app.exec_())
+	sys.exit(app.exec())

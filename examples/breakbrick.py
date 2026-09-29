@@ -3,12 +3,15 @@
 from past.utils import old_div
 from EMAN2 import *
 import numpy as np
+import sys
+import os
+
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtCore import QTimer
+from PySide6.QtCore import Qt
+from PySide6.QtCore import QTimer
 
 def main():
 	
@@ -30,7 +33,7 @@ def main():
 	#w.set_data(img,filename)
 	
 	app.show_specific(w)
-	app.exec_()
+	app.exec()
 	
 	
 	
@@ -93,13 +96,13 @@ class EMBreakBrick(EMImage2DWidget):
 	def update_score(self):
 		self.score_label.setShape(["label", 1,1,1, -self.sx*.1, self.sy*1.1, "{:.02f}".format(self.score), 100,5])
 		self.update_shapes({2:self.score_label})
-		self.updateGL()
+		self.update()
 	
 	def update_bar(self):
 		self.bar.setShape(["line",1,1,1,self.bar_xpos-self.bar_len,self.bar_ypos,self.bar_xpos+self.bar_len,self.bar_ypos,self.bar_thick])
 		
 		self.update_shapes({0:self.bar})
-		self.updateGL()
+		self.update()
 		
 		if not self.game_started:
 			self.ball_pos=np.array([self.bar_xpos, self.bar_ypos+self.bar_thick+self.ball_rad])
@@ -110,7 +113,7 @@ class EMBreakBrick(EMImage2DWidget):
 		self.ball.setShape(["circle",1,1,1,self.ball_pos[0], self.ball_pos[1], self.ball_rad,2])
 		#self.set_shapes({1:self.ball})
 		self.update_shapes({1:self.ball})
-		self.updateGL()
+		self.update()
 	
 	def start_game(self):
 		print("Start~")

@@ -439,7 +439,7 @@ def run(command):
 def display_validation_plots(path, radcut, planethres, plotdatalabels=False, color='#00ff00', plotzaxiscolor=False):
 	# In some cases it is impossible to import PyQT4, particularly on clusters
 	try:
-		from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+		from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 #		from eman2_gui.emshape import *
 		from eman2_gui.valslider import ValSlider
 		from eman2_gui.emplot2d import EMPolarPlot2DWidget
@@ -583,7 +583,7 @@ def display_validation_plots(path, radcut, planethres, plotdatalabels=False, col
 	if data:
 		image = EMImage2DWidget(data)
 		image.show()
-	app.exec_()
+	app.exec()
 
 if __name__ == "__main__":
 	main()

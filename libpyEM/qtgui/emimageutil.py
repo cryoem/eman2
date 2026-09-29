@@ -33,8 +33,8 @@
 from past.utils import old_div
 from builtins import range
 from builtins import object
-from PyQt5 import QtGui, QtWidgets,QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets,QtCore
+from PySide6.QtCore import Qt
 from math import *
 import numpy
 from EMAN2 import *
@@ -103,11 +103,11 @@ class EMTransformPanel(object):
 		self.az.valueChanged.connect(self.slider_rotate)
 		self.alt.valueChanged.connect(self.slider_rotate)
 		self.phi.valueChanged.connect(self.slider_rotate)
-		self.src.currentIndexChanged[str].connect(self.set_src)
+		self.src.currentIndexChanged.connect(self.set_src)
 		self.scale.valueChanged.connect(self.target().set_scale)
-		self.x_trans.valueChanged[float].connect(self.target().set_cam_x)
-		self.y_trans.valueChanged[float].connect(self.target().set_cam_y)
-		self.z_trans.valueChanged[float].connect(self.target().set_cam_z)
+		self.x_trans.valueChanged.connect(self.target().set_cam_x)
+		self.y_trans.valueChanged.connect(self.target().set_cam_y)
+		self.z_trans.valueChanged.connect(self.target().set_cam_z)
 		
 		
 	def set_defaults(self):
@@ -363,12 +363,12 @@ class EMParentWin(QtWidgets.QWidget,Animator):
 	
 class ImgHistogram(QtWidgets.QWidget):
 	""" A small fixed-size histogram widget"""
-	thresholdChanged = QtCore.pyqtSignal(float)
+	thresholdChanged = QtCore.Signal(float)
 
 	def __init__(self,parent):
 		QtWidgets.QWidget.__init__(self,parent)
 		
-		self.brush=QtGui.QBrush(Qt.black)
+		self.brush=QtGui.QBrush(Qt.GlobalColor.black)
 		self.font=QtGui.QFont("Helvetica", 12);
 		self.probe=None
 		self.histdata=None
@@ -512,36 +512,36 @@ class ImgHistogram(QtWidgets.QWidget):
 			#p.setPen(QtGui.QColor(self.upcolor[1][0],self.upcolor[1][1],self.upcolor[1][2]))
 			#p.setPen(QtGui.QColor(self.upcolor[2][0],self.upcolor[2][1],self.upcolor[2][2]))
 
-		p.setPen(Qt.black)
+		p.setPen(Qt.GlobalColor.black)
 		p.drawRect(0,0,258,128)
 		p.end()
 	
 	def mousePressEvent(self, event):
 
-		if (event.button()==Qt.LeftButton):
-			x=max(min(event.x()-1,255),0)
+		if (event.button()==Qt.MouseButton.LeftButton):
+			x=max(min(int(event.position().x())-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			if (self.volume == False):
 				self.thresholdChanged.emit(self.threshold)
 			self.update()
 		
-		if (event.button()==Qt.LeftButton) and (self.volume):
-			if ((event.x()-self.upposition[0][0])**2+(event.y()-self.upposition[0][1])**2)<49:
+		if (event.button()==Qt.MouseButton.LeftButton) and (self.volume):
+			if ((event.position().x()-self.upposition[0][0])**2+(event.position().y()-self.upposition[0][1])**2)<49:
 				self.uppresent =0
 				self.mpressed = True
-			elif ((event.x()-self.upposition[1][0])**2+(event.y()-self.upposition[1][1])**2)<49:
+			elif ((event.position().x()-self.upposition[1][0])**2+(event.position().y()-self.upposition[1][1])**2)<49:
 				self.uppresent =1
 				self.mpressed = True
-			elif ((event.x()-self.upposition[2][0])**2+(event.y()-self.upposition[2][1])**2)<49:
+			elif ((event.position().x()-self.upposition[2][0])**2+(event.position().y()-self.upposition[2][1])**2)<49:
 				self.uppresent =2
 				self.mpressed = True
 			else: 
 				self.mpressed = False
 				
 			if (self.mpressed) :
-				self.upposition[self.uppresent][0]=event.x()
-				self.upposition[self.uppresent][1]=event.y()
+				self.upposition[self.uppresent][0]=int(event.position().x())
+				self.upposition[self.uppresent][1]=int(event.position().y())
 				if self.upposition[self.uppresent][0] > 255: self.upposition[self.uppresent][0] =255 
 				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
 				if self.upposition[self.uppresent][1] > 125: self.upposition[self.uppresent][1] =125 
@@ -550,17 +550,17 @@ class ImgHistogram(QtWidgets.QWidget):
 			self.update()
 			
 	def mouseMoveEvent(self, event):
-		if (event.buttons()&Qt.LeftButton) and (self.volume==False):
-			x=max(min(event.x()-1,255),0)
+		if (event.buttons()&Qt.MouseButton.LeftButton) and (self.volume==False):
+			x=max(min(int(event.position().x())-1,255),0)
 			self.probe=(x,self.histdata[x])
 			self.threshold = (self.probe[0]/255.0*(self.maxden-self.minden)+self.minden)
 			self.thresholdChanged.emit(self.threshold)
 			self.update()
 		
-		if (Qt.LeftButton) and (self.volume):
+		if (Qt.MouseButton.LeftButton) and (self.volume):
 			if self.mpressed:
-				self.upposition[self.uppresent][0]=event.x()
-				self.upposition[self.uppresent][1]=event.y()
+				self.upposition[self.uppresent][0]=int(event.position().x())
+				self.upposition[self.uppresent][1]=int(event.position().y())
 				if self.upposition[self.uppresent][0] > 255: self.upposition[self.uppresent][0] =255 
 				if self.upposition[self.uppresent][0] < 3: self.upposition[self.uppresent][0] =3
 				if self.upposition[self.uppresent][1] > 125:self.upposition[self.uppresent][1] =125 

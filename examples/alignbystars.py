@@ -29,10 +29,12 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  2111-1307 USA
 #
 #
-
 from past.utils import old_div
 from builtins import range
+import os
+import sys
 from EMAN2 import *
+
 from eman2_gui.emimage import *
 import time
 import sys
@@ -107,7 +109,7 @@ def showstars(img,pa):
 	
 def dorun():
 	global app
-	sys.exit(app.exec_())
+	sys.exit(app.exec())
 
 
 def main():

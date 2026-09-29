@@ -32,8 +32,8 @@
 #
 
 from past.utils import old_div
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -54,7 +54,7 @@ from .emimageutil import ImgHistogram, EMTransformPanel
 
 
 class EMIsosurfaceModel(EM3DModel):
-	set_threshold = QtCore.pyqtSignal(float)
+	set_threshold = QtCore.Signal(float)
 
 	def eye_coords_dif(self,x1,y1,x2,y2,mdepth=True):
 		return self.vdtools.eye_coords_dif(x1,y1,x2,y2,mdepth)
@@ -386,8 +386,8 @@ class EMIsoInspector(QtWidgets.QWidget):
 			hblbrowse.addWidget(self.mrc_browse)
 			self.vbl.addLayout(hblbrowse)
 
-			self.mrc_text.textEdited[str].connect(self.on_mrc_text_change) #added by Muthu
-			self.mrc_browse.clicked[bool].connect(self.on_mrc_browse) # added by Muthu
+			self.mrc_text.textEdited.connect(self.on_mrc_text_change) #added by Muthu
+			self.mrc_browse.clicked.connect(self.on_mrc_browse) # added by Muthu
 
 		self.hbl = QtWidgets.QHBoxLayout()
 		self.hbl.setContentsMargins(0, 0, 0, 0)
@@ -435,12 +435,12 @@ class EMIsoInspector(QtWidgets.QWidget):
 		self.thr.valueChanged.connect(self.on_threshold_slider)
 		self.contrast.valueChanged.connect(target.set_contrast)
 		self.bright.valueChanged.connect(target.set_brightness)
-		self.cbb.currentIndexChanged[str].connect(self.set_material)
-		self.smp.valueChanged[int].connect(target.set_sample)
-		self.wiretog.toggled[bool].connect(target.toggle_wire)
-		self.lighttog.toggled[bool].connect(target.toggle_light)
-		self.texturetog.toggled[bool].connect(self.toggle_texture)
-		self.cubetog.toggled[bool].connect(target.toggle_cube)
+		self.cbb.currentIndexChanged.connect(self.set_material)
+		self.smp.valueChanged.connect(target.set_sample)
+		self.wiretog.toggled.connect(target.toggle_wire)
+		self.lighttog.toggled.connect(target.toggle_light)
+		self.texturetog.toggled.connect(self.toggle_texture)
+		self.cubetog.toggled.connect(target.toggle_cube)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 		

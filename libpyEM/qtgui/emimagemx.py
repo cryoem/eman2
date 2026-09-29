@@ -32,8 +32,8 @@
 
 from builtins import range
 from builtins import object
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -58,6 +58,7 @@ from .emglobjects import EMOpenGLFlagsAndTools,EMGLProjectionViewMatrices,EMBasi
 from .emapplication import EMGLWidget, get_application, EMApp
 from .emanimationutil import LineAnimation
 import weakref
+import gc
 
 from .emapplication import EMProgressDialog
 
@@ -202,22 +203,18 @@ class EMMatrixPanel(object):
 
 class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
-	setsChanged = QtCore.pyqtSignal()
-	mx_boxdeleted = QtCore.pyqtSignal(QtGui.QMouseEvent, list, bool)
-	signal_set_scale = QtCore.pyqtSignal(float, float, bool)
-	origin_update = QtCore.pyqtSignal(float, float)
-	mx_image_selected = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
-	mx_image_double = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
-	mx_mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent, float)
-	mx_mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent, tuple)
-	set_origin = QtCore.pyqtSignal(float, float, bool)
+	setsChanged = QtCore.Signal()
+	mx_boxdeleted = QtCore.Signal(QtGui.QMouseEvent, list, bool)
+	signal_set_scale = QtCore.Signal(float, float, bool)
+	origin_update = QtCore.Signal(float, float)
+	mx_image_selected = QtCore.Signal(QtGui.QMouseEvent, tuple)
+	mx_image_double = QtCore.Signal(QtGui.QMouseEvent, tuple)
+	mx_mousedrag = QtCore.Signal(QtGui.QMouseEvent, float)
+	mx_mouseup = QtCore.Signal(QtGui.QMouseEvent, tuple)
+	set_origin = QtCore.Signal(float, float, bool)
 
 	def __init__(self, data=None,application=None,winid=None, parent=None, title=""):
-		fmt=QtOpenGL.QGLFormat()
-		fmt.setDoubleBuffer(True)
-		#fmt.setSampleBuffers(True)
-#		QtOpenGL.QGLWidget.__init__(self,fmt, parent)
-		EMGLWidget.__init__(self,winid=winid)
+		super().__init__(winid=winid)
 		EMGLProjectionViewMatrices.__init__(self)
 
 
@@ -251,7 +248,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.invmag = 1.0/self.mag	# inverse magnification factor
 		self.glflags = EMOpenGLFlagsAndTools() 	# supplies power of two texturing flags
 		self.tex_names = [] 		# tex_names stores texture handles which are no longer used, and must be deleted
-		self.first_render = True # a hack, something is slowing us down in FTGL
+#		self.first_render = True # a hack, something is slowing us down in FTGL
 		self.scroll_bar = EMGLScrollBar(self)
 		self.draw_scroll = True
 		self.scroll_bar_has_mouse = False
@@ -266,6 +263,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.mmode="App"
 		self.class_window = None # used if people are looking at class averages and they double click, in which case a second window is opened showing the particles in the class
 		self.downbutton=None
+		self.rc=0
 
 		self.sets={}			# All available sets for the current data, key is set name, value is set of ints
 		self.sets_visible={}	# A copy of the elements from self.sets which are currently visible
@@ -281,8 +279,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#self.usetexture=True
 		self.usetexture=False
 		
-		self.font_size = 11
-		self.font_renderer.set_face_size(self.font_size)
+		self.font_size = 12
 
 
 		self.text_bbs = {} # bounding box cache - key is a string, entry is a list of 6 values defining a
@@ -298,62 +295,65 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		self.reroute_delete = False
 
-		if data:
-			self.set_data(data)
+		if data: self.tmp=data
+		else: self.tmp=None
 
 		self.auto_contrast = True
 		self.setAcceptDrops(True)
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 
 	def initializeGL(self):
+		super().initializeGL()
 		glClearColor(0,0,0,0)
 
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
-		#glEnable(GL_DEPTH_TEST)
-		#print "Initializing"
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.0, 0.0, 0.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0,1.0,1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION, [1,1,1.,0.])
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.4, 0.4, 0.4, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, [1,0,-1.,1.])
-		glLightfv(GL_LIGHT0, GL_POSITION, [40,40,100.,1.])
-		#glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE) # this is intentionally turned off
-
+		# Lighting not needed in EMImageMXWidget - use glColor instead of materials
+		glDisable(GL_LIGHTING)
+		
 		glEnable(GL_CULL_FACE)
 		glCullFace(GL_BACK)
-	
+		if self.tmp is not None: 
+			self.set_data(self.tmp)
+			self.tmp=None
+		
 	def paintGL(self):
 		try:
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 		except: pass
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		#context = OpenGL.contextdata.getContext(None)
-		#print "Matrix context is", context
+		# Ensure lighting is disabled every frame - QOpenGLWidget can reset GL state in Qt6
+		GL.glDisable(GL_LIGHTING)
+		dpr = self.devicePixelRatio()
+		w = self.width()
+		h = self.height()
+		if w == 0 or h == 0: return
+		GL.glViewport(0, 0, int(w * dpr), int(h * dpr))
+		GL.glMatrixMode(GL.GL_PROJECTION)
+		GL.glLoadIdentity()
+		GL.glOrtho(0.0, w, 0.0, h, -50, 50)
+		GL.glMatrixMode(GL.GL_MODELVIEW)
+		GL.glLoadIdentity()
 		self.render()
-
 
 	def resizeGL(self, width, height):
 		if width <= 0 or height <= 0: return
-		width = width // self.devicePixelRatio()
-		height = height // self.devicePixelRatio()
 		
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		dpr = self.devicePixelRatio()
+		GL.glViewport(0, 0, int(self.width() * dpr), int(self.height() * dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
-		GL.glOrtho(0.0,width,0.0,height,-50,50)
+		GL.glOrtho(0.0, width, 0.0, height, -50, 50)
 		GL.glMatrixMode(GL.GL_MODELVIEW)
 		GL.glLoadIdentity()
 
-		glLightfv(GL_LIGHT0, GL_POSITION, [width//2,height//2,100.,1.])
-
 		self.set_projection_view_update()
-		try: self.resize_event(width,height)
+		try: self.resize_event(width, height)
+		except: pass
+
+	def resizeEvent(self, event):
+		super().resizeEvent(event)
+		w = self.width()
+		h = self.height()
+		try: self.resize_event(w, h)
 		except: pass
 
 	def get_frame_buffer(self):
@@ -364,7 +364,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def closeEvent(self,event):
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 
 	def set_current_set(self,name):
 		"""Makes the named set the target of any mouse interactions"""
@@ -886,7 +886,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			nimg=sqrt(len(self.data))
 			x=self.data[0]["nx"]*sqrt(nimg)
 			y=self.data[0]["ny"]*sqrt(nimg)
-			xys=QtWidgets.QApplication.desktop().availableGeometry()
+			xys=QtWidgets.QApplication.primaryScreen().availableGeometry()
 			mx=xys.width()*2//3
 			my=xys.height()*2//3
 			
@@ -919,7 +919,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		if self.animation_enabled:
 			if self.line_animation != None and self.line_animation.animated: return # this is so the current animation has to end before starting another one. It could be the other way but I like it this way
 			self.line_animation = LineAnimation(self,self.origin,(x,y))
-			self.qt_parent.register_animatable(self.line_animation)
+			self.register_animatable(self.line_animation)
 			return True
 		else:
 			self.origin=(x,y)
@@ -1040,16 +1040,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		return False
 
-
-	def set_font_render_resolution(self):
-		" "
-		#self.font_renderer.set_face_size(int(self.height()*0.015))
-		#print "scale is",self.scale
-
 	def __draw_backdrop(self):
-		light = glIsEnabled(GL_LIGHTING)
-		glDisable(GL_LIGHTING)
-
 		glColor(.9,.9,.9)
 		glBegin(GL_QUADS)
 		glVertex(0,0,-1)
@@ -1060,7 +1051,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glColor(.9,.9,.9)
 		glVertex(0,self.height(),-1)
 		glEnd()
-		if light: glEnable(GL_LIGHTING)
 
 
 	def view_width(self):
@@ -1068,7 +1058,16 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def render(self):
 		if not self.data : return
-		self.set_font_render_resolution()
+		self.rc+=1
+
+		# DO NOT DELETE THIS APPARENTLY USELESS BLOCK
+		# this forces FTGL to pre-render the font before any other drawing is done
+		# without this the labels may appear black 
+		if self.rc==1: 
+			self.font_renderer.set_face_size(self.font_size)
+			bbox = self.font_renderer.bounding_box(" 0123456789,.")
+#			print(bbox)
+
 		try:
 			self.image_change_count = self.data[0]["changecount"] 		# this is important when the user has more than one display instance of the same image, for instance in e2.py if
 		except:
@@ -1076,8 +1075,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			except: pass
 
 		render = False
-
 		update = False
+		
 		if self.display_state_changed():
 			update = True
 
@@ -1085,7 +1084,6 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
 
 		if self.use_display_list:
-
 			if update:
 				if self.main_display_list != 0:
 					glDeleteLists(self.main_display_list,1)
@@ -1110,7 +1108,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 			if not self.invert : pixden=(0,255)
 			else: pixden=(255,0)
-
+				
 			n=len(self.data)
 			self.hist=numpy.zeros(256)
 			#if len(self.coords)>n : self.coords=self.coords[:n] # don't know what this does? Had to comment out, changing from a list to a dictionary
@@ -1182,8 +1180,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							continue
 
 						
-						tw*=dpr
-						th*=dpr
+						tw=int(tw*dpr+0.5)
+						th=int(th*dpr+0.5)
 						self.coords[i]=(tx,ty,tw,th)
 
 						draw_tex = True
@@ -1213,13 +1211,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 							self.__render_excluded_square()
 							glPopMatrix()
 
-						if drawlabel:
-							self.__draw_mx_text(tx,ty,txtcol,i)
+						self.__draw_mx_text(tx,ty,txtcol,i)
 
 						if draw_tex : self.nshown+=1
 
-						light = glIsEnabled(GL_LIGHTING)
-						glDisable(GL_LIGHTING)
 						iss = 0
 						for ii,kv in enumerate(sorted(self.sets.items())):
 							set_name,set_list=kv
@@ -1245,20 +1240,19 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 								self.__render_excluded_square()
 								glPopMatrix()
 								iss  += 1
-						if not light: glEnable(GL_LIGHTING)
-			for i in self.selected:
-				try:
-					data = self.coords[i]
-					glColor(0.5,0.5,1.0)
-					glBegin(GL_LINE_LOOP)
-					glVertex(data[0],data[1])
-					glVertex(data[0]+data[2],data[1])
-					glVertex(data[0]+data[2],data[1]+data[3])
-					glVertex(data[0],data[1]+data[3])
-					glEnd()
-				except:
-					# this means the box isn't visible!
-					pass
+				for i in self.selected:
+					try:
+						data = self.coords[i]
+						glColor(0.5,0.5,1.0)
+						glBegin(GL_LINE_LOOP)
+						glVertex(data[0],data[1])
+						glVertex(data[0]+data[2],data[1])
+						glVertex(data[0]+data[2],data[1]+data[3])
+						glVertex(data[0],data[1]+data[3])
+						glEnd()
+					except:
+						# this means the box isn't visible!
+						pass
 					
 			if self.inspector : self.inspector.set_hist(self.hist,self.minden,self.maxden)
 		else:
@@ -1272,9 +1266,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				glCallList(self.main_display_list)
 			except: 
 				pass
-			if self.first_render: #A hack, FTGL is slowing us down
-				self.display_states = []
-				self.first_render = False
+#			if self.first_render: #A hack, FTGL is slowing us down
+#				self.display_states = []
+#				self.first_render = False
 		if self.draw_scroll: 
 			try:
 				self.draw_scroll_bar()
@@ -1283,10 +1277,11 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def load_set_color(self,set):
 		color = BoxingTools.get_color(set+1)
-		c = [color[0],color[1],color[2],1.0]
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
-		glMaterial(GL_FRONT,GL_SPECULAR,c)
-		glMaterial(GL_FRONT,GL_SHININESS,100.0)
+		# c = [color[0],color[1],color[2],1.0]
+		glColor3f(*color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,c)
+		# glMaterial(GL_FRONT,GL_SPECULAR,c)
+		# glMaterial(GL_FRONT,GL_SHININESS,100.0)
 #		if set == 0:
 #			glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(.2,.2,.8,1.0))
 #			glMaterial(GL_FRONT,GL_SPECULAR,(.2,.2,.8,1.0))
@@ -1374,40 +1369,38 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		glNormal(1,-1,0.1)
 		glVertex(1-d,-1+d,0.1)
 
-
 		glEnd()
 
 	def __draw_mx_text(self,tx,ty,txtcol,i):
 		# try for a sensible background color
-		if txtcol[0]+txtcol[1]+txtcol[2]>.4 and txtcol[0]+txtcol[1]+txtcol[2]<.6 : bgcol=(0.0,0.0,0.0)
+		if txtcol[0]+txtcol[1]+txtcol[2]> .4 and txtcol[0]+txtcol[1]+txtcol[2]<.6 : bgcol=(0.0,0.0,0.0)
 		else : bgcol = (1.0-txtcol[0],1.0-txtcol[1],1.0-txtcol[2])
+		
+		if not self.font_renderer:
+			return
 
-		#glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-		lighting = glIsEnabled(GL_LIGHTING)
-		glDisable(GL_LIGHTING)
-		#glEnable(GL_NORMALIZE)
+		# Make sure GL context is current - Qt6 may recreate contexts on show/resize
+		self.makeCurrent()
+
 		tagy = ty
 
-		#glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,txtcol)
-		#glMaterial(GL_FRONT,GL_SPECULAR,txtcol)
-#		#glMaterial(GL_FRONT,GL_SHININESS,1.0)
 		for v in self.valstodisp:
 			glPushMatrix()
 			glTranslate(tx,tagy,0)
 			glTranslate(0,1,0.2)
+			glEnable(GL_TEXTURE_2D)
+			self.font_renderer.set_face_size(self.font_size)
+			# glDisable(GL_COLOR_MATERIAL)
+			# glDisable(GL_LIGHTING)
+			# glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
 			if v=="Img #" and not self.data[i].has_attr("Img #") :
 				idx = i+self.img_num_offset
 				if idx != 0: idx = idx%self.max_idx
 				sidx = str(idx)
-				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
-				self.font_renderer.set_face_size(self.font_size)
 				bbox = self.font_renderer.bounding_box(sidx)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				GL.glEnable(GL_TEXTURE_2D)
-				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				GL.glColor(*txtcol)
+				glColor3f(*txtcol)
 				self.font_renderer.render_string(sidx)
-				GL.glPopAttrib()
 
 			else :
 				try:
@@ -1428,23 +1421,14 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					except:avs ="???"
 				except: avs = ""
 
-				GL.glPushAttrib(GL.GL_ALL_ATTRIB_BITS)
-				self.font_renderer.set_face_size(self.font_size)
 				bbox = self.font_renderer.bounding_box(avs)
 				GLUtil.mx_bbox(bbox,txtcol,bgcol)
-				GL.glEnable(GL_TEXTURE_2D)
-				GL.glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE)
-				GL.glColor(*txtcol)
+				glColor3f(*txtcol)
 				self.font_renderer.render_string(avs)
-				GL.glPopAttrib()
 
 			tagy+=self.font_renderer.get_face_size()
 
 			glPopMatrix()
-
-		if lighting:
-			glEnable(GL_LIGHTING)
-#			glDisable(GL_TEXTURE_2D)
 
 
 	def bounding_box(self,character):
@@ -1596,7 +1580,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		msg.setWindowTitle("Whoops")
 		if self.data==None or len(self.data)==0:
 			msg.setText("there is no data to save")
-			msg.exec_()
+			msg.exec()
 			return
 
 		self.data.set_excluded_ptcls(self.deletion_manager.deleted_ptcls())
@@ -1633,7 +1617,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		f.close()
 
 	def dropEvent(self,event):
-		lc=self.scr_to_img((event.pos().x(),event.pos().y()))
+		lc=self.scr_to_img((event.position().x(),event.position().y()))
 #		print("drop drag",str(event),lc,event.source(),self,self.parent())
 		try:
 			if event.source()==self or event.source()==self.parent():
@@ -1715,8 +1699,8 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def __app_mode_mouse_down(self, event):
 		self.downbutton=event.button()
-		if event.button()==Qt.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+		if event.button()==Qt.MouseButton.LeftButton:
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc:
 #				print "select ",lc[0]
 				#print "setting selected"
@@ -1739,19 +1723,19 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					print("Angle: ", angle)
 
 	def __app_mode_mouse_double_click(self, event):
-		if event.button()==Qt.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+		if event.button()==Qt.MouseButton.LeftButton:
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc:
 #				print "dselect ",lc[0]
 				self.mx_image_double.emit(event, lc)
 
 	def __app_mode_mouse_move(self, event):
-		if event.buttons()&Qt.LeftButton:
+		if event.buttons()&Qt.MouseButton.LeftButton:
 			self.mx_mousedrag.emit(event, self.get_scale())
 
 	def __app_mode_mouse_up(self,event):
-		if self.downbutton==Qt.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+		if self.downbutton==Qt.MouseButton.LeftButton:
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc!=None:
 
 				self.mx_mouseup.emit(event, lc)
@@ -1765,12 +1749,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 					#self.force_display_update()
 
 	def __del_mode_mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
-			self.lc=self.scr_to_img((event.x(),event.y()))
+		if event.button()==Qt.MouseButton.LeftButton:
+			self.lc=self.scr_to_img((event.position().x(),event.position().y()))
 
 	def __del_mode_mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+		if event.button()==Qt.MouseButton.LeftButton:
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
 				self.remove_particle_image(lc[0],event,True)
 				#self.force_display_update()
@@ -1780,9 +1764,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 	def __drag_mode_mouse_down(self,event):
 #		return
 	   	# this is currently disabled because it causes seg faults on MAC. FIXME investigate and establish the functionality that we want for mouse dragging and dropping
-		if event.button()==Qt.LeftButton:
+		if event.button()==Qt.MouseButton.LeftButton:
 #			print("drag begin ",str(event))
-			lc= self.scr_to_img((event.x(),event.y()))
+			lc= self.scr_to_img((event.position().x(),event.position().y()))
 			if lc == None:
 #				print("strange lc error")
 				return
@@ -1807,10 +1791,10 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			#drag.setPixmap(pm)
 			#drag.setHotSpot(QtCore.QPoint(12,12))
 
-			dropAction = drag.exec_()
+			dropAction = drag.exec()
 
 	def __drag_mode_mouse_double_click(self,event):
-		lc=self.scr_to_img((event.x(),event.y()))
+		lc=self.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_double_click(event,lc)
 		
 	def mouse_double_click(self,event,lc=None):
@@ -1911,12 +1895,12 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		self.class_window = None
 
 	def __set_mode_mouse_down(self,event):
-		if event.button()==Qt.LeftButton:
-			self.lc= self.scr_to_img((event.x(),event.y()))
+		if event.button()==Qt.MouseButton.LeftButton:
+			self.lc= self.scr_to_img((event.position().x(),event.position().y()))
 
 	def __set_mode_mouse_up(self,event):
-		if event.button()==Qt.LeftButton:
-			lc=self.scr_to_img((event.x(),event.y()))
+		if event.button()==Qt.MouseButton.LeftButton:
+			lc=self.scr_to_img((event.position().x(),event.position().y()))
 			if lc != None and self.lc != None and lc[0] == self.lc[0]:
 				self.image_set_associate(lc[0],event,True)
 				#self.force_display_update()
@@ -1932,24 +1916,24 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def mousePressEvent(self, event):
 		if not self.data: return
-		if (self.width()-event.x() <= self.scroll_bar.width):
+		if (self.width()-event.position().x() <= self.scroll_bar.width):
 			self.scroll_bar_has_mouse = True
 			self.scroll_bar.mousePressEvent(event)
 			return
 
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
 			self.inspector.set_limits(self.mindeng,self.maxdeng,self.minden,self.maxden)
 
 #			self.emit(QtCore.SIGNAL("inspector_shown"),event)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			if not self.draw_scroll: return # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			try:
 				get_application().setOverrideCursor(Qt.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
 				get_application().setOverrideCursor(Qt.SizeAllCursor)
 
-			self.mousedrag=(event.x(),event.y())
+			self.mousedrag=(event.position().x(),event.position().y())
 		else:
 			if self.mmode == "App":
 				self.__app_mode_mouse_down(event)
@@ -1968,13 +1952,13 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 		if self.mousedrag and self.draw_scroll: # if the (vertical) scroll bar isn't drawn then mouse movement is disabled (because the images occupy the whole view)
 			oldy = self.origin[1]
-			newy = self.origin[1]+self.mousedrag[1]-event.y()
+			newy = self.origin[1]+self.mousedrag[1]-event.position().y()
 			newy = self.check_newy(newy)
 			if newy == oldy: return # this won't hold if the zoom level is great and an image occupies more than the size of the display
 
-			#self.origin=(self.origin[0]+self.mousedrag[0]-event.x(),self.origin[1]-self.mousedrag[1]+event.y())
+			#self.origin=(self.origin[0]+self.mousedrag[0]-event.position().x(),self.origin[1]-self.mousedrag[1]+event.position().y())
 			self.origin=(self.matrix_panel.xoffset,newy)
-			self.mousedrag=(event.x(),event.y())
+			self.mousedrag=(event.position().x(),event.position().y())
 			try:self.updateGL()
 			except: pass
 		else:
@@ -1989,7 +1973,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 			return
 
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scr_to_img((event.x(),event.y()))
+		lc=self.scr_to_img((event.position().x(),event.position().y()))
 		if self.mousedrag:
 			self.mousedrag=None
 		else:
@@ -2001,7 +1985,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 				self.__set_mode_mouse_up(event)
 
 	def wheelEvent(self, event):
-		if not self.data: return
+		if not self.data:
+			event.ignore()
+			return
 		if event.angleDelta().y() > 0:
 			self.set_scale( self.scale * self.mag )
 		elif event.angleDelta().y() < 0:
@@ -2009,6 +1995,7 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 		#self.resize_event(self.width(),self.height())
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
+		event.accept()
 
 	def leaveEvent(self,event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
@@ -2020,9 +2007,9 @@ class EMImageMXWidget(EMGLWidget, EMGLProjectionViewMatrices):
 
 	def draw_scroll_bar(self):
 		width = self.width()
-		glEnable(GL_LIGHTING)
-		glEnable(GL_NORMALIZE)
-		glDisable(GL_TEXTURE_2D)
+		# glEnable(GL_LIGHTING)
+		# glEnable(GL_NORMALIZE)
+		# glDisable(GL_TEXTURE_2D)
 
 		glPushMatrix()
 		glTranslate(width-self.scroll_bar.width,0,0)
@@ -2059,12 +2046,12 @@ class EMGLScrollBar(object):
 
 		self.min_scroll_bar_size = 30
 
-		self.scroll_bar_press_color = (.2,.2,.3,0)
-		self.scroll_bar_idle_color = (0,0,0,0)
+		self.scroll_bar_press_color = (0.2,0.2,0.2)
+		self.scroll_bar_idle_color = (0.2,0.2,0.2)
 		self.scroll_bar_color = self.scroll_bar_idle_color
 
-		self.scroll_bit_press_color = (0,0,.5,0)
-		self.scroll_bit_idle_color = (.5,0,0,0)
+		self.scroll_bit_press_color = (0.8,0.8,0.8)
+		self.scroll_bit_idle_color = (0.5,0.5,0.5)
 		self.scroll_bit_color = self.scroll_bit_idle_color
 
 		self.up_arrow_color = self.scroll_bar_idle_color
@@ -2114,26 +2101,27 @@ class EMGLScrollBar(object):
 		ex = self.width
 		ey = self.height
 
-		glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
-		glNormal(0,0,1) # this normal is fine for everything that is drawn here
-		# this provides some defaults for specular and shininess
-		glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,20.0)
+		# glShadeModel(GL_SMOOTH) # because we want smooth shading for the scroll bar components
+		# glNormal(0,0,1) # this normal is fine for everything that is drawn here
+		# # this provides some defaults for specular and shininess
+		# glMaterial(GL_FRONT,GL_SPECULAR,(.8,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_SHININESS,20.0)
 
 		# The scroll bar - the long bar that defines the extent
 		glBegin(GL_QUADS)
-		glNormal(0,0,1)
+		#glNormal(0,0,1)
 		x1 = self.startx
 		x2 = self.width
 		y1 = self.starty
 		y2 = self.height
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		glColor3f(*self.scroll_bar_color)
 		glVertex(x1,y1,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y1,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y2,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bar_color )
 		glVertex(x1,y2,0)
 		glEnd()
 
@@ -2141,22 +2129,24 @@ class EMGLScrollBar(object):
 		glPushMatrix()
 		glTranslate(0,self.arrow_button_height,0)
 		glBegin(GL_TRIANGLES)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		glColor3f(*self.up_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.up_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(self.width//2,self.arrow_button_height-self.arrow_part_offset,0)
 		glEnd()
 		glPopMatrix()
 
 		# the down pointing arrow
 		glBegin(GL_TRIANGLES)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		glColor3f(*self.down_arrow_color)
 		glVertex(self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(self.width//2,self.arrow_part_offset,0)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.down_arrow_color)
 		glVertex(self.width-self.arrow_part_offset,self.arrow_button_height-self.arrow_part_offset,0)
 		glEnd()
 
@@ -2166,13 +2156,14 @@ class EMGLScrollBar(object):
 		x2 = ex
 		y1 = sy+self.scroll_bit_position
 		y2 = y1+self.scroll_bit_height
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(0,.5,0.5,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(0,.5,0.5,1.0))
+		glColor3f(*self.scroll_bit_color)
 		glVertex(x1,y1,1)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y1,1)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,(1,1,1,1.0))
 		glVertex(x2,y2,1)
-		glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
+		# glMaterial(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,self.scroll_bit_color)
 		glVertex(x1,y2,1)
 		glEnd()
 		
@@ -2218,8 +2209,8 @@ class EMGLScrollBar(object):
 		self.target().updateGL()
 
 	def mousePressEvent(self,event):
-		x = self.target().width()-event.x()
-		y = self.target().height()-event.y()
+		x = self.target().width()-event.position().x()
+		y = self.target().height()-event.position().y()
 		if x < 0 or x > self.width: return # this shouldn't happen but it's nice to check I guess
 
 		if y < self.arrow_button_height:
@@ -2242,7 +2233,7 @@ class EMGLScrollBar(object):
 
 	def mouseMoveEvent(self,event):
 		if self.mouse_scroll_pos != None:
-			y = self.target().height()-event.y()
+			y = self.target().height()-event.position().y()
 			dy = y - self.mouse_scroll_pos
 			self.scroll_move(dy)
 			self.mouse_scroll_pos = y
@@ -2366,7 +2357,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 		self.font_size.setValue(int(self.target().get_font_size()))
 		self.hbl.addWidget(self.font_size)
 
-		self.font_size.valueChanged[int].connect(self.target().set_font_size)
+		self.font_size.valueChanged.connect(self.target().set_font_size)
 
 
 		self.banim = QtWidgets.QPushButton("Animate")
@@ -2390,20 +2381,20 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 
 		self.busy=0
 
-		self.vals.triggered[QtWidgets.QAction].connect(self.newValDisp)
+		self.vals.triggered.connect(self.newValDisp)
 #		QtCore.QObject.connect(self.mapp, QtCore.SIGNAL("clicked(bool)"), self.set_app_mode)
 #		QtCore.QObject.connect(self.mDel, QtCore.SIGNAL("clicked(bool)"), self.set_Del_mode)
 #		QtCore.QObject.connect(self.mdrag, QtCore.SIGNAL("clicked(bool)"), self.set_drag_mode)
 #		QtCore.QObject.connect(self.mset, QtCore.SIGNAL("clicked(bool)"), self.set_set_mode)
-		self.mouse_mode_but_grp.buttonClicked[QtWidgets.QAbstractButton].connect(self.mouse_mode_button_clicked)
+		self.mouse_mode_but_grp.buttonClicked.connect(self.mouse_mode_button_clicked)
 
-		self.bsavedata.clicked[bool].connect(self.save_data)
-		self.bshow2d.clicked[bool].connect(self.show_2d)
+		self.bsavedata.clicked.connect(self.save_data)
+		self.bshow2d.clicked.connect(self.show_2d)
 		if allow_opt_button:
-			self.opt_fit.clicked[bool].connect(self.target().optimize_fit)
-		self.bsnapshot.clicked[bool].connect(self.snapShot)
+			self.opt_fit.clicked.connect(self.target().optimize_fit)
+		self.bsnapshot.clicked.connect(self.snapShot)
 		#QtCore.QObject.connect(self.bnorm, QtCore.SIGNAL("clicked(bool)"), self.setNorm)
-		self.banim.clicked[bool].connect(self.animation_clicked)
+		self.banim.clicked.connect(self.animation_clicked)
 	
 	def update_vals(self):
 		#try:
@@ -2444,7 +2435,7 @@ class EMImageInspectorMX(QtWidgets.QWidget):
 			self.xyz.addItems(["x","y","z"])
 			self.hbl.addWidget(self.xyz)
 			self.xyz.setCurrentIndex(2)
-			self.xyz.currentIndexChanged[str].connect(self.target().xyz_changed)
+			self.xyz.currentIndexChanged.connect(self.target().xyz_changed)
 
 	def disable_xyz(self):
 		if self.xyz != None:
@@ -2681,12 +2672,12 @@ class EMMXSetsPanel(QtWidgets.QWidget):
 
 		hbl.addLayout(vbl)
 
-		self.save_set_button.clicked[bool].connect(self.save_set)
-		self.save_sett_button.clicked[bool].connect(self.save_set_text)
-		self.new_set_button.clicked[bool].connect(self.new_set)
-		self.delete_set_button.clicked[bool].connect(self.delete_set)
-		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
-		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.save_set_button.clicked.connect(self.save_set)
+		self.save_sett_button.clicked.connect(self.save_set_text)
+		self.new_set_button.clicked.connect(self.new_set)
+		self.delete_set_button.clicked.connect(self.delete_set)
+		self.setlist.itemChanged.connect(self.set_list_item_changed)
+		self.setlist.currentRowChanged.connect(self.set_list_row_changed)
 		self.target().setsChanged.connect(self.sets_changed)
 
 

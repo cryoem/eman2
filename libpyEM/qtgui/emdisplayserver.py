@@ -30,8 +30,8 @@
 #
 from EMAN2 import *
 from EMAN2jsondb import js_open_dict
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt, QTimer, QBuffer
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt, QTimer, QBuffer
 from .emapplication import EMApp
 from .emimage2d import *
 from .emimagemx import *
@@ -87,7 +87,7 @@ class EMDisplayServerWidget(QtWidgets.QWidget):
 			#self.setlist.addItem(i)
 		self.gbl.addWidget(self.wdglist,0,0)
 		
-		self.wdglist.currentRowChanged[int].connect(self.wdgSel)
+		self.wdglist.currentRowChanged.connect(self.wdgSel)
 	
 		self.widgets={wt:{} for wt in self.widget_types}		# dict of dicts for widgets organized by type
 		#self.threads=[]

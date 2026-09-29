@@ -71,23 +71,24 @@ A simple CTF simulation program.
 	gui=GUIctfsim(app,options.apix,options.voltage,options.cs,options.ac,options.samples,options.apply)
 	gui.show_guis()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 
-#		print "done execution"
+#	print "done execution"
 
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
+	from OpenGL import GL
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider
 except:
-	print("Error: PyQt5 must be installed")
+	print("Error: PySide6 must be installed")
 	sys.exit(1)
 
 class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
@@ -100,7 +101,7 @@ class MyListWidget(QtWidgets.QListWidget):
 
 
 class GUIctfsim(QtWidgets.QWidget):
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self,application,apix=1.0,voltage=300.0,cs=4.1,ac=10.0,samples=256,apply=None):
 		"""CTF simulation dialog
@@ -235,20 +236,20 @@ class GUIctfsim(QtWidgets.QWidget):
 		self.svoltage.valueChanged.connect(self.newCTF)
 		self.scs.valueChanged.connect(self.newCTF)
 		self.ssamples.valueChanged.connect(self.newCTF)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
-		self.newbut.clicked[bool].connect(self.on_new_but)
+		self.newbut.clicked.connect(self.on_new_but)
 
 
 		self.resize(720,380) # figured these values out by printing the width and height in resize event
 
 
 		E2loadappwin("e2ctfsim","main",self)
-		E2loadappwin("e2ctfsim","image",self.guiim.qt_parent)
-#		E2loadappwin("e2ctf","realimage",self.guirealim.qt_parent)
-		E2loadappwin("e2ctfsim","plot",self.guiplot.qt_parent)
+		E2loadappwin("e2ctfsim","image",self.guiim)
+#		E2loadappwin("e2ctf","realimage",self.guirealim)
+		E2loadappwin("e2ctfsim","plot",self.guiplot)
 
 		self.setWindowTitle("CTF")
 
@@ -274,7 +275,7 @@ class GUIctfsim(QtWidgets.QWidget):
 		ctf.cs=self.df_cs
 		ctf.ac=self.df_ac
 		ctf.samples=self.df_samples
-		self.data.append((str(len(self.setlist)+1),ctf))
+		self.data.append((str(self.setlist.count()+1),ctf))
 		self.curset=len(self.data)
 		self.update_data()
 		
@@ -296,17 +297,17 @@ class GUIctfsim(QtWidgets.QWidget):
 		E2saveappwin("e2ctf","main",self)
 
 		if self.guiim != None:
-			E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			E2saveappwin("e2ctf","image",self.guiim)
 			self.app().close_specific(self.guiim)
 			self.guiim = None
 		if self.applyim != None:
 			self.app().close_specific(self.applyim)
 			self.applyim = None
 		if self.guiplot != None:
-			E2saveappwin("e2ctf","plot",self.guiplot.qt_parent)
+			E2saveappwin("e2ctf","plot",self.guiplot)
 			self.app().close_specific(self.guiplot)
 		#if self.guirealim != None:
-			#E2saveappwin("e2ctf","realimage",self.guirealim.qt_parent)
+			#E2saveappwin("e2ctf","realimage",self.guirealim)
 			#self.app().close_specific(self.guirealim)
 
 		event.accept()
@@ -345,7 +346,7 @@ class GUIctfsim(QtWidgets.QWidget):
 		if self.plotmode in (2,3) :
 			self.guiplot.set_data((s,avg),"Sum",False,True,color=0)
 			
-		self.guiplot.setAxisParms("s (1/$\AA$)","CTF")
+		self.guiplot.setAxisParms(r"s (1/$\AA$)","CTF")
 
 		ctf.compute_2d_complex(self.img,Ctf.CtfType.CTF_AMP,None)
 		self.guiim.set_data(self.img)
@@ -400,9 +401,9 @@ class GUIctfsim(QtWidgets.QWidget):
 #		print "self.data[val]=",self.data[val][0].split('#')[-1]
 
 
-		self.guiim.qt_parent.setWindowTitle("e2ctfsim - 2D FFT - "+self.data[val][0])
-#		self.guirealim.qt_parent.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
-		self.guiplot.qt_parent.setWindowTitle("e2ctfsim - Plot ")
+		self.guiim.setWindowTitle("e2ctfsim - 2D FFT - "+self.data[val][0])
+#		self.guirealim.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
+		self.guiplot.setWindowTitle("e2ctfsim - Plot ")
 
 		#n=EMUtil.get_image_count(self.data[val][0])
 		#if n>1:
@@ -463,26 +464,26 @@ class GUIctfsim(QtWidgets.QWidget):
 		self.update_plot()
 
 	def imgmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 
 	def imgmouseup(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def plotmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for ctf-only programs."""
-		self.app.exec_()
+		self.app.exec()
 
 #		E2saveappwin("boxer","imagegeom",self.guiim)
 #		try:

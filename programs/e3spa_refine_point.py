@@ -69,6 +69,7 @@ def main():
 	parser.add_argument("--outbox",type=int,help="output boxsize, permitting over/undersampling (impacts A/pix)", default=-1)
 	parser.add_argument("--initpoint",type=int,help="Points in the first pass, scaled with stage, default=500", default=500)
 	parser.add_argument("--ctf", type=int,help="0=no ctf, 1=single ctf, 2=layered ctf",default=0)
+	parser.add_argument("--bfactor", type=int, help="bfator to apply during orientation refinement as a weight", default=10)
 	parser.add_argument("--keep", type=float, help="The fraction of images to use, based on quality scores (1.0 = use all)",default=1.0)
 	parser.add_argument("--ptcl3d_id", type=str, help="only use 2-D particles with matching ptcl3d_id parameter (lst file/header, use + for range)",default=None)
 	parser.add_argument("--class", dest="classid", type=int, help="only use 2-D particles with matching class parameter (lst file/header)",default=-1)
@@ -200,22 +201,34 @@ def main():
 		# ]
 	else:
 		stages=[
-			[512,   16,32,1.8,-3  ,1,.01, 0], # 0: Point
-			[512,   16,32,1.8, 0  ,4,.01, 0], # 1: Point
-			[1024,  32,32,1.5, 0  ,4,.005,0], # 2: Point
-			[1024,  32,32,1.5,-1  ,8,.005,0], # 3: Point
-			[4096,  64,32,1.2,-1.5,16,.003,0], # 4: Point
-			[16384, 256,32,1.0,-2 ,32,.003,0], # 5: Point
-			[65536*2, 512,32,1.0,-2 ,32,.001,0], # 6: Point
-			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 7: Points: don't filter
-			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 8: Orientations
-			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 9: Points: don't filter
-			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 10: Orientations
-			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 11: Points: don't filter
-			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 12: Orientations
-			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 13: Points: don't filter
-			[65536*2, 512, 16,0.8,-2  ,32,.001,-3], # 14: Orientations
-			[65536*2, 512,16,1.0,-2 ,0,.001,0], # 15: Points
+			[512,   16,32,1.8,-3  ,1,.01, 0], # 0: Point 0
+			[512,   16,32,1.8, 0  ,0,.01, 0], # 1: Point 1
+			[512,   16,64,1.8, 0  ,0,.01, -1], # 1: ort 2
+			[512,   16,64,1.8, 0  ,4,.01, -1], # 1: ort 3
+			[512,   16,32,1.8, 0  ,4,.01, 0], # 1: Point 4
+			[1024,  32,32,1.5, 0  ,4,.005,0], # 2: Point 5
+			[1024,  32,32,1.5,-1  ,0,.005,0], # 3: Point 6
+			[1024,  32,32,1.5,-1  ,0,.005,-1], # 3: ort 7
+			[1024,  32,32,1.5,-1  ,8,.005,-1], # 3: ort 8
+			[1024,  32,16,1.5,-1  ,8,.005,0], # 3: Point 9
+			[4096,  64,32,1.2,-1.5,0,.003,0], # 4: Point 10
+			[4096,  64,64,1.2,-1.5,16,.003,-1], # 4: ort 11
+			[4096,  64,32,1.2,-1.5,16,.003,0], # 4: Point 12
+			[16384, 256,32,1.0,-2 ,0,.003,0], # 5: Point 13
+			[16384, 256,64,1.0,-2 ,0,.003,-1], # 5: ort 14
+			[16384, 256,32,1.0,-2 ,32,.003,0], # 5: Point 15
+			[65536*2, 512,32,1.0,-2 ,0,.001,0], # 6: Point 16
+			[65536*2, 512,32,1.0,-2 ,0,.001,-1], # 6: ort 17
+			[65536*2, 512,32,1.0,-2 ,32,.001,0], # 6: Point 18
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 7: Points: don't filter 19
+			[65536*2, 512, 32,0.8,-2  ,32,.001,-3], # 8: Orientations 20
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 9: Points: don't filter 21
+			[65536*2, 512, 32,0.8,-2  ,32,.001,-3], # 10: Orientations 22
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 11: Points: don't filter 23
+			[65536*2, 512, 32,0.8,-2  ,32,.001,-3], # 12: Orientations 24
+			[65536*2, 512, 16,0.8,-2  ,0,.001,0], # 13: Points: don't filter 25
+			[65536*2, 512, 32,0.8,-2  ,32,.001,-3], # 14: Orientations 26
+			[65536*2, 512,16,1.0,-2 ,0,.001,0], # 15: Points 27
 		]
 
 	# limit sampling to (at most) the box size of the raw data
@@ -237,6 +250,7 @@ def main():
 		batchsize=1024//len(sym_orts)
 	else:
 		batchsize=192
+	ort_batchsize=batchsize
 
 	times=[time.time()]
 	# Cache initialization
@@ -342,8 +356,7 @@ def main():
 					elif options.ctf==1:
 						dsapix=ptclsfds.apix
 						wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
-						dfstep=2*apix*apix/(wavelength*10000)
-						step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
+						step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dsapix,symmx,weight,thresh)
 						step0=jnp.nan_to_num(step0)
 						if j==0:
 							step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -483,8 +496,10 @@ def main():
 			tytx=jnp.array(cache._meta[:,:2])
 			orts=jnp.array(cache._meta[:,2:5])
 
-			ort_optim = optax.adam(.001)
-			ort_optim_state=ort_optim.init((orts, tytx))		# initialize with data
+			ort_optim = optax.adam(.0001)
+			tytx_optim=optax.adam(.0001)
+			ort_optim_state=ort_optim.init(orts)
+			tytx_optim_state=tytx_optim.init(tytx)
 
 			if options.verbose: print(f"\tIterating orientations parms x{stage[2]} with frc weight {stage[3]}\n    FRC\t\tort_grad\tcen_grad")
 			fout=open(f"{options.path}/fscs.txt","w")
@@ -492,36 +507,42 @@ def main():
 				ort_grads = jnp.zeros(orts.shape)
 				tytx_grads = jnp.zeros(tytx.shape)
 
-				norm=nptcl//batchsize+1
-				for j in range(0,nptcl,batchsize):
-					ptclsfds=cache.read(stage[1],selimg[range(j,min(j+batchsize,nptcl))])
-					meta=jnp.hstack((tytx[selimg[range(j,min(j+batchsize,nptcl))]], orts[selimg[range(j,min(j+batchsize,nptcl))]], ptclsfds.metadata[:,5:]))# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
+				norm=nptcl//ort_batchsize+1
+				for j in range(0,nptcl,ort_batchsize):
+					ptclsfds=cache.read(stage[1],selimg[range(j,min(j+ort_batchsize,nptcl))])
+					meta=jnp.hstack((tytx[selimg[range(j,min(j+ort_batchsize,nptcl))]], orts[selimg[range(j,min(j+ort_batchsize,nptcl))]], ptclsfds.metadata[:,5:]))# 0:ty,1:tx,2:ortx,3:orty,4:ortz,5:defocus,6:phase,7:dfdiff,8:astigangle,9:score,10:class
 					dsapix = ptclsfds.apix
 					if len(ptclsfds)==0:
-							print("How can len ptclsfds be 0:",len(nliststg),j,batchsize)
+							print("How can len ptclsfds be 0:",len(nliststg),j,ort_batchsize)
 							continue
 
 					# TODO: Same question--do we need to do this differently with other CTF modes?
 					if i in (0,8) and j==0:
 						frcs=prj_frcs(point.jax,ptclsfds,meta)
 						try:
-							thresh=1.25*np.std(frcs,0)/sqrt(batchsize)
+							thresh=1.25*np.std(frcs,0)/sqrt(ort_batchsize)
 							weight=1.0/np.array(thresh)		# this should make all of the standard deviations the same
 							weight[0:2]=0			# low frequency cutoff
+							# weight[0:3]=0
 							weight[ptclsfds.shape[1]//2:]=0
+							# weight[floor(0.8*ptclsfds.shape[1]//2):]=0
+							bfactor=options.bfactor
+							s=np.arange(0,len(weight))/(dsapix*ptclsfds.shape[1])
+							weight*=np.exp(-(bfactor/4)*s*s)
 							weight/=np.sum(weight)	# normalize to 1
 							weight=jnp.array(weight*len(weight))	# the *len(weight) is dumb, but due to mean() being returned
 						except:
 							print(f"Weighting failed {sn},{i},{j}")
 							weight=np.ones((len(frcs.shape[1])))
+						thresholds[sn]=thresh
+						weights[sn]=weight
 						frchist.append((np.array(np.mean(frcs,0)),thresh,weight))
 
 					if options.ctf ==0:
 						ort_step,tytx_step,qual0,ortstd0,dydxstd0=ort_gradient_step_optax(point,ptclsfds,meta,symmx,weight,thresh)
 					elif options.ctf ==1:
 						wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
-						dfstep=2*apix*apix/(wavelength*10000)
-						ort_step,tytx_step,qual0,ortstd0,dydxstd0=ort_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
+						ort_step,tytx_step,qual0,ortstd0,dydxstd0=ort_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength,ptclsfds.cs]),dsapix,symmx,weight,thresh)
 					elif options.ctf == 2:
 						wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 						dfstep=2*apix*apix/(wavelength*10000)
@@ -534,8 +555,8 @@ def main():
 						ortstd+=ortstd0
 						dydxstd+=dydxstd0
 
-					ort_grads = ort_grads.at[jnp.arange(j, min(j+batchsize, nptcl))].add(ort_step)
-					tytx_grads = tytx_grads.at[jnp.arange(j, min(j+batchsize, nptcl))].add(tytx_step)
+					ort_grads = ort_grads.at[selimg[range(j, min(j+ort_batchsize, nptcl))]].add(ort_step)
+					tytx_grads = tytx_grads.at[selimg[range(j, min(j+ort_batchsize, nptcl))]].add(tytx_step)
 
 				# TODO: again, nan_to_num shouldn't be necessary. What is causing it?'
 				ort_grads=jnp.nan_to_num(ort_grads)
@@ -552,7 +573,7 @@ def main():
 						ptclsfds.do_ift().write_images("crash_lastb_images.hdf",0)
 						out=open("crash_lastb_ortdydx.txt","w")
 						for io in range(len(ptclsfds)):
-							out.write(f"{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][0]:1.6f}\t{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][1]*1000:1.6f}\t{orts[selimg[range(j,min(j+batchsize,nptcl))] + io][2]*1000:1.6f}\t{tytx[selimg[range(j,min(j+batchsize,nptcl))] + io][0]*1000:1.2f}\t{tytx[selimg[range(j,min(j+batchsize,nptcl))] + io][1]*1000:1.2f} (/1000)\n")
+							out.write(f"{orts[selimg[range(j,min(j+ort_batchsize,nptcl))] + io][0]:1.6f}\t{orts[selimg[range(j,min(j+ort_batchsize,nptcl))] + io][1]*1000:1.6f}\t{orts[selimg[range(j,min(j+ort_batchsize,nptcl))] + io][2]*1000:1.6f}\t{tytx[selimg[range(j,min(j+ort_batchsize,nptcl))] + io][0]*1000:1.2f}\t{tytx[selimg[range(j,min(j+ort_batchsize,nptcl))] + io][1]*1000:1.2f} (/1000)\n")
 						sys.exit(1)
 					else:
 						print("ERROR: encountered nan on gradient descent, skipping epoch. Image numbers saved to crash_img_S_E.lst")
@@ -563,16 +584,16 @@ def main():
 						out=None
 						continue
 
-				ort_update, ort_optim_state = ort_optim.update((ort_grads, tytx_grads), ort_optim_state, (orts, tytx))
-				(orts, tytx) = optax.apply_updates((orts, tytx), ort_update)
+				ort_update, ort_optim_state = ort_optim.update(ort_grads, ort_optim_state, orts)
+				tytx_update, tytx_optim_state = tytx_optim.update(tytx_grads, tytx_optim_state, tytx)
+				orts=optax.apply_updates(orts, ort_update)
+				tytx=optax.apply_updates(tytx, tytx_update)
 
-				print(f"{i}: {qual:1.4f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
-				all_frcs.append((i, qual))
+				print(f"{i}: {qual*1000:1.8f}\t{ortstd:1.4f}\t\t{dydxstd:1.4f}")
 
 			# Save the changes we've made to the np array so it goes to all levels of downsampling
 			cache._meta[:,:2]=np.array(tytx)
 			cache._meta[:,2:5]=np.array(orts)
-		np.savetxt(f"{options.path}/epoch_frcs_{sn:02d}.txt",np.array(all_frcs),fmt="%0.4f",delimiter="\t")
 
 		# end of epoch, save images and projections for comparison
 		if options.verbose>3:
@@ -586,7 +607,7 @@ def main():
 				ctf=ptclsfds.ctf
 				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 				dfstep=2*apix*apix/(wavelength*10000)
-				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, ptcl_orts.jax, jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, ptcl_tytx, ctf, symmx))
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, ptcl_orts.jax, jnp.array([wavelength,ptclsfds.cs]), dsapix, ny, ptcl_tytx, ctf, symmx))
 				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,ptcl_orts.jax,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,ptcl_tytx,ctf, symmx))
 			ptclds=ptclsfds.do_ift()
 			transforms=ptcl_orts.transforms(tytx=ptcl_tytx)
@@ -691,6 +712,9 @@ def main():
 			except:
 				outf.write("\t0.0\t0.0\t0.0")
 		outf.write("\n")
+	outf.close()
+
+
 
 	# this is just to save some extra processing steps
 	if options.fscdebug is not None:

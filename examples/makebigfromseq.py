@@ -31,9 +31,8 @@
 #
 
 # makebigfromseq 12/25/2005  Steven Ludtke
-# This will read a series of images, translationally align them, average them
-# together, and optionally iterate. Translational alignment only.
-# makebigfromseq.py <infile> <sizexsize> <dot threshold> <darkref> <lightref> <1st image shift>
+import os
+import sys
 
 from past.utils import old_div
 from builtins import range

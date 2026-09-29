@@ -32,8 +32,8 @@
 
 from past.utils import old_div
 from builtins import range
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU,GLUT
@@ -60,21 +60,22 @@ from .emimageutil import EMMetaDataTable
 from .emanimationutil import SingleValueIncrementAnimation, LineAnimation
 
 import platform
+import gc
 
 from .emglobjects import EMOpenGLFlagsAndTools
 
 class EMImage2DWidget(EMGLWidget):
 	"""
 	"""
-	origin_update = QtCore.pyqtSignal(tuple)
-	signal_set_scale = QtCore.pyqtSignal(float)
-	mousedown = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousedrag = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousemove = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mouseup = QtCore.pyqtSignal(QtGui.QMouseEvent,tuple)
-	mousewheel = QtCore.pyqtSignal(QtGui.QWheelEvent)
-	signal_increment_list_data = QtCore.pyqtSignal(float)
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	origin_update = QtCore.Signal(tuple)
+	signal_set_scale = QtCore.Signal(float)
+	mousedown = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousedrag = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousemove = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mouseup = QtCore.Signal(QtGui.QMouseEvent,tuple)
+	mousewheel = QtCore.Signal(QtGui.QWheelEvent)
+	signal_increment_list_data = QtCore.Signal(float)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	allim=WeakKeyDictionary()
 
@@ -82,7 +83,7 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.inspector = None # this should be a qt widget, otherwise referred to as an inspector in eman
 
-		EMGLWidget.__init__(self,parent)
+		super().__init__(parent, winid=winid)
 		self.setFocusPolicy(Qt.StrongFocus)
 		self.setMouseTracking(True)
 		self.initimageflag = True
@@ -90,7 +91,6 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.fftorigincenter = E2getappval("emimage2d","origincenter")
 		if self.fftorigincenter == None : self.fftorigincenter=False
-		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
 
 		#sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy(7),QtWidgets.QSizePolicy.Policy(7))
 		#sizePolicy.setHorizontalStretch(7)
@@ -181,10 +181,10 @@ class EMImage2DWidget(EMGLWidget):
 
 		self.circle_dl = None # used for a circle list, for displaying circled particles, for example
 
-		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"single_image.png")) #TODO: figure out why this icon doesn't work
 
-		if image : self.set_data(image)
+		if image is not None : self.tmp=image
+		else: self.tmp=None
 #		else:self.__load_display_settings_from_db()
 
 #	def __del__(self):
@@ -192,48 +192,61 @@ class EMImage2DWidget(EMGLWidget):
 #		self.qt_parent.deleteLater()
 
 	def initializeGL(self):
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 
-		glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
-		glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-		glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
+		# glLightfv(GL_LIGHT0, GL_AMBIENT, [0.1, 0.1, 0.1, 1.0])
+		# glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 1.0, 1.0, 1.0])
+		# glLightfv(GL_LIGHT0, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+		# glLightfv(GL_LIGHT0, GL_POSITION,  [.1,.1,1,0.])
 
-		glEnable(GL_LIGHTING)
-		glEnable(GL_LIGHT0)
+		# enable(GL_LIGHTING)
+		# enable(GL_LIGHT0)
+		glDisable(GL_LIGHTING)
+		emshape.pixelratio=self.devicePixelRatio()	# not optimal. Setting this factor globally, but should really be per-window
+		if self.tmp is not None: 
+			self.set_data(tmp)
+			self.tmp=None
 
+		self.setAcceptDrops(True) #TODO: figure out the purpose of this (moved) line of code
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
+		
 	def paintGL(self):
-		glMatrixMode(GL_MODELVIEW)
-		glLoadIdentity()
-		# glClear(GL_COLOR_BUFFER_BIT) # throws error.
-		glClearColor(0.0, 0.0, 0.0, 0.0)
-		if glIsEnabled(GL_DEPTH_TEST):
-			glClear(GL_DEPTH_BUFFER_BIT)
-		if glIsEnabled(GL_STENCIL_TEST):
-			glClear(GL_STENCIL_BUFFER_BIT)
-		#self.cam.position()
-		#context = OpenGL.contextdata.getContext(None)
-		#print "Image2D context is", context
-		glPushMatrix()
-		self.render()
-		glPopMatrix()
+		try:
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-	def resizeGL(self, width, height):
-		if width == 0 or height == 0: return # this is okay, nothing needs to be drawn
-		width = width // self.devicePixelRatio()
-		height = height // self.devicePixelRatio()
-		side = min(width, height)
-		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+			dpr = self.devicePixelRatio()
+			w = self.width()
+			h = self.height()
+			if w == 0 or h == 0: return
+			GL.glViewport(0, 0, int(w * dpr), int(h * dpr))
+			GL.glMatrixMode(GL.GL_PROJECTION)
+			GL.glLoadIdentity()
+			GLU.gluOrtho2D(0.0, w, 0.0, h)
 
-		GL.glMatrixMode(GL.GL_PROJECTION)
-		GL.glLoadIdentity()
-		GLU.gluOrtho2D(0.0,width,0.0,height)
-		GL.glMatrixMode(GL.GL_MODELVIEW)
-		GL.glLoadIdentity()
+			glMatrixMode(GL_MODELVIEW)
+			glLoadIdentity()
+			#self.cam.position()
+			#context = OpenGL.contextdata.getContext(None)
+			#print "Image2D context is", context
+			glPushMatrix()
+			self.render()
+			glPopMatrix()
+		except Exception as e:
+			print("EMImage2DWidget.paintGL error:", e)
+			import traceback; traceback.print_exc()
 
-		self.resize_event(width,height)
-		#except: pass
+	# def resizeGL(self, width, height):
+	# 	if width == 0 or height == 0: return
+	# 	width = width // self.devicePixelRatio()
+	# 	height = height // self.devicePixelRatio()
+	# 	self.resize_event(width,height)
+
+	def resizeEvent(self, event):
+		super().resizeEvent(event)
+		w = self.width()
+		h = self.height()
+		self.resize_event(w, h)
 
 	def optimally_resize(self):
 		if self.parent_geometry != None:
@@ -489,7 +502,7 @@ class EMImage2DWidget(EMGLWidget):
 			if needresize:
 				x=self.data["nx"]
 				y=self.data["ny"]
-				xys=QtWidgets.QApplication.desktop().availableGeometry()
+				xys=QtWidgets.QApplication.primaryScreen().availableGeometry()
 				mx=old_div(xys.width()*2,3)
 				my=old_div(xys.height()*2,3)
 
@@ -703,7 +716,7 @@ class EMImage2DWidget(EMGLWidget):
 		data["scale"] = self.scale
 
 		try:
-			data["parent_geometry"] = self.qt_parent.saveGeometry()
+			data["parent_geometry"] = self.saveGeometry()
 		except: pass
 
 		db = DB.image_2d_display_settings
@@ -740,7 +753,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.image_range_changed(z)
 			#self.setup_shapes()
 		animation = LineAnimation(self,self.origin,(x*self.scale-old_div(self.width(),2),y*self.scale-old_div(self.height(),2)))
-		self.qt_parent.register_animatable(animation)
+		self.register_animatable(animation)
 		return True
 
 	def set_scale(self,newscale,quiet=False):
@@ -762,7 +775,8 @@ class EMImage2DWidget(EMGLWidget):
 		self.histogram=mode
 		self.updateGL()
 
-	def set_FFT(self,val):
+	def set_FFT(self, btn_id):
+		val = btn_id
 		if self.data != None and self.data.is_complex():
 			print(" I am returning")
 			return
@@ -1059,12 +1073,11 @@ class EMImage2DWidget(EMGLWidget):
 			self.setup_shapes()
 			self.shapechange=0
 
-		width = old_div(self.width(),2.0)
-		height = old_div(self.height(),2.0)
+		width = self.width() / 2.0
+		height = self.height() / 2.0
 
 		if not self.invert : pixden=(0,255)
 		else: pixden=(255,0)
-
 
 		update = False
 		if self.display_state_changed():
@@ -1072,8 +1085,6 @@ class EMImage2DWidget(EMGLWidget):
 
 		if update:
 			self.update_inspector_texture() # important for this to occur in term of the e2desktop only
-
-#		print "render",update,self.image_change_count
 
 
 		render = False
@@ -1097,19 +1108,16 @@ class EMImage2DWidget(EMGLWidget):
 			if not self.glflags.npt_textures_unsupported():
 
 				self.hist=struct.unpack('256i',a[-1024:])
+				img_data = a[:-1024]  # Strip histogram bytes from image data for OpenGL
 
 				if self.tex_name != 0: glDeleteTextures(self.tex_name)
 				self.tex_name = glGenTextures(1)
 				if ( self.tex_name <= 0 ):
 					raise("failed to generate texture name")
 
-				#if self.otherdatablend and self.otherdata != None:
-
-					#glBlendFunc(GL_DST_ALPHA,GL_ONE_MINUS_DST_ALPHA)
-
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, a)
+				GL.glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,old_div(w,bpp),h,0,gl_render_type, GL.GL_UNSIGNED_BYTE, img_data)
 
 				glNewList(self.main_display_list,GL_COMPILE)
 				GL.glBindTexture(GL.GL_TEXTURE_2D,self.tex_name)
@@ -1126,11 +1134,12 @@ class EMImage2DWidget(EMGLWidget):
 
 			else:
 				self.hist=struct.unpack('256i',a[-1024:])
+				img_data = a[:-1024]  # Strip histogram bytes from image data for OpenGL
 				glNewList(self.main_display_list,GL_COMPILE)
 				#GL.glRasterPos(0,self.height()-1)
 				#GL.glPixelZoom(1.0,-1.0)
 				GL.glRasterPos(0,0)
-				GL.glDrawPixels(self.width(),self.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,a)
+				GL.glDrawPixels(self.width(),self.height(),gl_render_type,GL.GL_UNSIGNED_BYTE,img_data)
 		else:
 			glCallList(self.main_display_list)
 
@@ -1147,6 +1156,7 @@ class EMImage2DWidget(EMGLWidget):
 
 				scale = self.scale*self.otherdatascale
 				b=GLUtil.render_amp8(self.otherdata, int(old_div(self.origin[0],scale)),int(old_div(self.origin[1],scale)),self.width(),self.height(),old_div((self.width()-1),4)*4+4,scale,pixden[0],pixden[1],0,1,1,2)
+				other_img_data = b[:-1024]  # Strip histogram bytes from image data for OpenGL
 				gl_render_type = GL_LUMINANCE
 
 				if self.other_tex_name != 0: GL.glDeleteTextures(self.other_tex_name)
@@ -1154,9 +1164,9 @@ class EMImage2DWidget(EMGLWidget):
 				if ( self.other_tex_name <= 0 ):
 					raise("failed to generate texture name")
 
-				glBindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
+				bindTexture(GL.GL_TEXTURE_2D,self.other_tex_name)
 				glPixelStorei(GL_UNPACK_ALIGNMENT,4)
-				glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, b)
+				glTexImage2D(GL.GL_TEXTURE_2D,0,gl_render_type,self.width(),self.height(),0,gl_render_type, GL.GL_UNSIGNED_BYTE, other_img_data)
 
 
 				if self.otherdatadl != 0: glDeleteLists(self.otherdatadl,1)
@@ -1611,7 +1621,7 @@ class EMImage2DWidget(EMGLWidget):
 		if register_animation:
 			animation = SingleValueIncrementAnimation(self,0,1)
 
-			self.qt_parent.register_animatable(animation)
+			self.register_animatable(animation)
 		self.shapes.update(d)
 		self.shapechange=1
 		#self.updateGL()
@@ -1621,14 +1631,16 @@ class EMImage2DWidget(EMGLWidget):
 		try:
 			self.shapes.pop(p)
 			self.shapechange=1
-		except:pass
+		except: pass
 
 	def del_shapes(self,k=None):
 		if k:
 			try:
 				for i in k:
 					del self.shapes[i]
-			except: del self.shapes[k]
+			except: 
+				try: del self.shapes[k]
+				except: pass
 		else:
 			self.shapes={}
 		self.shapechange=1
@@ -1658,7 +1670,7 @@ class EMImage2DWidget(EMGLWidget):
 
 	def closeEvent(self,event) :
 		self.__write_display_settings_to_db()
-		EMGLWidget.closeEvent(self,event)
+		super().closeEvent(event)
 		try:
 			for w in self.inspector.pspecwins: w.close()
 		except: pass
@@ -1703,34 +1715,34 @@ class EMImage2DWidget(EMGLWidget):
 		self.inspector.ptcoord2.setText("dcen (%d, %d)"%(x-self.data["nx"]//2,y-self.data["ny"]//2))
 
 	def mousePressEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		lc=self.scr_to_img(event.position().x(),event.position().y())
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.ControlModifier and event.modifiers()&Qt.ShiftModifier):
 			try:
-				get_application().setOverrideCursor(Qt.ClosedHandCursor)
+				get_application().setOverrideCursor(Qt.CursorShape.ClosedHandCursor)
 			except: # if we're using a version of qt older than 4.2 than we have to use this...
-				get_application().setOverrideCursor(Qt.SizeAllCursor)
-			self.rmousedrag=(event.x(),event.y() )
+				get_application().setOverrideCursor(Qt.CursorShape.SizeAllCursor)
+			self.rmousedrag=(event.position().x(),event.position().y() )
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				self.mousedown.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
-				if event.buttons()&Qt.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+				if event.buttons()&Qt.MouseButton.LeftButton:
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
-		#			self.del_shape("MEASL")
+				if event.buttons()&Qt.MouseButton.LeftButton:
+					lc=self.scr_to_img(event.position().x(),event.position().y())
+# 		self.del_shape("MEASL")
 					self.del_shape("MEAS")
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,lc[0],lc[1],lc[0]+1,lc[1],2)))
-					self.updateGL()
+					self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
-					lc=self.scr_to_img(event.x(),event.y())
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					if inspector:
 						self.drawr1=int(float(inspector.dtpen.text()))
 						self.drawv1=float(inspector.dtpenv.text())
@@ -1738,30 +1750,30 @@ class EMImage2DWidget(EMGLWidget):
 						self.drawv2=float(inspector.dtpenv2.text())
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
-						self.updateGL()
+						self.update()
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		if self.rmousedrag:
-			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.x(),self.origin[1]-self.rmousedrag[1]+event.y())
-			self.rmousedrag=(event.x(),event.y())
+			self.set_origin(self.origin[0]+self.rmousedrag[0]-event.position().x(),self.origin[1]-self.rmousedrag[1]+event.position().y())
+			self.rmousedrag=(event.position().x(),event.position().y())
 #			self.emit(QtCore.SIGNAL("origin_update"),self.origin)
 			#try: self.updateGL()
 			#except: pass
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
-				if event.buttons()&Qt.LeftButton:
+				lc=self.scr_to_img(event.position().x(),event.position().y())
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.mousedrag.emit(event, lc)
 				else:
 					self.mousemove.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "probe":
-				if event.buttons()&Qt.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+				if event.buttons()&Qt.MouseButton.LeftButton:
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.do_probe(lc[0],lc[1])
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+				if event.buttons()&Qt.MouseButton.LeftButton:
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					current_shapes = self.get_shapes()
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 
@@ -1817,36 +1829,37 @@ class EMImage2DWidget(EMGLWidget):
 						#except: pass
 
 					self.update_inspector_texture()
-					self.updateGL()
+					self.update()
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.buttons()&Qt.LeftButton:
-					lc=self.scr_to_img(event.x(),event.y())
+				if event.buttons()&Qt.MouseButton.LeftButton:
+					lc=self.scr_to_img(event.position().x(),event.position().y())
 					self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 					self.force_display_update()
-					self.updateGL()
+					self.update()
 
 	def mouseReleaseEvent(self, event):
 		get_application().setOverrideCursor(Qt.ArrowCursor)
-		lc=self.scr_to_img(event.x(),event.y())
+		lc=self.scr_to_img(event.position().x(),event.position().y())
 		current_shapes = self.get_shapes()
 		if self.rmousedrag:
 			self.rmousedrag=None
 		else:
 			if self.mouse_mode_dict[self.mouse_mode] == "emit":
-				lc=self.scr_to_img(event.x(),event.y())
+				lc=self.scr_to_img(event.position().x(),event.position().y())
 				self.mouseup.emit(event, lc)
 			elif self.mouse_mode_dict[self.mouse_mode] == "measure":
-				if event.buttons()&Qt.LeftButton:
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					self.add_shape("MEAS",EMShape(("line",.5,.1,.5,current_shapes["MEAS"].shape[4],current_shapes["MEAS"].shape[5],lc[0],lc[1],2)))
 			elif self.mouse_mode_dict[self.mouse_mode] == "draw":
-				if event.button()==Qt.LeftButton:
+				if event.button()==Qt.MouseButton.LeftButton:
 					self.redo_fft()
 					self.force_display_update()
-					self.updateGL()
+					self.update()
 
 	def wheelEvent(self, event):
 		if self.mouse_mode==0 and event.modifiers()&Qt.ShiftModifier:
 			self.mousewheel.emit(event)
+			event.accept()
 			return
 		if event.angleDelta().y() > 0:
 			self.set_scale( self.scale * self.mag )
@@ -1854,7 +1867,7 @@ class EMImage2DWidget(EMGLWidget):
 			self.set_scale(self.scale * self.invmag )
 		# The self.scale variable is updated now, so just update with that
 		if self.inspector: self.inspector.set_scale(self.scale)
-
+		event.accept()
 
 	def mouseDoubleClickEvent(self,event):
 		return
@@ -1867,7 +1880,7 @@ class EMImage2DWidget(EMGLWidget):
 		if self.key_mvt_animation == None:
 			new_origin=(self.origin[0]+dx,self.origin[1]+dy)
 			self.key_mvt_animation = LineAnimation(self,self.origin,new_origin)
-			self.qt_parent.register_animatable(self.key_mvt_animation)
+			self.register_animatable(self.key_mvt_animation)
 		else:
 			new_origin = self.key_mvt_animation.get_end()
 			new_origin = (new_origin[0]+dx,new_origin[1]+dy)
@@ -1974,18 +1987,12 @@ class EMImage2DWidget(EMGLWidget):
 		glOrtho(0,width,0,height,-100,100)
 		glMatrixMode(GL_MODELVIEW)
 		glLoadIdentity()
-		glEnable(GL_LIGHTING)
-		glEnable(GL_NORMALIZE)
-		glMaterial(GL_FRONT,GL_AMBIENT,(0.2, 1.0, 0.2,1.0))
-		glMaterial(GL_FRONT,GL_DIFFUSE,(0.2, 1.0, 0.9,1.0))
-		glMaterial(GL_FRONT,GL_SPECULAR,(1.0	, 0.5, 0.2,1.0))
-		glMaterial(GL_FRONT,GL_SHININESS,20.0)
 		enable_depth = glIsEnabled(GL_DEPTH_TEST)
 		glDisable(GL_DEPTH_TEST)
-		glColor(1.0,1.0,1.0)
-#		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
-		glNormal(0,0,1)
-		glEnable(GL_TEXTURE_2D)
+		glDisable(GL_LIGHTING)
+		glDisable(GL_TEXTURE_2D)
+		glDisable(GL_CULL_FACE)  # Inner contours of glyphs like "0" have opposite winding order
+		glColor4f(1.0, 1.0, 1.0, 1.0)
 		n = len(self.list_data)
 		string = f"{self.list_idx} ({n})"
 		bbox = self.font_renderer.bounding_box(string)
@@ -2067,11 +2074,11 @@ class EMImageInspector2D(QtWidgets.QWidget):
 
 		self.mmtab.addTab(self.savetab,"Save")
 
-		self.stsnapbut.clicked[bool].connect(self.do_snapshot)
-		self.stwholebut.clicked[bool].connect(self.do_saveimg)
-		self.ststackbut.clicked[bool].connect(self.do_savestack)
-		self.stmoviebut.clicked[bool].connect(self.do_makemovie)
-		self.stanimgif.clicked[bool].connect(self.do_makegifanim)
+		self.stsnapbut.clicked.connect(self.do_snapshot)
+		self.stwholebut.clicked.connect(self.do_saveimg)
+		self.ststackbut.clicked.connect(self.do_savestack)
+		self.stmoviebut.clicked.connect(self.do_makemovie)
+		self.stanimgif.clicked.connect(self.do_makegifanim)
 
 		# Filter tab
 		self.filttab = QtWidgets.QWidget()
@@ -2354,9 +2361,9 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		#self.update_brightness_contrast()
 		self.busy=0
 
-		self.psbsing.clicked[bool].connect(self.do_pspec_single)
-		self.psbstack.clicked[bool].connect(self.do_pspec_stack)
-		self.psbaz.clicked[bool].connect(self.do_pspec_az)
+		self.psbsing.clicked.connect(self.do_pspec_single)
+		self.psbstack.clicked.connect(self.do_pspec_stack)
+		self.psbaz.clicked.connect(self.do_pspec_az)
 		self.scale.valueChanged.connect(target.set_scale)
 		self.mins.valueChanged.connect(self.new_min)
 		self.maxs.valueChanged.connect(self.new_max)
@@ -2364,16 +2371,20 @@ class EMImageInspector2D(QtWidgets.QWidget):
 		self.conts.valueChanged.connect(self.new_cont)
 		self.gammas.valueChanged.connect(self.new_gamma)
 		self.pyinp.returnPressed.connect(self.do_python)
-		self.invtog.toggled[bool].connect(target.set_invert)
-		self.histoequal.currentIndexChanged[int].connect(target.set_histogram)
-		self.fftg.buttonClicked[int].connect(target.set_FFT)
-		self.mmtab.currentChanged[int].connect(target.set_mouse_mode)
-		self.auto_contrast_button.clicked[bool].connect(target.auto_contrast)
-		self.full_contrast_button.clicked[bool].connect(target.full_contrast)
+		self.invtog.toggled.connect(target.set_invert)
+		self.histoequal.currentIndexChanged.connect(target.set_histogram)
+		self.fftg.buttonClicked.connect(self.__on_fft_button_clicked)
+		self.mmtab.currentChanged.connect(target.set_mouse_mode)
+		self.auto_contrast_button.clicked.connect(target.auto_contrast)
+		self.full_contrast_button.clicked.connect(target.full_contrast)
 
 		self.resize(400,440) # d.woolford thinks this is a good starting size as of Nov 2008 (especially on MAC)
 
-	def do_pspec_single(self,ign):
+	def __on_fft_button_clicked(self, button):
+		btn_id = self.fftg.id(button)
+		self.target().set_FFT(btn_id)
+
+	def do_pspec_single(self, ign):
 		"""Compute 1D power spectrum of single image and plot"""
 		try: 
 			data=self.target().list_data[self.target().list_idx]
@@ -2743,7 +2754,7 @@ def main():
 
 	em_app.show()
 	window.optimally_resize()
-	sys.exit(em_app.exec_())
+	sys.exit(em_app.exec())
 
 
 if __name__ == '__main__':

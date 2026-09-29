@@ -35,7 +35,7 @@ from eman2_gui.emapplication import EMApp, get_application
 from eman2_gui.emimage3dsym import EM3DSymModel,EMSymInspector
 import os,sys
 from EMAN2 import *
-from PyQt5 import QtGui, QtWidgets,QtCore
+from PySide6 import QtGui, QtWidgets,QtCore
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.emglobjects import EM3DGLWidget
 
@@ -291,7 +291,7 @@ class EMCmpExplorer(EM3DSymModel):
 				progress.close()
 				return
 			progress.setValue(i)
-			QtWidgets.qApp.processEvents()
+			QtWidgets.QApplication.instance().processEvents()
 			
 		progress.close()
 		self.set_emdata_list_as_data(self.proj_data,"cmp")
@@ -352,8 +352,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.tabwidget.insertTab(0,self.cmp_tab,"Cmp")
 		self.tabwidget.setCurrentIndex(0)
 		
-		self.cmp_combo.currentIndexChanged[str].connect(self.cmp_changed)
-		self.cmp_realignb.clicked[bool].connect(self.cmp_realign)
+		self.cmp_combo.currentIndexChanged.connect(self.cmp_changed)
+		self.cmp_realignb.clicked.connect(self.cmp_realign)
 #		self.connect(self.cmp_shrink, QtCore.SIGNAL("valueChanged(int)"), self.ali_changed)
 
 		

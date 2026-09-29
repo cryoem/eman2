@@ -31,7 +31,9 @@
 #
 from builtins import range
 import os
+import sys
 from EMAN2 import *
+
 from numpy import *
 from eman2_gui.emapplication import EMApp
 
@@ -70,7 +72,7 @@ Plots the set of similarity quality values for a single particle from a set of s
 	plotw.show()
 	try: plotw.raise_()
 	except: pass
-	app.exec_()
+	app.exec()
 
 	#out=file("simmxplot.txt","w")
 	#for i in range(plts[0]["nx"]):

@@ -58,8 +58,8 @@ def safe_float(x):
 	try: return float(x)
 	except: return 0.0
 
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU
@@ -74,7 +74,6 @@ from .emshape import *
 import weakref
 from pickle import dumps,loads
 import struct, math
-from numpy import *
 from .valslider import *
 from io import StringIO
 import re
@@ -92,6 +91,7 @@ from .emapplication import EMApp, EMGLWidget
 from .emglobjects import EMOpenGLFlagsAndTools
 
 import traceback
+import gc
 
 #plt.style.use('ggplot')
 
@@ -114,7 +114,7 @@ class EMPlot3DWidget(EMGLWidget):
 
 	def __init__(self,application=None,winid=None,parent=None):
 
-		EMGLWidget.__init__(self, parent=parent, winid=winid)
+		super().__init__(parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		emshape.pixelratio=self.devicePixelRatio()
 
@@ -157,6 +157,7 @@ class EMPlot3DWidget(EMGLWidget):
 		self.alpha = 0.5
 
 	def initializeGL(self):
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
@@ -172,7 +173,7 @@ class EMPlot3DWidget(EMGLWidget):
 		#print "resize ",self.width(), self.height()
 		side = min(width, height)
 		dpr=self.devicePixelRatio()
-		GL.glViewport(0,0,self.width()*dpr,self.height()*dpr)
+		GL.glViewport(0,0,int(self.width()*dpr),int(self.height()*dpr))
 
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
@@ -181,6 +182,13 @@ class EMPlot3DWidget(EMGLWidget):
 		GL.glLoadIdentity()
 
 		self.resize_event(width,height)
+
+	def resizeEvent(self, event):
+		super().resizeEvent(event)
+		dpr=self.devicePixelRatio()
+		w = self.width() // dpr
+		h = self.height() // dpr
+		self.resize_event(w,h)
 
 	def closeEvent(self,event):
 		if self.particle_viewer!=None :
@@ -200,27 +208,28 @@ class EMPlot3DWidget(EMGLWidget):
 			self.particle_viewer5.close()
 
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 
 		if self.inspector :
 			self.inspector.closeEvent(event)
+
+	def showEvent(self, event):
+		super(EMPlot3DWidget, self).showEvent(event)
+		self.update()
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt5 import QtWebEngineWidgets
-			except: return
+			from PySide6.QtWebEngineWidgets import QWebEngineView
 			try:
-				try:
-					test = self.browser
-				except:
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					self.browser.resize(800,800)
+				test = self.browser
+			except:
+				self.browser = QWebEngineView()
+				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+				self.browser.resize(800,800)
 
-				if not self.browser.isVisible(): self.browser.show()
-			except: pass
+			if not self.browser.isVisible(): self.browser.show()
 
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
@@ -274,11 +283,11 @@ class EMPlot3DWidget(EMGLWidget):
 
 		if not isinstance(data[0],list) and not isinstance(data[0],tuple) and not isinstance(data[0],ndarray):
 			x_axis = arange(len(data))
-			data = [ x_axis,array(data) ]		# replace data with our refactored version
+			data = [ x_axis,np.array(data) ]		# replace data with our refactored version
 			self.data[key]= data
 			self.visibility.setdefault(key,True)
 		else:
-			self.data[key]=[array(i) for i in data]
+			self.data[key]=[np.array(i) for i in data]
 			self.visibility.setdefault(key,True)
 
 		try:
@@ -308,7 +317,7 @@ class EMPlot3DWidget(EMGLWidget):
 			if symsize<0 : symsize=pp[6]
 		else:
 			if symtype==-2 and linetype==-2:
-				if len(data)<4 and (diff(self.data[key][0])>=0).all() : doline,linetype=1,0
+				if len(data)<4 and (np.diff(self.data[key][0])>=0).all() : doline,linetype=1,0
 				else : dosym,symtype=1,0
 			if color<0 : color=len(self.data)%len(colortypes)			# Automatic color setting
 			if color >len(colortypes): color = 0 # there are only a certain number of colors
@@ -452,7 +461,7 @@ class EMPlot3DWidget(EMGLWidget):
 				else : rdata=[[float(j) for j in i.split()] for i in rdata]
 				nx=len(rdata[0])
 				ny=len(rdata)
-				data=[[array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
+				data=[[np.array([rdata[j][i]]) for j in range(ny)] for i in range(nx)]
 
 			except:
 				print("couldn't read",filename)
@@ -857,46 +866,46 @@ lc is the cursor selection point in plot coords"""
 			self.add_shape("selp%d"%i,EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-(18*i+y0),"%d. %1.3g, %1.3g"%(p,x[p],y[p]),120.0,-1)))
 
 	def mousePressEvent(self, event):
-#		lc=self.scr2plot(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+#		lc=self.scr2plot(event.position().x(),event.position().y())
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
 			self.updateGL()
-			self.rmousedrag=(event.x(),event.y())
-		elif event.button()==Qt.LeftButton:
-			self.lmousedrag=(event.x(),event.y())
+			self.rmousedrag=(event.position().x(),event.position().y())
+		elif event.button()==Qt.MouseButton.LeftButton:
+			self.lmousedrag=(event.position().x(),event.position().y())
 
 	def mouseMoveEvent(self, event):
-#		lc=self.scr2plot(event.x(),event.y())
+#		lc=self.scr2plot(event.position().x(),event.position().y())
 
 		if  self.rmousedrag:
-			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.x(),self.height()-event.y(),1)))
+			self.add_shape("zoom",EMShape(("scrrect",0,0,0,self.rmousedrag[0],self.height()-self.rmousedrag[1],event.position().x(),self.height()-event.position().y(),1)))
 			self.updateGL()
 		if self.lmousedrag:
-			daz=event.x()-self.lmousedrag[0]
-			delev=event.y()-self.lmousedrag[1]
+			daz=event.position().x()-self.lmousedrag[0]
+			delev=event.position().y()-self.lmousedrag[1]
 #			print self.lmousedrag,daz,delev
-			self.lmousedrag=(event.x(),event.y())
+			self.lmousedrag=(event.position().x(),event.position().y())
 			self.viewang=(self.viewang[0]+delev,self.viewang[1]-daz)
 			self.needupd=True
 			self.updateGL()
-		elif event.buttons()&Qt.LeftButton:
-			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.y(),self.scrlim[2]+self.scrlim[0],self.height()-event.y(),1)))
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+		elif event.buttons()&Qt.MouseButton.LeftButton:
+			self.add_shape("xcross",EMShape(("scrline",0,0,0,self.scrlim[0],self.height()-event.position().y(),self.scrlim[2]+self.scrlim[0],self.height()-event.position().y(),1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 
 			try: recip="%1.2f"%(old_div(1.0,lc[0]))
 			except: recip="-"
 			self.add_shape("lcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-220,self.scrlim[3]-10,"%1.5g (%s), %1.5g"%(lc[0],recip,lc[1]),120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
+			self.update_selected((event.position().x(),event.position().y()),lc)
 			self.updateGL()
 #			self.add_shape("mcross",EMShape(("scrlabel",0,0,0,self.scrlim[2]-80,self.scrlim[3]-20,"%1.3g, %1.3g"%(self.plot2scr(*lc)[0],self.plot2scr(*lc)[1]),1.5,1)))
 
 	def mouseReleaseEvent(self, event):
-#		lc =self.scr2plot(event.x(),event.y())
+#		lc =self.scr2plot(event.position().x(),event.position().y())
 		if self.rmousedrag:
 #			lc2=self.scr2plot(*self.rmousedrag)
-			#if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0,0,0)
+			#if fabs(event.position().x()-self.rmousedrag[0])+fabs(event.position().y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0,0,0)
 			#else : self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),min(lc[1],lc2[1]),max(lc[1],lc2[1]))
 			self.rmousedrag=None
 		if self.lmousedrag:
@@ -994,6 +1003,7 @@ lc is the cursor selection point in plot coords"""
 				cmin=min(cmin,min(self.data[k][self.axes[k][3]]))
 				cmax=max(cmax,max(self.data[k][self.axes[k][3]]))
 			self.climits=(cmin,cmax)
+			if self.climits[0] >= self.climits[1]: self.climits = (0.0, 1.0)
 
 		if force or self.slimits==None or self.slimits[1]<=self.slimits[0] :
 			smin=1.0e38
@@ -1003,6 +1013,7 @@ lc is the cursor selection point in plot coords"""
 				smin=min(smin,min(self.data[k][self.axes[k][4]]))
 				smax=max(smax,max(self.data[k][self.axes[k][4]]))
 			self.slimits=(smin,smax)
+			if self.slimits[0] >= self.slimits[1]: self.slimits = (0.0, 1.0)
 
 		if self.inspector: self.inspector.update()
 
@@ -1026,6 +1037,7 @@ lc is the cursor selection point in plot coords"""
 		self.updateGL()
 		
 		if self.inspector: self.inspector.update()
+		event.accept()
 
 	def leaveEvent(self,event):
 		pass
@@ -1729,7 +1741,7 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		# plot list
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
-		self.setlist.setSelectionMode(3)
+		self.setlist.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
@@ -2047,32 +2059,32 @@ class EMPlot3DInspector(QtWidgets.QWidget):
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
 
-		self.slidex.valueChanged[int].connect(self.newCols)
-		self.slidey.valueChanged[int].connect(self.newCols)
-		self.slidez.valueChanged[int].connect(self.newCols)
-		self.slidec.valueChanged[int].connect(self.newCols)
-		self.slides.valueChanged[int].connect(self.newCols)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
-		self.color.currentIndexChanged[str].connect(self.updPlotColor)
+		self.slidex.valueChanged.connect(self.newCols)
+		self.slidey.valueChanged.connect(self.newCols)
+		self.slidez.valueChanged.connect(self.newCols)
+		self.slidec.valueChanged.connect(self.newCols)
+		self.slides.valueChanged.connect(self.newCols)
+		self.setlist.currentRowChanged.connect(self.newSet)
+		self.setlist.itemChanged.connect(self.list_item_changed)
+		self.color.currentIndexChanged.connect(self.updPlotColor)
 		self.classb.clicked.connect(self.openClassWin)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.symtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmsel,QtCore.SIGNAL("clicked()"),self.updPlotHmsel)
 		#QtCore.QObject.connect(self.hmbins,QtCore.SIGNAL("clicked()"),self.updPlotHmbins)
-		self.symsel.currentIndexChanged[str].connect(self.updPlotSymsel)
-		self.symsize.valueChanged[int].connect(self.updPlotSymsize)
+		self.symsel.currentIndexChanged.connect(self.updPlotSymsel)
+		self.symsize.valueChanged.connect(self.updPlotSymsize)
 		self.xlogtog.clicked.connect(self.updPlot)
 		self.ylogtog.clicked.connect(self.updPlot)
 		self.zlogtog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.zlogtog,QtCore.SIGNAL("clicked()"),self.updPlot)
 		self.lintog.clicked.connect(self.updPlot)
 		#QtCore.QObject.connect(self.hmtog,QtCore.SIGNAL("clicked()"),self.updPlot)
-		self.linsel.currentIndexChanged[str].connect(self.updPlotLinsel)
-		self.linwid.valueChanged[int].connect(self.updPlotLinwid)
-		self.xlabel.textChanged[str].connect(self.updPlot)
-		self.ylabel.textChanged[str].connect(self.updPlot)
-		self.zlabel.textChanged[str].connect(self.updPlot)
+		self.linsel.currentIndexChanged.connect(self.updPlotLinsel)
+		self.linwid.valueChanged.connect(self.updPlotLinwid)
+		self.xlabel.textChanged.connect(self.updPlot)
+		self.ylabel.textChanged.connect(self.updPlot)
+		self.zlabel.textChanged.connect(self.updPlot)
 		self.stats.clicked.connect(self.openStatsWin)
 		self.regress.clicked.connect(self.openRegrWin)
 		self.saveb.clicked.connect(self.savePlot)

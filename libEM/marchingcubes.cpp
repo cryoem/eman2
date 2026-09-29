@@ -531,38 +531,14 @@ float* ColorRGBGenerator::getRGBColor(int x, int y, int z)
 MarchingCubes::MarchingCubes()
 	: _isodl(0), needtobind(1)
 {
-
-if ((int(glGetString(GL_VERSION)[0])-48)>2){
 	rgbgenerator = ColorRGBGenerator();
-
-// #ifdef _WIN32
-// 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
-// 	PFNGLGENBUFFERSPROC glGenBuffers;
-// 	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
-// #endif	//_WIN32
-//
-// 	glGenBuffers(4, buffer);
-}
-
 }
 
 MarchingCubes::MarchingCubes(EMData * em)
-	: _isodl(0)
+	: _isodl(0), needtobind(1)
 {
-if ((int(glGetString(GL_VERSION)[0])-48)>2){
 	rgbgenerator = ColorRGBGenerator();
-
-// #ifdef _WIN32
-// 	typedef void (APIENTRYP PFNGLGENBUFFERSPROC) (GLsizei n, GLuint *buffers);
-// 	PFNGLGENBUFFERSPROC glGenBuffers;
-// 	glGenBuffers = (PFNGLGENBUFFERSPROC) wglGetProcAddress("glGenBuffers");
-// #endif	//_WIN32
-//
-// 	glGenBuffers(4, buffer);
-	set_data(em);}
-else{
 	set_data(em);
-	}
 }
 
 

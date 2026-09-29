@@ -29,6 +29,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston MA 02111-1307 USA
 #
 #
+
 import traceback
 #traceback.print_stack()
 import warnings
@@ -149,8 +150,8 @@ XYData.__len__=XYData.get_size
 
 try:
 	if __IPYTHON__ : GUIMode=True
-	from PyQt5 import QtGui, QtWidgets
-	app=QtWidgets.qApp
+	from PySide6 import QtGui, QtWidgets
+	app=QtWidgets.QApplication.instance()
 except:
 	GUIMode=False
 	app = 0
@@ -370,10 +371,13 @@ def E2loadappwin(app,key,win):
 		geom=list(E2getappval(app,key))
 		if geom==None : raise Exception
 		win.resize(geom[2],geom[3])
-		geom[0]=max(32,geom[0])
-		geom[1]=max(60,geom[1])
-		win.move(geom[0],geom[1])
-#		print(app,key,geom)
+		# Only move top-level windows. Calling move() on widgets managed by a layout
+		# manager causes undefined positioning behavior in PySide6.
+		if win.window() == win or not hasattr(win, 'parent') or win.parent() is None:
+			geom[0]=max(32,geom[0])
+			geom[1]=max(60,geom[1])
+			win.move(geom[0],geom[1])
+# 		print(app,key,geom)
 	except: return
 
 def E2saveprojtype(app,key,win):
@@ -2309,21 +2313,16 @@ def test_image_3d(type=0,size=(128,128,128)):
 # get a font renderer
 def get_3d_font_renderer():
 	try:
-		from libpyGLUtils2 import EMFTGL
+		from libpyGLUtils2 import EMFTGL,FTGLFontMode
 		font_renderer = EMFTGL()
-		font_renderer.set_face_size(32)
-		font_renderer.set_using_display_lists(True)
+		font_renderer.set_using_display_lists(False)
 		font_renderer.set_depth(2)
-		pfm = get_platform()
-		if pfm in ["Linux","Darwin"]:
-			font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/DejaVuSerif.ttf")
-			#font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/SourceCodePro-Light.ttf")
-		elif pfm == "Windows":
-			font_renderer.set_font_file_name("C:\\WINDOWS\\Fonts\\arial.ttf")
-		else:
-			print("unknown platform:",pfm)
+		font_renderer.set_face_size(12)
+		font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
+		font_renderer.set_font_file_name(e2getinstalldir()+"/fonts/NotoSansMono-Medium.ttf")
 		return font_renderer
-	except ImportError:
+	except:
+		#traceback.print_exc()
 		#print "Unable to import EMFTGL. The FTGL library may not be installed. Text on 3D and some 2D viewers may not work."
 		return None
 

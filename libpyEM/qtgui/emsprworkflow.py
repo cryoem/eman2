@@ -35,8 +35,8 @@ from builtins import range
 from builtins import object
 from .emform import EMFormWidget,EMParamTable,EMTableFormWidget
 from .emdatastorage import ParamDef
-from PyQt5 import QtGui, QtWidgets,QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets,QtCore
+from PySide6.QtCore import Qt
 from EMAN2 import *
 import os
 import copy
@@ -100,9 +100,9 @@ class EmptyObject(object):
 		pass
 
 class WorkFlowTask(object):
-	display_file = QtCore.pyqtSignal()
-	task_idle = QtCore.pyqtSignal()
-	process_started = QtCore.pyqtSignal()
+	display_file = QtCore.Signal()
+	task_idle = QtCore.Signal()
+	process_started = QtCore.Signal()
 
 	def __init__(self):
 		self.window_title = "Set me please" # inheriting classes should set this
@@ -344,7 +344,7 @@ class WorkFlowTask(object):
 		msg = QtWidgets.QMessageBox()
 		msg.setWindowTitle("Almost")
 		msg.setText("Please select files for processing")
-		msg.exec_()
+		msg.exec()
 
 	def show_error_message(self,error_message):
 		'''
@@ -865,7 +865,7 @@ Note that the data cannot be filtered unless it is imported."
 				data_dict.add_names(list_of_names)
 		
 		class AddFilesToProjectViaContext(object):
-			task_idle = QtCore.pyqtSignal()
+			task_idle = QtCore.Signal()
 
 			def __init__(self,project_list):
 				self.project_list = project_list
@@ -879,7 +879,7 @@ Note that the data cannot be filtered unless it is imported."
 				
 				selector.set_selection_text("Selection(s)")
 				selector.set_validator(self.validator)
-				files = selector.exec_()
+				files = selector.exec()
 				selector.close()
 
 				if files != "":
@@ -1054,7 +1054,7 @@ class ParticleWorkFlowTask(WorkFlowTask):
 			
 			if self.validator != None: 
 				selector.set_validator(self.validator)
-			files = selector.exec_()
+			files = selector.exec()
 			selector.close()
 			
 			if files != "":
@@ -1190,7 +1190,7 @@ class CTFDBColumns(CTFColumns):
 
 class EMParticleReportTask(ParticleWorkFlowTask):
 	'''This tool is for displaying the particles that are currently associated with this project.'''
-	task_idle = QtCore.pyqtSignal()
+	task_idle = QtCore.Signal()
 
 	def __init__(self):
 		ParticleWorkFlowTask.__init__(self)
@@ -1383,7 +1383,7 @@ class E2CTFWorkFlowTask(EMParticleReportTask):
 
 class E2CTFOutputTask(E2CTFWorkFlowTask):	
 	"""Select the particle data for which you wish to generate phase flipped and/or Wiener filtered output and hit OK.\nThis will cause the workflow to spawn processes based on the available CPUs that write the output into a predefined location in the EMAN2 database.\nNote that the Wiener filtered output images are also phase flipped."""
-	task_idle = QtCore.pyqtSignal()
+	task_idle = QtCore.Signal()
 
 	def __init__(self):
 		E2CTFWorkFlowTask.__init__(self)
@@ -1469,7 +1469,7 @@ class E2CTFOutputTask(E2CTFWorkFlowTask):
 class E2CTFOutputTaskGeneral(E2CTFOutputTask):
 	''' Use this form for generating CTF-related output. 
 	'''
-	task_idle = QtCore.pyqtSignal()
+	task_idle = QtCore.Signal()
 	warning_string = "\n\n\nNOTE: There are no CTF parameters currently stored for any images in the local database. You can change this by running automated fitting with e2ctf."
 	
 	def __init__(self):

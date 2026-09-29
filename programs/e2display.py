@@ -30,19 +30,18 @@
 #
 #
 
-from builtins import range
-from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
-from eman2_gui.emapplication import EMApp
-from eman2_gui import embrowser
-from eman2_gui.emimage import EMImageWidget, EMWidgetFromFile
-from eman2_gui.emscene3d import EMScene3D
 import os
 import sys
 
 import OpenGL
 OpenGL.ERROR_CHECKING = False
-from OpenGL import GL, GLU, GLUT
-from PyQt5.QtCore import Qt
+from OpenGL import GL, GLU
+from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
+from eman2_gui.emapplication import EMApp
+from eman2_gui import embrowser
+from eman2_gui.emimage import EMImageWidget, EMWidgetFromFile
+from eman2_gui.emscene3d import EMScene3D
+from PySide6.QtCore import Qt
 
 def main():
 	progname = os.path.basename(sys.argv[0])
@@ -74,6 +73,11 @@ def main():
 #	logid=E2init(sys.argv)
 
 	app = EMApp()
+
+	# for m in sorted(sys.modules):
+	# 	if "Qt" in m or "PyQt" in m or "PySide" in m:
+	# 		print(m)
+
 	#gapp = app
 	#QtWidgets.QApplication(sys.argv)
 	win=[]
@@ -138,7 +142,7 @@ e2procjson.py --setoption display2d.autocontrast:true
 				sys.exit(1)
 			display_file(i,app,options.singleimage,usescenegraph=options.newwidget)
 
-	app.exec_()
+	app.exec()
 
 #	E2end(logid)
 

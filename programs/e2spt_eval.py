@@ -3,8 +3,9 @@
 from past.utils import old_div
 from EMAN2 import *
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from OpenGL import GL
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui import embrowser
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emscene3d import EMScene3D
@@ -26,7 +27,7 @@ def main():
 	gui=SptEvalGUI(options)
 	gui.show()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 	E2end(logid)
 	
 	
@@ -60,7 +61,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.imglst_srtby=0
 		hdr=self.imglst.horizontalHeader()
 		self.imglst.cellClicked[int, int].connect(self.select_folder)
-		hdr.sectionPressed[int].connect(self.sortlst)
+		hdr.sectionPressed.connect(self.sortlst)
 		
 		self.dp_folder=QtWidgets.QComboBox()
 		self.dp_folder.setToolTip("Folder suffix")
@@ -69,7 +70,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.paramfile={"spt":"spt", "sptsgd":"spt", "subtlt":"subtlt"}
 		for i in sfxlst:
 			self.dp_folder.addItem(i)
-		self.dp_folder.currentIndexChanged[int].connect(self.set_sfx)
+		self.dp_folder.currentIndexChanged.connect(self.set_sfx)
 
 		self.wg_thumbnail=EMScene3D()#parent=self)
 		#self.wg_thumbnail.set_scale(1)
@@ -85,12 +86,12 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.bt_showbs=QtWidgets.QPushButton("ShowBrowser")
 		self.bt_showbs.setToolTip("Show Browser")
 		self.gbl.addWidget(self.bt_showbs, 2,1,1,2)
-		self.bt_showbs.clicked[bool].connect(self.show_browser)
+		self.bt_showbs.clicked.connect(self.show_browser)
 
 		self.bt_plotParms=QtWidgets.QPushButton("PlotParams")
 		self.bt_plotParms.setToolTip("Examine particle orientations")
 		self.gbl.addWidget(self.bt_plotParms, 3,1,1,2)
-		self.bt_plotParms.clicked[bool].connect(self.plot_params)
+		self.bt_plotParms.clicked.connect(self.plot_params)
 
 		self.paramplot = EMPlot2DWidget()
 		self.paramplot.show()
@@ -99,7 +100,7 @@ class SptEvalGUI(QtWidgets.QWidget):
 		self.bt_plotFSC=QtWidgets.QPushButton("PlotFSCs")
 		self.bt_plotFSC.setToolTip("Examine tightly masked FSCs from this SPT refinement")
 		self.gbl.addWidget(self.bt_plotFSC, 4,1,1,2)
-		self.bt_plotFSC.clicked[bool].connect(self.plot_fscs)
+		self.bt_plotFSC.clicked.connect(self.plot_fscs)
 
 		self.fscplot = EMPlot2DWidget()
 		self.fscplot.show()

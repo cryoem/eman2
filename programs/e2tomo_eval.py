@@ -5,14 +5,19 @@ from EMAN2 import *
 from EMAN2_utils import natural_sort
 import os
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+
+import OpenGL
+OpenGL.ERROR_CHECKING = False
+from OpenGL import GL, GLU
+from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import ValSlider,CheckBox,ValBox
 from eman2_gui.emshape import EMShape
 from eman2_gui.emapplication import EMApp
+from PySide6.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
 import subprocess
 
 
@@ -46,7 +51,7 @@ def main():
 	gui=TomoEvalGUI(options)
 	gui.show()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 	E2end(logid)
 	
 	
@@ -87,7 +92,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		hdr=self.imglst.horizontalHeader()
 		#self.imglst.cellClicked[int, int].connect(self.selimg)
 		self.imglst.itemSelectionChanged.connect(self.selimg)
-		hdr.sectionPressed[int].connect(self.sortlst)
+		hdr.sectionPressed.connect(self.sortlst)
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
@@ -138,16 +143,16 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.gbl.addWidget(self.bt_clearptcl, 8,2)
 		
 
-		self.bt_show2d.clicked[bool].connect(self.show2d)
-		self.bt_runboxer.clicked[bool].connect(self.runboxer)
-		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
-		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
-		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
-		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
-		self.bt_refresh.clicked[bool].connect(self.update_files)
-		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
-		self.bt_evalimage.clicked[bool].connect(self.eval_image)
-		self.bt_clearptcl.clicked[bool].connect(self.clear_ptcls)
+		self.bt_show2d.clicked.connect(self.show2d)
+		self.bt_runboxer.clicked.connect(self.runboxer)
+		self.bt_plotloss.clicked.connect(self.plot_loss)
+		self.bt_plottpm.clicked.connect(self.plot_tltparams)
+		self.bt_showtlts.clicked.connect(self.show_tlts)
+		self.bt_showatlts.clicked.connect(self.show_ali_tlts)
+		self.bt_refresh.clicked.connect(self.update_files)
+		self.bt_plotctf.clicked.connect(self.plot_ctf)
+		self.bt_evalimage.clicked.connect(self.eval_image)
+		self.bt_clearptcl.clicked.connect(self.clear_ptcls)
 		
 		self.wg_2dimage=EMImage2DWidget()
 		self.wg_2dimage.setWindowTitle("Tomo2D")
@@ -491,15 +496,15 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		if idx==None: return
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		else:
 			cmd="e2spt_boxer.py {} --ppid {}".format(info["filename"], os.getpid())
 			psel=[p for p in self.ptclcls.keys() if self.ptclcls[p][0]]
 			if len(psel)==1:
 				cmd+=f" --label {psel[0]}"
-				
-			if modifiers == QtCore.Qt.ControlModifier:
+			
+			if modifiers & QtCore.Qt.ControlModifier:
 				cmd+=" --clean"
 			subprocess.Popen(cmd,shell=True)
 		#launch_childprocess()

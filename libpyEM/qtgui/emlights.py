@@ -41,8 +41,8 @@ from OpenGL import GL, GLU, GLUT
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from .emglobjects import Camera2, get_default_gl_colors, EMViewportDepthTools2, get_RGB_tab, get_gl_lights_vector, init_glut, EM3DModel
 from .emimageutil import EMTransformPanel # for EMLightsInspector
 from math import *
@@ -402,7 +402,7 @@ class EMLightsDrawer(object):
 		if self.display_lights:
 			self.draw_lights()
 	def motion_translate_z_only(self,prev_x,prev_y,event):
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		[dx,dy] = [event.position().x()-prev_x,prev_y-event.position().y()]
 		dx /= 10.0
 		dy /= 10.0
 		d = abs(dx) + abs(dy)
@@ -424,7 +424,7 @@ class EMLightsDrawer(object):
 		
 	def motion_translate(self,prev_x,prev_y,event):
 		
-		[dx,dy] = [event.x()-prev_x,prev_y-event.y()]
+		[dx,dy] = [event.position().x()-prev_x,prev_y-event.position().y()]
 		dx /= 10.0
 		dy /= 10.0
 		pos = glGetLightfv(self.current_light,GL_POSITION)
@@ -499,32 +499,32 @@ class EMLightsDrawer(object):
 
 	def mousePressEvent(self,event):
 		if self.current_mouse_mode != None:
-			self.mpressx = event.x()
-			self.mpressy = event.y()
+			self.mpressx = event.position().x()
+			self.mpressy = event.position().y()
 			self.updateGL()
 	
 	def mouseMoveEvent(self,event):
 		if self.current_mouse_mode == "point source":
-			if event.buttons()&Qt.RightButton and event.modifiers()&Qt.ShiftModifier:
+			if event.buttons()&Qt.MouseButton.RightButton and event.modifiers()&Qt.ShiftModifier:
 				
 				self.motion_translate_z_only(self.mpressx, self.mpressy,event)
-				self.mpressx = event.x()
-				self.mpressy = event.y()
-	
-			elif event.buttons()&Qt.RightButton:
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
+
+			elif event.buttons()&Qt.MouseButton.RightButton:
 				self.motion_translate(self.mpressx, self.mpressy,event)
 				
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
 			else:
-				self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-				self.mpressx = event.x()
-				self.mpressy = event.y()
+				self.motion_rotate(self.mpressx - event.position().x(), self.mpressy - event.position().y())
+				self.mpressx = event.position().x()
+				self.mpressy = event.position().y()
 			self.updateGL()
 		elif self.current_mouse_mode == "directional":
-			self.motion_rotate(self.mpressx - event.x(), self.mpressy - event.y())
-			self.mpressx = event.x()
-			self.mpressy = event.y()
+			self.motion_rotate(self.mpressx - event.position().x(), self.mpressy - event.position().y())
+			self.mpressx = event.position().x()
+			self.mpressy = event.position().y()
 			self.updateGL()
 	
 	def mouseReleaseEvent(self,event):
@@ -870,12 +870,12 @@ class EMLightsInspectorBase(object):
 		self.light_specular.r.valueChanged.connect(self.update_light)
 		self.light_specular.g.valueChanged.connect(self.update_light)
 		self.light_specular.b.valueChanged.connect(self.update_light)
-		self.light_x_dir.valueChanged[float].connect(self.update_light)
-		self.light_y_dir.valueChanged[float].connect(self.update_light)
-		self.light_z_dir.valueChanged[float].connect(self.update_light)
-		self.light_manip_check.stateChanged[int].connect(self.target().light_manipulation_toggled)
-		show_lights.stateChanged[int].connect(self.target().show_lights)
-		self.local_viewer_check.stateChanged[int].connect(self.local_viewer_checked)
+		self.light_x_dir.valueChanged.connect(self.update_light)
+		self.light_y_dir.valueChanged.connect(self.update_light)
+		self.light_z_dir.valueChanged.connect(self.update_light)
+		self.light_manip_check.stateChanged.connect(self.target().light_manipulation_toggled)
+		show_lights.stateChanged.connect(self.target().show_lights)
+		self.local_viewer_check.stateChanged.connect(self.local_viewer_checked)
 		#QtCore.QObject.connect(self.light_w_pos, QtCore.SIGNAL("valueChanged(int)"), self.update_light)
 	 
 		return light_tab
@@ -1141,7 +1141,7 @@ class EMLightsInspectorBase(object):
 		
 		new_light.clicked.connect(self.new_directional_light)
 		del_light.clicked.connect(self.del_directional_light)
-		self.light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.light_list_clicked)
+		self.light_list.itemPressed.connect(self.light_list_clicked)
 		
 		return self.directional_light_widget
 	
@@ -1291,13 +1291,13 @@ class EMLightsInspectorBase(object):
 		
 		
 		new_light.clicked.connect(self.new_pointsource_light)
-		self.point_light_list.itemPressed[QtWidgets.QListWidgetItem].connect(self.point_light_list_clicked)
-		self.light_x_pos.valueChanged[float].connect(self.update_light)
-		self.light_y_pos.valueChanged[float].connect(self.update_light)
-		self.light_z_pos.valueChanged[float].connect(self.update_light)
-		self.light_ps_xdir.valueChanged[float].connect(self.update_light)
-		self.light_ps_ydir.valueChanged[float].connect(self.update_light)
-		self.light_ps_zdir.valueChanged[float].connect(self.update_light)
+		self.point_light_list.itemPressed.connect(self.point_light_list_clicked)
+		self.light_x_pos.valueChanged.connect(self.update_light)
+		self.light_y_pos.valueChanged.connect(self.update_light)
+		self.light_z_pos.valueChanged.connect(self.update_light)
+		self.light_ps_xdir.valueChanged.connect(self.update_light)
+		self.light_ps_ydir.valueChanged.connect(self.update_light)
+		self.light_ps_zdir.valueChanged.connect(self.update_light)
 		self.spot_cutoff.valueChanged.connect(self.update_light)
 		self.spot_exponent.valueChanged.connect(self.update_light)
 		self.const_atten.valueChanged.connect(self.update_light)
@@ -1350,9 +1350,9 @@ class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		self.n3_showing = False
 		self.quiet = False
 
-		self.cbb.currentIndexChanged[str].connect(target.setColor)
-		self.wiretog.toggled[bool].connect(target.toggle_wire)
-		self.lighttog.toggled[bool].connect(target.toggle_light)
+		self.cbb.currentIndexChanged.connect(target.setColor)
+		self.wiretog.toggled.connect(target.toggle_wire)
+		self.lighttog.toggled.connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
 

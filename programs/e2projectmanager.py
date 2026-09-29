@@ -33,7 +33,12 @@
 from past.utils import old_div
 from builtins import range
 from EMAN2 import *
-from PyQt5 import QtCore, QtGui, QtWidgets
+from OpenGL import GL
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+import os
+import sys
+
 from eman2_gui.pmicons import *
 import os, json, re, glob, signal
 import subprocess
@@ -149,7 +154,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		# File menu
 		filemenu = menubar.addMenu('&File')
 		# exit
-		exit = QtWidgets.QAction('Exit', self)
+		exit = QtGui.QAction('Exit', self)
 		exit.setShortcut('Ctrl+Q')
 		exit.setStatusTip('Exit application')
 		exit.triggered.connect(self.close)
@@ -157,12 +162,12 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		# Project
 		projectmenu = menubar.addMenu('&Project')
-		openproject = QtWidgets.QAction('Open Project', self)
+		openproject = QtGui.QAction('Open Project', self)
 		openproject.setShortcut('Ctrl+O')
 		openproject.setStatusTip('Open Project')
 		openproject.triggered.connect(self._on_openproject)
 		projectmenu.addAction(openproject)
-		editproject = QtWidgets.QAction('Edit Project', self)
+		editproject = QtGui.QAction('Edit Project', self)
 		editproject.setShortcut('Ctrl+E')
 		editproject.setStatusTip('Edit Project')
 		editproject.triggered.connect(self._on_editproject)
@@ -172,13 +177,13 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		# Utils
 		utilsmenu = menubar.addMenu('&Utilities')
-		filebrowser = QtWidgets.QAction('File Browser', self)
+		filebrowser = QtGui.QAction('File Browser', self)
 		filebrowser.setShortcut('Ctrl+F')
 		filebrowser.setStatusTip('File Browser')
 		utilsmenu.addAction(filebrowser)
 		utilsmenu.addSeparator()
 		filebrowser.triggered.connect(self._on_browse)
-		self.dumpterminal = QtWidgets.QAction('Dump Terminal', self)
+		self.dumpterminal = QtGui.QAction('Dump Terminal', self)
 		self.dumpterminal.setCheckable(True)
 		self.dumpterminal.setChecked(False)
 		utilsmenu.addAction(self.dumpterminal)
@@ -187,10 +192,10 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		# Help
 		helpmenu = menubar.addMenu('&Help')
-		about = QtWidgets.QAction('About', self)
+		about = QtGui.QAction('About', self)
 		about.setStatusTip('About')
 		helpmenu.addAction(about)
-		helpdoc = QtWidgets.QAction('Help', self)
+		helpdoc = QtGui.QAction('Help', self)
 		helpdoc.setStatusTip('Help')
 		helpmenu.addAction(helpdoc)
 
@@ -212,7 +217,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		box.addWidget(self.modeCB)
 		widget.setLayout(box)
 
-		self.modeCB.activated[int].connect(self._onModeChange)
+		self.modeCB.activated.connect(self._onModeChange)
 
 		return widget
 
@@ -247,7 +252,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 	def _on_editproject(self):
 		""" Open edit dialog """
 		np = ProjectDialog(self)
-		np.exec_()
+		np.exec()
 		self.activateWindow()
 
 	def makeTilteBarWidget(self):
@@ -338,9 +343,9 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		toolwidget.setLayout(tbox)
 
 		self.browsebutton.clicked.connect(self._on_browse)
-		self.helpbutton.stateChanged[bool].connect(self._on_helpbutton)
-		self.logbutton.stateChanged[bool].connect(self._on_logbutton)
-		self.taskmanagerbutton.stateChanged[bool].connect(self._on_taskmgrbutton)
+		self.helpbutton.stateChanged.connect(self._on_helpbutton)
+		self.logbutton.stateChanged.connect(self._on_logbutton)
+		self.taskmanagerbutton.stateChanged.connect(self._on_taskmgrbutton)
 
 		return toolwidget
 
@@ -450,7 +455,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 
 		self.wikibutton.clicked.connect(self._on_wikibutton)
 		self.wizardbutton.clicked.connect(self._on_wizardbutton)
-		self.expertbutton.stateChanged[bool].connect(self._on_expertmodechanged)
+		self.expertbutton.stateChanged.connect(self._on_expertmodechanged)
 
 	#return programtoolwidget
 
@@ -659,7 +664,7 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			self._add_children(toplevel, qtreewidget)
 			QTree.addTopLevelItem(qtreewidget)
 
-		QTree.itemClicked[QtWidgets.QTreeWidgetItem, int].connect(self._tree_widget_click)
+		QTree.itemClicked.connect(self._tree_widget_click)
 
 		return QTree
 
@@ -948,7 +953,8 @@ class EMAN2StatusBar(QtWidgets.QTextEdit):
 	"""
 	def __init__(self, text, style):
 		QtWidgets.QTextEdit.__init__(self)
-		self.setFrameShape(QtWidgets.QFrame.Panel | QtWidgets.QFrame.Sunken)
+		self.setFrameShape(QtWidgets.QFrame.Panel)
+		self.setFrameShadow(QtWidgets.QFrame.Sunken)
 		self.setLineWidth(2)
 		#self.setContentsMargins(4, 4, 4, 4)
 		self.setTextInteractionFlags(QtCore.Qt.NoTextInteraction)
@@ -1101,7 +1107,7 @@ class TheHelp(QtWidgets.QWidget):
 		self.helptopics.append(["symmetries", dump_symmetries_list()])
 
 
-		self.helpcb.activated[int].connect(self._helpchange)
+		self.helpcb.activated.connect(self._helpchange)
 		self.dosearch = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+F"), self)
 		self.dosearch.activated.connect(self.search)
 		self.cur_search=""
@@ -1243,11 +1249,11 @@ class NoteBook(QtWidgets.QWidget):
 			self._load_fontsizes()
 
 		# Connect signals
-		self.fontfamily.activated[int].connect(self._fontfamilychange)
-		self.fontsizecb.activated[int].connect(self._fontchange)
-		self.boldbutton.stateChanged[bool].connect(self._fontchange)
-		self.italicbutton.stateChanged[bool].connect(self._fontchange)
-		self.underlinebutton.stateChanged[bool].connect(self._fontchange)
+		self.fontfamily.activated.connect(self._fontfamilychange)
+		self.fontsizecb.activated.connect(self._fontchange)
+		self.boldbutton.stateChanged.connect(self._fontchange)
+		self.italicbutton.stateChanged.connect(self._fontchange)
+		self.underlinebutton.stateChanged.connect(self._fontchange)
 		self.fontcolor.newcolor[QtGui.QColor].connect(self._fontchange)
 
 		return tbwidget
@@ -1583,7 +1589,7 @@ class TaskManager(QtWidgets.QWidget):
 	def _on_kill(self):
 		killsig=signal.SIGTERM
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			print("Shift held. Will force kill processes")
 			killsig=signal.SIGKILL
 
@@ -1702,7 +1708,7 @@ class PMProgramWidget(QtWidgets.QTabWidget):
 
 		self.previoustab = 0
 
-		self.currentChanged[int].connect(self._on_tabchange)
+		self.currentChanged.connect(self._on_tabchange)
 
 	def updateWidget(self):
 		""" Delegate to guiwidget """
@@ -1788,7 +1794,7 @@ class PMGUIWidget(QtWidgets.QScrollArea):
 				widget = PMFSCTableWidget(option['name'], self.getDefault(option), self.getSharingMode(option), postional=self.getPositional(option), initdefault=self.getDefault(option, nodb=True))
 
 			# Setup each widget
-			widget.pmmessage[str].connect(self._on_message)
+			widget.pmmessage.connect(self._on_message)
 			widget.setToolTip(option['help'])
 			self.widgethash[option['name']] = widget
 			self.widgetlist.append(widget)
@@ -2056,7 +2062,7 @@ class PMQTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 
 class PMToolButton(QtWidgets.QToolButton):
 	""" Create a toggle button """
-	stateChanged = QtCore.pyqtSignal(bool)
+	stateChanged = QtCore.Signal(bool)
 
 	def __init__(self):
 		QtWidgets.QToolButton.__init__(self)
@@ -2219,4 +2225,4 @@ with output_only, and regenerate any sets/""")
 	pm.show()
 	try: pm.raise_()
 	except: pass
-	app.exec_()
+	app.exec()

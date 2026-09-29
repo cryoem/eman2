@@ -194,7 +194,8 @@ def main():
 			[2**13,64,  48,1.5, -2,8,.02,0.5],
 			[2**15,128, 32,1.2, -3,16,.01,2],
 			[2**17,256, 16,1.2, -2,32,.01,3],
-			[2**18,512, 8,1.2, -2,0,.01,3]
+			[2**18,512, 8,1.2, -2,64,.01,3],
+			[2**18,1024, 8,1.2, -2,0,.01,3]
 		]
 	elif options.quick or options.profile:
 		stages=[
@@ -342,8 +343,7 @@ def main():
 				elif options.ctf==1:
 					dsapix=ptclsfds.apix
 					wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
-					dfstep=2*apix*apix/(wavelength*10000)
-					step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dfstep,dsapix,symmx,weight,thresh)
+					step0,qual0,shift0,sca0=point_gradient_step_ctf_optax(point,ptclsfds,meta,jnp.array([wavelength, ptclsfds.cs]),dsapix,symmx,weight,thresh)
 					step0=jnp.nan_to_num(step0)
 					if j==0:
 						step,qual,shift,sca=step0,-qual0,shift0,sca0
@@ -472,7 +472,7 @@ def main():
 				ctf=ptclsfds.ctf
 				wavelength=12.2639/np.sqrt(ptclsfds.voltage*1000.0+0.97845*ptclsfds.voltage*ptclsfds.voltage)
 				dfstep=2*apix*apix/(wavelength*10000)
-				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, orts.jax, jnp.array([wavelength,ptclsfds.cs]), dfstep, dsapix, ny, tytx, ctf, symmx))
+				ctf_projs=EMStack2D(point_project_ctf_sym_fn(pointary, orts.jax, jnp.array([wavelength,ptclsfds.cs]), dsapix, ny, tytx, ctf, symmx))
 				layered_ctf_projs=EMStack2D(point_project_layered_ctf_sym_fn(pointary,orts.jax,jnp.array([wavelength,ptclsfds.cs]),dfstep,dsapix,ny,tytx,ctf, symmx))
 			ptclds=ptclsfds.do_ift()
 			transforms=orts.transforms(tytx=tytx)

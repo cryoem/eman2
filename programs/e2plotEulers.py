@@ -99,7 +99,7 @@ def main():
 	plot.setPointSizes(size)
 	plot.show()
 	
-	app.exec_()
+	app.exec()
 	
 if __name__ == "__main__":
 	main()

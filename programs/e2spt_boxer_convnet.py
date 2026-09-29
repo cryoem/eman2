@@ -9,8 +9,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -358,7 +358,7 @@ class EMImageList(QtWidgets.QWidget):
 class EMTomobox(QtWidgets.QMainWindow):
 
 	def __init__(self,application,options,datafile=None):
-		QtWidgets.QWidget.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		self.setMinimumSize(700,200)
 		
 		#### load references first
@@ -418,13 +418,13 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.gbl.addWidget(self.box_display, 0,2,1,1)
 		
 		
-		self.bt_new.clicked[bool].connect(self.new_nnet)
-		self.bt_load.clicked[bool].connect(self.load_nnet)
-		self.bt_train.clicked[bool].connect(self.train_nnet)
-		self.bt_save.clicked[bool].connect(self.save_nnet)
-		self.bt_apply.clicked[bool].connect(self.apply_nnet)
-		self.bt_chgbx.clicked[bool].connect(self.change_boxsize)
-		self.bt_applyall.clicked[bool].connect(self.apply_nnet_all)
+		self.bt_new.clicked.connect(self.new_nnet)
+		self.bt_load.clicked.connect(self.load_nnet)
+		self.bt_train.clicked.connect(self.train_nnet)
+		self.bt_save.clicked.connect(self.save_nnet)
+		self.bt_apply.clicked.connect(self.apply_nnet)
+		self.bt_chgbx.clicked.connect(self.change_boxsize)
+		self.bt_applyall.clicked.connect(self.apply_nnet_all)
 		self.box_display.currentIndexChanged.connect(self.do_update)
 
 		self.val_targetsize=TextBox("TargetSize", 1)
@@ -503,9 +503,9 @@ class EMTomobox(QtWidgets.QMainWindow):
 		self.imgview.shapes = {0:self.boxshapes}
 
 		E2loadappwin("e2sptconvnet","main",self)
-		E2loadappwin("e2sptconvnet","positive",self.boxesviewer[1].qt_parent)
-		E2loadappwin("e2sptconvnet","negative",self.boxesviewer[0].qt_parent)
-		E2loadappwin("e2sptconvnet","particles",self.ptclviewer.qt_parent)
+		E2loadappwin("e2sptconvnet","positive",self.boxesviewer[1])
+		E2loadappwin("e2sptconvnet","negative",self.boxesviewer[0])
+		E2loadappwin("e2sptconvnet","particles",self.ptclviewer)
 
 		glEnable(GL_POINT_SMOOTH)
 		glEnable(GL_LINE_SMOOTH );
@@ -524,9 +524,9 @@ class EMTomobox(QtWidgets.QMainWindow):
 		print("Exiting")
 
 		E2saveappwin("e2sptconvnet","main",self)
-		E2saveappwin("e2sptconvnet","positive",self.boxesviewer[1].qt_parent)
-		E2saveappwin("e2sptconvnet","negative",self.boxesviewer[0].qt_parent)
-		E2saveappwin("e2sptconvnet","particles",self.ptclviewer.qt_parent)
+		E2saveappwin("e2sptconvnet","positive",self.boxesviewer[1])
+		E2saveappwin("e2sptconvnet","negative",self.boxesviewer[0])
+		E2saveappwin("e2sptconvnet","particles",self.ptclviewer)
 
 		self.boxesviewer[0].close()
 		self.boxesviewer[1].close()
@@ -796,7 +796,7 @@ class EMTomobox(QtWidgets.QMainWindow):
 			return
 		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		skipexist=(modifiers == QtCore.Qt.ShiftModifier)
+		skipexist=(modifiers & QtCore.Qt.ShiftModifier)
 		if skipexist:
 			print("Skipping tomograms with particles")
 			
@@ -938,10 +938,10 @@ class EMTomobox(QtWidgets.QMainWindow):
 		return
 	
 	def on_tomo_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))		
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))		
 		x,y =np.round(x), np.round(y)
 		
-		if not event.button()&Qt.LeftButton:
+		if not event.button()&Qt.MouseButton.LeftButton:
 			return
 		
 		mode=self.box_display.currentText()

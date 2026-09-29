@@ -36,8 +36,8 @@ from EMAN2 import get_image_directory, get_dtag, EMData, \
 	get_files_and_directories, remove_file, \
 	remove_directories_from_name, Util, EMUtil, IMAGE_UNKNOWN, base_name, \
 	file_exists, base_name, e2getcwd
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from .emapplication import ModuleEventsManager, EMApp, get_application
 from .emimage2d import EMImage2DWidget
 from .emimagemx import EMImageMXWidget
@@ -110,7 +110,7 @@ class EMDeleteItemAction(EMItemAction,EMMultiItemAction,EMActionDelegate):
 		msg.setInformativeText(s)
 		msg.setStandardButtons(QtWidgets.QMessageBox.Cancel | QtWidgets.QMessageBox.Ok )
 		msg.setDefaultButton(QtWidgets.QMessageBox.Cancel)
-		ret = msg.exec_()
+		ret = msg.exec()
 		if ret == QtWidgets.QMessageBox.Cancel: return False
 		
 		for item in items:
@@ -278,9 +278,9 @@ def EMSelectorBaseTemplate(Type):
 	Types currently in use are the QtWidgets.QWidget and the QtWidgets.QDialog
 	'''
 	class EMSelectorBase(Type):
-		ok = QtCore.pyqtSignal(list)
-		oky = QtCore.pyqtSignal()
-		cancel = QtCore.pyqtSignal(list)
+		ok = QtCore.Signal(list)
+		oky = QtCore.Signal()
+		cancel = QtCore.Signal(list)
 
 		def __init__(self, single_selection=False):
 			'''
@@ -348,8 +348,8 @@ def EMSelectorBaseTemplate(Type):
 			self.cancel_button = QtWidgets.QPushButton("Cancel")
 			self.cancel_button.adjustSize()
 		
-			self.ok_button.clicked[bool].connect(self.ok_button_clicked)
-			self.cancel_button.clicked[bool].connect(self.cancel_button_clicked)
+			self.ok_button.clicked.connect(self.ok_button_clicked)
+			self.cancel_button.clicked.connect(self.cancel_button_clicked)
 		
 		def ok_button_clicked(self,bool):
 			''' Slot for OK button '''
@@ -430,7 +430,7 @@ def EMSelectorBaseTemplate(Type):
 			self.filter_combo.addItem("*")
 			self.filter_combo.setEditable(True)
 		
-			self.filter_combo.currentIndexChanged[int].connect(self.filter_index_changed)
+			self.filter_combo.currentIndexChanged.connect(self.filter_index_changed)
 	#		QtCore.QObject.connect(self.filter_combo, QtCore.SIGNAL("currentIndexChanged(QString&)"),self.filter_index_changed)
 	
 		def filter_index_changed(self):
@@ -461,11 +461,11 @@ def EMSelectorBaseTemplate(Type):
 			
 			self.list_widget_data.append(None)
 			
-			list_widget.itemDoubleClicked[QtWidgets.QListWidgetItem].connect(self.list_widget_dclicked)
+			list_widget.itemDoubleClicked.connect(self.list_widget_dclicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemPressed(QListWidgetItem*)"),self.list_widget_clicked)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentRowChanged (int)"),self.list_widget_row_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("paintEvent (int)"),self.list_widget_row_changed)
-			list_widget.itemEntered[QtWidgets.QListWidgetItem].connect(self.list_widget_item_entered)
+			list_widget.itemEntered.connect(self.list_widget_item_entered)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("currentItemChanged(QListWidgetItem*,QListWidgetItem*)"),self.list_widget_current_changed)
 			#QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemChanged(QListWidgetItem*)"),self.list_widget_item_changed)
 			#\QtCore.QObject.connect(list_widget, QtCore.SIGNAL("itemActivated(QListWidgetItem*)"),self.list_widget_item_activated)
@@ -787,7 +787,7 @@ class EMBrowser(EMBrowserType):
 		self.preview_options.addItem("Multi preview")
 		#self.preview_options.setCurrentIndex(0)
 		
-		self.preview_options.currentIndexChanged[str].connect(self.preview_options_changed)
+		self.preview_options.currentIndexChanged.connect(self.preview_options_changed)
 	
 	def preview_options_changed(self,qstring):
 		if str(qstring) == "Single preview":
@@ -884,9 +884,9 @@ class EMBrowser(EMBrowserType):
 					menu.addAction(SAVE_SUBSET)
 				
 
-		menu.triggered[QtWidgets.QAction].connect(self.menu_action_triggered)
+		menu.triggered.connect(self.menu_action_triggered)
 		self.action_list_widget = l # only set if the menu actually triggers
-		menu.exec_(event.globalPos())
+		menu.exec(event.globalPos())
 		
 	def menu_action_triggered(self,action):
 		'''
@@ -929,12 +929,12 @@ class EMSelectorDialog(EMSelectorDialogType):
 		self.resize(480,400)
 		self.setWindowTitle("EMAN2 Selector")
 		
-	def exec_(self):
+	def exec(self):
 		'''
 		Wraps QtWidgets.QDialog.exec_
 		@return a list of selected filenames
 		'''
-		QtWidgets.QDialog.exec_(self)
+		QtWidgets.QDialog.exec(self)
 		return self.dialog_result
 	
 	def set_validator(self,validator):
@@ -1001,7 +1001,7 @@ class EMSelectorDialog(EMSelectorDialogType):
 		if directory == None:
 			msg = QtWidgets.QMessageBox()
 			msg.setText("Can not deduce the current directory. Please update your selection")
-			msg.exec_()
+			msg.exec()
 			return
 		names = str(self.save_as_line_edit.text()).split()
 		names = [name.strip(";") for name in names]
@@ -1806,7 +1806,7 @@ def main():
 #    em_app.show()
 	
 	em_selector = EMSelectorDialog()
-	files = em_selector.exec_()
+	files = em_selector.exec()
 	#print files
 	#print "Press Ctrl-C to exit" #FIXME: figure out why Ctrl-C is required to terminate the program
 	em_app.exit(0)
