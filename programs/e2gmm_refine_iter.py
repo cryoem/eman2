@@ -44,7 +44,6 @@ def main():
 	parser.add_argument("--parallel", type=str,help="for e2spa_make3d.", default="thread:32")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	parser.add_argument("--jax", action="store_true", default=False ,help="use jax backend")
-	parser.add_argument("--skipeven", action="store_true", default=False ,help="skip even for first iteration. testing only")
 
 	(options, args) = parser.parse_args()
 	
@@ -110,8 +109,6 @@ def main():
 		it0=itr-1
 		
 		for ieo, eo in enumerate(["even", "odd"]):
-			if options.skipeven and itr==options.startiter and eo=="even":
-				continue
 			if options.jax:
 				ref_input=f"{path}/threed_{it0:02d}_{eo}.hdf"
 			else:
@@ -132,7 +129,7 @@ def main():
 				run(f"{prog_refine} --ptclsin {ref_input} --model {path}/model_{itr-2:02d}_{eo}.txt --maxres {res} --modelout {path}/model_{it0:02d}_{eo}.txt --niter 40 --trainmodel --learnrate 1e-6 --batchsz {options.batchsize}")
 	
 			pts=np.loadtxt(f"{path}/model_{it0:02d}_{eo}.txt")
-			if options.jax==None and options.mask:
+			if options.jax==False and options.mask:
 				msk=EMData(options.mask)
 				
 				## read selected Gaussian from mask file
@@ -171,8 +168,13 @@ def main():
 			if options.jax and options.mask:
 				etcali+=f" --mask {options.mask}"
 				
-
-			run(f'e2gmm_batch.py "{prog_refine} --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
+			
+			if options.jax and itr==1:
+				etcali+=" --no_load"
+				run(f'e2gmm_batch.py "{prog_refine} --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align_mlp --niter 10 --midout {path}/mid_{itr:02d}_{eo}.txt --decoderout {path}/dec_{itr:02d}_{eo} --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 1 --batch {options.chunksize}')
+			
+			else:
+				run(f'e2gmm_batch.py "{prog_refine} --model {path}/model_{it0:02d}_{eo}.txt  --ptclsin {path}/ptcls_{it0:02d}_{eo}.lst  --ptclsout {path}/ptcls_{itr:02d}_{eo}.lst --align --maxres {res} --minres {options.minres} --batchsz {options.batchsize} {etcali}" --niter 0 --batch {options.chunksize}')
 			
 			pfile=f"{path}/ptcls_{itr:02d}_{eo}.lst"
 			if options.breaksym:

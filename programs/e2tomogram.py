@@ -529,6 +529,7 @@ def main():
 		print(options.badi)
 		ikeep=[i for i in np.arange(len(imgs_500)) if i not in options.badi]
 		imgs_pt=[imgs_500[i] for i in ikeep]
+		options.zeroid=len(imgs_pt)//2
 		options.num=len(imgs_pt)
 		tpm01, l0= do_patch_tracking(imgs_pt, ttparams[ikeep], options)
 		ttparams[ikeep]=tpm01
@@ -1511,8 +1512,7 @@ def calc_global_trans(imgs, options, excludes=[], tltax=None,tlts=[]):
 		cnt=np.array(np.unravel_index(cnt, (sz,sz))).T-sz//2
 		cnt=np.concatenate([[[0,0]], cnt])
 		ts=-np.cumsum(cnt, axis=0)
-		
-		ts-=ts[nimg//2]
+		ts-=ts[len(ts)//2]
 		#mxt=np.max(abs(ts), axis=1)
 		#ts-=np.mean(ts[mxt<sz//4], axis=0).astype(int)
 		meants=np.mean(abs(ts), axis=0)

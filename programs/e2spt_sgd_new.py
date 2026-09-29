@@ -37,6 +37,7 @@ def main():
 	parser.add_argument("--mask", type=str,help="mask. real space only", default=None)
 	parser.add_argument("--maskfourier", type=str,help="mask in fourier space", default=None)
 	parser.add_argument("--threads", type=int,help="threads", default=24)
+	parser.add_argument("--loadali2d",help="load previous 2d alignment ", type=str, default=None)
 
 	
 	(options, args) = parser.parse_args()
@@ -166,6 +167,7 @@ def main():
 			cmd=f"e2spt_align_subtlt.py {info3dname} {options.ref[ic]} --path {path} --maxres {res} --parallel {options.parallel} --iter 0  --sym {options.sym}"
 			if options.refine==False:
 				cmd+=" --fromscratch"
+			if options.loadali2d: cmd+=f" --plst {options.loadali2d}"
 			run(cmd)
 			ali2d=load_lst_params(f"{path}/aliptcls2d_00.lst")
 			thrd0=make_3d(ali2d, options)
@@ -212,6 +214,7 @@ def main():
 		for ic in range(ncls):
 			print(f"iter {itr}, class {ic}: ")
 			cmd=f"e2spt_align_subtlt.py {info3dname} {path}/output_cls{ic}.hdf --path {path} --maxres {res} --parallel {options.parallel} --iter 0 --sym {options.sym}"
+			
 			if options.curve:
 				cmd+=" --curve"
 			elif options.vector:
@@ -223,10 +226,11 @@ def main():
 					cmd+=f" --breaksym {options.breaksym}"
 				if options.skipali:
 					cmd+=" --skipali"
-
 			else:
 				cmd+=" --fromscratch"
 				
+			if options.loadali2d: cmd+=f" --plst {options.loadali2d}"
+			
 			launch_childprocess(cmd)
 			
 			a3dout.append(load_lst_params(f"{path}/aliptcls3d_00.lst"))

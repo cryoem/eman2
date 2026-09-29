@@ -222,6 +222,7 @@ def main():
 	parser.add_argument("--verbose", "-v", dest="verbose", action="store", metavar="n", type=int, help="verbose level [0-9], higher number means higher level of verboseness",default=1)
 	parser.add_argument("--plane", metavar=threedplanes, type=str, default='xy', help="Change the plane of image processing, useful for processing 3D mrcs as 2D images.")
 	parser.add_argument("--writejunk", action="store_true", help="Writes the image even if its sigma is 0.", default=False)
+	parser.add_argument("--skipbad", action="store_true", help="skip corrupted images and fill with zeros.", default=False)
 	parser.add_argument("--swap", action="store_true", help="Swap the byte order", default=False)
 	parser.add_argument("--threed2threed", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 3D image", default=False)
 	parser.add_argument("--threed2twod", action="store_true", help="Process 3D image as a stack of 2D slices, then output as a 2D stack", default=False)
@@ -546,7 +547,14 @@ def main():
 			if not isthreed:
 				if options.threed2threed or options.threed2twod:
 					d = EMData()
-					d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
+					if options.skipbad:
+						try:
+							d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
+						except:
+							print("bad image", infile, i)
+							d.to_zero()
+					else:
+						d.read_image(infile, 0, False, Region(0,0,i,threed_xsize,threed_ysize,1))
 				elif infile[0] == ":":
 					vals = infile.split(":")
 

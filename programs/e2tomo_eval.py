@@ -24,6 +24,7 @@ def main():
 	parser.add_argument("--dir", type=str,help="look at a specified directory instead of tomograms/", default=None)
 	parser.add_argument("--zshift", type=float,help="shift thumbnail image along z. range -.5 to .5. default 0.", default=0)
 	parser.add_argument("--zthick", type=int,help="thickness of thumbnail image. default 0.", default=0)
+	parser.add_argument("--showvar", type=str,help="show additional variables", default="")
 	parser.add_argument("--select", action="store_true", default=False ,help="add a selection column and save a list of selected tomograms.")
 
 	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
@@ -31,6 +32,12 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
+	if len(options.showvar)>0:
+		options.showvar=options.showvar.split(',')
+		print("Displaying additional variables:", options.showvar)
+	else:
+		options.showvar=[]
+		
 	if not os.path.isdir("tomograms"): os.mkdir("tomograms")
 		#print("No tomograms found. You must perform at least one reconstruction or manually populate the 'tomograms' directory with at least one reconstruction.")
 		#sys.exit()
@@ -260,6 +267,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 					dic["ice_thick"]=js["ice_thick"]
 				else:
 					dic["ice_thick"]=-1
+					
+				for k in self.options.showvar:
+					if k in js: dic[k]=js[k]
+					else: dic[k]=-1
+					
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
@@ -290,7 +302,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.labels.append("thickness")
 		if self.options.select:
 			self.labels.append("select")
-		
+		for k in self.options.showvar:
+			self.labels.append(k)
+			
 		self.imglst.setColumnCount(len(self.labels))
 		self.imglst.setHorizontalHeaderLabels(self.labels)
 		self.imglst.setColumnHidden(0, True)
@@ -342,7 +356,14 @@ class TomoEvalGUI(QtWidgets.QWidget):
 				it.setData(Qt.EditRole, sel)
 				self.imglst.setItem(i,ik, it)
 				ik+=1
-			
+				
+			for k in self.options.showvar:
+				a=np.round(info[k],3)
+				it=QtWidgets.QTableWidgetItem()
+				it.setData(Qt.EditRole, float(a))
+				self.imglst.setItem(i,ik, it)
+				ik+=1
+				
 		self.imglst.setVerticalHeaderLabels([str(i) for i in range(len(self.imginfo))])
 		
 	def get_id_info(self):

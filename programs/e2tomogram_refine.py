@@ -24,11 +24,23 @@ def main():
 	parser.add_argument("--niter", type=int,help="number of iteration", default=100)
 	parser.add_argument("--refinerot", action="store_true",help="refine tilt axis rotation", default=False)
 	parser.add_argument("--mlp_refine", action="store_true",help="refine with a small MLP.", default=False)
+	parser.add_argument("--ignore_box", action="store_true",help="ignore boxes.", default=False)
+	parser.add_argument("--ignore_coef", action="store_true",help="ignore existing coeffient.", default=False)
+	parser.add_argument("--skip_existing", action="store_true",help="skip ones with existing coeffient.", default=False)
+	parser.add_argument("--skip_m3d", action="store_true",help="skip tomogram reconstruction.", default=False)
 	parser.add_argument("--local_motion", type=float,help="local motion scaling muliplier", default=0.5)
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-2)	
 
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
+	
+	if len(args)==1 and args[0].endswith(".lst"):
+		lst=load_lst_params(args[0])
+		args0=[l["src"] for l in lst]
+		args=[]
+		for fname in args0:
+			info=dict(js_open_dict(info_name(fname)))
+			args.append(info["tlt_file"])
 	
 	init=False
 	ntilt=[EMUtil.get_image_count(f) for f in args]
@@ -38,8 +50,8 @@ def main():
 	print(f"{len(args)} tilt series. max {maxtilt} tilt images")
 	for fname in args:
 		print(base_name(fname))
-		refine_tomo_align(fname, options, maxtilt, init)
-		init=True
+		ret=refine_tomo_align(fname, options, maxtilt, init)
+		if init==False and ret==True: init=True
 	
 	E2end(logid)
 	return 
@@ -48,6 +60,11 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	rng_key=jax.random.key(0)
 	
 	info=dict(js_open_dict(info_name(fname)))
+	tltpms=np.array(info["tlt_params"])
+	fname=info["tlt_file"]
+	if tltpms.shape[1]>5 and options.skip_existing:
+		print("Found existing coeffient. Skip.")
+		return False
 	
 	img=EMData(fname,0)
 	if img["nz"]>1:
@@ -85,9 +102,9 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	print(f"Scale input by {scale:.2f}, image size {xx}, apix {apix_now:.2f}")
 		
 	
-	tltpms=np.array(info["tlt_params"])	
+	
 	has_coef=False
-	if tltpms.shape[1]>5:
+	if options.ignore_coef==False and tltpms.shape[1]>5:
 		print("Found existing local motion coeffient")
 		tpm_cf=tltpms[:, 5:].copy()
 		tltpms=tltpms[:,:5]
@@ -95,6 +112,8 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 		tpm_cf=tpm_cf/scale
 		tpm_cf=tpm_cf.reshape((-1,2,2))[:,:,[1,0]]
 		has_coef=True
+	else:
+		tltpms=tltpms[:,:5]
 		
 	tltpm00=tltpms.copy()
 	tltpms=tltpms[ikeep]
@@ -168,7 +187,7 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	width_mask[wid0:wid1]=1
 	print(wid0, wid1)
 	
-	if "boxes_3d" in info and len(info["boxes_3d"])>0:
+	if options.ignore_box==False and ("boxes_3d" in info) and len(info["boxes_3d"])>0:
 		boxes=info["boxes_3d"]
 		boxz=np.array([b[2] for b in boxes])
 		boxz=boxz*info["apix_unbin"]/imgs_raw[0]["apix_x"]
@@ -256,16 +275,19 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 		
 		stds=np.array(stds)
 		stds2.append(stds)
+		
 
 	sdiff=[np.mean(s[:, wid0:wid1], axis=1) for s in stds2]
 	for i in range(len(data_cpx)):
 		s0=sdiff[0][i]
 		s1=sdiff[1][i]
-		print(f"tile {i} std: {s0:.3f} -> {s1:.3f}, diff {s1-s0:+.3f}")
+		t1=np.mean(np.linalg.norm(tt[i], axis=-1))
+		print(f"tile {i} std: {s0:.3f} -> {s1:.3f}, trans {t1:.2f}, diff {s1-s0:+.3f}")
 		
 	s0=np.mean(sdiff[0])
 	s1=np.mean(sdiff[1])
-	print(f"mean std: {s0:.3f} -> {s1:.3f}, diff {s1-s0:+.3f}")
+	t1=np.mean(np.linalg.norm(tt, axis=-1))
+	print(f"mean std: {s0:.3f} -> {s1:.3f}, trans {t1:.2f}, diff {s1-s0:+.3f}")
 
 	###################
 	
@@ -295,10 +317,13 @@ def refine_tomo_align(fname, options, maxtilt, init=False):
 	#np.savetxt(pmname, xf2)
 	js=js_open_dict(info_name(fname))
 	js["tlt_params"]=xf2#[:,1:]
+	js["std_final"]=s1
+	js["std_change"]=s1-s0
 	js.close()	
 	
-	run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --load --filterres {res} --notmp")
-	return
+	if not options.skip_m3d:
+		run(f"e2tomogram.py {fname} --bytile --niter 0 --noali --load --filterres {res} --notmp")
+	return True
 
 def refine_tlt_rot(imgs, tltpms, scale):
 	

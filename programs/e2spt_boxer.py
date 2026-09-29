@@ -188,8 +188,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setRowMinimumHeight(0,200)
 		#self.gbl.setColumnStretch(0,0)
 		
-		self.wzheight=ValBox(label="Z height:",value=256)
-		self.gbl2.addWidget(self.wzheight,1,0)
+		#self.wzheight=ValBox(label="Z height:",value=256)
+		#self.gbl2.addWidget(self.wzheight,1,0)
 
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=0)
@@ -437,7 +437,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
 		#self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
 		#print(data["nx"],data["ny"],data["nz"])
-		self.wzheight.setValue(data["nz"])
+		#self.wzheight.setValue(data["nz"])
 
 		self.wdepth.setRange(0,data["nz"]-1)
 		self.wdepth.setValue(data["nz"]//2)
@@ -544,6 +544,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			fnames.append(f"snapshot_{i:03d}.png")
 			ss_img.save(fnames[-1])
 # 		
+		fnames=fnames[1:]
 		c="convert {} snapshot.gif".format(' '.join(fnames+fnames[::-1]))
 		print(c)
 		os.system(c)
