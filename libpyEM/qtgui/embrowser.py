@@ -3765,7 +3765,7 @@ class EMSliceParamDialog(QtWidgets.QDialog):
 		EMSliceParamDialog.dhp=self.wlehp.text()
 		EMSliceParamDialog.dmask=self.wlemask.text()
 		EMSliceParamDialog.sym=self.wlesym.text()
-		EMSliceParamDialog.oldcheck=self.wcheckoldwin.checkState()
+		EMSliceParamDialog.oldcheck=self.wcheckoldwin.isChecked()
 		self.accept()
 
 class EMBrowserWidget(QtWidgets.QWidget) :
