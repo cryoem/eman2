@@ -1350,11 +1350,14 @@ class EMLightsInspector(QtWidgets.QWidget,EMLightsInspectorBase):
 		self.n3_showing = False
 		self.quiet = False
 
-		self.cbb.currentIndexChanged.connect(target.setColor)
+		self.cbb.currentIndexChanged.connect(self.on_color_change)
 		self.wiretog.toggled.connect(target.toggle_wire)
 		self.lighttog.toggled.connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
+
+	def on_color_change(self,idx):
+		self.target().setColor(self.cbb.itemText(idx))
 
 	def update_rotations(self,t3d):
 		self.rotation_sliders.update_rotations(t3d)

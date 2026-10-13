@@ -182,6 +182,8 @@ class EMTransformPanel(object):
 	
 	def set_src(self, val):
 		t3d = self.get_current_rotation()
+		if isinstance(val,int):
+			val = self.src.itemText(val)
 		
 		if (self.n3_showing) :
 			self.parent().get_transform_layout().removeWidget(self.n3)

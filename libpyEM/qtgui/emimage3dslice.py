@@ -481,12 +481,15 @@ class EM3DSliceInspector(QtWidgets.QWidget):
 		self.slice.valueChanged.connect(target.set_slice)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
 		self.glbrightness.valueChanged.connect(target.set_GL_brightness)
-		self.axisCombo.currentIndexChanged.connect(target.setAxis)
+		self.axisCombo.currentIndexChanged.connect(self.axis_changed)
 		self.cubetog.toggled.connect(target.toggle_cube)
 		self.defaults.clicked.connect(self.set_defaults)
 		self.contrast.valueChanged.connect(self.on_contrast_changed)
 		self.bright.valueChanged.connect(self.on_brightness_changed)
 	
+	def axis_changed(self,idx):
+		self.target().setAxis(self.axisCombo.itemText(idx))
+
 	def on_contrast_changed(self,val):
 		if self.busy: return
 		self.target().set_contrast(val)

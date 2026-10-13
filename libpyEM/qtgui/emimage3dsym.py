@@ -1498,6 +1498,7 @@ class SparseSymChoicesWidgets(object):
 		@param the current text of self.angle_label
 		'''
 		if self.busy: return
+		string = self.angle_label.itemText(string)
 		if string == "Angle Based": s = "delta"
 		elif string == "Number Based": s = "n"
 		else: raise RuntimeError
@@ -1511,7 +1512,7 @@ class SparseSymChoicesWidgets(object):
 		@param the current text of self.strategy_label
 		'''
 		if self.busy: return
-		self.target().set_strategy(str(string))
+		self.target().set_strategy(str(self.strategy_label.itemText(string)))
 		self.target().regen_dl()
 		
 	def sym_number_changed(self):
@@ -1528,6 +1529,7 @@ class SparseSymChoicesWidgets(object):
 		@param the current text of self.sym_label
 		'''
 		if self.busy: return
+		sym = self.sym_combo.itemText(sym)
 		if sym == ' D ' or sym == ' C ' or sym == ' H ':
 			self.sym_text.setEnabled(True)
 		else:

@@ -506,6 +506,7 @@ class EMIsoInspector(QtWidgets.QWidget):
 		self.target().updateGL()
 	
 	def set_material(self,color):
+		color = self.cbb.itemText(color)
 		self.target().set_material(color)
 		material = self.target().get_material()
 		

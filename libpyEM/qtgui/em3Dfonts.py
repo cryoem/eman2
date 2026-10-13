@@ -322,7 +322,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		self.vbl.addWidget(self.tabwidget2)
 		self.n3_showing = False
 
-		self.cbb.currentIndexChanged.connect(target.setColor)
+		self.cbb.currentIndexChanged.connect(self.on_color_change)
 		self.wiretog.toggled.connect(target.toggle_wire)
 		self.lighttog.toggled.connect(target.toggle_light)
 		self.glcontrast.valueChanged.connect(target.set_GL_contrast)
@@ -378,7 +378,11 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 					self.l.extend([name])
 		return self.l, self.d
 
+	def on_color_change(self,idx):
+		self.target().setColor(self.cbb.itemText(idx))
+
 	def on_Dfont_change(self,Dfont):
+		Dfont = self.Dfont.itemText(Dfont)
 		self.target().font_renderer.set_font_file_name(self.d[str(Dfont)])
 		self.target().update()
 
@@ -413,6 +417,7 @@ class EMFontInspector(QtWidgets.QWidget, EMLightsInspectorBase):
 		self.target().update()
 
 	def on_combo_change(self,mode):
+		mode = self.combo.itemText(mode)
 		d = {}
 		d["Extrude"] = FTGLFontMode.EXTRUDE
 		d["Pixmap"] = FTGLFontMode.PIXMAP

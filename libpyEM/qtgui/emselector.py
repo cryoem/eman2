@@ -790,6 +790,7 @@ class EMBrowser(EMBrowserType):
 		self.preview_options.currentIndexChanged.connect(self.preview_options_changed)
 	
 	def preview_options_changed(self,qstring):
+		qstring = self.preview_options.itemText(qstring)
 		if str(qstring) == "Single preview":
 			self.groupbox.setEnabled(True)
 		else:

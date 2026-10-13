@@ -352,7 +352,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.tabwidget.insertTab(0,self.cmp_tab,"Cmp")
 		self.tabwidget.setCurrentIndex(0)
 		
-		self.cmp_combo.currentIndexChanged.connect(self.cmp_changed)
+		self.cmp_combo.currentTextChanged.connect(self.cmp_changed)
 		self.cmp_realignb.clicked.connect(self.cmp_realign)
 #		self.connect(self.cmp_shrink, QtCore.SIGNAL("valueChanged(int)"), self.ali_changed)
 

@@ -2501,6 +2501,7 @@ class EMBoxerInspector(QtWidgets.QWidget):
 
 	def box_format_changed(self,val):
 		db = js_open_dict(EMBOXERBASE_DB)
+		val = self.boxformats.itemText(val)
 		val = db["ptcl_display_shape"] = str(val)
 		self.target().set_ptcl_display_shape(EMBoxerInspector.PTCL_SHAPE_MAP[val])
 
@@ -2639,12 +2640,13 @@ class EMBoxerInspector(QtWidgets.QWidget):
 			try:
 				test = self.browser
 			except:
-				self.browser = QWebEngineView()
-				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
-				self.browser.resize(800,800)
+				try:
+					self.browser = QWebEngineView()
+					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2boxer"))
+					self.browser.resize(800,800)
 
-			if not self.browser.isVisible(): self.browser.show()
-			except: pass
+					if not self.browser.isVisible(): self.browser.show()
+				except: pass
 
 			
 if __name__ == "__main__":

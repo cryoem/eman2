@@ -998,6 +998,8 @@ class EMEmanStrategyWidget(QtWidgets.QWidget):
 				self.selection_changed(self.main_combo.itemText(start_idx))
 	
 	def selection_changed(self,s):
+		if isinstance(s,int):
+			s = self.main_combo.itemText(s)
 		strategy = str(s)
 		self.current_strategy = strategy
 		if self.current_widget != None:
