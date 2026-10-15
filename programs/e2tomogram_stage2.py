@@ -187,8 +187,26 @@ def make_tomogram_tile(imgs, tltpm, options, basenameForOutputs, errtlt=[], clip
 	# for ijob, job in enumerate(jobs):
 
 	total = len(jobs)
-	max_workers = min(total, os.cpu_count() or 3)
-	max_workers = 5
+	mem_per_tile = (pad // 2 + 1) * pad * pad * 8 * 2  # observed real usage ~1.6x the raw FFT-buffer estimate; reconstructor holds additional working buffers
+	try:
+		with open('/proc/meminfo') as f:
+			for line in f:
+				if line.startswith('MemAvailable'):
+					avail = int(line.split()[1]) * 1024
+					break
+	except:
+		avail = 32 * 1024**3
+	max_workers = max(1, min(total, int(avail * 0.8 / mem_per_tile)))
+	# --threads overrides the memory-derived count. Each tile holds ~16 GB, so
+	# the automatic choice can claim most of the machine (4 workers = 64 GB on a
+	# 125 GB box), which is fine alone but crowds anything running alongside.
+	_req = getattr(options, "threads", 0) or 0
+	if _req > 0:
+		if _req > max_workers:
+			print(f"  --threads={_req} exceeds what memory allows ({max_workers}); using {max_workers}")
+		else:
+			max_workers = _req
+	print(f"mem_per_tile={mem_per_tile/1e9:.1f} GB, avail={avail/1e9:.0f} GB → {max_workers} workers")
 	print(f"Using {max_workers} threads for {total} tiles")
 
 	# Submit all tiles to worker threads; each worker runs make_tile(job)
@@ -662,6 +680,8 @@ def main():
     parser = EMArgumentParser(usage=usage)
     #parser.add_pos_argument("--json", type=str, help="Path to full options JSON file")
     #parser.add_argument("--ppid", type=int, help="PID of the parent process")
+    parser.add_argument("--threads", type=int, default=0, help="Tile workers for the reconstruction. 0 (default) = choose automatically from available memory, which can take most of the machine (~16 GB per worker). Set 1 to leave the box free for other work.")
+    parser.add_argument("--filterres", type=float, default=-1, help="Override target lowpass resolution (Angstroms) for this stage's own reconstruction volume, recomputed against its own apix. -1 = use the filterto value inherited from the input JSON (legacy behavior).")
 
     (options,args) =parser.parse_args()
     logid = E2init(sys.argv)
@@ -675,6 +695,12 @@ def main():
     # Convert to SimpleNamespace for attribute-style access
     fullopts = SimpleNamespace(**optdict)
 
+    # make_tomogram_tile() receives fullopts, not the argparse options, so a
+    # command-line --threads has to be copied across or it is silently ignored
+    # (the JSON's own 'threads' value wins instead).
+    if getattr(options, "threads", 0) and options.threads > 0:
+        fullopts.threads = options.threads
+
     # Load data
 
     #tlt_params_FN = fullopts.basename +"_tlt_params.npy"
@@ -687,6 +713,12 @@ def main():
 
     stackFN = fullopts.inputname
     print(stackFN)
+
+    if options.filterres > 0:
+        _apix = EMData(stackFN, 0, True)["apix_x"]
+        fullopts.filterto = _apix / options.filterres
+        print("filter to {} A, {:.2f} of Nyquist (recomputed at this stage's apix={:.3f}).".format(
+            options.filterres, fullopts.filterto, _apix))
 
     nimg    = EMUtil.get_image_count(stackFN);
 

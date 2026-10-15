@@ -36,6 +36,7 @@ def main():
 
 	parser.add_argument("--zeroid", type=int,help="Index of the center tilt. Ignored when rawtlt is provided.", default=-1,guitype='intbox',row=3, col=1, rowspan=1, colspan=1,mode="easy")
 	parser.add_argument("--tltstep", type=float,help="Step between tilts. Ignored when rawtlt/mdoc is provided. Set to 0 if tilt present in header.", default=2.0,guitype='floatbox',row=3, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--fixytilt", action="store_true", help="Hold the per-tilt tilt angle (tilt_y) at its input value instead of refining it. Intended for continuous-tilt data, where neighbouring tilts are a fraction of a degree apart and per-tilt tilt_y refinement over-fits noise. Everything else (tx/ty/tilt axis/off-axis tilt) still refines.", default=False)
 	parser.add_argument("--rawtlt", type=str,help="Specify a text file contains raw tilt angles. Will look for files with the same name as the tilt series if a directory is provided", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=4, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--mdoc", type=str,help="Specify a SerialEM .mdoc file or a folder containing same-named .mdoc files", default="", guitype='filebox', browser="EMBrowserWidget(withmodal=True,multiselect=False)", filecheck=False, row=5, col=0, rowspan=1, colspan=2)#,mode="easy")
 	parser.add_argument("--npk", type=int,help="Number of landmarks to use (such as gold fiducials). Default is 20.", default=20,guitype='intbox',row=6, col=0, rowspan=1, colspan=1, mode="easy")
@@ -238,7 +239,11 @@ def main():
 		imgs_500.append(m)
 		
 	options.badi=[]
-	imgs_500mask=[m.process("mask.soft",{"outer_radius":-8,"width":4}) for m in imgs_500]
+	imgs_500mask=[]
+	for m in imgs_500:
+		# subtract mean of ring at the mask edge so the transition to zero is smooth
+		m2=m.process("normalize.circlemean",{"radius":m["ny"]//2-10,"width":4})
+		imgs_500mask.append(m2.process("mask.soft",{"outer_radius":-8,"width":4}))
 
 	num=options.num=len(imgs_500)
 	boxes3d=[]
@@ -417,7 +422,8 @@ def main():
 			options.rawtlt=None
 			if options.tltstep>0:
 				print("Using fixed tilt step of ",options.tltstep)
-				tlts=np.arange(-len(imgs_2k)*options.tltstep/2,len(imgs_2k)*options.tltstep/2,options.tltstep)
+				n_tlt=len(imgs_2k)
+				tlts=(np.arange(n_tlt)-n_tlt/2)*options.tltstep
 			else:
 				print("Using tilt_angle from header")
 				tlts=np.array([i["tilt_angle"] for i in imgs_1k])
@@ -568,7 +574,19 @@ def main():
 			   (imgs_1k, itnum[1], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_2k, itnum[2], options.pkkeep, [[0,1],[], [0,1],[3],[4],[2],[0,1]]),
 			   (imgs_4k, itnum[3], options.pkkeep, [[0,1], [0,1],[3],[4],[2],[0,1]])]
-	
+
+	if options.fixytilt:
+		#### Continuous-tilt data has only a fraction of a degree between neighbouring
+		#### tilts -- far too little signal to pin down an individual tilt angle. Refining
+		#### tilt_y per tilt then over-fits noise and scrambles the accurately-known stage
+		#### angles (observed: excursions up to 90x the nominal spacing, ~25% of intervals
+		#### running backwards). The frame-level Euler interpolation downstream hands every
+		#### interval the same number of frames regardless of its angular width, so that
+		#### scramble becomes ~600x swings in angular sampling density -- the "clumpy"
+		#### Fourier wedge. Holding tilt_y at its input (rawtlt) value avoids all of it.
+		scaleiter=[(im, it, kp, [g for g in seq if g!=[3]]) for (im, it, kp, seq) in scaleiter]
+		print("--fixytilt: holding tilt_y at input values (still refining tx/ty/tilt axis/off-axis tilt)")
+
 	
 	yrot=0 #### this is to save the overall rotation of tomogram
 	rawfilterto=options.filterto
@@ -816,7 +834,11 @@ def do_patch_tracking(imgs, ttparams, options, niter=4, startiter=0):
 	pks=np.round(pks*dx*scale)
 	loss=np.zeros(len(imgs))
 	options.npk=len(pks)
-	maskc=make_mask(sz)
+	bx=options.bxsz//2
+	if abs(scale-2)<.1: bx=int(bx*1.5)
+	elif abs(scale-1)<.1: bx*=2
+	psz_expected=bx*2
+	maskc=make_mask(psz_expected)
 	imgshp=[m.process("filter.highpass.gauss",{"cutoff_pixels":options.highpass}) for m in imgs]
 	
 	for itr in range(startiter, niter):
@@ -824,10 +846,11 @@ def do_patch_tracking(imgs, ttparams, options, niter=4, startiter=0):
 		allparams=np.hstack([tpm.flatten(), pks.flatten()])
 		ptclpos,ptclimgs=ali_ptcls(imgshp, allparams, options, doali=False,return_imgs=True)
 		ptclimgs=np.array([p.numpy().copy() for p in ptclimgs])
-		ptclimgs=ptclimgs.reshape((len(pks), -1, sz,sz))
+		psz=ptclimgs.shape[-1]  # actual patch size (may differ from sz after bx scaling)
+		ptclimgs=ptclimgs.reshape((len(pks), -1, psz, psz))
 
 		fts=[]
-		ptcl=ptclimgs.reshape((-1, sz,sz))
+		ptcl=ptclimgs.reshape((-1, psz, psz))
 		for i,p in enumerate(ptcl):
 			m=p*maskc
 			m=get_fft(m)
@@ -839,7 +862,7 @@ def do_patch_tracking(imgs, ttparams, options, niter=4, startiter=0):
 		fts=np.array(fts)
 		fts=fts.reshape(ptclimgs.shape)
 
-		bd=(sz-mxsft)//2
+		bd=(psz-mxsft)//2
 		cccs=np.zeros((len(pks), nz, mxsft, mxsft))
 		for fi, ft in enumerate(fts):
 			for i in nrange:
@@ -1964,7 +1987,7 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 	
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep or not jsd.empty():
 		if thrtolaunch<len(thrds) :
-			while (threading.active_count()==options.threads ) : time.sleep(.1)
+			while (threading.active_count()-tsleep>=options.threads ) : time.sleep(.1)
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
 		else: time.sleep(.1)
@@ -2058,7 +2081,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	tsleep=threading.active_count()
 	while thrtolaunch<len(thrds) or threading.active_count()>tsleep:
 		if thrtolaunch<len(thrds) :
-			while (threading.active_count()==options.threads ) : time.sleep(.1)
+			while (threading.active_count()-tsleep>=options.threads ) : time.sleep(.1)
 			if options.verbose : print("Inserting slice {}/{}".format(thrtolaunch,len(thrds)))
 			thrds[thrtolaunch].start()
 			thrtolaunch+=1
