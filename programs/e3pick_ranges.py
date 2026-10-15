@@ -762,7 +762,7 @@ The thumbnail movie is a single HDF stack: [neg frames, reversed] + [pos frames]
     app = EMApp()
     win = PickRangesWindow(frames, options)
     win.show()
-    app.exec_()
+    app.exec()
 
     if win.done_clicked and options.neg_gain_cor and options.pos_gain_cor:
         run_steps_1_2(options)
