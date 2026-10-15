@@ -4498,6 +4498,20 @@ void BeamstopProcessor::process_inplace(EMData * image)
 }
 
 
+string MeanZeroEdgeProcessor::get_desc() const
+{
+	return "Fill zero-valued image borders by tapering from the nearest interior "
+	       "horizontal/vertical non-zero pixel.";
+}
+
+TypeDict MeanZeroEdgeProcessor::get_param_types() const
+{
+	TypeDict d;
+	d.put("mode", EMObject::STRING,
+	      "Edge fill mode: 'edgelinearzero' (default) or 'edgetapermean'.");
+	return d;
+}
+
 void MeanZeroEdgeProcessor::process_inplace(EMData * image)
 {
 	if (!image) { LOGWARN("NULL Image"); return; }
