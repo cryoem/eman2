@@ -746,8 +746,20 @@ class EMProjectManager(QtWidgets.QMainWindow):
 		wh = pw.guiwidget.widgethash
 		for key in ("thumbnailmovie", "neg_gain_cor", "pos_gain_cor"):
 			val = d.get("combined_thumb" if key == "thumbnailmovie" else key)
-			if val and key in wh:
-				wh[key].setValue(val, quiet=True)
+			if not val or key not in wh:
+				continue
+			# Only prefill blanks. These are the user's own inputs, and
+			# info/import_params.json holds whichever pair was imported *last* --
+			# not necessarily the pair being picked (they differ whenever imports
+			# were run in parallel). Overwriting on every visit to the tab silently
+			# reverts a correction the user just made.
+			try:
+				already = str(wh[key].getValue()).strip()
+			except Exception:
+				already = ""
+			if already:
+				continue
+			wh[key].setValue(val, quiet=True)
 
 	def _autofill_import_gain(self):
 		"""Populate e3ctomo_import.py --gain field from info/gain_params.json."""
@@ -772,7 +784,14 @@ class EMProjectManager(QtWidgets.QMainWindow):
 			wh["gain"].setValue(gain_file, quiet=True)
 
 	def _autofill_reconstruct_ranges(self):
-		"""Populate e3ctomo_reconstruct.py frame-range fields from info/pick_ranges.json."""
+		"""Populate e3ctomo_reconstruct.py fields from info/pick_ranges.json.
+
+		This deliberately carries the most recently picked dataset forward into
+		the Reconstruction panel, including the basename -- that hand-off is the
+		point of the autofill. Guarding against a stale/mismatched basename is
+		done in e3ctomo_reconstruct.py itself, which reads
+		info/pick_ranges_<basename>.json and refuses to run on a mismatch.
+		"""
 		import json
 		json_path = os.path.join(self.pm_cwd, "info", "pick_ranges.json")
 		if not os.path.isfile(json_path):
