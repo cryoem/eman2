@@ -3,8 +3,11 @@
 from past.utils import old_div
 from EMAN2 import *
 import numpy as np
+import sys
+import os
 import weakref
-from PyQt5 import QtCore, QtGui, QtWidgets
+
+from PySide6 import QtCore, QtGui, QtWidgets
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
@@ -72,7 +75,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		shps[len(self.all_shapes)]=EMShape(["ellipse",1,0,0]+self.shape[1:]+[2]+[self.shape[0]])
 		self.imgview.shapes=shps
 		self.imgview.shapechange=1
-		self.imgview.updateGL()
+		self.imgview.update()
 		
 	def on_mouseup(self, event):
 		x,y=self.imgview.scr_to_img((event.x(),event.y()))

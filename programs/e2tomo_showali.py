@@ -10,8 +10,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5.QtCore import Qt
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PySide6.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -129,7 +129,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 			self.iterlst.addItem(item)
 			
 		
-		self.iterlst.currentRowChanged[int].connect(self.update_list)
+		self.iterlst.currentRowChanged.connect(self.update_list)
 		self.gbl.addWidget(self.iterlst,1,0,1,2)
 		
 
@@ -217,7 +217,7 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		
 		
 	def on_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))
 		self.select_landmark(x,y)
 		
 		#if event.button()&Qt.LeftButton:

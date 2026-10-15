@@ -46,13 +46,14 @@ from numpy import array,arange
 import traceback
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
-	from PyQt5.QtCore import QTimer
+	from OpenGL import GL
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
+	from PySide6.QtCore import QTimer
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import *
 except:
-	print("Warning: PyQt5 must be installed")
+	print("Warning: PySide6 must be installed")
 	sys.exit(1)
 
 
@@ -373,9 +374,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.cxray=CheckBox(None,"X-ray Pixels")
 		self.bvbl.addWidget(self.cxray)
 
-		self.bimport.clicked[bool].connect(self.doImport)
-		self.brefit.clicked[bool].connect(self.doRefit)
-		self.bfilter.clicked[bool].connect(self.filterToggle)
+		self.bimport.clicked.connect(self.doImport)
+		self.brefit.clicked.connect(self.doRefit)
+		self.bfilter.clicked.connect(self.filterToggle)
 		self.cbgadj.valueChanged.connect(self.bgAdj)
 		self.sdefocus.valueChanged.connect(self.newCTF)
 		self.sbfactor.valueChanged.connect(self.newCTF)
@@ -389,12 +390,12 @@ class GUIEvalImage(QtWidgets.QWidget):
 #		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
 		self.sang45.valueChanged.connect(self.recalc_real)
 		self.squality.valueChanged.connect(self.newQualityFactor)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.scalcmode.currentIndexChanged[int].connect(self.newCalcMode)
-		self.s2dmode.currentIndexChanged[int].connect(self.new2DMode)
-		self.s2danmode.currentIndexChanged[int].connect(self.new2DAnMode)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.scalcmode.currentIndexChanged.connect(self.newCalcMode)
+		self.s2dmode.currentIndexChanged.connect(self.new2DMode)
+		self.s2danmode.currentIndexChanged.connect(self.new2DAnMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
 	   	#QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
 		#QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
@@ -421,9 +422,9 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.wfft.show()
 		self.wplot.show()
 		E2loadappwin("e2evalimage","main",self)
-		E2loadappwin("e2evalimage","image",self.wimage.qt_parent)
-		E2loadappwin("e2evalimage","fft",self.wfft.qt_parent)
-		E2loadappwin("e2evalimage","plot",self.wplot.qt_parent)
+		E2loadappwin("e2evalimage","image",self.wimage)
+		E2loadappwin("e2evalimage","fft",self.wfft)
+		E2loadappwin("e2evalimage","plot",self.wplot)
 #		self.recalc()
 
 	def listkey(self,event):
@@ -446,13 +447,13 @@ class GUIEvalImage(QtWidgets.QWidget):
 	def closeEvent(self,event):
 #		QtWidgets.QWidget.closeEvent(self,event)
 		E2saveappwin("e2evalimage","main",self)
-		E2saveappwin("e2evalimage","image",self.wimage.qt_parent)
-		E2saveappwin("e2evalimage","fft",self.wfft.qt_parent)
-		E2saveappwin("e2evalimage","plot",self.wplot.qt_parent)
+		E2saveappwin("e2evalimage","image",self.wimage)
+		E2saveappwin("e2evalimage","fft",self.wfft)
+		E2saveappwin("e2evalimage","plot",self.wplot)
 
 		self.writeCurParm()
 		event.accept()
-		QtWidgets.qApp.exit(0)
+		QtWidgets.QApplication.instance().exit(0)
 		#app=QtWidgets.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
@@ -1128,7 +1129,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 	def imgmousedown(self,event) :
 		if self.calcmode in (0,2,3):
-			m=self.wimage.scr_to_img((event.x(),event.y()))
+			m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 			parms=self.parms[self.curset]
 			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
 			self.recalc()
@@ -1137,7 +1138,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 	def imgmousedrag(self,event) :
 		if self.calcmode in (0,2,3):
-			m=self.wimage.scr_to_img((event.x(),event.y()))
+			m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 			parms=self.parms[self.curset]
 			parms[2]=(m[0]-parms[0]//2,m[1]-parms[0]//2)
 			self.needredisp=True
@@ -1148,7 +1149,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			#for i,j in enumerate(self.boxes):
 
 	def imgmouseup(self,event) :
-		m=self.wimage.scr_to_img((event.x(),event.y()))
+		m=self.wimage.scr_to_img((event.position().x(),event.position().y()))
 		if self.calcmode==1:
 			parms=self.parms[self.curset]
 			nx=(self.data["nx"]-128)//parms[0]
@@ -1160,7 +1161,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 
 	def fftmousedown(self,event,m) :
-		#m=self.wfft.scr_to_img((event.x(),event.y()))
+		#m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 		if self.f2danmode==1:
 			self.ringrad=hypot(m[0]-self.fft["nx"]//2,m[1]-self.fft["ny"]//2)
@@ -1174,7 +1175,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def fftmousedrag(self,event,m) :
-		#m=self.wfft.scr_to_img((event.x(),event.y()))
+		#m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 		if self.f2danmode==1:
 			self.ringrad=hypot(m[0]-old_div(self.fft["nx"],2),m[1]-old_div(self.fft["ny"],2))
@@ -1189,7 +1190,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 	def fftmouseup(self,event,m) :
 		"up"
-		#m=self.wfft.scr_to_img((event.x(),event.y()))
+		#m=self.wfft.scr_to_img((event.position().x(),event.position().y()))
 
 
 if __name__ == "__main__":

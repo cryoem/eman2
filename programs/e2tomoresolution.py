@@ -74,7 +74,7 @@ def main():
 	plot = EMPlot2DWidget()
 	plot.set_data((fscstrategy.getFreq(),fscstrategy.getFSC()))
 	plot.show()
-	app.exec_()
+	app.exec()
 
 # Use strategy pattern here. Any new stategy needs to inherit this
 class Strategy(object):

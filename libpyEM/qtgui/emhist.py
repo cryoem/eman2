@@ -54,8 +54,8 @@ ploticon = [
     'ccccccccccccccc'
 ]
 
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLU
@@ -72,6 +72,7 @@ import struct, math
 from .valslider import *
 from io import StringIO
 import re
+import gc
 #import emimage2d
 
 import matplotlib.pyplot as plt
@@ -113,7 +114,7 @@ class EMHistogramWidget(EMGLWidget):
 	"""
 
 	def __init__(self,application=None,winid=None,parent=None):
-		EMGLWidget.__init__(self, parent=parent, winid=winid)
+		super().__init__(parent=parent, winid=winid)
 		self.setWindowIcon(QtGui.QIcon(get_image_directory() +"plot.png"))
 		self.axes={}
 		self.pparm={}			# nbins,color,histtype,orient,align,alpha,width,norm,cumul,logy,stacked
@@ -144,8 +145,10 @@ class EMHistogramWidget(EMGLWidget):
 		self.alignment="edge" #alignments[self.inspector.align.currentIndex()]
 		self.cumulative = False #self.inspector.cumulative.isChecked()
 		self.logy = False #self.inspector.logtogy.isChecked()
+		self.setContextMenuPolicy(Qt.PreventContextMenu)
 
 	def initializeGL(self):
+		super().initializeGL()
 		GL.glClearColor(0,0,0,0)
 		GL.glEnable(GL_DEPTH_TEST)
 
@@ -159,7 +162,7 @@ class EMHistogramWidget(EMGLWidget):
 
 	def resizeGL(self, width, height):
 #		side = min(width, height)
-		GL.glViewport(0,0,self.width(),self.height())
+		GL.glViewport(0,0,int(self.width() * self.devicePixelRatio()),int(self.height() * self.devicePixelRatio()))
 		GL.glMatrixMode(GL.GL_PROJECTION)
 		GL.glLoadIdentity()
 		GL.glOrtho(0.0,self.width(),0.0,self.height(),-10,10)
@@ -168,25 +171,29 @@ class EMHistogramWidget(EMGLWidget):
 
 		self.resize_event(width,height)
 
+	def resizeEvent(self, event):
+		super().resizeEvent(event)
+		w = self.width()
+		h = self.height()
+		self.resize_event(w, h)
+
 	def closeEvent(self,event):
 		self.clear_gl_memory()
-		EMGLWidget.closeEvent(self, event)
+		super().closeEvent(event)
 		if self.inspector : self.inspector.closeEvent(event)
 
 	def keyPressEvent(self,event):
 		if event.key() == Qt.Key_C:
 			self.show_inspector(1)
 		elif event.key() == Qt.Key_F1:
-			try: from PyQt5 import QtWebEngineWidgets
-			except: return
+			from PySide6.QtWebEngineWidgets import QWebEngineView
 			try:
-				try: test = self.browser
-				except:
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
-					self.browser.resize(800,800)
-				if not self.browser.isVisible(): self.browser.show()
-			except: pass
+				test = self.browser
+			except:
+				self.browser = QWebEngineView()
+				self.browser.load(QtCore.QUrl("http://blake.bcm.edu/emanwiki/e2display"))
+				self.browser.resize(800,800)
+			if not self.browser.isVisible(): self.browser.show()
 
 	def setWindowTitle(self,filename):
 		EMGLWidget.setWindowTitle(self, remove_directories_from_name(filename,1))
@@ -668,16 +675,16 @@ lc is the cursor selection point in plot coords"""
 		return
 
 	def mousePressEvent(self, event):
-		lc=self.scr2plot(event.x(),event.y())
-		if event.button()==Qt.MidButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		lc=self.scr2plot(event.position().x(),event.position().y())
+		if event.button()==Qt.MouseButton.MiddleButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.show_inspector(1)
-		elif event.button()==Qt.RightButton or (event.button()==Qt.LeftButton and event.modifiers()&Qt.AltModifier):
+		elif event.button()==Qt.MouseButton.RightButton or (event.button()==Qt.MouseButton.LeftButton and event.modifiers()&Qt.AltModifier):
 			self.del_shapes()
-			self.updateGL()
-			self.rmousedrag=(event.x(),event.y())
-		elif event.button()==Qt.LeftButton:
+			self.update()
+			self.rmousedrag=(event.position().x(),event.position().y())
+		elif event.button()==Qt.MouseButton.LeftButton:
 			self.del_shapes()
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			histlabel = ""
 			idx = self.getBinIndex(lc[0])
 			if idx != None:
@@ -687,21 +694,21 @@ lc is the cursor selection point in plot coords"""
 				histlabel = ""
 			self.add_shape("lcrosshist0",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
 			self.add_shape("lcrosshist",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
-			self.updateGL()
+			self.update_selected((event.position().x(),event.position().y()),lc)
+			self.update()
 
 	def mouseMoveEvent(self, event):
-		lc=self.scr2plot(event.x(),event.y())
+		lc=self.scr2plot(event.position().x(),event.position().y())
 		if  self.rmousedrag:
 			self.add_shape("xzoom1",EMShape(("scrline",0,0,0,self.rmousedrag[0],self.scrlim[1],self.rmousedrag[0],self.scrlim[3]+self.scrlim[1],1)))
-			self.add_shape("xzoom2",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("xzoom2",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			zm = self.scr2plot(self.rmousedrag[0],self.rmousedrag[1])
 			zoomlabel = "{:1.5g}; ({:1.5g},{:1.5g})".format(np.abs(lc[0]-zm[0]),zm[0],lc[0])
 			self.add_shape("lzoom",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,zoomlabel,120.0,-1)))
-			self.updateGL()
-		elif event.buttons()&Qt.LeftButton:
+			self.update()
+		elif event.buttons()&Qt.MouseButton.LeftButton:
 			self.del_shapes()
-			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.x(),self.scrlim[1],event.x(),self.scrlim[3]+self.scrlim[1],1)))
+			self.add_shape("ycross",EMShape(("scrline",0,0,0,event.position().x(),self.scrlim[1],event.position().x(),self.scrlim[3]+self.scrlim[1],1)))
 			histlabel = ""
 			idx = self.getBinIndex(lc[0])
 			if idx != None:
@@ -710,8 +717,8 @@ lc is the cursor selection point in plot coords"""
 			else:
 				histlabel = ""
 			self.add_shape("lcrosshist",EMShape(("scrlabel",0,0,0,self.scrlim[2]-175,self.scrlim[3]-10,histlabel,120.0,-1)))
-			self.update_selected((event.x(),event.y()),lc)
-			self.updateGL()
+			self.update_selected((event.position().x(),event.position().y()),lc)
+			self.update()
 
 	def getBinIndex(self,x):
 		if x < self.edges[0] or x > self.edges[-1]: return None
@@ -763,10 +770,10 @@ lc is the cursor selection point in plot coords"""
 			self.needupd = 1
 
 	def mouseReleaseEvent(self, event):
-		lc =self.scr2plot(event.x(),event.y())
+		lc =self.scr2plot(event.position().x(),event.position().y())
 		if self.rmousedrag:
 			lc2=self.scr2plot(*self.rmousedrag)
-			if fabs(event.x()-self.rmousedrag[0])+fabs(event.y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
+			if fabs(event.position().x()-self.rmousedrag[0])+fabs(event.position().y()-self.rmousedrag[1])<3 : self.rescale(0,0,0,0)
 			else :
 				self.autoscale(True)
 				self.rescale(min(lc[0],lc2[0]),max(lc[0],lc2[0]),self.ylimits[0],self.ylimits[1])
@@ -863,7 +870,7 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		# plot list
 		self.setlist=DragListWidget(self)
 		self.setlist.setDataSource(self)
-		self.setlist.setSelectionMode(3)
+		self.setlist.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
 		self.setlist.setSizePolicy(QtWidgets.QSizePolicy.Preferred,QtWidgets.QSizePolicy.Expanding)
 		self.setlist.setDragEnabled(True)
 		self.setlist.setAcceptDrops(True)
@@ -1087,23 +1094,23 @@ class EMHistogramInspector(QtWidgets.QWidget):
 		self.showslide.valueChanged.connect(self.selSlide)
 		self.allbut.clicked.connect(self.selAll)
 		self.nonebut.clicked.connect(self.selNone)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
-		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.list_item_changed)
+		self.setlist.currentRowChanged.connect(self.newSet)
+		self.setlist.itemChanged.connect(self.list_item_changed)
 		self.saveb.clicked.connect(self.savePlot)
 		self.pdfb.clicked.connect(self.savePdf)
 		self.concatb.clicked.connect(self.saveConcatPlot)
-		self.normed.stateChanged[int].connect(self.updPlotRepr)
-		self.logtogy.stateChanged[int].connect(self.updPlotRepr)
-		self.cumulative.stateChanged[int].connect(self.updPlotRepr)
-		self.stacked.stateChanged[int].connect(self.updPlotRepr)
-		self.slidecol.valueChanged[int].connect(self.newCols)
-		self.slidenbs.valueChanged[int].connect(self.newNBins)
+		self.normed.stateChanged.connect(self.updPlotRepr)
+		self.logtogy.stateChanged.connect(self.updPlotRepr)
+		self.cumulative.stateChanged.connect(self.updPlotRepr)
+		self.stacked.stateChanged.connect(self.updPlotRepr)
+		self.slidecol.valueChanged.connect(self.newCols)
+		self.slidenbs.valueChanged.connect(self.newNBins)
 		self.rwidth.valueChanged.connect(self.updPlot)
 		self.alpha.valueChanged.connect(self.updPlot)
-		self.color.currentIndexChanged[str].connect(self.updPlot)
-		self.histtype.currentIndexChanged[str].connect(self.updPlotRepr)
-		self.orient.currentIndexChanged[str].connect(self.updPlotRepr)
-		self.align.currentIndexChanged[str].connect(self.updPlotRepr)
+		self.color.currentIndexChanged.connect(self.updPlot)
+		self.histtype.currentIndexChanged.connect(self.updPlotRepr)
+		self.orient.currentIndexChanged.connect(self.updPlotRepr)
+		self.align.currentIndexChanged.connect(self.updPlotRepr)
 		#QtCore.QObject.connect(self.xlabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		#QtCore.QObject.connect(self.ylabel,QtCore.SIGNAL("textChanged(QString)"),self.updPlot)
 		self.wxmin.valueChanged.connect(self.newLimits)

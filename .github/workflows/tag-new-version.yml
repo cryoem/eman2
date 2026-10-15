@@ -22,7 +22,10 @@ jobs:
 
       - name: Checkout eman2
         if: ${{ env.bump }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          path: 'eman2'
+          fetch-depth: 0
 
       - name: Set up Git user
         if: ${{ env.bump }}
@@ -33,14 +36,19 @@ jobs:
       - name: Bump and tag new version
         if: ${{ env.bump }}
         run: |
+          cd eman2
           git fetch --tags
-          version=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
-
-          if [[ "$version" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
-            major="${BASH_REMATCH[1]}"
-            minor="${BASH_REMATCH[2]}"
-            patch="${BASH_REMATCH[3]}"
+          
+          # Find the highest semantic version tag, ignoring any corrupted text leftovers
+          latest_tag=$(git tag -l 'v*' --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -n 1)
+          
+          # Fallback if no clean tag is found
+          if [ -z "$latest_tag" ]; then
+            latest_tag="v2.99.80"
           fi
+          
+          raw_version=${latest_tag#v}
+          IFS='.' read -r major minor patch <<< "$raw_version"
 
           case "${{ env.bump }}" in
             major)
@@ -55,39 +63,51 @@ jobs:
             patch)
               patch=$((patch + 1))
               ;;
-            *)
-              echo "Unknown bump type: ${{ env.bump }}"
-              exit 1
-              ;;
           esac
 
           new_version="${major}.${minor}.${patch}"
-          echo "new_version=${new_version}" >> $GITHUB_ENV
+          echo "NEW_VERSION_STRING=${new_version}" >> $GITHUB_ENV
 
-          echo "Current version: ${version}"
-          echo "Requested bump : ${{ env.bump }}"
-          echo "New version    : ${new_version}"
+          echo "Current valid tag found: ${latest_tag}"
+          echo "New bumped version     : ${new_version}"
           
-          sed -i "s/VERSION\s*[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
+          # FIXED: Clears any invalid 'v' character from CMakeLists.txt dynamically
+          sed -i "s/VERSION\s*v\?[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*/VERSION ${new_version}/" CMakeLists.txt
 
           git add CMakeLists.txt
-          git commit -m v${new_version}
-          git tag -f v${new_version}
-          git push origin ${{ github.ref }} v${new_version}
+          git commit -m "v${new_version}" || echo "No changes to commit in CMakeLists"
+          git tag -f "v${new_version}"
+          git push origin master "v${new_version}"
 
       - name: Checkout eman-feedstock
         if: ${{ env.bump }}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
-         repository: cryoem/eman-feedstock
-         token: ${{ secrets.EMAN_DEV_TOKEN }}
+          repository: cryoem/eman-feedstock
+          token: ${{ secrets.FEEDSTOCK_TOKEN }}
+          path: 'eman-feedstock'
+          persist-credentials: false
 
       - name: Update version in eman-feedstock
         if: ${{ env.bump }}
+        env:
+          PASSED_VERSION: ${{ env.NEW_VERSION_STRING }}
+          FEEDSTOCK_AUTH: ${{ secrets.FEEDSTOCK_TOKEN }}
         run: |
-          sed -i 's/set\s*version\s*=\s*"[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*"/set version = "${{ env.new_version }}"/' recipe/meta.yaml
+          cd eman-feedstock
+          
+          curl -L -o release.tar.gz "https://github.com/cryoem/eman2/archive/v${PASSED_VERSION}.tar.gz"
+          
+          calculated_hash=$(sha256sum release.tar.gz | awk '{ print $1 }')
+          echo "Calculated SHA256: ${calculated_hash}"
+          rm release.tar.gz
+
+          sed -i "s/set\\s*version\\s*=\\s*\"[0-9][0-9]*\\.[0-9][0-9]*\\.[0-9][0-9]*\"/set version = \"${PASSED_VERSION}\"/" recipe/meta.yaml
+          sed -i "s/set\\s*sha256\\s*=\\s*\"[^\"]*\"/set sha256 = \"${calculated_hash}\"/" recipe/meta.yaml
           sed -i 's/set\s*build\s*=\s*[0-9][0-9]*/set build = 0/' recipe/meta.yaml
 
           git add recipe/meta.yaml
-          git commit -m v${{ env.new_version }}
+          git commit -m "v${PASSED_VERSION} and hash updates"
+          git remote set-url origin "https://x-access-token:${FEEDSTOCK_AUTH}@github.com/cryoem/eman-feedstock.git"
+          
           git push origin master

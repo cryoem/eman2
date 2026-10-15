@@ -39,7 +39,7 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from .emglobjects import EM3DModel, get_default_gl_colors, EMViewportDepthTools, Camera2
-from PyQt5 import QtGui, QtWidgets, QtCore
+from PySide6 import QtGui, QtWidgets, QtCore
 import sys
 import weakref
 from .emimageutil import EMTransformPanel
@@ -1007,8 +1007,8 @@ class EMPDBInspector(QtWidgets.QWidget):
 
 		self.setLayout(vbl)
 		
-		self.text.textEdited[str].connect(self.on_text_change)
-		self.browse.clicked[bool].connect(self.on_browse)
+		self.text.textEdited.connect(self.on_text_change)
+		self.browse.clicked.connect(self.on_browse)
 	
 	def on_text_change(self,text):
 		print("Use the Browse button to update the pdb file")

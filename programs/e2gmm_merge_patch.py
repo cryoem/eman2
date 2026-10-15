@@ -17,6 +17,7 @@ def main():
 	parser.add_argument("--sym", type=str, help="",default="c1")
 	parser.add_argument("--iter", type=int, help="iteration number. per-iter merge only",default=-1)
 	parser.add_argument("--masks", type=str, help="replace masks in info files",default=None)
+	parser.add_argument("--mult", type=str, help="multiplier per mask",default=None)
 	parser.add_argument("--skippp", action="store_true", default=False ,help="skip post process")
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
 	(options, args) = parser.parse_args()
@@ -38,6 +39,12 @@ def main():
 		else:
 			masks=EMData.read_images(options.masks[0])
 			
+		if options.mult:
+			mult=options.mult.split(',')
+			mult=np.array([float(m) for m in mult])
+		else:
+			mult=np.ones((len(masks)))
+			
 		for eo in ["even","odd"]:
 			avg=EMData(f"{path}/threed_{itr:02d}_00_{eo}.hdf")
 			avg.to_zero()
@@ -46,6 +53,15 @@ def main():
 			for ci,m in enumerate(masks):
 				e=EMData(f"{path}/threed_{itr:02d}_{ci:02d}_{eo}.hdf")
 				e.mult(m)
+				e.mult(mult[ci])
+				
+				if options.sym!="c1":
+					nsym=Transform.get_nsym(options.sym)
+					e.process_inplace("xform.applysym",{"sym":options.sym})
+					m.process_inplace("xform.applysym",{"sym":options.sym})
+					e.mult(nsym)
+					m.mult(nsym)
+				
 				avg.add(e)
 				wt.add(m)
 				

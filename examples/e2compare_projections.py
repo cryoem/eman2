@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 import sys
-from PyQt5 import QtGui, QtWidgets, QtCore
+import os
+from PySide6 import QtGui, QtWidgets, QtCore
 from EMAN2 import *
+
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage import EMImageWidget
 from eman2_gui.emimage2d import EMImage2DWidget
@@ -34,7 +36,7 @@ def main():
 	cp.show()
 
 
-	x=app.exec_()
+	x=app.exec()
 	#E2end(logid)
 	sys.exit(0)
 

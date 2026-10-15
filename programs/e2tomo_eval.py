@@ -5,14 +5,19 @@ from EMAN2 import *
 from EMAN2_utils import natural_sort
 import os
 import numpy as np
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+
+import OpenGL
+OpenGL.ERROR_CHECKING = False
+from OpenGL import GL, GLU
+from EMAN2 import EMANVERSION, E2init, E2end, EMData, base_name, file_exists, EMArgumentParser
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 from eman2_gui.valslider import ValSlider,CheckBox,ValBox
 from eman2_gui.emshape import EMShape
 from eman2_gui.emapplication import EMApp
+from PySide6.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
 import subprocess
 
 
@@ -24,6 +29,7 @@ def main():
 	parser.add_argument("--dir", type=str,help="look at a specified directory instead of tomograms/", default=None)
 	parser.add_argument("--zshift", type=float,help="shift thumbnail image along z. range -.5 to .5. default 0.", default=0)
 	parser.add_argument("--zthick", type=int,help="thickness of thumbnail image. default 0.", default=0)
+	parser.add_argument("--showvar", type=str,help="show additional variables", default="")
 	parser.add_argument("--select", action="store_true", default=False ,help="add a selection column and save a list of selected tomograms.")
 
 	parser.add_header(name="orblock1", help='', title="Click launch to evaluate reconstructed tomograms", row=1, col=0, rowspan=1, colspan=2, mode="")
@@ -31,6 +37,12 @@ def main():
 	(options, args) = parser.parse_args()
 	logid=E2init(sys.argv)
 
+	if len(options.showvar)>0:
+		options.showvar=options.showvar.split(',')
+		print("Displaying additional variables:", options.showvar)
+	else:
+		options.showvar=[]
+		
 	if not os.path.isdir("tomograms"): os.mkdir("tomograms")
 		#print("No tomograms found. You must perform at least one reconstruction or manually populate the 'tomograms' directory with at least one reconstruction.")
 		#sys.exit()
@@ -39,7 +51,7 @@ def main():
 	gui=TomoEvalGUI(options)
 	gui.show()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 	E2end(logid)
 	
 	
@@ -80,7 +92,7 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		hdr=self.imglst.horizontalHeader()
 		#self.imglst.cellClicked[int, int].connect(self.selimg)
 		self.imglst.itemSelectionChanged.connect(self.selimg)
-		hdr.sectionPressed[int].connect(self.sortlst)
+		hdr.sectionPressed.connect(self.sortlst)
 		
 		self.wg_thumbnail=EMImage2DWidget(parent=self)
 		self.wg_thumbnail.set_scale(1)
@@ -131,16 +143,16 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		self.gbl.addWidget(self.bt_clearptcl, 8,2)
 		
 
-		self.bt_show2d.clicked[bool].connect(self.show2d)
-		self.bt_runboxer.clicked[bool].connect(self.runboxer)
-		self.bt_plotloss.clicked[bool].connect(self.plot_loss)
-		self.bt_plottpm.clicked[bool].connect(self.plot_tltparams)
-		self.bt_showtlts.clicked[bool].connect(self.show_tlts)
-		self.bt_showatlts.clicked[bool].connect(self.show_ali_tlts)
-		self.bt_refresh.clicked[bool].connect(self.update_files)
-		self.bt_plotctf.clicked[bool].connect(self.plot_ctf)
-		self.bt_evalimage.clicked[bool].connect(self.eval_image)
-		self.bt_clearptcl.clicked[bool].connect(self.clear_ptcls)
+		self.bt_show2d.clicked.connect(self.show2d)
+		self.bt_runboxer.clicked.connect(self.runboxer)
+		self.bt_plotloss.clicked.connect(self.plot_loss)
+		self.bt_plottpm.clicked.connect(self.plot_tltparams)
+		self.bt_showtlts.clicked.connect(self.show_tlts)
+		self.bt_showatlts.clicked.connect(self.show_ali_tlts)
+		self.bt_refresh.clicked.connect(self.update_files)
+		self.bt_plotctf.clicked.connect(self.plot_ctf)
+		self.bt_evalimage.clicked.connect(self.eval_image)
+		self.bt_clearptcl.clicked.connect(self.clear_ptcls)
 		
 		self.wg_2dimage=EMImage2DWidget()
 		self.wg_2dimage.setWindowTitle("Tomo2D")
@@ -260,6 +272,11 @@ class TomoEvalGUI(QtWidgets.QWidget):
 					dic["ice_thick"]=js["ice_thick"]
 				else:
 					dic["ice_thick"]=-1
+					
+				for k in self.options.showvar:
+					if k in js: dic[k]=js[k]
+					else: dic[k]=-1
+					
 				dic["basename"]= os.path.basename(name).split(".")[0] #base_name(name)
 				dic["e2basename"] = base_name(name)
 				dic["filename"]=name
@@ -290,7 +307,9 @@ class TomoEvalGUI(QtWidgets.QWidget):
 			self.labels.append("thickness")
 		if self.options.select:
 			self.labels.append("select")
-		
+		for k in self.options.showvar:
+			self.labels.append(k)
+			
 		self.imglst.setColumnCount(len(self.labels))
 		self.imglst.setHorizontalHeaderLabels(self.labels)
 		self.imglst.setColumnHidden(0, True)
@@ -342,7 +361,14 @@ class TomoEvalGUI(QtWidgets.QWidget):
 				it.setData(Qt.EditRole, sel)
 				self.imglst.setItem(i,ik, it)
 				ik+=1
-			
+				
+			for k in self.options.showvar:
+				a=np.round(info[k],3)
+				it=QtWidgets.QTableWidgetItem()
+				it.setData(Qt.EditRole, float(a))
+				self.imglst.setItem(i,ik, it)
+				ik+=1
+				
 		self.imglst.setVerticalHeaderLabels([str(i) for i in range(len(self.imginfo))])
 		
 	def get_id_info(self):
@@ -470,15 +496,15 @@ class TomoEvalGUI(QtWidgets.QWidget):
 		if idx==None: return
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
 		### do not use launch_childprocess so the gui wont be frozen when boxer is opened
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			subprocess.Popen("e2tomo_drawcurve.py {} --ppid {}".format(info["filename"], os.getpid()),shell=True)
 		else:
 			cmd="e2spt_boxer.py {} --ppid {}".format(info["filename"], os.getpid())
 			psel=[p for p in self.ptclcls.keys() if self.ptclcls[p][0]]
 			if len(psel)==1:
 				cmd+=f" --label {psel[0]}"
-				
-			if modifiers == QtCore.Qt.ControlModifier:
+			
+			if modifiers & QtCore.Qt.ControlModifier:
 				cmd+=" --clean"
 			subprocess.Popen(cmd,shell=True)
 		#launch_childprocess()

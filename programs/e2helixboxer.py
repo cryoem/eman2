@@ -38,7 +38,8 @@ import sys
 import os
 
 try:
-	from PyQt5 import QtGui, QtWidgets, QtCore
+	from OpenGL import GL
+	from PySide6 import QtGui, QtWidgets, QtCore
 	from eman2_gui.emapplication import EMApp, get_application
 	from eman2_gui.emimage2d import EMImage2DWidget
 	from eman2_gui.emselector import EMSelectorDialog
@@ -861,7 +862,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile( os.path.join(self.default_dir, self.micrograph_name + "_boxes.txt") )
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.helices_coords_line_edit.setText(file_path)
@@ -869,7 +870,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.helices_images_line_edit.text())
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.helices_images_line_edit.setText(file_path)
@@ -886,7 +887,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Coordinates"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_coords_line_edit.text())
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.ptcls_coords_line_edit.setText(file_path)
@@ -894,7 +895,7 @@ if ENABLE_GUI:
 			file_dlg = QtWidgets.QFileDialog(self,self.tr("Save Helix Images"))
 			file_dlg.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
 			file_dlg.selectFile(self.ptcls_images_line_edit.text())
-			if file_dlg.exec_():
+			if file_dlg.exec():
 				file_path = file_dlg.selectedFiles()[0]
 				file_path = str(file_path)
 				self.ptcls_images_line_edit.setText(file_path)
@@ -1006,8 +1007,8 @@ if ENABLE_GUI:
 				self.micrograph_filepath_set = set(micrograph_filepaths) # [micrograph1_filepath, micrograph2_filepath, ...]
 			self.update_micrograph_table()
 
-			self.box_width_spinbox.valueChanged[int].connect(self.width_changed)
-			self.img_quality_combobox.currentIndexChanged[int].connect(self.set_image_quality)
+			self.box_width_spinbox.valueChanged.connect(self.width_changed)
+			self.img_quality_combobox.currentIndexChanged.connect(self.set_image_quality)
 			self.load_boxes_action.triggered.connect(self.load_boxes)
 			self.load_micrograph_action.triggered.connect(self.open_micrograph)
 	#        self.connect(self.write_coords_action, QtCore.SIGNAL("triggered()"), self.write_coords)
@@ -1025,11 +1026,11 @@ if ENABLE_GUI:
 
 			self.menu_bar = QtWidgets.QMenuBar(self)
 			self.file_menu = QtWidgets.QMenu(self.tr("&File"))
-			self.load_micrograph_action = QtWidgets.QAction(self.tr("&Open Micrographs"), self)
-	#        self.write_coords_action = QtWidgets.QAction(self.tr("Save &Coordinates"), self)
-			self.write_images_action = QtWidgets.QAction(self.tr("&Save"), self)
-			self.load_boxes_action = QtWidgets.QAction(self.tr("&Load Coordinates"), self)
-			self.quit_action = QtWidgets.QAction(self.tr("&Quit"), self)
+			self.load_micrograph_action = QtGui.QAction(self.tr("&Open Micrographs"), self)
+	#       self.write_coords_action = QtGui.QAction(self.tr("Save &Coordinates"), self)
+			self.write_images_action = QtGui.QAction(self.tr("&Save"), self)
+			self.load_boxes_action = QtGui.QAction(self.tr("&Load Coordinates"), self)
+			self.quit_action = QtGui.QAction(self.tr("&Quit"), self)
 			self.file_menu.addAction(self.load_micrograph_action)
 			self.file_menu.addAction(self.load_boxes_action)
 	#        self.file_menu.addAction(self.write_coords_action)
@@ -1146,7 +1147,7 @@ if ENABLE_GUI:
 				keep_boxes_msgbox.setInformativeText(self.tr("Do you want to keep your current boxes?"))
 				keep_boxes_msgbox.setStandardButtons(QtWidgets.QMessageBox.No | QtWidgets.QMessageBox.Yes)
 				keep_boxes_msgbox.setDefaultButton(QtWidgets.QMessageBox.Yes)
-				keep_current_boxes = keep_boxes_msgbox.exec_()
+				keep_current_boxes = keep_boxes_msgbox.exec()
 
 				if keep_current_boxes == QtWidgets.QMessageBox.No:
 					self.main_image.shapes = EMShapeDict()
@@ -1242,7 +1243,7 @@ if ENABLE_GUI:
 			loads a file browser to select a micrograph or multiple microgrpahs to add to the micrograph table
 			"""
 			selector = EMSelectorDialog(single_selection=False,save_as_mode=False)
-			new_micrographs = selector.exec_()
+			new_micrographs = selector.exec()
 			if isinstance(new_micrographs, str): #Just one file was selected
 				if sys.version_info >= (2, 6):
 					new_micrographs = os.path.relpath(new_micrographs) #os.path.relpath is new in Python 2.6
@@ -1380,11 +1381,25 @@ if ENABLE_GUI:
 			removes the coordinates for a helix in the e2helixboxer database for the current micrograph
 			"""
 			assert len(box_coords) == 5, "box_coords must have 5 items"
-#			db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
+	#            db = db_open_dict(E2HELIXBOXER_DB + "helixboxes")
 			db = js_open_dict(info_name(self.micrograph_filepath))
 
 			boxList = db["helixboxes"] #Get a copy of the db in memory
-			boxList.remove(list(box_coords))
+			box_to_remove = list(box_coords)
+			# Exact match may fail due to float serialization differences, so try approximate match
+			found = False
+			for i, item in enumerate(boxList):
+				if item == box_to_remove:
+					boxList.pop(i)
+					found = True
+					break
+				# Try approximate match (all 5 floats within tolerance)
+				if all(abs(a - b) < 0.5 for a, b in zip(item, box_to_remove)):
+					boxList.pop(i)
+					found = True
+					break
+			if not found:
+				print(f"Warning: could not find box_coords {box_coords} in database")
 			db["helixboxes"] = boxList #Needed to save changes to disk
 
 		def mouse_down(self, event, click_loc):
@@ -1451,7 +1466,8 @@ if ENABLE_GUI:
 			elif self.edit_mode == "delete":
 				box_coords = self.main_image.get_shapes().get(box_key).getShape()[4:9]
 				self.remove_box_from_db(box_coords)
-				self.helices_dict.pop(tuple(box_coords))
+				try: self.helices_dict.pop(tuple(box_coords))
+				except: print("error ",self.helices_dict)
 				self.main_image.del_shape(box_key)
 				self.main_image.updateGL()
 				self.current_boxkey = None

@@ -36,8 +36,8 @@ from past.utils import old_div
 from EMAN2 import *
 import os
 import re
-from PyQt5 import QtCore
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore
+from PySide6.QtCore import Qt
 from .embrowser import EMBrowserWidget, EMFileItemModel, EMDirEntry, nonone, safe_int,safe_float
 
 

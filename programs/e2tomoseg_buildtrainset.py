@@ -77,7 +77,7 @@ def main():
 		ins.dtpenv.setText('100')
 		w.set_mouse_mode(5)
 		app.show_specific(w)
-		app.exec_()
+		app.exec()
 		try: os.remove(options.output)
 		except:pass
 		for e in img:

@@ -30,14 +30,27 @@
 #
 #
 
+import OpenGL
+from OpenGL import GL
 from builtins import object
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+
+# Set default OpenGL format globally BEFORE any QOpenGLWidget is created
+# Qt6 defaults to Core profile which doesn't support legacy GL functions (glMatrixMode, etc.)
+_fmt = QtGui.QSurfaceFormat()
+_fmt.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
+QtGui.QSurfaceFormat.setDefaultFormat(_fmt)
+del _fmt
+
 import sys
-from .emimageutil import EMParentWin
+#from .emimageutil import EMParentWin
 from EMAN2 import remove_directories_from_name, get_image_directory,get_3d_font_renderer, E2end,get_platform
 import weakref
 from libpyGLUtils2 import *
+from .emanimationutil import Animator
+import gc
 
+gc.set_threshold(10000, 500, 500)
 #try: from PyQt5 import QtWebEngineWidgets
 #except: pass
 
@@ -90,50 +103,68 @@ class ModuleEventsManager(object):
 	
 		emitter.ok.disconnect(self.module_ok) # yes, redundant, but time is short
 		emitter.cancel.disconnect(self.module_cancel) # yes, redundant, but time is short
+		
+	
 
-class EMGLWidget(QtOpenGL.QGLWidget):
+class EMGLWidget(QtOpenGLWidgets.QOpenGLWidget):
 	"""
 	This class encapsulates the use of the EMParentWin to provide a status bar with a size grip on Mac.
 	It also handles much of the inspector behavior, displays help in a web browser, and provides 
-	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in place. 
+	a self.busy attribute to prevent updateGL() from redrawing before all changes to display parameters are in progress. 
 	"""
-	
-	module_closed = QtCore.pyqtSignal()
-	inspector_shown = QtCore.pyqtSignal()
 
-	def hide(self):
-		if self.qt_parent:
-			self.qt_parent.hide()
-			
-	def resize(self, w, h):
-		if self.qt_parent:
-			QtOpenGL.QGLWidget.resize(self, int(w), int(h))
-			if get_platform()=="Darwin" : self.qt_parent.resize(int(w), int(h)+22)
-			else : self.qt_parent.resize(int(w+4), int(h+4))
+	module_closed = QtCore.Signal()
+	inspector_shown = QtCore.Signal()
 
-	def resizeGL(self, width, height):
-		QtOpenGL.QGLWidget.resizeGL(self,int(width),int(height))
+	# def hide(self):
+	# 	if self.qt_parent:
+	# 		self.qt_parent.hide()
 			
-	def show(self):
-		if self.qt_parent:
-			self.qt_parent.show()
+	# def resize(self, w, h):
+	# 	if self.qt_parent:
+	# 		QtOpenGLWidgets.QOpenGLWidget.resize(self, int(w), int(h))
+	# 		if get_platform()=="Darwin" : self.qt_parent.resize(int(w), int(h)+22)
+	# 		else : self.qt_parent.resize(int(w+4), int(h+4))
+	# 	self.update()
+
+	# Note that QT6 apparently swallows exceptions in initializeGL
+	def initializeGL(self):
+		try:
+			self.font_renderer = get_3d_font_renderer()
+			if self.font_renderer is None :
+				print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
+				sys.exit(1)
+		except:
+			print_exc()
+			sys.exit(1)
+
+	# def resizeGL(self, width, height):
+	# 	QtOpenGLWidgets.QOpenGLWidget.resizeGL(self,int(width),int(height))
+	# 	# Subclass resizeGL will be called by Qt after this
+	# 	self.update()
 			
-	def setWindowTitle(self, title):
-		if self.qt_parent:
-			self.qt_parent.setWindowTitle(title)
-		else:
-			self.setWindowTitle(title)
+	# def show(self):
+	# 	if self.qt_parent:
+	# 		self.qt_parent.show()
+	# 	super.show(self)
+		
+	# def setWindowTitle(self, title):
+	# 	if self.qt_parent:
+	# 		self.qt_parent.setWindowTitle(title)
+	# 	else:
+	# 		self.setWindowTitle(title)
 			
 	def __init__(self, parent=None,enable_timer=False, application_control=True,winid=None):
-		if parent==None : 
-			self.qt_parent = EMParentWin(enable_timer)
-			self.myparent=True			# we allocated the parent, responsible for cleaning it up
-		else: 
-			self.qt_parent=parent
-			self.myparent=False			# we did not allocate our parent, so we should not get rid of it
+		# if parent==None :
+		#	self.qt_parent = EMParentWin(enable_timer)
+		#	self.myparent=True			# we allocated the parent, responsible for cleaning it up
+		# else: 
+		#	self.qt_parent=parent
+		#	self.myparent=False			# we did not allocate our parent, so we should not get rid of it
 		
-		QtOpenGL.QGLWidget.__init__(self,self.qt_parent)
-		if self.myparent : self.qt_parent.setup(self)
+		# Animator provides register_animatable/update/animation_done_event via mixin pattern
+		QtOpenGLWidgets.QOpenGLWidget.__init__(self, parent)
+		# if self.myparent : self.qt_parent.setup(self)
 		self.closed=False		# this is set when the widget has been closed in case someone still has a pointer to it
 		
 		self.inspector = None # a Qt Widget for changing display parameters, setting the data, accessing metadata, etc.
@@ -148,21 +179,26 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		self.file_name = ""
 		self.disable_inspector = False
 		
-		self.makeCurrent()
-		self.font_renderer = get_3d_font_renderer()
-		if self.font_renderer == None : 
-			print("FTGL not initialized. Please make sure you have FTGL installed, and configured for compilation in CMake. If using a binary, please report a problem to sludtke@bcm.edu.")
-			sys.exit(1)
-		self.font_renderer.set_face_size(16)
-		self.font_renderer.set_font_mode(FTGLFontMode.TEXTURE)
-			
+		# In Qt6, makeCurrent() must not be called during __init__ before the widget has a valid surface.
+		# Font renderer is lazily initialized on first use.
+		self.font_renderer = None
+		self._font_initialized = False
+		
 		self.busy = False #updateGL() does nothing when self.busy == True
+
+	def register_animatable(self, animatable):
+		# Animation is disabled — jump to end position immediately
+		if hasattr(animatable, 'end') and hasattr(self, 'set_line_animation'):
+			x, y = animatable.end[0], animatable.end[1]
+			self.set_line_animation(x, y)
+
+	def animation_done_event(self, animated):
+		pass
 		
 	def closeEvent(self, event):
 		if self.inspector:
 			self.inspector.close()
-		QtOpenGL.QGLWidget.closeEvent(self, event)
-		if self.myparent : self.qt_parent.close()
+		super().closeEvent(event)
 		self.module_closed.emit() # this could be a useful signal, especially for something like the selector module, which can potentially show a lot of images but might want to close them all when it is closed
 		self.closed=True
 		event.accept()
@@ -176,11 +212,12 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 				try:
 					test = self.browser
 				except: 
-					self.browser = QtWebEngineWidgets.QWebEngineView()
-					self.browser.load(QtCore.QUrl())
+					from PySide6.QtWebEngineWidgets import QWebEngineView
+					self.browser = QWebEngineView()
+					self.browser.load(QtCore.QUrl(url))
 					self.browser.resize(800,800)
 				
-				if not self.browser.isVisible(): self.browser.show(url)
+				if not self.browser.isVisible(): self.browser.show()
 		except:
 			pass
 
@@ -215,7 +252,7 @@ class EMGLWidget(QtOpenGL.QGLWidget):
 		if self.busy:
 			return
 		else:
-			QtOpenGL.QGLWidget.updateGL(self)
+			QtOpenGLWidgets.QOpenGLWidget.update(self)
 
 class EMInstance(object):
 	'''
@@ -309,7 +346,7 @@ class EMApp(QtWidgets.QApplication):
 		#print "couldn't close",child
 		
 	def execute(self, logid=None):
-		self.exec_()
+		self.exec()
 		print(logid)
 		if logid: E2end(logid) # We need to log the end of the process, don't we....
 		return sys.exit()
@@ -329,7 +366,7 @@ class EMApp(QtWidgets.QApplication):
 	def show_specific(self,child):
 		for child_ in self.children:
 			if child == child_:
-#				print "show",child
+#\t\t\t\tprint "show",child
 				if child.isVisible() == False:
 					child.show()
 					child.setFocus()
@@ -406,6 +443,6 @@ class EMErrorMessageDisplay(object):
 				# correct my own inconsistencies....AWESOME
 				mes += '.'
 		msg.setText(mes)
-		msg.exec_()
+		msg.exec()
 	
 	run = staticmethod(run)

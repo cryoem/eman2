@@ -31,7 +31,10 @@
 #
 
 from EMAN2 import *
-from PyQt5 import QtCore
+import os
+import sys
+from PySide6 import QtCore
+
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 

@@ -32,7 +32,7 @@
 
 from builtins import range
 from builtins import object
-from PyQt5 import QtGui, QtWidgets,QtCore
+from PySide6 import QtGui, QtWidgets,QtCore
 from EMAN2 import EMData, file_exists, gimme_image_dimensions3D,get_image_directory,EMUtil,base_name,gm_time_string
 import os
 # For example usage see http://blake.bcm.edu/emanwiki/EMAN2ImageFormats#SavingEMDatafromPython
@@ -59,7 +59,7 @@ class EMFileTypeValidator(object):
 		if len(vals) < 2 or vals[-1] != self.type:
 			# error is therefore a string
 			msg.setText("%s is not of type %s" %(file_name,self.type))
-			msg.exec_()
+			msg.exec()
 			return 0
 			
 		return 1
@@ -107,7 +107,7 @@ class EMCoordFileValidator(object):
 			except:
 				msg = QtWidgets.QMessageBox()
 				msg.setText("%s is not a valid coordinate file" %file_name)
-				msg.exec_()
+				msg.exec()
 				return 0
 
 
@@ -230,7 +230,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		from .emselector import EMSelectorDialog
 		selector = EMSelectorDialog(True,True)
 		selector.set_validator(self.validator)
-		file = selector.exec_()
+		file = selector.exec()
 		if file != "":
 			self.__save_file(file)
 
@@ -253,7 +253,7 @@ class EMSingleImageSaveDialog(EMFileSaver):
 		except:
 			msg = QtWidgets.QMessageBox()
 			msg.setText("An exception occurred while writing %s, please try again" %out_file)
-			msg.exec_()
+			msg.exec()
 			tmp_file_object.remove_tmp_file()
 			return 1
 		
@@ -333,7 +333,7 @@ class EMSaveImageValidator(object):
 		if error != None:
 			# error is therefore a string
 			msg.setText(error)
-			msg.exec_()
+			msg.exec()
 			return 0
 		
 		# If we make it here the file name is fine, but it may exist
@@ -341,7 +341,7 @@ class EMSaveImageValidator(object):
 		self.append = False
 		if file_exists(file_name):
 			file_exists_dialog = EMFileExistsDialog(file_name,self.__item_list)
-			code = file_exists_dialog.exec_()
+			code = file_exists_dialog.exec()
 			if code == 0:
 				return 0
 			elif code == 1:
@@ -399,7 +399,7 @@ class EMStackSaveDialog(EMFileSaver):
 		selector = EMSelectorDialog(True,True)
 		self.validator = EMSaveImageValidator(item_list)
 		selector.set_validator(self.validator)
-		file = selector.exec_()
+		file = selector.exec()
 		if file != "":
 			self.__save_file(str(file))
 
@@ -457,7 +457,7 @@ class EMStackSaveDialog(EMFileSaver):
 				d.write_image(out_file,-1)
 			except:
 				msg.setText("An exception occurred while writing %s, please try again" %out_file)
-				msg.exec_()
+				msg.exec()
 				tmp_file_object.remove_tmp_file()
 				progress.close()
 				return 1
@@ -573,9 +573,9 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		vbl.addLayout(hbl)
 		
 		if append_enable:
-			append.clicked[bool].connect(self.append_clicked)
-		overwrite.clicked[bool].connect(self.overwrite_clicked)
-		cancel.clicked[bool].connect(self.cancel_clicked)
+			append.clicked.connect(self.append_clicked)
+			overwrite.clicked.connect(self.overwrite_clicked)
+			cancel.clicked.connect(self.cancel_clicked)
 		
 		self.__result = 0
 		
@@ -603,7 +603,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		self.__result = 0
 		self.accept()
 	
-	def exec_(self):
+	def exec(self):
 		'''
 		Wraps QtWidgets.QDialog.exec_ but returns a custom return value
 		@return important integer code
@@ -612,7 +612,7 @@ class EMFileExistsDialog(QtWidgets.QDialog):
 		1 - The user hit overwrite
 		2 - The user hit append 
 		'''
-		QtWidgets.QDialog.exec_(self)
+		QtWidgets.QDialog.exec(self)
 		return self.__result
 	
 class EMTmpFileHandle(object):

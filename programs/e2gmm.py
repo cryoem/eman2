@@ -48,8 +48,9 @@ import threading
 import time
 from sys import argv
 from EMAN2 import *
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt,QTimer
+from OpenGL import GL
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt,QTimer
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emplot2d import EMPlot2DWidget
 from eman2_gui.emimage2d import EMImage2DWidget
@@ -281,7 +282,7 @@ def main():
 #	parms=js_open_dict("{}/0_a2d_parms.json".format(options.path))
 
 
-	pid=E2init(argv)
+#	pid=E2init(argv)
 
 	app = EMApp()
 	emgmm=EMGMM(app,options)
@@ -294,7 +295,7 @@ of gaussians to resolution/volume is key in obtaining good
 distributions.""")
 	app.execute()
 
-	E2end(pid)
+#	E2end(pid)
 
 class EMGMM(QtWidgets.QMainWindow):
 	"""This is the main window for the e2gmm application"""
@@ -302,7 +303,7 @@ class EMGMM(QtWidgets.QMainWindow):
 	def __init__(self,application,opt):
 		self.options=opt
 		"""application is an QApplication instance. path is the path for ouput files"""
-		QtWidgets.QWidget.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 
 		self.particles=None
 
@@ -540,17 +541,17 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutkmeans=QtWidgets.QPushButton("Kmeans")
 		self.wbutkmeans.setToolTip("Fast and functional, but produces linear boundaries not clusters")
 		self.gblpltctl.addWidget(self.wbutkmeans,0,5)
-		self.wbutkmeans.clicked[bool].connect(self.do_kmeans)
+		self.wbutkmeans.clicked.connect(self.do_kmeans)
 
 		self.wbutwater=QtWidgets.QPushButton("Wshed")
 		self.wbutwater.setToolTip("Watershed based, number is a maximum. 2-D and 3-D subspaces only.")
 		self.gblpltctl.addWidget(self.wbutwater,1,5)
-		self.wbutwater.clicked[bool].connect(self.do_watershed)
+		self.wbutwater.clicked.connect(self.do_watershed)
 
 		self.wbutdbscan=QtWidgets.QPushButton("OpticsDB")
 		self.wbutdbscan.setToolTip("Danger! This may exhaust RAM on large data sets, and may take a long time to run")
 		self.gblpltctl.addWidget(self.wbutdbscan,2,5)
-		self.wbutdbscan.clicked[bool].connect(self.do_dbscan)
+		self.wbutdbscan.clicked.connect(self.do_dbscan)
 
 		# self.wbutoptics=QtWidgets.QPushButton("OpticsXi")
 		# self.wbutoptics.setToolTip("Danger! This could take many hours to run")
@@ -570,12 +571,12 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wbutlinu=QtWidgets.QPushButton("Line U")
 		self.wbutlinu.setToolTip("Sequential split along a single axis, uniformly dividing the particles among groups")
 		self.gblpltctl.addWidget(self.wbutlinu,3,5)
-		self.wbutlinu.clicked[bool].connect(self.do_linusplit)
+		self.wbutlinu.clicked.connect(self.do_linusplit)
 
 		self.wbutlin=QtWidgets.QPushButton("Line")
 		self.wbutlin.setToolTip("Sequential split along a single axis. Single value for Axes.")
 		self.gblpltctl.addWidget(self.wbutlin,4,5)
-		self.wbutlin.clicked[bool].connect(self.do_linesplit)
+		self.wbutlin.clicked.connect(self.do_linesplit)
 
 		self.wvbnsets=StringBox(label="Sets:",value="2")
 		self.gblpltctl.addWidget(self.wvbnsets,0,4)
@@ -613,7 +614,7 @@ class EMGMM(QtWidgets.QMainWindow):
 
 		self.wbuteveryn=QtWidgets.QPushButton("Every N")
 		self.gblpltctl.addWidget(self.wbuteveryn,3,6)
-		self.wbuteveryn.clicked[bool].connect(self.do_everyn)
+		self.wbuteveryn.clicked.connect(self.do_everyn)
 
 		self.wbutsetintsec=QtWidgets.QPushButton("Intersect")
 		self.gblpltctl.addWidget(self.wbutsetintsec,0,7)
@@ -719,44 +720,44 @@ class EMGMM(QtWidgets.QMainWindow):
 		self.wsbthk.valueChanged.connect(self.slice_update)
 		self.wsbcen.valueChanged.connect(self.slice_update)
 		self.wview3d.sgtransform.connect(self.slice_update)
-		self.wlistgmm.currentRowChanged[int].connect(self.sel_gmm)
-		self.wbutnmap.clicked[bool].connect(self.new_3d_opt)
-		self.wbutnmdl.clicked[bool].connect(self.new_3d_opt)
-		self.wbutdmap.clicked[bool].connect(self.new_3d_opt)
-		self.wbutdmdl.clicked[bool].connect(self.new_3d_opt)
-		self.wbutdmask.clicked[bool].connect(self.new_3d_opt)
-		self.wbutvtop.clicked[bool].connect(self.view_top)
-		self.wbutvbot.clicked[bool].connect(self.view_bot)
-		self.wbutvoblq.clicked[bool].connect(self.view_oblique)
-		self.wbutvside1.clicked[bool].connect(self.view_side1)
-		self.wbutvside2.clicked[bool].connect(self.view_side2)
-		self.wbutvside3.clicked[bool].connect(self.view_side3)
-		self.wbutvside4.clicked[bool].connect(self.view_side4)
+		self.wlistgmm.currentRowChanged.connect(self.sel_gmm)
+		self.wbutnmap.clicked.connect(self.new_3d_opt)
+		self.wbutnmdl.clicked.connect(self.new_3d_opt)
+		self.wbutdmap.clicked.connect(self.new_3d_opt)
+		self.wbutdmdl.clicked.connect(self.new_3d_opt)
+		self.wbutdmask.clicked.connect(self.new_3d_opt)
+		self.wbutvtop.clicked.connect(self.view_top)
+		self.wbutvbot.clicked.connect(self.view_bot)
+		self.wbutvoblq.clicked.connect(self.view_oblique)
+		self.wbutvside1.clicked.connect(self.view_side1)
+		self.wbutvside2.clicked.connect(self.view_side2)
+		self.wbutvside3.clicked.connect(self.view_side3)
+		self.wbutvside4.clicked.connect(self.view_side4)
 		self.wvssphsz.valueChanged.connect(self.new_sph_size)
-		self.wbutnewgmm.clicked[bool].connect(self.add_gmm)
-		self.wbutnewmangmm.clicked[bool].connect(self.add_gmm_man)
+		self.wbutnewgmm.clicked.connect(self.add_gmm)
+		self.wbutnewmangmm.clicked.connect(self.add_gmm_man)
 #		self.wbutrefine.clicked[bool].connect(self.setgmm_refine)
-		self.wlistrun.currentRowChanged[int].connect(self.sel_run)
-		self.wbutnewrun.clicked[bool].connect(self.new_run)
+		self.wlistrun.currentRowChanged.connect(self.sel_run)
+		self.wbutnewrun.clicked.connect(self.new_run)
 		#self.wbutrerun.clicked[bool].connect(self.do_run)
-		self.wbutrerun2.clicked[bool].connect(self.do_run_new)
+		self.wbutrerun2.clicked.connect(self.do_run_new)
 		#self.wbutneutral.clicked[bool].connect(self.new_neutral)
-		self.wbutneutral2.clicked[bool].connect(self.new_neutral2)
-		self.wbutmapnorm.clicked[bool].connect(self.new_map)
-		self.wbutmapfast.clicked[bool].connect(self.new_map_fast)
-		self.wbutmapgauss.clicked[bool].connect(self.new_map_gauss)
-		self.wbutsetdel.clicked[bool].connect(self.set_del)
-		self.wbutsetsave.clicked[bool].connect(self.set_save)
-		self.wbutmodelsave.clicked[bool].connect(self.model_save)
+		self.wbutneutral2.clicked.connect(self.new_neutral2)
+		self.wbutmapnorm.clicked.connect(self.new_map)
+		self.wbutmapfast.clicked.connect(self.new_map_fast)
+		self.wbutmapgauss.clicked.connect(self.new_map_gauss)
+		self.wbutsetdel.clicked.connect(self.set_del)
+		self.wbutsetsave.clicked.connect(self.set_save)
+		self.wbutmodelsave.clicked.connect(self.model_save)
 
-		self.wbutsetintsec.clicked[bool].connect(self.intsec_sets)
-		self.wbutsetunion.clicked[bool].connect(self.union_sets)
+		self.wbutsetintsec.clicked.connect(self.intsec_sets)
+		self.wbutsetunion.clicked.connect(self.union_sets)
 #		self.wedres.editingFinished.connect(self.new_res)
-		self.wbutres.clicked[bool].connect(self.new_res)
+		self.wbutres.clicked.connect(self.new_res)
 		#self.wbutdrgrp.idClicked[int].connect(self.plot_mode_sel)		# requires pyqt 5.15
 		#self.wbutdrgrp.buttonClicked[QtWidgets.QAbstractButton].connect(self.plot_mode_sel)
-		self.wsbxcol.valueChanged[int].connect(self.update_axes_x)
-		self.wsbycol.valueChanged[int].connect(self.update_axes_y)
+		self.wsbxcol.valueChanged.connect(self.update_axes_x)
+		self.wsbycol.valueChanged.connect(self.update_axes_y)
 		#self.wsbxcol.valueChanged[int].connect(self.wplot2d.setXAxisAll) #sequencing issue with this approach
 		#self.wsbycol.valueChanged[int].connect(self.wplot2d.setYAxisAll)
 		#self.wsbxcol.valueChanged[int].connect(self.update_maps_plot)		# also connect to update map locations when axes change
@@ -816,7 +817,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			#self.maplist = None
 
 		#if self.guiim != None:
-			#E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			#E2saveappwin("e2ctf","image",self.guiim)
 			#self.app().close_specific(self.guiim)
 			#self.guiim = None
 
@@ -1238,7 +1239,7 @@ class EMGMM(QtWidgets.QMainWindow):
 			#self.wplot2d.add_shape("count",EMShape(["scrlabel",0.1,0.1,0.1,10.,10.,f"{len(ptdist)} ptcls",120.0,-1]))
 			#self.wplot2d.add_shape("region",EMShape(["circle",0.1,0.8,0.1,loc[0],loc[1],rad,1]))
 			#self.wplot2d.update()
-##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.x(),event.y(),self.wplot2d.scrlim,rad)
+##			print(loc,self.wplot2d.plot2draw(loc[0],loc[1]),event.position().x(),event.position().y(),self.wplot2d.scrlim,rad)
 
 			##Limit ourselves to a random subset of ~500 of the points to average
 			#if len(ptdist)>500: ptdist=ptdist[::len(ptdist)//500]

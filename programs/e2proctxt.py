@@ -152,6 +152,7 @@ Manipulations of text files conatining multi-column data (as would be used with 
 	parser.add_argument("--copy",type=str,help="Copy input file to output specified here. Will follow ':' convention to limit input lines. ",default=None)
 	parser.add_argument("--sortcomment",action="store_true",default=False,help="Sorts rows based on per-row comment (after #) before merging")
 	parser.add_argument("--merge",type=str,help="Merge several files into a single output by appending columns. All inputs must have the same number of rows. Row comments stripped.",default=None)
+	parser.add_argument("--mergerow",type=str,help="Merge several files into a single output by appending rows.",default=None)
 	parser.add_argument("--dimreduce",type=str,help="tsne, mds, isomap, lle, spectral. output=input with added columns. Multiple files are independent.",default=None)
 	parser.add_argument("--hist2d",type=int,help="[bins]. Generate a 2d histogram as an image of any 2 specified columns. output=input.hdf",default=0)
 	parser.add_argument("--hist3d",type=int,help="[bins]. Generate a 3d histogram as a 3D volume of any 3 specified columns. output=input.hdf",default=0)
@@ -332,8 +333,13 @@ Manipulations of text files conatining multi-column data (as would be used with 
 
 		print("merged data written to ",options.merge)
 		sys.exit(0)
-
 	
+	if options.mergerow!=None:
+		
+		p=[np.loadtxt(f) for f in args]
+		p=np.concatenate(p, axis=0)
+		print(p.shape)
+		np.savetxt(options.mergerow, p)
 			
 
 	E2end(logid)

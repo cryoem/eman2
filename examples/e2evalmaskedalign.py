@@ -34,6 +34,9 @@ from past.utils import old_div
 from builtins import range
 from EMAN2 import *
 from EMAN2db import db_open_dict, db_close_dict, db_check_dict, db_list_dicts
+import os
+import sys
+
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL,GLUT
@@ -47,13 +50,13 @@ from numpy import array,arange
 import traceback
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
-	from PyQt5.QtCore import QTimer
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
+	from PySide6.QtCore import QTimer
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import *
 except:
-	print("Warning: PyQt5 must be installed")
+	print("Warning: PySide6 must be installed")
 	sys.exit(1)
 
 
@@ -357,8 +360,8 @@ class GUIEvalImage(QtWidgets.QWidget):
 		self.cxray=CheckBox(None,"X-ray Pixels")
 		self.bvbl.addWidget(self.cxray)
 
-		self.bimport.clicked[bool].connect(self.doImport)
-		self.brefit.clicked[bool].connect(self.doRefit)
+		self.bimport.clicked.connect(self.doImport)
+		self.brefit.clicked.connect(self.doRefit)
 		self.cbgadj.valueChanged.connect(self.bgAdj)
 		self.sdefocus.valueChanged.connect(self.newCTF)
 		self.sbfactor.valueChanged.connect(self.newCTF)
@@ -372,12 +375,12 @@ class GUIEvalImage(QtWidgets.QWidget):
 #		QtCore.QObject.connect(self.soversamp, QtCore.SIGNAL("valueChanged"), self.newBox)
 		self.sang45.valueChanged.connect(self.recalc_real)
 		self.squality.valueChanged.connect(self.newQualityFactor)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.scalcmode.currentIndexChanged[int].connect(self.newCalcMode)
-		self.s2dmode.currentIndexChanged[int].connect(self.new2DMode)
-		self.s2danmode.currentIndexChanged[int].connect(self.new2DAnMode)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.scalcmode.currentIndexChanged.connect(self.newCalcMode)
+		self.s2dmode.currentIndexChanged.connect(self.new2DMode)
+		self.s2danmode.currentIndexChanged.connect(self.new2DAnMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
 	   	#QtCore.QObject.connect(self.saveparms,QtCore.SIGNAL("clicked(bool)"),self.on_save_params)
 		#QtCore.QObject.connect(self.recallparms,QtCore.SIGNAL("clicked(bool)"),self.on_recall_params)
@@ -435,7 +438,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 		self.writeCurParm()
 		event.accept()
-		QtWidgets.qApp.exit(0)
+		QApplication.instance().exit(0)
 		#app=QtWidgets.qApp
 		#if self.wimage != None:
 			#app.close_specific(self.wimage)
@@ -488,14 +491,14 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
-			self.wfft.updateGL()
+			self.wfft.update()
 		# Single measurement circle mode
 		elif self.f2danmode==1 :
 			self.wfft.del_shapes()
 			if self.ringrad==0: self.ringrad=1.0
 			self.wfft.add_shape("ring",EMShape(("circle",0.2,1.0,0.2,r,r,self.ringrad,1.0)))
 			self.wfft.add_shape("ringlbl",EMShape(("scrlabel",0.2,1.0,0.2,10,10,"r=%d pix -> 1/%1.2f 1/A (%1.4f)"%(self.ringrad,old_div(1.0,(self.ringrad*ds)),self.ringrad*ds),24.0,2.0)))
-			self.wfft.updateGL()
+			self.wfft.update()
 		# 2-D Crystal mode
 		elif self.f2danmode==2 :
 			shp={}
@@ -506,11 +509,11 @@ class GUIEvalImage(QtWidgets.QWidget):
 			self.wfft.del_shapes()
 			self.wfft.add_shapes(shp)
 			self.wfft.add_shape("xtllbl",EMShape(("scrlabel",1.0,0.3,0.3,10,10,"Unit Cell: %1.2f,%1.2f"%(old_div(1.0,(hypot(*self.xpos1)*ds)),old_div(1.0,(hypot(*self.xpos2)*ds))),60.0,2.0)))
-#			except: pass
-			self.wfft.updateGL()
+# 		except: pass
+			self.wfft.update()
 		else:
 			self.wfft.del_shapes()
-			self.wfft.updateGL()
+			self.wfft.update()
 
 
 		# Now update the plots for the correct plot mode
@@ -913,7 +916,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 			# update the box display on the image
 			self.wimage.del_shapes()
 			self.wimage.add_shape("box",EMShape(("rect",.3,.9,.3,parms[2][0],parms[2][1],parms[2][0]+parms[0],parms[2][1]+parms[0],1)))
-			self.wimage.updateGL()
+			self.wimage.update()
 		elif self.calcmode==1:
 			# update the box display on the image
 			nx=old_div(self.data["nx"],parms[0])-1
@@ -928,7 +931,7 @@ class GUIEvalImage(QtWidgets.QWidget):
 
 			self.wimage.del_shapes()
 			self.wimage.add_shapes(shp)
-			self.wimage.updateGL()
+			self.wimage.update()
 
 		if self.f2dmode>0 :
 			if self.f2dmode==1 : self.wfft.set_data(self.fft-self.fftbg)

@@ -43,7 +43,7 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import numpy as np
 
@@ -203,7 +203,7 @@ class EMPDBItem3DInspector(EMItem3DInspector):
 		self.file_path_label.setFont(lfont)
 		gridbox.addWidget(self.file_path_label, 3, 0)
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
-		self.data_checkbox.stateChanged[int].connect(self.onBBoxChange)
+		self.data_checkbox.stateChanged.connect(self.onBBoxChange)
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMPDBItem3DInspector: self.updateItemControls()
 

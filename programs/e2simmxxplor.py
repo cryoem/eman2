@@ -34,7 +34,8 @@
 from past.utils import old_div
 from builtins import range
 import os,sys
-from PyQt5 import QtGui, QtWidgets,QtCore
+from OpenGL import GL
+from PySide6 import QtGui, QtWidgets,QtCore
 from eman2_gui.valslider import ValSlider
 
 from e2eulerxplor import get_eulers_from
@@ -344,7 +345,7 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.ptcl_slider.setSingleStep(1)
 		self.ptcl_slider.setValue(0)
 		layout.addWidget(self.ptcl_slider)
-		self.ptcl_slider.valueChanged[int].connect(self.set_ptcl_idx)
+		self.ptcl_slider.valueChanged.connect(self.set_ptcl_idx)
 
 
 	def set_ptcl_idx(self,val):
@@ -365,8 +366,8 @@ class EMSimmxXplorInspector(EMSymInspector):
 		self.combo = QtWidgets.QComboBox(self)
 		for e in combo_entries: self.combo.addItem(e)
 
-		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
-		self.combo.currentIndexChanged[str].connect(self.on_combo_change)
+		self.combo.currentIndexChanged.connect(self.on_combo_change)
+		self.combo.currentIndexChanged.connect(self.on_combo_change)
 
 		vbl.addWidget(self.combo)
 

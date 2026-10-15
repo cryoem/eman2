@@ -37,8 +37,9 @@ from EMAN2 import *
 from EMAN2_utils import *
 import numpy as np
 import weakref
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from OpenGL import GL
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -143,8 +144,8 @@ def main():
 
 class EMTomoBoxer(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
-	module_closed = QtCore.pyqtSignal()
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
+	module_closed = QtCore.Signal()
 
 	def __init__(self,application,options,datafile=None):
 		QtWidgets.QWidget.__init__(self)
@@ -269,25 +270,25 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 
 		# file menu
-		self.mfile_open.triggered[bool].connect(self.menu_file_open)
-		self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
-		self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
-		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
-		self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
+		self.mfile_open.triggered.connect(self.menu_file_open)
+		self.mfile_read_boxloc.triggered.connect(self.menu_file_read_boxloc)
+		self.mfile_save_boxloc.triggered.connect(self.menu_file_save_boxloc)
+		self.mfile_save_boxes_stack.triggered.connect(self.save_boxes)
+		self.mfile_quit.triggered.connect(self.menu_file_quit)
 
 		# window menu
-		self.mwin_boxes.triggered[bool].connect(self.menu_win_boxes)
-		self.mwin_single.triggered[bool].connect(self.menu_win_single)
+		self.mwin_boxes.triggered.connect(self.menu_win_boxes)
+		self.mwin_single.triggered.connect(self.menu_win_single)
 #		QtCore.QObject.connect(self.mwin_average,QtCore.SIGNAL("triggered(bool)")  ,self.menu_win_average  )
 
 		# all other widgets
-		self.wdepth.valueChanged[int].connect(self.event_depth)
-		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
+		self.wdepth.valueChanged.connect(self.event_depth)
+		self.wnlayers.valueChanged.connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
-		self.wmaxmean.clicked[bool].connect(self.event_projmode)
+		self.wmaxmean.clicked.connect(self.event_projmode)
 		self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
-		self.wlocalbox.stateChanged[int].connect(self.event_localbox)
+		self.wlocalbox.stateChanged.connect(self.event_localbox)
 
 		self.xyview.mousemove.connect(self.xy_move)
 		self.xyview.mousedown.connect(self.xy_down)
@@ -1118,7 +1119,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.do_deletion(delids)
 
 	def xy_down(self,event):
-		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 		x,y=int(x),int(y)
 		z=int(self.get_z())
 		self.xydown=None
@@ -1159,7 +1160,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	def xy_drag(self,event):
 		
-		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 		x,y=int(x),int(y)
 		if self.optionviewer.erasercheckbox.isChecked():
 			self.del_region_xy(x,y)
@@ -1208,7 +1209,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	def xy_move(self,event):
 		if self.optionviewer.erasercheckbox.isChecked():
-			x,y=self.xyview.scr_to_img((event.x(),event.y()))
+			x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 			#print x,y
 			self.xyview.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
 			self.xyview.shapechange=1
@@ -1217,7 +1218,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			self.xyview.eraser_shape=None
 
 	def xz_down(self,event):
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 		x,z=int(x),int(z)
 		y=int(self.get_y())
 		self.xzdown=None
@@ -1256,7 +1257,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	def xz_drag(self,event):
 		if self.xzdown==None : return
 
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 		x,z=int(x),int(z)
 
 		dx=x-self.xzdown[1]
@@ -1299,7 +1300,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 
 	def zy_down(self,event):
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 		z,y=int(z),int(y)
 		x=int(self.get_x())
 		self.xydown=None
@@ -1337,7 +1338,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	def zy_drag(self,event):
 		if self.zydown==None : return
 
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 		z,y=int(z),int(y)
 
 		dz=z-self.zydown[1]
@@ -1658,12 +1659,12 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 
 		hbl.addLayout(vbl)
 
-		self.save_set_button.clicked[bool].connect(self.save_set)
-		self.new_set_button.clicked[bool].connect(self.new_set)
-		self.rename_set_button.clicked[bool].connect(self.rename_set)
-		self.delete_set_button.clicked[bool].connect(self.delete_set)
+		self.save_set_button.clicked.connect(self.save_set)
+		self.new_set_button.clicked.connect(self.new_set)
+		self.rename_set_button.clicked.connect(self.rename_set)
+		self.delete_set_button.clicked.connect(self.delete_set)
 		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
-		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.setlist.currentRowChanged.connect(self.set_list_row_changed)
 
 
 	def sets_changed(self):

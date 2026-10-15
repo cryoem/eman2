@@ -32,7 +32,7 @@
 #
 from builtins import range
 from EMAN2 import get_image_directory, dump_processors_list
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from .emrctstrategy import Strategy2IMGMan, Strategy2IMGPair
 from EMAN2jsondb import js_open_dict
 from EMAN2 import *
@@ -129,9 +129,9 @@ class ControlPannel(QtWidgets.QWidget):
 		self.gridkernel.append(self.add_custom_kernels(7))
 		self.add_kernel_sizes()
 		
-		self.filter_but.clicked[bool].connect(self.on_filter)
-		self.kernel_combobox.activated[int].connect(self.kernel_combobox_changed)
-		self.filter_combobox.activated[int].connect(self.filter_combobox_changed)
+		self.filter_but.clicked.connect(self.on_filter)
+		self.kernel_combobox.activated.connect(self.kernel_combobox_changed)
+		self.filter_combobox.activated.connect(self.filter_combobox_changed)
 		
 		return filterwidget
 	
@@ -170,8 +170,8 @@ class ControlPannel(QtWidgets.QWidget):
 		
 		processorwidget.setLayout(vboxa)
 		
-		self.processor_but.clicked[bool].connect(self.on_processor)
-		self.processor_combobox.activated[int].connect(self.processor_combobox_changed)
+		self.processor_but.clicked.connect(self.on_processor)
+		self.processor_combobox.activated.connect(self.processor_combobox_changed)
 		self.params_listbox.editingFinished.connect(self.params_listbox_changed)
 		
 		return processorwidget
@@ -316,8 +316,8 @@ class ControlPannel(QtWidgets.QWidget):
 		self.tool_button_group_box.setLayout(grid)
 		layout.addWidget(self.tool_button_group_box,0,)
 		
-		self.current_tool_combobox.activated[int].connect(self.current_tool_combobox_changed)
-		self.quality.activated[int].connect(self.quality_score_changed)
+		self.current_tool_combobox.activated.connect(self.current_tool_combobox_changed)
+		self.quality.activated.connect(self.quality_score_changed)
 	
 	def add_controls(self, layout):
 		butbox = QtWidgets.QHBoxLayout()
@@ -329,9 +329,9 @@ class ControlPannel(QtWidgets.QWidget):
 		self.done_but=QtWidgets.QPushButton("Done")
 		layout.addWidget(self.done_but)
 		
-		self.write_box_but.clicked[bool].connect(self.on_write_box)
-		self.write_but.clicked[bool].connect(self.on_write)
-		self.done_but.clicked[bool].connect(self.on_done)
+		self.write_box_but.clicked.connect(self.on_write_box)
+		self.write_but.clicked.connect(self.on_write)
+		self.done_but.clicked.connect(self.on_done)
 	
 	# This function configures the tools up tool change
 	def current_tool_combobox_changed(self, idx):
@@ -412,9 +412,9 @@ class ManualPicker(QtWidgets.QWidget):
 		self.mpsplitter = QtWidgets.QSplitter(QtCore.Qt.Vertical)
 		self.mpsplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		self.mpsplitter.addWidget(self)
-		self.clr_but.clicked[bool].connect(self.on_clear)
+		self.clr_but.clicked.connect(self.on_clear)
 	
-	def on_clear(self):
+def on_clear(self):
 		for window in self.mediator.windowlist:
 			window.boxes.clear_boxes()
 			window.update_mainwin()
@@ -511,12 +511,12 @@ class PairPickerTool(QtWidgets.QWidget):
 		self.ppsplitter.setFrameShape(QtWidgets.QFrame.StyledPanel)
 		self.ppsplitter.addWidget(self)
 		
-		self.spinbox.valueChanged[int].connect(self.on_spinbox)
-		self.updateboxes_cb.stateChanged[int].connect(self.on_updateboxes)
-		self.centertilts_cb.stateChanged[int].connect(self.on_centertilts)
-		self.clr_but.clicked[bool].connect(self.on_clear)
-		self.centerboxes_but.clicked[bool].connect(self.on_centerboxes_but)
-		self.upboxes_but.clicked[bool].connect(self.on_upboxes_but)
+		self.spinbox.valueChanged.connect(self.on_spinbox)
+		self.updateboxes_cb.stateChanged.connect(self.on_updateboxes)
+		self.centertilts_cb.stateChanged.connect(self.on_centertilts)
+		self.clr_but.clicked.connect(self.on_clear)
+		self.centerboxes_but.clicked.connect(self.on_centerboxes_but)
+		self.upboxes_but.clicked.connect(self.on_upboxes_but)
 	
 		# Initialize
 		self.spinbox.setValue(self.db.getdefault("ppspinbox",dfl=self.minpp_for_xform))
@@ -530,7 +530,7 @@ class PairPickerTool(QtWidgets.QWidget):
 		self.mask_combobox.addItem("SolidMask")
 		self.mask_combobox.setCurrentIndex(self.db.getdefault("masktype",dfl=0))
 		
-		self.mask_combobox.activated[int].connect(self.mask_combobox_changed)
+		self.mask_combobox.activated.connect(self.mask_combobox_changed)
 		
 	def mask_combobox_changed(self, idx):
 		self.db["masktype"] = idx

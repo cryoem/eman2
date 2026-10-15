@@ -38,8 +38,8 @@
 from past.utils import old_div
 from builtins import range
 import sys, math, weakref
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from .emselector import EMSelectorDialog	# This will be replaced by something more sensible in the future
 import re, os, glob
 from .embrowser import EMBrowserWidget
@@ -58,7 +58,7 @@ class PMComboBox(QtWidgets.QComboBox):
 
 class PMBaseWidget(QtWidgets.QWidget):
 	""" A base widget upon which all the other PM widgets are derived """
-	pmmessage = QtCore.pyqtSignal(str)
+	pmmessage = QtCore.Signal(str)
 
 	def __init__(self, name, mode="",returnNone=False):
 		QtWidgets.QWidget.__init__(self)
@@ -357,7 +357,7 @@ class PMBoolWidget(PMBaseWidget):
 		gridbox.addWidget(self.boolbox, 0, 0)
 		self.setLayout(gridbox)
 
-		self.boolbox.stateChanged[int].connect(self._on_boolchanged)
+		self.boolbox.stateChanged.connect(self._on_boolchanged)
 
 		self.setValue(self.boolvalue)
 
@@ -381,7 +381,7 @@ class PMBoolWidget(PMBaseWidget):
 
 class PMFileNameWidget(PMBaseWidget):
 	""" A widget for getting filenames. Type is checked """
-	pmfilename = QtCore.pyqtSignal(str)
+	pmfilename = QtCore.Signal(str)
 	@staticmethod
 	def copyWidget(widget):
 		""" Basically a copy constructor to get around QT and python limitations """
@@ -522,7 +522,7 @@ class PMDirectoryWidget(PMBaseWidget):
 		gridbox.addWidget(self.combobox, 0, 1)
 		self.setLayout(gridbox)
 
-		self.combobox.activated[str].connect(self.setValue)
+		self.combobox.activated.connect(self.setValue)
 
 		self.setValue(default)
 
@@ -542,9 +542,13 @@ class PMDirectoryWidget(PMBaseWidget):
 
 	def setValue(self, value, quiet=False):
 		self.updateDirs()
-		idx = self.combobox.findText(str(value))
-		if idx > -1:
-			self.combobox.setCurrentIndex(idx)
+		if isinstance(value, int) and value > -1:
+			# Called from activated signal with an index
+			self.combobox.setCurrentIndex(value)
+		else:
+			idx = self.combobox.findText(str(value))
+			if idx > -1:
+				self.combobox.setCurrentIndex(idx)
 		self.setErrorMessage(None)
 
 class PMComboWidget(PMBaseWidget):
@@ -572,7 +576,7 @@ class PMComboWidget(PMBaseWidget):
 		for choice in self.choices:
 			self.combobox.addItem(str(choice))
 
-		self.combobox.activated[str].connect(self.setValue)
+		self.combobox.activated.connect(self.setValue)
 
 		self.setValue(default)
 
@@ -583,6 +587,12 @@ class PMComboWidget(PMBaseWidget):
 		return self.datatype(self.combobox.currentText())
 
 	def setValue(self, value, quiet=False):
+		if isinstance(value, int) and value > -1:
+			# Called from activated signal with an index
+			self.combobox.setCurrentIndex(value)
+			self.setErrorMessage(None)
+			return
+
 		if value == '': value = "None"
 		idx = self.combobox.findText(str(value))
 		if idx > -1:
@@ -621,10 +631,11 @@ class PMComboParamsWidget(PMBaseWidget):
 		# Load choices
 		self.choices = sorted(choices)
 		for choice in self.choices:
-			self.combobox.addItem(str(choice))
-		self.combobox.addItem('None')
+			for choice in self.params_choices:
+				self.combobox.addItem(str(choice))
+			self.combobox.addItem('None')
 
-		self.combobox.activated[str].connect(self.setValue)
+			self.combobox.activated.connect(self.setValue)
 
 		self.setValue(default)
 
@@ -640,6 +651,12 @@ class PMComboParamsWidget(PMBaseWidget):
 
 	def setValue(self, value, quiet=False):
 		# First parse the value, as it may contain both options and params
+		if isinstance(value, int) and value > -1:
+			# Called from activated signal with an index
+			self.combobox.setCurrentIndex(value)
+			self.setErrorMessage(None)
+			return
+
 		if value == '': value = "None"
 		values = self._parsedefault(str(value))
 		# Next process the parsed value
@@ -684,7 +701,7 @@ class PMSymWidget(PMBaseWidget):
 
 		for i in ['icos','oct','tet','c','d','h']: self.combobox.addItem(i)
 
-		self.symnumbox.pmmessage[str].connect(self._on_message)
+		self.symnumbox.pmmessage.connect(self._on_message)
 
 		self.setValue(default)
 
@@ -752,12 +769,12 @@ class PMAutoMask3DWidget(PMBaseWidget):
 		gridbox.addWidget(self.params[4], 2, 1)
 		self.setLayout(gridbox)
 
-		self.automask3dbool.stateChanged[int].connect(self._on_boolchanged)
-		self.params[0].pmmessage[str].connect(self._on_message)
-		self.params[1].pmmessage[str].connect(self._on_message)
-		self.params[2].pmmessage[str].connect(self._on_message)
-		self.params[3].pmmessage[str].connect(self._on_message)
-		self.params[4].pmmessage[str].connect(self._on_message)
+		self.automask3dbool.stateChanged.connect(self._on_boolchanged)
+		self.params[0].pmmessage.connect(self._on_message)
+		self.params[1].pmmessage.connect(self._on_message)
+		self.params[2].pmmessage.connect(self._on_message)
+		self.params[3].pmmessage.connect(self._on_message)
+		self.params[4].pmmessage.connect(self._on_message)
 
 		self.setValue(default)
 
@@ -825,7 +842,7 @@ class PMTableBase(PMBaseWidget):
 
 class PMFSCTableWidget(PMTableBase):
 	""" A widget for generating FSC tables"""
-	pmmessage = QtCore.pyqtSignal(str)
+	pmmessage = QtCore.Signal(str)
 
 	@staticmethod
 	def copyWidget(widget):
@@ -845,7 +862,7 @@ class PMFSCTableWidget(PMTableBase):
 
 		self.tablewidget.setRowCount(0)
 		self.patterns = ["refine","frealign","multi"]
-		self.tablewidget.cellDoubleClicked[int, int].connect(self.loadFSC)
+		self.tablewidget.cellDoubleClicked.connect(self.loadFSC)
 
 		# Now update table
 		self.setValue(default)

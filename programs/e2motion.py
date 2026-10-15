@@ -40,8 +40,9 @@ import threading
 import time
 from sys import argv
 from EMAN2 import *
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtCore import Qt
+from OpenGL import GL
+from PySide6 import QtCore, QtGui, QtWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
@@ -412,23 +413,23 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		#self.hbl1.addStretch(5)
 
-		self.wbdrawali.clicked[bool].connect(self.aliDrawMode)
-		self.wbautoali.clicked[bool].connect(self.aliAutoPress)
-		self.wbresetali.clicked[bool].connect(self.aliResetPress)
-		self.wbaligo.clicked[bool].connect(self.aliGoPress)
-		self.wbrecalcref.clicked[bool].connect(self.aliRecalcRefPress)
-		self.wbrrecalcref.clicked[bool].connect(self.aliRRecalcRefPress)
-		self.wbdrawroi.clicked[bool].connect(self.roiDrawMode)
-		self.wbautoroi.clicked[bool].connect(self.roiAutoPress)
-		self.wbresetroi.clicked[bool].connect(self.roiResetPress)
-		self.wbroigo.clicked[bool].connect(self.roiGoPress)
-		self.wbcompute.clicked[bool].connect(self.doCompute)
-		self.wbshowptcl.clicked[bool].connect(self.showParticles)
+		self.wbdrawali.clicked.connect(self.aliDrawMode)
+		self.wbautoali.clicked.connect(self.aliAutoPress)
+		self.wbresetali.clicked.connect(self.aliResetPress)
+		self.wbaligo.clicked.connect(self.aliGoPress)
+		self.wbrecalcref.clicked.connect(self.aliRecalcRefPress)
+		self.wbrrecalcref.clicked.connect(self.aliRRecalcRefPress)
+		self.wbdrawroi.clicked.connect(self.roiDrawMode)
+		self.wbautoroi.clicked.connect(self.roiAutoPress)
+		self.wbresetroi.clicked.connect(self.roiResetPress)
+		self.wbroigo.clicked.connect(self.roiGoPress)
+		self.wbcompute.clicked.connect(self.doCompute)
+		self.wbshowptcl.clicked.connect(self.showParticles)
 		self.wvbiter.valueChanged.connect(self.newIter)
 		self.wvsnum.valueChanged.connect(self.newThresh)
-		self.wbdoavg.clicked[bool].connect(self.avgPress)
+		self.wbdoavg.clicked.connect(self.avgPress)
 
-		self.mfileopen.triggered[bool].connect(self.menuFileOpen)
+		self.mfileopen.triggered.connect(self.menuFileOpen)
 
 
 		# set up draw mode
@@ -619,7 +620,7 @@ class EMMotion(QtWidgets.QMainWindow):
 		while 1:
 			time.sleep(0.2)
 			self.wpbprogress.setValue(int(old_div(lst.qsize()*100,maxl)))
-			QtWidgets.qApp.processEvents()
+			QtWidgets.QApplication.instance().processEvents()
 
 			# If any threads are alive, it breaks out of the inner loop, if none are alive, the else block breaks out of the outer loop
 			for t in thrs:
@@ -635,7 +636,7 @@ class EMMotion(QtWidgets.QMainWindow):
 
 		self.wpbprogress.setEnabled(True)
 		self.wpbprogress.reset()
-		QtWidgets.qApp.processEvents()
+		QtWidgets.QApplication.instance().processEvents()
 		nthr=int(self.wvbcores.getValue())		# number of threads to use for faster alignments
 
 		print("bs1")

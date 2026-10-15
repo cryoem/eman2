@@ -63,7 +63,10 @@ def main():
 			it0=max(0, itr-1)			
 			
 			if options.nogoldstandard:
-				run(f"e2proclst.py {oldpath}/ptcls_{itr:02d}_even.lst {oldpath}/ptcls_{itr:02d}_odd.lst --create {path}/ptcls_00.lst --mergeeo")
+				if os.path.isfile(f"{oldpath}/ptcls_{itr:02d}.lst"):
+					run(f"e2proclst.py {oldpath}/ptcls_{itr:02d}.lst --create {path}/ptcls_00.lst")
+				else:
+					run(f"e2proclst.py {oldpath}/ptcls_{itr:02d}_even.lst {oldpath}/ptcls_{itr:02d}_odd.lst --create {path}/ptcls_00.lst --mergeeo")
 				if options.model:
 					pts=np.loadtxt(options.model)
 				else:

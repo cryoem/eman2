@@ -171,7 +171,6 @@ namespace EMAN
 		int to_em_datatype(int pif_datatype);
 		int to_pif_datatype(int em_datatype);
 
-	    string filename;
 		PifFileHeader pfh;
 		int mode_size;
 		bool is_big_endian;

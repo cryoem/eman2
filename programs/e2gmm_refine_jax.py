@@ -174,25 +174,25 @@ def calc_frc(data_cpx, imgs_cpx, rings, return_curve=False, minpx=1, maxpx=-1):
 def get_slice(volume, ang):
 	#### make projections of 3D volume
 	
-    R=make_matrix_3d(ang)
-    rotated_coords = R @ ind_xy.T
-    rotated_coords+=rawbox//2
-    rotated_coords=jnp.concatenate([rotated_coords[:,:2], abs(rotated_coords[:,2:])], axis=1)
+	R=make_matrix_3d(ang)
+	rotated_coords = R @ ind_xy.T
+	rotated_coords+=rawbox//2
+	rotated_coords=jnp.concatenate([rotated_coords[:,:2], abs(rotated_coords[:,2:])], axis=1)
     
-    ix=jnp.floor(rotated_coords).astype(int)
-    ir=rotated_coords-jnp.floor(rotated_coords)
-    ir=[ir, 1-ir]
+	ix=jnp.floor(rotated_coords).astype(int)
+	ir=rotated_coords-jnp.floor(rotated_coords)
+	ir=[ir, 1-ir]
     
-    pj=jnp.zeros((rawbox, rawbox), dtype=np.complex64).flatten()
+	pj=jnp.zeros((rawbox, rawbox), dtype=np.complex64).flatten()
     
-    for i0 in ind_interp[...,None]:
-        w=ir[0]*i0+ir[1]*(1-i0)
-        w=jnp.prod(w, axis=0)
-        i=ix+i0
-        pj=pj+volume[i[0], i[1], i[2]]*w
+	for i0 in ind_interp[...,None]:
+		w=ir[0]*i0+ir[1]*(1-i0)
+		w=jnp.prod(w, axis=0)
+		i=ix+i0
+		pj=pj+volume[i[0], i[1], i[2]]*w
 
-    pj=pj.reshape((rawbox, rawbox))
-    return pj
+	pj=pj.reshape((rawbox, rawbox))
+	return pj
 
 get_slice_multi=jax.vmap(get_slice, in_axes=(None, 0))
 

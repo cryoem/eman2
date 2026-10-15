@@ -51,7 +51,7 @@ OpenGL.ERROR_CHECKING = False
 from OpenGL import GL
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import numpy as np
 
@@ -230,7 +230,7 @@ class EMDataItem3DInspector(EMItem3DInspector):
 		gridbox.addWidget(self.file_path_label, 3, 0)
 
 		self.file_browse_button.clicked.connect(self.onFileBrowse)
-		self.data_checkbox.stateChanged[int].connect(self.onBBoxChange)
+		self.data_checkbox.stateChanged.connect(self.onBBoxChange)
 
 		# Set to default, but run only once and not in each base class
 		if type(self) == EMDataItem3DInspector: self.updateItemControls()
@@ -960,7 +960,7 @@ class EMVolumeInspector(EMInspectorControlShape):
 
 		self.histogram_widget.setDynamicProbe(self.probeposition, self.probecolor, self.probepresent,levelvalue) # The needs to be node AFTER the data is set
 
-		self.cappingcolor.newcolor[QtCore.QColor].connect(self._on_cap_color)
+		self.cappingcolor.newcolor.connect(self._on_cap_color)
 
 	def _on_cap_color(self, color):
 		rgb = color.getRgb()
@@ -991,17 +991,17 @@ class EMIsosurfaceInspector(EMInspectorControlShape):
 		EMInspectorControlShape.__init__(self, name, item3d)	# for the iso inspector we need two grid cols for extra space....
 
 		self.thr.valueChanged.connect(self.onThresholdSlider)
-		self.histogram_widget.thresholdChanged[float].connect(self.onHistogram)
+		self.histogram_widget.thresholdChanged.connect(self.onHistogram)
 		self.cullbackface.toggled.connect(self.onCullFaces)
 		self.wireframe.toggled.connect(self.onWireframe)
 		self.colorbyradius.toggled.connect(self.onColorByRadius)
 		self.colorbymap.toggled.connect(self.onColorByMap)
 		self.cmapbrowse.clicked.connect(self.onFileBrowse)
-		self.sampling_spinbox.valueChanged[int].connect(self.onSampling)
-		self.innercolorscaling.valueChanged[int].connect(self.reColorScale)
-		self.outercolorscaling.valueChanged[int].connect(self.reColorScale)
-		self.cmapmin.valueChanged[int].connect(self.reColorMapMinMax)
-		self.cmapmax.valueChanged[int].connect(self.reColorMapMinMax)
+		self.sampling_spinbox.valueChanged.connect(self.onSampling)
+		self.innercolorscaling.valueChanged.connect(self.reColorScale)
+		self.outercolorscaling.valueChanged.connect(self.reColorScale)
+		self.cmapmin.valueChanged.connect(self.reColorMapMinMax)
+		self.cmapmax.valueChanged.connect(self.reColorMapMinMax)
 
 	def updateItemControls(self):
 		""" Updates this item inspector. Function is called by the item it observes"""

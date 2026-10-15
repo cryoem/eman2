@@ -2262,7 +2262,7 @@ class Boxable(object):
 		args.append("--input="+tmpimage)
 		args.append("--ncls=25")
 		
-		self.process.finished[int].connect(self.process_finished)
+		self.process.finished.connect(self.process_finished)
 		self.process.started.connect(self.process_start)
 		print(self.process.start(program,args))
 

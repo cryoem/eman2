@@ -31,7 +31,10 @@
 #
 
 from builtins import range
+import os
+import sys
 from EMAN2 import *
+
 from eman2_gui.emimage import *
 import time
 

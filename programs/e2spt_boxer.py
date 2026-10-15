@@ -42,6 +42,8 @@ from EMAN2_utils import numpy2pdb
 import numpy as np
 
 import weakref
+# upstream: OpenGL must be imported BEFORE any PySide6 import
+from OpenGL import GL
 from eman2_gui.emapplication import get_application, EMApp
 # Match whatever Qt binding EMApp (and this environment's eman2_gui) is built on --
 # this script is symlinked across multiple conda envs that don't necessarily agree
@@ -63,6 +65,8 @@ from eman2_gui.emshape import EMShape
 from eman2_gui.valslider import ValSlider, ValBox
 from sklearn.decomposition import PCA
 
+import faulthandler
+faulthandler.enable()
 	
 def run(cmd):
 	print(cmd)
@@ -120,11 +124,11 @@ def main():
 
 class EMTomoBoxer(QtWidgets.QMainWindow):
 	"""This class represents the EMTomoBoxer application instance.  """
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
-	module_closed = QtCore.pyqtSignal()
+	keyPress = QtCore.Signal(QtGui.QKeyEvent)
+	module_closed = QtCore.Signal()
 
 	def __init__(self,application,options,datafile):
-		QtWidgets.QWidget.__init__(self)
+		QtWidgets.QMainWindow.__init__(self)
 		self.initialized=False
 		self.app=weakref.ref(application)
 		self.options=options
@@ -186,8 +190,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.splitter_bottom.addWidget(self.grid_widget)
 		self.splitter_bottom.addWidget(self.xzview)
 
-		self.splitter_top.splitterMoved.connect(lambda pos, index: self.sync_splitters(self.splitter_top, self.splitter_bottom))
-		self.splitter_bottom.splitterMoved.connect(lambda pos, index: self.sync_splitters(self.splitter_bottom, self.splitter_top))
+		self.splitter_top.splitterMoved.connect(self._on_top_splitter_moved)
+		self.splitter_bottom.splitterMoved.connect(self._on_bottom_splitter_moved)
 
 #########################################################################
 		
@@ -212,8 +216,8 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.wbautoc.setChecked(True)
 		self.gbl3.addWidget(self.wbautoc)
 		
-		self.wzheight=ValBox(label="Z height:",value=256)
-		self.gbl2.addWidget(self.wzheight,1,0)
+		#self.wzheight=ValBox(label="Z height:",value=256)
+		#self.gbl2.addWidget(self.wzheight,1,0)
 
 		# box size
 		self.wboxsize=ValBox(label="Box Size:",value=0)
@@ -259,22 +263,22 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.dragging=-1
 
 		
-		self.button_flat.clicked[bool].connect(self.flatten_tomo)
-		self.button_reset.clicked[bool].connect(self.reset_flatten_tomo)
+		self.button_flat.clicked.connect(self.flatten_tomo)
+		self.button_reset.clicked.connect(self.reset_flatten_tomo)
 
 		# file menu
 		#self.mfile_open.triggered[bool].connect(self.menu_file_open)
-		self.mfile_read_boxloc.triggered[bool].connect(self.menu_file_read_boxloc)
-		self.mfile_save_boxloc.triggered[bool].connect(self.menu_file_save_boxloc)
-		self.mfile_save_boxpdb.triggered[bool].connect(self.menu_file_save_boxpdb)
+		self.mfile_read_boxloc.triggered.connect(self.menu_file_read_boxloc)
+		self.mfile_save_boxloc.triggered.connect(self.menu_file_save_boxloc)
+		self.mfile_save_boxpdb.triggered.connect(self.menu_file_save_boxpdb)
 		
-		self.mfile_save_boxes_stack.triggered[bool].connect(self.save_boxes)
-		self.mfile_save_gif.triggered[bool].connect(self.save_gif)
+		self.mfile_save_boxes_stack.triggered.connect(self.save_boxes)
+		self.mfile_save_gif.triggered.connect(self.save_gif)
 		#self.mfile_quit.triggered[bool].connect(self.menu_file_quit)
 
 		# all other widgets
-		self.wdepth.valueChanged[int].connect(self.event_depth)
-		self.wnlayers.valueChanged[int].connect(self.event_nlayers)
+		self.wdepth.valueChanged.connect(self.event_depth)
+		self.wnlayers.valueChanged.connect(self.event_nlayers)
 		self.wboxsize.valueChanged.connect(self.event_boxsize)
 		
 #Erik commented out because QHBoxlayerout has no attribute 'setRowMinimumheight'
@@ -283,7 +287,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.wmaxmean.clicked[bool].connect(self.event_projmode)
 		#self.wscale.valueChanged.connect(self.event_scale)
 		self.wfilt.valueChanged.connect(self.event_filter)
-		self.wlocalbox.stateChanged[int].connect(self.event_localbox)
+		self.wlocalbox.stateChanged.connect(self.event_localbox)
 
 		self.xyview.mousemove.connect(self.xy_move)
 		self.xyview.mousedown.connect(self.xy_down)
@@ -415,7 +419,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		info.close()
 		
 		E2loadappwin("e2sptboxer","main",self)
-		E2loadappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
+		E2loadappwin("e2sptboxer","boxes",self.boxesviewer)
 		E2loadappwin("e2sptboxer","option",self.optionviewer)
 		
 		#### particle classes
@@ -460,6 +464,12 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		target_splitter.blockSignals(True)
 		target_splitter.setSizes(source_splitter.sizes())
 		target_splitter.blockSignals(False)
+
+	def _on_top_splitter_moved(self, pos, index):
+		self.sync_splitters(self.splitter_top, self.splitter_bottom)
+
+	def _on_bottom_splitter_moved(self, pos, index):
+		self.sync_splitters(self.splitter_bottom, self.splitter_top)
 		
 	def set_data(self,data):
 
@@ -472,7 +482,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		#self.gbl.setRowMinimumHeight(1,max(250,data["nz"]))
 		#self.gbl.setColumnMinimumWidth(0,max(250,data["nz"]))
 		#print(data["nx"],data["ny"],data["nz"])
-		self.wzheight.setValue(data["nz"])
+		#self.wzheight.setValue(data["nz"])
 
 		self.wdepth.setRange(0,data["nz"]-1)
 		self.wdepth.setValue(data["nz"]//2)
@@ -579,6 +589,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 			fnames.append(f"snapshot_{i:03d}.png")
 			ss_img.save(fnames[-1])
 # 		
+		fnames=fnames[1:]
 		c="convert {} snapshot.gif".format(' '.join(fnames+fnames[::-1]))
 		print(c)
 		os.system(c)
@@ -1012,15 +1023,15 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 	
 	#### mouse click
 	def xy_down(self,event):
-		x,y=self.xyview.scr_to_img((event.x(),event.y()))
+		x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_down(event, x,y,self.z_loc, "z")
 		
 	def xz_down(self,event):
-		x,z=self.xzview.scr_to_img((event.x(),event.y()))
+		x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_down(event,x,self.y_loc,z, "y")
 			
 	def zy_down(self,event):
-		z,y=self.zyview.scr_to_img((event.x(),event.y()))
+		z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 		self.mouse_down(event,self.x_loc,y,z, "x")
 		
 	def mouse_down(self,event, x, y, z, axis):
@@ -1088,7 +1099,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		
 		if self.optionviewer.erasercheckbox.isChecked(): 
 			self.xyview.eraser_shape=self.xzview.eraser_shape=self.zyview.eraser_shape=None
-			x,y=view.scr_to_img((event.x(),event.y()))
+			x,y=view.scr_to_img((event.position().x(),event.position().y()))
 			view.eraser_shape=EMShape(["circle",1,1,1,x,y,self.eraser_width(),2])
 			view.shapechange=1
 			view.update()
@@ -1119,17 +1130,17 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 
 	def xy_drag(self,event):
 		if self.dragging>=0:
-			x,y=self.xyview.scr_to_img((event.x(),event.y()))
+			x,y=self.xyview.scr_to_img((event.position().x(),event.position().y()))
 			self.mouse_drag(x,y,self.z_loc)
 
 	def xz_drag(self,event):
 		if self.dragging>=0:
-			x,z=self.xzview.scr_to_img((event.x(),event.y()))
+			x,z=self.xzview.scr_to_img((event.position().x(),event.position().y()))
 			self.mouse_drag(x,self.y_loc,z)
 	
 	def zy_drag(self,event):
 		if self.dragging>=0:
-			z,y=self.zyview.scr_to_img((event.x(),event.y()))
+			z,y=self.zyview.scr_to_img((event.position().x(),event.position().y()))
 			self.mouse_drag(self.x_loc,y,z)
 		
 	def mouse_up(self,event):
@@ -1272,7 +1283,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		c=pca.components_
 		
 		modifiers = QtWidgets.QApplication.keyboardModifiers()
-		if modifiers == QtCore.Qt.ShiftModifier:
+		if modifiers & QtCore.Qt.ShiftModifier:
 			axis=0
 			t2=Transform({"type":"xyz","ytilt":90, "ztilt":90})
 		else:
@@ -1363,7 +1374,7 @@ class EMTomoBoxer(QtWidgets.QMainWindow):
 		self.SaveJson()
 		
 		E2saveappwin("e2sptboxer","main",self)
-		E2saveappwin("e2sptboxer","boxes",self.boxesviewer.qt_parent)
+		E2saveappwin("e2sptboxer","boxes",self.boxesviewer)
 		E2saveappwin("e2sptboxer","option",self.optionviewer)
 		
 		#self.boxviewer.close()
@@ -1451,12 +1462,12 @@ class EMTomoSetsPanel(QtWidgets.QWidget):
 
 		hbl.addLayout(vbl)
 
-		self.save_set_button.clicked[bool].connect(self.save_set)
-		self.new_set_button.clicked[bool].connect(self.new_set)
-		self.rename_set_button.clicked[bool].connect(self.rename_set)
-		self.delete_set_button.clicked[bool].connect(self.delete_set)
+		self.save_set_button.clicked.connect(self.save_set)
+		self.new_set_button.clicked.connect(self.new_set)
+		self.rename_set_button.clicked.connect(self.rename_set)
+		self.delete_set_button.clicked.connect(self.delete_set)
 		self.setlist.itemChanged[QtWidgets.QListWidgetItem].connect(self.set_list_item_changed)
-		self.setlist.currentRowChanged[int].connect(self.set_list_row_changed)
+		self.setlist.currentRowChanged.connect(self.set_list_row_changed)
 
 
 	def sets_changed(self):

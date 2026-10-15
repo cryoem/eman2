@@ -272,7 +272,7 @@ NOTE: This program should be run from the project directory, not from within the
 		gui.show_guis()
 		gui.show()
 		gui.raise_()
-		app.exec_()
+		app.exec()
 
 #		print "done execution"
 
@@ -2265,15 +2265,16 @@ def ctf_env_points(im_1d,bg_1d,ctf) :
 #	return ret
 
 try:
-	from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
-	from PyQt5.QtCore import Qt
+	from OpenGL import GL
+	from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
+	from PySide6.QtCore import Qt
 	import OpenGL
 	OpenGL.ERROR_CHECKING = False
 	from OpenGL import GL,GLUT
 	from eman2_gui.emshape import *
 	from eman2_gui.valslider import ValSlider,CheckBox
 except:
-	print("Warning: PyQt5 must be installed to use the --gui option")
+	print("Warning: PySide6 must be installed to use the --gui option")
 	class dummy(object):
 		pass
 	class QWidget(object):
@@ -2294,7 +2295,7 @@ def notzero(x):
 
 class MyListWidget(QtWidgets.QListWidget):
 	"""Exactly like a normal list widget but intercepts a few keyboard events"""
-	keypress = QtCore.pyqtSignal(QtGui.QKeyEvent)
+	keypress = QtCore.Signal(QtGui.QKeyEvent)
 
 	def keyPressEvent(self,event):
 
@@ -2306,8 +2307,10 @@ class MyListWidget(QtWidgets.QListWidget):
 #		event.key()==Qt.Key_I
 
 
+
+
 class GUIctf(QtWidgets.QWidget):
-	module_closed = QtCore.pyqtSignal()
+	module_closed = QtCore.Signal()
 
 	def __init__(self,application,data,autohp=True,nosmooth=False,highdensity=False):
 		"""Implements the CTF fitting dialog using various EMImage and EMPlot2D widgets
@@ -2454,14 +2457,14 @@ class GUIctf(QtWidgets.QWidget):
 		self.scs.valueChanged.connect(self.newCTF)
 		self.squality.valueChanged.connect(self.newQual)
 		self.showzerorings.valueChanged.connect(self.update_plot)
-		self.setlist.currentRowChanged[int].connect(self.newSet)
+		self.setlist.currentRowChanged.connect(self.newSet)
 		self.setlist.keypress.connect(self.listkey)
-		self.splotmode.currentIndexChanged[int].connect(self.newPlotMode)
+		self.splotmode.currentIndexChanged.connect(self.newPlotMode)
 
-		self.saveparms.clicked[bool].connect(self.on_save_params)
-		self.recallparms.clicked[bool].connect(self.on_recall_params)
-		self.refit.clicked[bool].connect(self.on_refit)
-		self.output.clicked[bool].connect(self.on_output)
+		self.saveparms.clicked.connect(self.on_save_params)
+		self.recallparms.clicked.connect(self.on_recall_params)
+		self.refit.clicked.connect(self.on_refit)
+		self.output.clicked.connect(self.on_output)
 
 		self.neednewps=False
 		self.update_data()
@@ -2470,9 +2473,9 @@ class GUIctf(QtWidgets.QWidget):
 
 
 		E2loadappwin("e2ctf","main",self)
-		E2loadappwin("e2ctf","image",self.guiim.qt_parent)
-		E2loadappwin("e2ctf","realimage",self.guirealim.qt_parent)
-		E2loadappwin("e2ctf","plot",self.guiplot.qt_parent)
+		E2loadappwin("e2ctf","image",self.guiim)
+		E2loadappwin("e2ctf","realimage",self.guirealim)
+		E2loadappwin("e2ctf","plot",self.guiplot)
 
 		self.setWindowTitle("CTF")
 
@@ -2600,14 +2603,14 @@ class GUIctf(QtWidgets.QWidget):
 		E2saveappwin("e2ctf","main",self)
 
 		if self.guiim != None:
-			E2saveappwin("e2ctf","image",self.guiim.qt_parent)
+			E2saveappwin("e2ctf","image",self.guiim)
 			self.app().close_specific(self.guiim)
 			self.guiim = None
 		if self.guiplot != None:
-			E2saveappwin("e2ctf","plot",self.guiplot.qt_parent)
+			E2saveappwin("e2ctf","plot",self.guiplot)
 			self.app().close_specific(self.guiplot)
 		if self.guirealim != None:
-			E2saveappwin("e2ctf","realimage",self.guirealim.qt_parent)
+			E2saveappwin("e2ctf","realimage",self.guirealim)
 			self.app().close_specific(self.guirealim)
 
 		event.accept()
@@ -2926,9 +2929,9 @@ class GUIctf(QtWidgets.QWidget):
 #		print "self.data[val]=",self.data[val][0].split('#')[-1]
 
 
-		self.guiim.qt_parent.setWindowTitle("e2ctf - 2D FFT - "+self.data[val][0].split('#')[-1])
-		self.guirealim.qt_parent.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
-		self.guiplot.qt_parent.setWindowTitle("e2ctf - Plot - "+self.data[val][0].split('#')[-1])
+		self.guiim.setWindowTitle("e2ctf - 2D FFT - "+self.data[val][0].split('#')[-1])
+		self.guirealim.setWindowTitle("e2ctf - "+self.data[val][0].split('#')[-1])
+		self.guiplot.setWindowTitle("e2ctf - Plot - "+self.data[val][0].split('#')[-1])
 
 		n=EMUtil.get_image_count(self.data[val][0])
 		if n>1:
@@ -2998,26 +3001,26 @@ class GUIctf(QtWidgets.QWidget):
 
 
 	def imgmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 		#self.guiim.add_shape("cen",["rect",.9,.9,.4,x0,y0,x0+2,y0+2,1.0])
 
 	def imgmousedrag(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 		# box deletion when shift held down
 		#if event.modifiers()&Qt.ShiftModifier:
 			#for i,j in enumerate(self.boxes):
 
 	def imgmouseup(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def plotmousedown(self,event) :
-		m=self.guiim.scr_to_img((event.x(),event.y()))
+		m=self.guiim.scr_to_img((event.position().x(),event.position().y()))
 
 	def run(self):
 		"""If you make your own application outside of this object, you are free to use
 		your own local app.exec_(). This is a convenience for ctf-only programs."""
-		self.app.exec_()
+		self.app.exec()
 
 #		E2saveappwin("boxer","imagegeom",self.guiim)
 #		try:

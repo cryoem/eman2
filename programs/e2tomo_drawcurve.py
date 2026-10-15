@@ -10,8 +10,8 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtGui, QtWidgets, QtCore, QtOpenGL
-from PyQt5.QtCore import Qt
+from PySide6 import QtGui, QtWidgets, QtCore, QtOpenGLWidgets
+from PySide6.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
@@ -261,11 +261,11 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		self.tx_interp.setText("20")
 		self.gbl.addWidget(self.tx_interp, 5,1,1,1)
 
-		self.classidbox.valueChanged[int].connect(self.classid_change)
-		self.bt_showimg.clicked[bool].connect(self.show_tomo)
-		self.bt_savepdb.clicked[bool].connect(self.save_pdb)
-		self.bt_interp.clicked[bool].connect(self.interp_points)
-		self.bt_clear.clicked[bool].connect(self.clear_points)
+		self.classidbox.valueChanged.connect(self.classid_change)
+		self.bt_showimg.clicked.connect(self.show_tomo)
+		self.bt_savepdb.clicked.connect(self.save_pdb)
+		self.bt_interp.clicked.connect(self.interp_points)
+		self.bt_clear.clicked.connect(self.clear_points)
 
 		#self.gbl.addWidget(self.imgview,0,0)
 		self.options=options
@@ -421,8 +421,8 @@ class EMDrawWindow(QtWidgets.QMainWindow):
 		return
 
 	def on_mouseup(self, event):
-		x,y=self.imgview.scr_to_img((event.x(),event.y()))
-		if not event.button()&Qt.LeftButton:
+		x,y=self.imgview.scr_to_img((event.position().x(),event.position().y()))
+		if not event.button()&Qt.MouseButton.LeftButton:
 			return
 
 		if event.modifiers()&Qt.ControlModifier or event.modifiers()&Qt.ShiftModifier:

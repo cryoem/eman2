@@ -171,8 +171,9 @@ once complete, bispectra can be recomputed based on the masked particles, or the
 
 def maskparmgui(classes):
 	try:
+		from OpenGL import GL
 		from eman2_gui.emapplication import EMApp
-		from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+		from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGLWidgets
 		import OpenGL
 		OpenGL.ERROR_CHECKING = False
 		from OpenGL import GL,GLUT
@@ -180,7 +181,7 @@ def maskparmgui(classes):
 		from eman2_gui.emimagemx import EMImageMXWidget
 		
 	except:
-		print("Error: PyQt5 must be usable to use the --gui option")
+		print("Error: PySide6 must be usable to use the --gui option")
 		sys.exit(1)
 
 
@@ -227,7 +228,7 @@ def maskparmgui(classes):
 			self.snmax.valueChanged.connect(self.newParm)
 			self.sshells.valueChanged.connect(self.newParm)
 			self.ssigma.valueChanged.connect(self.newParm)
-			self.bok.clicked[bool].connect(self.close)
+			self.bok.clicked.connect(self.close)
 	
 			self.newParm()
 
@@ -250,7 +251,7 @@ def maskparmgui(classes):
 	gui=GUImask(app,classes)
 	gui.show()
 	gui.raise_()
-	app.exec_()
+	app.exec()
 	
 	return((gui.slpres.value,gui.snmax.value,gui.sshells.value,gui.ssigma.value))
 

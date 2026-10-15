@@ -34,7 +34,7 @@ from builtins import object
 import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL import GL
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 from EMAN2 import Transform, Vec4f, Vec3f
 from libpyGLUtils2 import GLUtil
 from .valslider import ValSlider, EMSpinWidget
@@ -168,8 +168,9 @@ class EMItem3D(object): #inherit object for new-style class (new-stype classes r
 		@type children: list
 		@param children: the child nodes
 		@type transform: Transform or None
-		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children 
+		@param transform: The transformation (rotation, scaling, translation) that should be applied before rendering this node and its children
 		"""
+		super().__init__()
 		self.label = None	# Customizable label, used to label the inspector in the tree
 		self.setParent(parent)
 		self.setChildren(children)
@@ -604,10 +605,10 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		# set to default, but run only as a base class
 		if type(self) == EMItem3DInspector: self.updateItemControls()
 		
-		self.tx.valueChanged[int].connect(self._on_translation)
-		self.ty.valueChanged[int].connect(self._on_translation)
-		self.tz.valueChanged[int].connect(self._on_translation)
-		self.zoom.valueChanged[int].connect(self._on_scale)
+		self.tx.valueChanged.connect(self._on_translation)
+		self.ty.valueChanged.connect(self._on_translation)
+		self.tz.valueChanged.connect(self._on_translation)
+		self.zoom.valueChanged.connect(self._on_scale)
 		self.resetbuttontx.clicked.connect(self._on_resettx)
 		self.resetbuttonrot.clicked.connect(self._on_resetrot)
 	
@@ -838,7 +839,7 @@ class EMItem3DInspector(QtWidgets.QTabWidget):
 		self.rotcombobox.addItem("quaternion")
 	
 		# Signal for all sliders
-		self.rotcombobox.activated[int].connect(self._rotcombobox_changed)
+		self.rotcombobox.activated.connect(self._rotcombobox_changed)
 		self.emanazslider.valueChanged.connect(self._on_EMAN_rotation)
 		self.emanaltslider.valueChanged.connect(self._on_EMAN_rotation)
 		self.emanphislider.valueChanged.connect(self._on_EMAN_rotation)

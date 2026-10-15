@@ -31,11 +31,14 @@
 #
 
 # displaydemo.py  09/18/2009  Steven Ludtke
-
-
+import os
+import sys
 from builtins import object
 from EMAN2 import *
 from math import *
+import os
+import sys
+
 from eman2_gui.emapplication import EMApp
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emshape import EMShape
@@ -73,12 +76,12 @@ class TestControl(object):
 	def drag(self,event,lc):
 		s=EMShape(["line",0,.7,0,self.downloc[0],self.downloc[1],lc[0],lc[1],1])
 		self.im2d.add_shape("mine",s)
-		self.im2d.updateGL()
+		self.im2d.update()
 	
 	def up(self,event,lc):
 		s=EMShape(["line",.7,.2,0,self.downloc[0],self.downloc[1],lc[0],lc[1],1])
 		self.im2d.del_shape("mine")
 		self.im2d.add_shape("done",s)
-		self.im2d.updateGL()
+		self.im2d.update()
 	
 if __name__ == "__main__":  main()

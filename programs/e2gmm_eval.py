@@ -37,6 +37,7 @@ def main():
 	parser.add_argument("--fulldist", action="store_true", default=False ,help="use full distance in reduced space instead of project to one axis.")
 
 	parser.add_argument("--spt", action="store_true", default=False ,help="mode for subtomogram particles.")
+	parser.add_argument("--spt_ntilt", type=int,help="in spt mode, skip particles with fewer than this many tilt images", default=-1)
 	parser.add_argument("--parallel", type=str,help="parallel options for 3d reconstruction", default="thread:32")
 
 	parser.add_argument("--ppid", type=int, help="Set the PID of the parent process, used for cross platform PPID",default=-1)
@@ -51,6 +52,10 @@ def main():
 		uid=np.unique(pids)
 		p3did=[np.where(pids==u)[0] for u in uid]
 		print(len(uid), "3D particles")
+		if options.spt_ntilt>0:
+			p3did=[p for p in p3did if len(p)>=options.spt_ntilt]
+			print("keeping", len(p3did), "3D particles")
+
 		
 	if options.pts.endswith(".lst"):
 		print("Found lst input. Use angle difference to build trajectory")
@@ -73,13 +78,17 @@ def main():
 				x0=l0["xform.projection"]
 				x1=l1["xform.projection_00"]
 				dx=x0*x1.inverse()
-				dx=dx.get_params("xyz")
-				dx=[dx["xtilt"],dx["ytilt"],dx["ztilt"],dx["tx"],dx["ty"],dx["tz"]]
+				#dx=dx.get_params("xyz")
+				#dx=[dx["xtilt"],dx["ytilt"],dx["ztilt"],dx["tx"],dx["ty"],dx["tz"]]
+				dx=dx.get_params("quaternion")
+				dx=[dx["e0"],dx["e1"],dx["e2"],dx["e3"],dx["tx"],dx["ty"],dx["tz"]]
 				pts.append(dx)
 				
 		pts=np.array(pts)
+		pts[:,-3:]/=100
 		print("Point shape:", pts.shape)
 		print("STD:", np.std(pts, axis=0))
+		
 		#pts=pts/np.std(pts, axis=0)
 		
 	else:

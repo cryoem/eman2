@@ -45,7 +45,7 @@ import OpenGL
 OpenGL.ERROR_CHECKING = False
 from OpenGL.GL import *
 from OpenGL.GLU import *
-from PyQt5 import QtCore, QtGui, QtWidgets, QtOpenGL
+from PySide6 import QtCore, QtGui, QtWidgets
 
 import numpy as np
 
@@ -1082,9 +1082,9 @@ class EMInspectorControlShape(EMItem3DInspector):
 		# Set to default, but do not run if being inherited
 		if type(self) == EMInspectorControlShape: self.updateItemControls()
 		
-		self.ambcolorbox.newcolor[QtGui.QColor].connect(self._on_ambient_color)
-		self.diffusecolorbox.newcolor[QtGui.QColor].connect(self._on_diffuse_color)
-		self.specularcolorbox.newcolor[QtGui.QColor].connect(self._on_specular_color)
+		self.ambcolorbox.newcolor.connect(self._on_ambient_color)
+		self.diffusecolorbox.newcolor.connect(self._on_diffuse_color)
+		self.specularcolorbox.newcolor.connect(self._on_specular_color)
 		self.shininess.valueChanged.connect(self._on_shininess)
 		
 	def _on_ambient_color(self, color):
@@ -1170,8 +1170,8 @@ class EMInspectorControlScatterPlot(EMInspectorControlShape):
 		if type(self) == EMInspectorControlScatterPlot: 
 			self.updateItemControls()
 		
-		self.pointsize.valueChanged[object].connect(self.onPointSizeChanged)
-		self.pointthr.valueChanged[object].connect(self.onPointThrChanged)
+		self.pointsize.valueChanged.connect(self.onPointSizeChanged)
+		self.pointthr.valueChanged.connect(self.onPointThrChanged)
 
 	def onPointSizeChanged(self):
 		self.item3d().setPointSize(self.pointsize.getValue())
@@ -1279,9 +1279,9 @@ class EMInspectorControl3DText(EMInspectorControlShape):
 			self.updateMetaData()
 			
 		self.textModeBox.currentIndexChanged.connect(self.on3DTextModeChanged)
-		self.fontDepth.valueChanged[int].connect(self.on3DTextDepthChanged)
-		self.fontSize.valueChanged[int].connect(self.on3DTextFontChanged)
-		self.text3d.textChanged[str].connect(self.on3DTextChanged)
+		self.fontDepth.valueChanged.connect(self.on3DTextDepthChanged)
+		self.fontSize.valueChanged.connect(self.on3DTextFontChanged)
+		self.text3d.textChanged.connect(self.on3DTextChanged)
 		
 	def on3DTextModeChanged(self):
 		textMode = str(self.textModeBox.currentText())
@@ -1434,14 +1434,14 @@ class EMInspectorControlLine(EMInspectorControlShape):
 			self.updateItemControls()
 			self.updateMetaData()
 		
-		self.leftShowArrow.stateChanged[int].connect(self.redraw)
-		self.rightShowArrow.stateChanged[int].connect(self.redraw)
-		self.leftArrowSize.valueChanged[int].connect(self.redraw)
-		self.leftArrowLength.valueChanged[int].connect(self.redraw)
-		self.rightArrowSize.valueChanged[int].connect(self.redraw)
-		self.rightArrowLength.valueChanged[int].connect(self.redraw)
-		self.linelength.valueChanged[int].connect(self.redraw)
-		self.linewidth.valueChanged[int].connect(self.redraw)
+		self.leftShowArrow.stateChanged.connect(self.redraw)
+		self.rightShowArrow.stateChanged.connect(self.redraw)
+		self.leftArrowSize.valueChanged.connect(self.redraw)
+		self.leftArrowLength.valueChanged.connect(self.redraw)
+		self.rightArrowSize.valueChanged.connect(self.redraw)
+		self.rightArrowLength.valueChanged.connect(self.redraw)
+		self.linelength.valueChanged.connect(self.redraw)
+		self.linewidth.valueChanged.connect(self.redraw)
 		
 		self.slice.valueChanged.connect(self.redraw)
 		self.stack.valueChanged.connect(self.redraw)

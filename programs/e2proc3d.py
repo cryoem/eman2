@@ -140,6 +140,7 @@ def main():
 	parser.add_option("--unstacking", action="store_true", help="Process a stack of 3D images, then output as a series of numbered single image files", default=False)
 
 	parser.add_option("--fouriermult", type=str, metavar="inputfile", help="multiply given file in Fourier space. experimental.")
+	parser.add_option("--removekey", type=str, metavar="inputfile", help="remove key in header.")
 	parser.add_option("--applyxf", type=str, metavar="inputfile", help="apply xf from the xform.align3d header of another map.")
 	parser.add_option("--verbose", "-v", dest="verbose", action="store", metavar="n", type="int", default=0, help="verbose level [0-9], higher number means higher level of verboseness")
 
@@ -443,6 +444,17 @@ def main():
 
 			elif option1 == "matchto":
 				mt=EMData(options.matchto[0])
+				if mt["apix_x"]!=data["apix_x"]:
+					print("pixel size mismatch. rescale first")
+					data.process_inplace("math.fft.resample",{"n":mt["apix_x"]/data["apix_x"]})
+				
+				if mt["nx"]!=data["nx"]:
+					print("size mismatch. clip data")
+					c=data["nx"]//2
+					sz=mt["nx"]
+					data.process_inplace("normalize.edgemean")
+					data.clip_inplace(Region(c-sz//2, c-sz//2, c-sz//2, sz, sz, sz))
+											   
 				data.process_inplace("filter.matchto",{"to":mt})
 				mt=None
 
@@ -496,6 +508,9 @@ def main():
 				tmp=EMData(options.applyxf, 0, True)
 				xf=tmp["xform.align3d"]
 				data.process_inplace("xform", {"transform":xf})
+			elif option1 == "removekey":
+				if options.verbose>1 : print("removekey -> ",options.removekey)
+				data.del_attr(options.removekey)
 
 			elif option1 == "process":
 				fi = index_d[option1]
