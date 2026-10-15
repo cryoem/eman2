@@ -107,6 +107,30 @@ def step_i_copy_movies(input_movies, outdir, apix, meanshrink, compressbits):
             sys.exit(1)
 
 
+def run_detector_stats(movie_file, outdir="diagnostics"):
+    """Best-effort detector pixel-value/fill-fraction diagnostic on an interior
+    frame of movie_file; a failure here must not abort the pipeline."""
+    cmd = f"e3plot_detector_stats.py {movie_file} --outdir {outdir}"
+    print(cmd)
+    ret = os.system(cmd)
+    if ret != 0:
+        print(f"Warning: e3plot_detector_stats.py exited with code {ret} (non-fatal)")
+
+
+def run_gain_check(raw_movie, corrected, nframes=150, outdir="diagnostics"):
+    """Best-effort before/after gain diagnostic: the same block of frames averaged
+    from the raw movie and from the gain-corrected stack, shown in real and
+    Fourier space. Fixed-pattern detector structure is multiplicative and does not
+    average away, so it shows as a stripe/lattice in the raw power spectrum and
+    should be absent after correction. Non-fatal, like the other diagnostics."""
+    cmd = (f"e3plot_gain_check.py {raw_movie} {corrected} "
+           f"--nframes {nframes} --outdir {outdir}")
+    print(cmd)
+    ret = os.system(cmd)
+    if ret != 0:
+        print(f"Warning: e3plot_gain_check.py exited with code {ret} (non-fatal)")
+
+
 # ── RPS diagnostic ────────────────────────────────────────────────────────────
 
 def _make_rps_diagnostic(gain_time_ave_file, gain_shifted_file, apix, outdir, neg_base, nframes=150):
@@ -424,7 +448,7 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     parser = EMAN2.EMArgumentParser(usage=usage, version=EMAN2.EMANVERSION)
     parser.add_argument("--movie_neg", type=str, default="", help="Negative tilt movie (gain-corrected HDF).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=0, col=0, rowspan=1, colspan=3)
     parser.add_argument("--movie_pos", type=str, default="", help="Positive tilt movie (gain-corrected HDF).", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=1, col=0, rowspan=1, colspan=3)
-    parser.add_argument("--gain", type=str, default=gain_params_data.get("gain_file", "GainFiducial.hdf"), help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
+    parser.add_argument("--gain", type=str, default="GainFiducial.hdf", help="Gain reference HDF file.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", row=2, col=0, rowspan=1, colspan=3)
     parser.add_argument("--outdir", type=str, default=".", help="Project output directory.", guitype='filebox', browser="EMBrowserWidget(withmodal=True, multiselect=False)", filecheck=False, row=3, col=0, rowspan=1, colspan=3)
     parser.add_header(name="apixhdr", help="", title=u"Å/pixel", row=4, col=0, rowspan=1, colspan=1)
     parser.add_argument("--apix", type=float, default=3.714, help=u"Å/pixel — Angstroms per pixel.", guitype='floatbox', row=4, col=1, rowspan=1, colspan=1)
@@ -470,6 +494,7 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     if not options.skip_copy:
         print("\n--- Step i: copying movies to movies/ ---")
         step_i_copy_movies(input_movies, outdir, options.apix, options.meanshrink, options.compressbits)
+        run_detector_stats(movie_files[0])
     else:
         print("Skipping step i (--skip_copy).")
         missing = [f for f in movie_files if not os.path.isfile(f)]
@@ -477,6 +502,11 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
             for f in missing:
                 print(f"ERROR: expected movie not found: {f}")
             sys.exit(1)
+
+    # Effective apix of movie_files (already shrunk by Step i) -- everything below
+    # this point operates on the post-shrink data and must use this, not the raw
+    # pre-shrink options.apix (which is only correct as input to Step i itself).
+    effective_apix = options.apix * options.meanshrink
 
     # ── Step iii ──────────────────────────────────────────────────────────────
     if not options.skip_thumbs:
@@ -494,7 +524,7 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
         step_iv_gain_and_align(
             movie_files,
             gain_file=gain_file,
-            apix=options.apix,
+            apix=effective_apix,
             number_to_be_averaged=options.ntave,
             chunkframes=options.chunk,
         )
@@ -507,9 +537,18 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     shft_file = neg_base + "_GainShifted.hdf"
     if os.path.isfile(tave_file) and os.path.isfile(shft_file):
         print("\n--- RPS diagnostic ---")
-        _make_rps_diagnostic(tave_file, shft_file, options.apix, outdir, neg_base)
+        _make_rps_diagnostic(tave_file, shft_file, effective_apix, outdir, neg_base)
     else:
         print("  RPS diagnostic skipped (GainTimeAve or GainShifted not found).")
+
+    # Gain-correction check: same frames, raw vs gain-corrected, real + Fourier.
+    # The raw movie is the copy made in step i, which has not had gain applied.
+    _raw_neg = os.path.join(outdir, "movies", neg_base + ".hdf")
+    if os.path.isfile(_raw_neg) and os.path.isfile(tave_file):
+        print("\n--- gain-correction check ---")
+        run_gain_check(_raw_neg, tave_file, outdir=os.path.join(outdir, "diagnostics"))
+    else:
+        print("  Gain check skipped (raw movie copy or GainTimeAve not found).")
 
     # Record import parameters for downstream steps
     import json as _json
@@ -517,7 +556,7 @@ Continuous-tilt import: copy, thumbnail, time-average, gain-correct, and CCF-ali
     neg_shifted = os.path.splitext(os.path.basename(movie_files[0]))[0] + "_GainShifted.hdf"
     pos_shifted = os.path.splitext(os.path.basename(movie_files[1]))[0] + "_GainShifted.hdf"
     combined_thumb = os.path.relpath(os.path.join(outdir, "thumbnails", neg_base + "_combined_thumb.hdf"))
-    params = {"ntave": options.ntave, "apix": options.apix,
+    params = {"ntave": options.ntave, "apix": effective_apix,
               "neg_gain_cor": neg_shifted, "pos_gain_cor": pos_shifted,
               "combined_thumb": combined_thumb}
     with open(os.path.join("info", "import_params.json"), "w") as _f:
