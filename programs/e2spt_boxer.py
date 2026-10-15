@@ -42,10 +42,18 @@ from EMAN2_utils import numpy2pdb
 import numpy as np
 
 import weakref
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QSplitter, QHBoxLayout # Erik add for Qsplitter
-from PyQt5.QtCore import Qt
 from eman2_gui.emapplication import get_application, EMApp
+# Match whatever Qt binding EMApp (and this environment's eman2_gui) is built on --
+# this script is symlinked across multiple conda envs that don't necessarily agree
+# on PyQt5 vs PySide6, so a hardcoded import breaks whichever env doesn't match.
+if EMApp.__bases__[0].__module__.split('.')[0] == "PySide6":
+    from PySide6 import QtCore, QtGui, QtWidgets
+    from PySide6.QtWidgets import QSplitter, QHBoxLayout # Erik add for Qsplitter
+    from PySide6.QtCore import Qt
+else:
+    from PyQt5 import QtCore, QtGui, QtWidgets
+    from PyQt5.QtWidgets import QSplitter, QHBoxLayout # Erik add for Qsplitter
+    from PyQt5.QtCore import Qt
 from eman2_gui.emimage2d import EMImage2DWidget
 from eman2_gui.emimagemx import EMImageMXWidget
 #from emimage3d import EMImage3DWidget
