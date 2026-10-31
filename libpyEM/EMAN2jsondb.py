@@ -947,17 +947,21 @@ def json_to_obj(jsdata):
 		except:
 			traceback.print_exc()
 			print("error decoding ",jsdata["__pickle__"])
-			return str(jsdata["__pickle__"])				# This shouldn't happen. Means a module hasn't been loaded. This is an emergency stopgap to avoid crashing
+			return jsdata					# undecodable (e.g. written by another EMAN version) - keep the raw entry so it is preserved unaltered on disk
 	elif "__image__" in jsdata :							# images now stored in a separate HDF file
 		try: 
 			# We defer actual reading of the image until it's needed
 			ret= tmpimg(str(jsdata["__image__"][0]),int(jsdata["__image__"][1]))
-#			ret= EMData(str(jsdata["__image__"][0]),int(jsdata["__image__"][1]))
+# 			ret= EMData(str(jsdata["__image__"][0]),int(jsdata["__image__"][1]))
 		except:
 			print("Error reading image from JSON: ",jsdata["__image__"])
 			ret= None
 		return ret
-	elif "__class__" in jsdata : return jsonclasses[jsdata["__class__"]](jsdata)
+	elif "__class__" in jsdata :
+		try: return jsonclasses[jsdata["__class__"]](jsdata)
+		except:
+			print("Warning: unknown or unreadable class '{}' in JSON - entry will be preserved as-is".format(jsdata.get("__class__")))
+			return jsdata	# unknown class (e.g. written by EMAN3) - keep the raw entry so it is preserved unaltered on disk
 	else: return jsdata
 
 def obj_to_json(obj):
