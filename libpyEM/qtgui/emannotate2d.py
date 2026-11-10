@@ -1593,8 +1593,8 @@ class EMAnnotate2DWidget(EMGLWidget):
 						self.get_data().process_inplace("mask.paint",{"x":lc[0],"y":lc[1],"z":0,"r1":self.drawr1,"v1":self.drawv1,"r2":self.drawr2,"v2":self.drawv2})
 						self.force_display_update()
 						self.update()
-					elif self.mouse_mode_dict[self.mouse_mode]=="seg":
-					if event.buttons()&Qt.MouseButton.LeftButton:
+			elif self.mouse_mode_dict[self.mouse_mode]=="seg":
+				if event.buttons()&Qt.MouseButton.LeftButton:
 					inspector = self.get_inspector()
 					lc=self.scr_to_img(event.position().x(),event.position().y())
 					if inspector:
@@ -3338,7 +3338,7 @@ class EMSegTab(QtWidgets.QWidget):
 		self.target.update()
 		self.update_sets()
 
-def load_mask(self):
+	def load_mask(self):
 		#Initiate loading a binary mask on the current annotation by popping up a EMBrowserWidget
 		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
 		self.openbrowser.ok.connect(self.load_mask_browser_ok)
@@ -3355,9 +3355,9 @@ def load_mask(self):
 		self.target.force_display_update()
 		self.target.update()
 		del in_f
-	return
+		return
 
-def load_class(self):
+	def load_class(self):
 		#Initiate loading a binary mask on the current annotation by popping up a EMBrowserWidget
 		self.openbrowser = EMBrowserWidget(withmodal=True,multiselect=False)
 		self.openbrowser.ok.connect(self.load_class_browser_ok)
