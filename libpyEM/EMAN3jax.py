@@ -552,7 +552,7 @@ metadata in the new object."""
 			self._data=imgs
 			if parent is not None:
 				if parent.metadata.shape==(imgs.shape[0],11): self._meta=parent._meta.copy()
-				else: raise Exception(f"EMStack2D(imgs,meta) has {imgs.shape[0]} images but metadata shape is {meta.shape}")
+				else: raise Exception(f"EMStack2D(imgs,meta) has {imgs.shape[0]} images but metadata shape is {parent.metadata.shape}")
 				self.apix,self.is_phase_flipped,self.voltage,self.cs=parent.apix,parent.is_phase_flipped,parent.voltage,parent.cs
 
 			self._npy_list=None
