@@ -103,7 +103,7 @@ def main():
 
 	# if lowpass filter selected apply to CTF images
 	if options.lowpass>0:
-		lp=jax_gaussfilt_2d(options.boxsize,options.lowpass)
+		lp=jax_pointfilt_2d(options.boxsize,options.lowpass)
 		ctfstack.mult(lp)
 
 	lst=LSXFile(options.lstout)

@@ -690,30 +690,31 @@ metadata in the new object."""
 		"""Compute the cross correlation between each image in the stack and target, which may be a single image or another EMStack of the same size.
 	If center is True, will shift the phase origin so zero shift corresponds to the middle of the image"""
 
-		if center:
-			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(jax_phaseorigin2d(self.jax[:-offset]*jnp.conj(target.jax[offset:])),self)
-			elif isinstance(target,EMStack2D):
-				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target.jax)),self)
-			elif isinstance(target,jax.Array) and offset==0:
-				return EMStack2D(jax_phaseorigin2d(self.jax*jnp.conj(target)),self)
-			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
-		else:
-			if isinstance(target,EMStack2D) and offset!=0:
-				return EMStack2D(self.jax[:-offset]*jnp.conj(target.jax[offset:]),self)
-			elif isinstance(target,EMStack2D):
-				return EMStack2D(self.jax*jnp.conj(target.jax),self)
-			elif isinstance(target,jax.Array) and offset==0:
-				return EMStack2D(self.jax*jnp.conj(target),self)
-			else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
+		if isinstance(target,EMStack2D) and offset!=0:
+			data=self.jax[:-offset]*jnp.conj(target.jax[offset:])
+			if center: data=jax_phaseorigin2d(data)
+			ret=EMStack2D(data)
+			# the CCF stack is "offset" images shorter than self; inherit self's attributes and the corresponding (sliced) metadata
+			ret.apix,ret.is_phase_flipped,ret.voltage,ret.cs=self.apix,self.is_phase_flipped,self.voltage,self.cs
+			if self._meta is not None: ret._meta=self._meta[:data.shape[0],:].copy()
+			return ret
+		elif isinstance(target,EMStack2D):
+			data=self.jax*jnp.conj(target.jax)
+			if center: data=jax_phaseorigin2d(data)
+			return EMStack2D(data,self)
+		elif isinstance(target,jax.Array) and offset==0:
+			data=self.jax*jnp.conj(target)
+			if center: data=jax_phaseorigin2d(data)
+			return EMStack2D(data,self)
+		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 	def convolve(self,target):
 		"""Compute the convolution between each image in the stack and target, which may be a single image or another EMStack of the same size"""
 
 		if isinstance(target,EMStack2D):
-			return EMStack2D(self.jax*target.jax)
+			return EMStack2D(self.jax*target.jax,self)
 		elif isinstance(target,jax.Array):
-			return EMStack2D(self.jax*target)
+			return EMStack2D(self.jax*target,self)
 		else: raise Exception("calc_ccf: target must be either EMStack2D or single Tensor")
 
 	def downsample(self,newsize):
@@ -722,7 +723,7 @@ metadata in the new object."""
 		current stack is in real or Fourier space. This cannot be used to upsample (make images larger) and should
 		not be used on rectangular images/volumes."""
 
-		if newsize==self.shape[1]: return EMStack2D(self.jax) # this won't copy, but since the tensor is constant should be ok?
+		if newsize==self.shape[1]: return EMStack2D(self.jax,self) # this won't copy, but since the tensor is constant should be ok?
 		ret=EMStack2D(jax_downsample_2d(self.jax,newsize),self)	# TODO: for now we're forcing this to be a tensor, probably better to leave it in the current format
 
 		try: ret.apix=self.apix*self.shape[1]/newsize

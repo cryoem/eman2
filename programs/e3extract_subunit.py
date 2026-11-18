@@ -104,7 +104,7 @@ The program proceeds in several steps:
 	N=len(lsxin)
 #	N=100
 
-	lpfilt=jax_gaussfilt_2d(nx,0.03)	# lowpass filter to smooth out Gaussians for mask generation
+	lpfilt=jax_pointfilt_2d(nx,0.03)	# lowpass filter to smooth out Gaussians for mask generation
 
 	nblk=int(1.0e9/(nx*nx*4))	# target 1G of ram at a time for the particles
 	sym=Symmetries.get(options.sym)

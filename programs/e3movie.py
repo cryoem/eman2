@@ -129,7 +129,7 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 			ccfsf=ccfsr.do_fft()
 
 			# make a gaussian low pass filter to smooth the ccfs after removing the 0 translation value
-			filtj=jax_gaussfilt_2d(rsz*2,0.125)
+			filtj=jax_pointfilt_2d(rsz*2,0.125)
 			# filt=EMData(rsz*2,rsz*2,1)
 			# filt.to_one()
 			# filt.process_inplace("mask.gaussian",{"outer_radius":2})
@@ -157,14 +157,16 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 
 			avgorig=Averagers.get("mean")
 			avgali=Averagers.get("mean")
-			for i in range(frames[0],frames[1],max(options.seqavg,1)):
+			step=max(options.seqavg,1)
+			actual_end=frames[0]+((frames[1]-frames[0])//step)*step	# drop any trailing frames that don't fill a full seqavg block
+			for i in range(frames[0],actual_end,step):
 				if options.seqavg>1: im=sum(EMData.read_images(f"{args[mi]}:{i}:{i+options.seqavg}"))
 				else: im=EMData(f"{args[mi]}",i)
 				if options.align_gain is not None:
 					im.process_inplace("math.fixgain.counting",{"gain":gain,"gainmin":2,"gainmax":2})
 				if clip is not None: im=im.get_clip(Region((im["nx"]-clip[0])//2,(im["ny"]-clip[1])//2,clip[0],clip[1]))
 				avgorig.add_image(im)
-				im.translate(int(seqoff[1][i-frames[0]]),int(seqoff[0][i-frames[0]]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
+				im.translate(int(seqoff[1][(i-frames[0])//max(options.seqavg,1)]),int(seqoff[0][(i-frames[0])//max(options.seqavg,1)]),0)		# note the apparent x/y swap here due to the numpy/tf N/Y/X indices
 				avgali.add_image(im)
 
 			avgo=avgorig.finish()
@@ -181,10 +183,10 @@ This will estimate gain for counting mode cameras, and has a "first draft" of fr
 				avgo.process_inplace("math.fft.resample",{"n":options.shrinkout})
 				avga.process_inplace("math.fft.resample",{"n":options.shrinkout})
 
-			if options.keepunali: avgo.write_image(f"micrographs/{base}__{frames[0]}-{frames[1]}_unali.hdf:6")
-			avga.write_image(f"micrographs/{base}__{frames[0]}-{frames[1]}.hdf:6")
+			if options.keepunali: avgo.write_image(f"micrographs/{base}__{frames[0]}-{actual_end}_unali.hdf:6")
+			avga.write_image(f"micrographs/{base}__{frames[0]}-{actual_end}.hdf:6")
 			js=js_open_dict(info_name(args[mi]))
-			js["movie_frames"]=frames
+			js["movie_frames"]=(frames[0],actual_end)
 			js["movie_align_x"]=seqoff[1]
 			js["movie_align_y"]=seqoff[0]
 			js=None
