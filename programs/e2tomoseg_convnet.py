@@ -367,16 +367,16 @@ class StackedConvNet_tf(object):
 			return loss
 		
 		self.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=learnrate), loss=calc_loss)
-		for it in range(niter):
-			self.model.reset_metrics()
-			cost=[]
-			for image, label in dataset:
+		# for it in range(niter):
+		# 	self.model.reset_metrics()
+		# 	cost=[]
+		# 	for image, label in dataset:
 				
-				y=self.model.predict(image)
-				result = self.model.train_on_batch(image, label)
-				cost.append(result)
-			print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
-
+		# 		y=self.model.predict(image)
+		# 		result = self.model.train_on_batch(image, label)
+		# 		cost.append(result)
+		# 	print("iteration {}, cost {:.3f}".format(it, np.mean(cost)))
+		self.model.fit(dataset, epochs=niter, verbose=1)
 		
 		self.dataset=dataset
 		
