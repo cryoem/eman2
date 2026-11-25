@@ -38,6 +38,12 @@ def make_tomogram_tile(imgs, tltpm, options, basenameForOutputs, errtlt=[], clip
 		#return make_tomogram(imgs, tltpm, options, errtlt=errtlt)
 
 	print("Making bin{:d} tomogram by tiling...".format(int(np.round(scale))))
+	#### state the mask state up front: a run on 21 Nov 2026 completed in 1h40m
+	#### before it was discovered the flag had never reached this function.
+	print("  supportmask (variant G): {}".format(
+		"ON -- mask tapered from the analytic support"
+		if getattr(options, "supportmask", False) else
+		"OFF -- shipped cos(ytilt) mask only"))
 	tpm=np.array(tltpm.copy())
 	print(scale)
 	print(type(tpm))
@@ -261,6 +267,43 @@ def make_tomogram_tile(imgs, tltpm, options, basenameForOutputs, errtlt=[], clip
 	return full3d
 
 
+def support_taper(pad, ov, ztilt, width):
+	"""Inward taper from the ANALYTIC support -- variant G, ported from
+	e2tomogram.py (19 Nov 2026).
+
+	The shipped mask cuts at dy=(pad//2)-cos(ytilt)*pad/2, which depends only on
+	ytilt: it knows nothing about tx, ty, the tile position or the detector
+	edge. Measured on ct4 stage 2 over 1791 tile-tilt samples, it leaves a zero
+	plateau INSIDE the kept region with a median of 146 px in x and 354 px in y,
+	reaching 515, and 100% of tile-tilts insert some unmeasured region. Those
+	zeros go into the Fourier insertion as though they were data.
+
+	The support is the clip rectangle rotated by ztilt -- a convex polygon -- so
+	the distance from an interior point to its boundary is the minimum of four
+	perpendicular distances, each a linear function of position. Rotation
+	preserves distance, so the forms are evaluated in the unrotated frame. This
+	avoids a distance transform entirely: 29 ms per tile against 105 ms, which
+	over 30312 tile-tilts is 15 minutes rather than 53.
+
+	Sign convention verified against a rotated-mask EDT on three tilts
+	(mean |difference| 0.001-0.007, which is mask pixelation in the reference).
+
+	ov = [left, right, bottom, top] overhang of the clip beyond the detector.
+	"""
+	th = -np.radians(ztilt)
+	c, sn = np.cos(th), np.sin(th)
+	Y, X = np.indices((pad, pad))
+	X = X - pad/2.0; Y = Y - pad/2.0
+	u =  X*c - Y*sn
+	v =  X*sn + Y*c
+	lo_u = ov[0] - pad/2.0; hi_u = pad/2.0 - ov[1]
+	lo_v = ov[2] - pad/2.0; hi_v = pad/2.0 - ov[3]
+	d = np.minimum(np.minimum(u - lo_u, hi_u - u),
+	               np.minimum(v - lo_v, hi_v - v))
+	t = np.clip(d/float(width), 0.0, 1.0)
+	return (t*t*t*(t*(t*6-15)+10)).astype(np.float32)
+
+
 def make_tile(args):
 	# Unpack inputs (no queue used)
 	tiltsFN, tiltsIndices, tpm, sz, pad, step, stepx, stepy, outz, ctf, options = args
@@ -298,7 +341,12 @@ def make_tile(args):
 			ty = int(m[i2]["ny"] // 2 + pxf[1])
 
 			# ROI from the already-loaded frame
-			tileData = m[i2].get_clip(Region(tx - pad // 2, ty - pad // 2, pad, pad), fill=0)
+			x0 = tx - pad // 2; y0 = ty - pad // 2
+			tileData = m[i2].get_clip(Region(x0, y0, pad, pad), fill=0)
+			#### how far this window overhangs the detector on each side, for
+			#### the analytic support used by --supportmask
+			ov = [max(0, -x0), max(0, x0 + pad - m[i2]["nx"]),
+			      max(0, -y0), max(0, y0 + pad - m[i2]["ny"])]
 
 			# Thread-safe CTF: build fresh per-slice object (don't mutate shared 'ctf')
 			if ctf is not None and getattr(options, "ctf", None) is not None:
@@ -348,6 +396,14 @@ def make_tile(args):
 				"val1": 0,
 				"val2": edge
 			})
+
+			#### VARIANT G: additionally taper the mask inward from the true
+			#### support, so no unmeasured region is inserted. Multiplies into
+			#### the existing mask, so it can only ever remove material.
+			if getattr(options, "supportmask", False):
+				mn = msk.numpy()            # a view -- writing updates msk
+				mn *= support_taper(pad, ov, float(t[2]), edge)
+				msk.update()
 
 			tileData.mult(msk)
 			del msk
@@ -681,6 +737,7 @@ def main():
     #parser.add_pos_argument("--json", type=str, help="Path to full options JSON file")
     #parser.add_argument("--ppid", type=int, help="PID of the parent process")
     parser.add_argument("--threads", type=int, default=0, help="Tile workers for the reconstruction. 0 (default) = choose automatically from available memory, which can take most of the machine (~16 GB per worker). Set 1 to leave the box free for other work.")
+    parser.add_argument("--supportmask", action="store_true", default=False, help="VARIANT G. Taper the tile mask inward from the ANALYTIC support -- the detector rectangle displaced by the alignment shift and rotated by ztilt -- so no unmeasured region is inserted. The shipped cos(ytilt) mask leaves a zero plateau with a median of 354 px in y on this data, affecting 100 percent of tile-tilts. Costs about 29 ms per tile-tilt (~15 min over a full stage-2 run).")
     parser.add_argument("--filterres", type=float, default=-1, help="Override target lowpass resolution (Angstroms) for this stage's own reconstruction volume, recomputed against its own apix. -1 = use the filterto value inherited from the input JSON (legacy behavior).")
 
     (options,args) =parser.parse_args()
@@ -700,6 +757,12 @@ def main():
     # (the JSON's own 'threads' value wins instead).
     if getattr(options, "threads", 0) and options.threads > 0:
         fullopts.threads = options.threads
+
+    # Same trap for --supportmask: a run on 21 Nov 2026 completed in 1h40m and
+    # produced a volume BIT-IDENTICAL to the previous one, because the flag was
+    # set on `options` while make_tile reads `fullopts`. Any new command-line
+    # option that make_tile consults must be copied across here.
+    fullopts.supportmask = bool(getattr(options, "supportmask", False))
 
     # Load data
 

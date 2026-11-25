@@ -169,7 +169,7 @@ def _run_logged(cmd_str, log_path):
         return proc.wait()
 
 
-def run_tomogram(sa_path, zeroid, rawtlt_path, threads, clipz, tltkeep, extrapad=True, moretile=False, keeptmp=False, patchtrack=-1, bxsz=32, filterres=40.0, fixytilt=False, niter="2,1,1,1", tltax=0.5, npk=20, compressbits=6, correctrot=False, posz=False, xdrift=False, autoclipxy=False):
+def run_tomogram(sa_path, zeroid, rawtlt_path, threads, clipz, tltkeep, extrapad=True, moretile=False, keeptmp=False, patchtrack=-1, bxsz=32, filterres=40.0, fixytilt=False, niter="2,1,1,1", tltax=0.5, npk=20, compressbits=6, correctrot=False, posz=False, xdrift=False, autoclipxy=False, edgefill=0.0, writetiles=False, supportmask=False, harmonicfill=False, boxfill=False, maskmean=False):
     """Run e2tomogram.py --stage2prep: reconstruct and write rich JSON."""
     n_sa = EMUtil.get_image_count(sa_path)
     cmd = (
@@ -201,6 +201,18 @@ def run_tomogram(sa_path, zeroid, rawtlt_path, threads, clipz, tltkeep, extrapad
         cmd += " --moretile"
     if fixytilt:
         cmd += " --fixytilt"
+    if edgefill != 0:
+        cmd += f" --edgefill={edgefill}"
+    if writetiles:
+        cmd += " --writetiles"
+    if supportmask:
+        cmd += " --supportmask"
+    if harmonicfill:
+        cmd += " --harmonicfill"
+    if boxfill:
+        cmd += " --boxfill"
+    if maskmean:
+        cmd += " --maskmean"
     # Steve Ludtke's platelet recommendation: patch tracking alone
     # (--niter=0 --patchtrack=2 --correctrot --posz --xdrift --autoclipxy).
     # Platelets lack the strong localized features landmark alignment needs, so
@@ -542,6 +554,12 @@ performed automatically by e3pick_ranges.py after range selection.
     parser.add_argument("--extrapad",   default=False,  action="store_true", help="Pass --extrapad to e2tomogram.py --stage2prep (recommended, but roughly triples the per-tile memory footprint of the bin4-tiling reconstruction step; uncheck to cut memory use).", guitype='boolbox', row=6, col=0, rowspan=1, colspan=1)
     parser.add_argument("--moretile",   default=False, action="store_true", help="Pass --moretile to e2tomogram.py --stage2prep (more tiles, slower).", guitype='boolbox', row=6, col=1, rowspan=1, colspan=1)
     parser.add_argument("--keeptmp",    default=False, action="store_true", help="Keep tomorecon/ temp directory (contains aligned tilt series for inspection).", guitype='boolbox', row=6, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--edgefill",     type=float, default=0.0, help="Pass --edgefill to e2tomogram.py: extend measured data outward into the hard-zero region the clip-and-rotate leaves, so no cliff enters the Fourier insertion. Reach in pixels; -1 uses pad//20 (~62 px at clipz=768); 0 disables.", guitype='floatbox', row=6, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--maskmean",    default=False, action="store_true", help="Pass --maskmean to e2tomogram.py (VARIANT J): the tile mask fades to the measured mean instead of to zero, so the border is not a step down to nothing. Requires --supportmask.", guitype='boolbox', row=13, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--boxfill",     default=False, action="store_true", help="Pass --boxfill to e2tomogram.py (VARIANT I): Laplace fill with the box edge held at the measured mean. Requires --supportmask. No free parameter.", guitype='boolbox', row=13, col=1, rowspan=1, colspan=1)
+    parser.add_argument("--harmonicfill", default=False, action="store_true", help="Pass --harmonicfill to e2tomogram.py (VARIANT H): harmonic (Laplace) fill of the clip blank before filter.ramp. Requires --supportmask. Adds roughly 4.5 s per tile per tilt.", guitype='boolbox', row=13, col=0, rowspan=1, colspan=1)
+    parser.add_argument("--supportmask", default=False, action="store_true", help="Pass --supportmask to e2tomogram.py (VARIANT G): build the tile mask from the analytic support rather than the cos(ytilt) guess, so no unmeasured region is inserted into the reconstruction.", guitype='boolbox', row=12, col=2, rowspan=1, colspan=1)
+    parser.add_argument("--writetiles",  default=False, action="store_true", help="Pass --writetiles to e2tomogram.py: save the centre tile's aligned tilt images, fully filtered, exactly as handed to the reconstructor. Written to <tmppath>/tiles_ali_x0_y0.hdf (needs --keeptmp). Diagnostic only.", guitype='boolbox', row=12, col=1, rowspan=1, colspan=1)
     parser.add_argument("--skip_tomogram",  default=False, action="store_true", help="Skip step 1: e2tomogram.py --stage2prep.", guitype='boolbox', row=7, col=0, rowspan=1, colspan=1)
     parser.add_argument("--skip_fullsh4",   default=False, action="store_true", help="Skip step 2: full-frame shrink stack.", guitype='boolbox', row=7, col=1, rowspan=1, colspan=1)
     parser.add_argument("--skip_interp",    default=False, action="store_true", help="Skip step 3: Euler interpolation.", guitype='boolbox', row=7, col=2, rowspan=1, colspan=1)
@@ -679,7 +697,12 @@ performed automatically by e3pick_ranges.py after range selection.
                      compressbits=options.compressbits, correctrot=options.correctrot,
                      posz=options.posz, xdrift=options.xdrift, autoclipxy=options.autoclipxy,
                      patchtrack=options.patchtrack, bxsz=options.bxsz, filterres=options.filterres,
-                     fixytilt=options.fixytilt)
+                     fixytilt=options.fixytilt, edgefill=options.edgefill,
+                     writetiles=options.writetiles,
+                     supportmask=options.supportmask,
+                     harmonicfill=options.harmonicfill,
+                     boxfill=options.boxfill,
+                     maskmean=options.maskmean)
         _copy_tlt_keys_to_sa_info(tomo_json, bn)
         run_plot_tltparams(tomo_json)
         if options.skip_measure:

@@ -75,6 +75,12 @@ def main():
 	parser.add_argument("--filterres", type=float,help="filter final tomogram to target resolution (in A). Default is 40", default=40,guitype='floatbox',row=13, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--extrapad", action="store_true",help="Use extra padding for tilted reconstruction. slower and cost more memory, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=0, rowspan=1, colspan=1,mode="easy")
+	parser.add_argument("--maskmean", action="store_true", default=False, help="VARIANT J. Where the tile mask fades out, fade to the MEAN of the measured data rather than to zero: out = data*msk + c*(1-msk). The tile keeps the texture the support mask gives it, but its border sits at the measured level instead of dropping to nothing. Requires --supportmask.")
+	parser.add_argument("--boxfill", action="store_true", default=False, help="VARIANT I. Before filter.ramp, fill the blank left by the clip by solving Laplace's equation with Dirichlet data on BOTH the measured pixels and the edge of the box, the latter held at mu = the mean of the measured pixels (box_fill.py). No free parameter, unlike --edgefill or the screened form. Measured pixels are copied exactly. REQUIRES --supportmask. Costs about 5 s per tile per tilt; needs pyamg.")
+	parser.add_argument("--harmonicfill", action="store_true", default=False, help="VARIANT H. Before filter.ramp, fill the blank left by the clip by solving Laplace's equation there with the measured pixels as boundary values (periodic_harmonic_fill.py). Measured pixels are copied exactly. This stops filter.ramp fitting its plane to a frame that is 16-52 percent fiction. REQUIRES --supportmask: with the cos(ytilt) mask it is far worse than doing nothing (ratio 12-17). Costs about 4.5 s per tile per tilt; needs pyamg for that, falls back to plain CG at about 8x slower.")
+	parser.add_argument("--supportmask", action="store_true", default=False, help="VARIANT G. Build the tile mask from the ANALYTIC support -- the detector rectangle displaced by the alignment shift and rotated by ztilt -- instead of the cos(ytilt) guess, so no unmeasured region is ever inserted. Measured on ct4: boundary gradient falls from 3.9x the interior texture to 0.76x, and the -8.9 sigma rim artefact disappears.")
+	parser.add_argument("--writetiles", action="store_true", default=False, help="Write out the aligned tilt images the reconstructor actually sees -- the centre tile, after every filtering step, immediately before Fourier insertion. Goes to <tmppath>/tiles_ali_x0_y0.hdf. Diagnostic only; does not change the reconstruction.")
+	parser.add_argument("--edgefill", type=float, default=0.0, help="Extend measured data outward into the hard-zero region left by the clip-and-rotate, instead of letting a cliff enter the Fourier insertion. Value is the reach in pixels; -1 uses pad//20; 0 (default) disables. See extend_edges().")
 	parser.add_argument("--moretile", action="store_true",help="Sample more tiles during reconstruction. Slower, but reduce boundary artifacts when the sample is thick", default=False,guitype='boolbox',row=15, col=1, rowspan=1, colspan=1,mode="easy")
 
 	parser.add_argument("--rmbeadthr", type=float, help="Density value threshold (of sigma) for removing beads. high contrast objects beyond this value will be removed. default is -1 for not removing. try 10 for removing fiducials", default=-1,guitype='floatbox',row=14, col=1, rowspan=1, colspan=1,mode="easy")
@@ -228,7 +234,7 @@ def main():
 	for p in imgs_1k:
 		m=p.process("math.meanshrink", {"n":2})
 		m.process_inplace("filter.ramp")
-		m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.025})
+		m.process_inplace("filter.lowpass.gauss",{"cutoff_freq":.025}) #   PRB; should we change?
 		m.process_inplace("filter.lowpass.gauss",{"cutoff_abs":options.lowpass})
 		m.process_inplace("filter.highpass.gauss",{"cutoff_pixels":options.highpass})
 		m.process_inplace("normalize.edgemean")
@@ -1779,6 +1785,169 @@ def calc_tltax_rot(imgs, options):
 	return tltax
 
 #### subthread for making tomogram by tiles. similar to make_tomogram, just for small cubes
+def tile_support(pad, ov, ztilt):
+	"""The analytic support of a tile: 1 where real detector pixels landed.
+
+	make_tomogram_tile clips each tile with fill=0 and records how far the
+	window overhung the detector (ct_overhang). That rectangle, pushed through
+	the SAME rotation the data gets, is exactly where measured data lives. It
+	is computed, never guessed at -- hunting for zeros would be fooled by
+	genuine zero counts in the data.
+	"""
+	sup=EMData(pad, pad)
+	sup.to_one()
+	if max(ov)>0:
+		sup.process_inplace("mask.zeroedge2d",{"x0":int(ov[0]), "x1":int(ov[1]),
+			"y0":int(ov[2]), "y1":int(ov[3])})
+	if ztilt!=0:
+		sup.process_inplace("xform",{"alpha":-ztilt})
+	return sup
+
+
+def box_fill_tile(m, sup):
+	"""Laplace fill with Dirichlet data on the measured set AND the box edge.
+
+	    grad^2 u = 0   in the blank
+	    u = f          on the measured pixels
+	    u = mu         on the edge of the tile,  mu = mean of the measured pixels
+
+	Chosen over the periodic harmonic fill (--harmonicfill) and the screened
+	form on inspection of the tiles: measured on ct4 frames 28/4/56, boundary
+	gradient as a multiple of interior texture, paired with --supportmask,
+
+	    current                3.87 / 5.96 / 3.73
+	    harmonic fill (H)      0.26 / 0.42 / 0.16
+	    box fill    (I)        0.13 / 0.32 / 0.11
+
+	It has no free parameter: the box edge anchors the far field directly,
+	where the screened form needed a relaxation length. Holding every edge of
+	the tile at the same constant also makes the tile continuous when the
+	Fourier insertion treats it as periodic.
+
+	MEASURED PIXELS ARE COPIED EXACTLY (max |change| = 0.000e+00 measured).
+
+	Placed BEFORE filter.ramp so the ramp fits its plane to a complete frame
+	rather than one that is 16-52% blank.
+	"""
+	import importlib.util
+	_p=os.path.join(os.path.dirname(os.path.realpath(__file__)), "box_fill.py")
+	_sp=importlib.util.spec_from_file_location("box_fill", _p)
+	_mod=importlib.util.module_from_spec(_sp); _sp.loader.exec_module(_mod)
+	hard=np.array(sup.numpy(), copy=True)>0.5
+	if hard.all() or not hard.any():
+		return
+	a=m.numpy()
+	src=np.array(a, copy=True).astype(np.float64)
+	try:
+		out=_mod.box_dirichlet_fill(src, hard, use_amg=True, rtol=1e-6)
+	except ImportError:
+		print("  boxfill: pyamg missing, falling back to plain CG")
+		out=_mod.box_dirichlet_fill(src, hard, rtol=1e-6)
+	a[:]=out.astype(np.float32)
+	m.update()
+	return
+
+
+def harmonic_fill_tile(m, sup):
+	"""Harmonic (Laplace) fill of the blank region, in place.
+
+	Solves grad^2 u = 0 over the unmeasured pixels with the measured ones as
+	Dirichlet data, on a periodic domain -- which is the right topology, since
+	the Fourier insertion treats the tile as a torus. The result is the
+	smoothest interpolant in the Dirichlet-energy sense and obeys the maximum
+	principle, so it cannot overshoot or ring the way a hard edge does.
+
+	MEASURED PIXELS ARE COPIED EXACTLY (max |change| = 0.000e+00 measured).
+
+	Placed BEFORE filter.ramp deliberately. The ramp fits a plane across the
+	whole pad frame, of which 16-52% is the blank from get_clip(..., fill=0);
+	subtracting that plane turns the blank into a sloped negative field and
+	removes a wrong plane from the real data (interior mean +1.11 -> +0.37
+	measured on ct4 frame 28). Filling first gives the ramp a complete frame.
+
+	Measured on ct4, paired with --supportmask:
+	  boundary gradient / interior texture, frame 28 / 4 / 56:
+	      current  3.87 / 5.96 / 3.73
+	      G        0.76 / 1.13 / 0.35
+	      H        0.26 / 0.42 / 0.16
+	With the cos(ytilt) mask instead it is catastrophic (12.4 / 16.7): filling
+	the frame and then keeping a region wider than the data inserts a large
+	amount of invented smooth signal as though it had been measured.
+	"""
+	#### import by real path: the deployed e2tomogram.py is a symlink from bin/,
+	#### so sys.path[0] cannot be relied on to hold the source directory.
+	import importlib.util
+	_p=os.path.join(os.path.dirname(os.path.realpath(__file__)),
+		"periodic_harmonic_fill.py")
+	_sp=importlib.util.spec_from_file_location("periodic_harmonic_fill", _p)
+	_mod=importlib.util.module_from_spec(_sp); _sp.loader.exec_module(_mod)
+	periodic_harmonic_fill=_mod.periodic_harmonic_fill
+	hard=np.array(sup.numpy(), copy=True)>0.5
+	if hard.all() or not hard.any():
+		return
+	a=m.numpy()                        # a view -- writing into it updates m
+	src=np.array(a, copy=True).astype(np.float64)
+	try:
+		out=periodic_harmonic_fill(src, hard, use_amg=True, rtol=1e-6)
+	except ImportError:
+		#### pyamg is pip-installed into the conda env and would vanish on a
+		#### rebuild. Plain CG gives the same answer, about 8x slower.
+		print("  harmonicfill: pyamg missing, falling back to plain CG")
+		out=periodic_harmonic_fill(src, hard, rtol=1e-6)
+	a[:]=out.astype(np.float32)
+	m.update()
+	return
+
+
+def extend_edges(m, sup, width):
+	"""Extend measured data outward into the hard-zero region, in place.
+
+	THE PROBLEM. make_tomogram_tile clips each tile with fill=0, so a window
+	that overhangs the detector arrives with a block of exact zeros; make_tile
+	then rotates by ztilt, which turns that block into a rotated quadrilateral
+	and sweeps further zeros into the corners. The step from data to zero is a
+	one-pixel cliff -- measured on tomorecon_28/tiltseries_ali.hdf as column-mean
+	steps of 0.08-0.19 against a median of 0.004-0.019 -- and it goes straight
+	into the Fourier insertion. mask.decayedge2d cannot reach it: that decays
+	toward the frame RECTANGLE, while this boundary runs diagonally across the
+	interior.
+
+	THE FILL. Normalized convolution: G(data*support)/G(support) with
+	sigma = width/2. Outside the support the numerator is carried by whatever
+	measured pixels are near and the denominator corrects for the part of the
+	kernel sitting over nothing, so the data continues smoothly outward and is
+	then decayed to zero over `width` with a smootherstep ramp.
+
+	MEASURED DATA IS NOT TOUCHED -- only pixels outside the support are written.
+
+	Chosen by sweep in RatNeurons/07092025_ProcessJune2026/edge_testbed/. Against
+	a synthetic rotated square the boundary gradient falls from 2.13x the
+	interior texture to 0.75x at width 24 of 512 (4.7% of the frame), while a
+	second-difference measure of streaking across the fill reads 0.007 against
+	0.011 for the untouched image. Three alternatives lost: nearest-value
+	projection streaks badly (0.298), an iterative +/-45 deg cone reached 1.19
+	and streaked at 0.020, and an equal-weight cone reached 0.78 but costs
+	O(width^2) array passes -- far too slow here, where this runs once per tile
+	per tilt (about 500 times per reconstruction).
+	"""
+	hard=np.array(sup.numpy(), copy=True)>0.5
+	if hard.all() or not hard.any():
+		return
+	a=m.numpy()                      # a view -- writing into it updates m
+	f=np.where(hard, a, 0).astype(np.float32)
+	w=hard.astype(np.float32)
+	sig=float(width)/2.
+	num=sciimg.gaussian_filter(f, sig, mode="constant", truncate=3.)
+	den=sciimg.gaussian_filter(w, sig, mode="constant", truncate=3.)
+	fill=np.where(den>1e-4, num/np.maximum(den,1e-9), 0)
+	d=sciimg.distance_transform_edt(~hard)
+	t=np.clip(1.-d/float(width), 0., 1.)
+	t=t*t*t*(t*(t*6-15)+10)          # smootherstep: flat slope at both ends
+	a[~hard]=(fill*t)[~hard]
+	m.update()
+	return
+
+
 def make_tile(args):
 	jsd, imgs, tpm, sz, pad, stepx, stepy, outz, options=args
 	recon=Reconstructors.get("fourier", {"sym":'c1',"size":[pad,pad,pad], "mode":options.reconmode})
@@ -1789,7 +1958,17 @@ def make_tile(args):
 		m=imgs[i].copy()
 		if m["nx"]==1:
 			continue
+		#### read this BEFORE the ctf branch -- do_ift() returns a new EMData and
+		#### the attribute would not survive it.
+		ov=m.get_attr_default("ct_overhang", [0,0,0,0])
 		
+		#### VARIANT H: fill the clip blank BEFORE the ramp sees it. Support is
+		#### the unrotated clip rectangle, since the rotation has not happened yet.
+		if options.boxfill:
+			box_fill_tile(m, tile_support(pad, ov, 0))
+		elif options.harmonicfill:
+			harmonic_fill_tile(m, tile_support(pad, ov, 0))
+
 		if m.has_attr('ctf'):
 			ctf=m["ctf"]
 			fft1=m.do_fft()
@@ -1798,8 +1977,32 @@ def make_tile(args):
 			fft1.mult(flipim)
 			m=fft1.do_ift()
 			
+		#### the ramp filter and decay edge help soften the edge artifacts.
+		#### normalize + mask.decayedge2d added 16 Nov 2026. reconstruct() (~line
+		#### 2120) has carried all three since Muyuan wrote it; make_tile had only
+		#### the ramp. A hard tile edge entering the Fourier insertion is the
+		#### leading candidate for the border in --bytile reconstructions:
+		#### measured on Fiducial4, interior column sd 3.48 falling to ~1.0 at the
+		#### edge, not recovering to 90% until 128-205 px in on three sides.
+		#### width=pad//40 matches reconstruct() exactly.
 		m.process_inplace("filter.ramp")
+		m.process_inplace("normalize")
+		m.process_inplace("mask.decayedge2d", {"width":int(pad//40)})
 		m.process_inplace("xform",{"alpha":-t[2]})
+
+		#### 16 Nov 2026: extend the data into the zeros the clip and the rotation
+		#### left behind, so no cliff reaches the Fourier insertion. The support
+		#### is rebuilt by pushing an image of ones through the SAME clip and
+		#### rotation, rather than hunting for zeros -- genuine zero counts in the
+		#### data would fool that. Off unless --edgefill is given.
+		sup=None
+		if options.edgefill!=0 or options.supportmask:
+			sup=tile_support(pad, ov, t[2])
+
+		if options.edgefill!=0:
+			ew=int(pad//20) if options.edgefill<0 else int(options.edgefill)
+			extend_edges(m, sup, ew)
+
 		if options.addnoise:
 			m.process_inplace("math.addnoise",{"noise":100})
 			m.process_inplace("normalize")
@@ -1811,8 +2014,53 @@ def make_tile(args):
 		edge=(sz//10)
 		msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
 		msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
-	
-		m.mult(msk)
+
+		#### VARIANT G, 19 Nov 2026. The mask above cuts at dy=(pad//2)-cos(ytilt)
+		#### *pad/2, which depends only on ytilt -- it knows nothing about tx, ty,
+		#### the tile position or the detector edge. Measured on ct4 it leaves up
+		#### to 503 px of hard zero INSIDE the kept region, and 18-29% of the
+		#### weight it inserts falls outside any measured pixel. Here the mask is
+		#### additionally tapered inward from the true support, so nothing
+		#### unmeasured is inserted. This relocates the existing addshells taper
+		#### to the right boundary; it does not add a new one.
+		#### Measured, frame 28 / frame 4 of ct4:
+		####   boundary gradient / interior texture  3.87 / 5.96  ->  0.76 / 1.13
+		####   rim artefact                          -8.9 sigma   ->  0.0
+		####   signal weight kept                    100%         ->  89% / 90%
+		if options.supportmask:
+			hard=np.array(sup.numpy(), copy=True)>0.5
+			tt=np.clip(sciimg.distance_transform_edt(hard)/float(edge), 0., 1.)
+			tt=tt*tt*tt*(tt*(tt*6-15)+10)      # smootherstep, flat slope both ends
+			mn=msk.numpy()                     # a view -- writing updates msk
+			mn*=tt.astype(np.float32)
+			msk.update()
+
+		#### VARIANT J, 24 Nov 2026. The mask normally fades the tile to zero,
+		#### which leaves the border at 0 while the interior has a non-zero mean
+		#### -- a step the Fourier insertion has to absorb. Fading instead to the
+		#### measured mean c removes that step: where msk==1 nothing changes,
+		#### where msk==0 the tile sits at c. Note that at steep tilt the
+		#### cos(ytilt) mask already attenuates a wide band inside the data, so
+		#### this lifts that band too, not only the outer border (measured: the
+		#### interior is unchanged to 1e-6 at -4.5 deg, but differs by up to 0.41
+		#### at -49.8 and +55.3).
+		if options.maskmean and sup is not None:
+			hr=np.array(sup.numpy(), copy=True)>0.5
+			mn=m.numpy()
+			c=float(mn[hr].mean()) if hr.any() else 0.0
+			kk=np.array(msk.numpy(), copy=True)
+			mn[:]=(mn*kk + c*(1.0-kk)).astype(np.float32)
+			m.update()
+		else:
+			m.mult(msk)
+
+		#### the aligned tilt as the reconstructor sees it: after ramp, normalize,
+		#### decayedge, rotation, edgefill and the mask. Centre tile only, so one
+		#### thread writes and there is no clobbering between workers.
+		if options.writetiles and stepx==0 and stepy==0:
+			m.write_image(os.path.join(getattr(options,"tmppath","."),
+				"tiles_ali_x0_y0.hdf"), i)
+
 		mp=recon.preprocess_slice(m, xf)
 		recon.insert_slice(mp,xf,1)
 		
@@ -1934,7 +2182,13 @@ def make_tomogram_tile(imgs, tltpm, options, errtlt=[], clipz=-1):
 					pos=[stepx*step,stepy*step,0]
 					pxf=get_xf_pos(t, pos)
 					img=imgs[i]
-					m=img.get_clip(Region(img["nx"]//2-pad//2+pxf[0],img["ny"]//2-pad//2+pxf[1], pad, pad), fill=0)
+					x0=int(img["nx"]//2-pad//2+pxf[0]); y0=int(img["ny"]//2-pad//2+pxf[1])
+					m=img.get_clip(Region(x0,y0, pad, pad), fill=0)
+					#### how far this window overhangs the detector on each side.
+					#### make_tile rebuilds the support from this, so the fill knows
+					#### exactly which pixels were measured and which are fill=0.
+					m["ct_overhang"]=[max(0,-x0), max(0, x0+pad-img["nx"]),
+						max(0,-y0), max(0, y0+pad-img["ny"])]
 					if options.ctf!=None:
 						rot=Transform({"type":"xyz","xtilt":float(t[4]),"ytilt":float(t[3])})
 						p1=rot.transform(pos)
@@ -2114,7 +2368,7 @@ def make_tomogram(imgs, tltpm, options, outname=None, padr=1.2,  errtlt=[], clip
 	return threed
 
 #### reconstruction function for the subprocesses
-def reconstruct(nid, img, recon, pad, xform,  exclude, options):
+def reconstruct(nid, img, recon, pad, xform,  exclude, options): # PRB look here
 	m=img.copy()
 	#### the ramp filter and decay edge helps soften the edge artifacts
 	m.process_inplace("filter.ramp")
@@ -2134,7 +2388,11 @@ def reconstruct(nid, img, recon, pad, xform,  exclude, options):
 	msk.process_inplace("mask.zeroedge2d",{"x0":dy+edge, "x1":dy+edge, "y0":edge, "y1":edge})
 	msk.process_inplace("mask.addshells.gauss",{"val1":0, "val2":edge})
 	p2.mult(msk)
-	
+	#   Write the image data to a debug file on disk     PRB   11/05/2026
+	#    in such a way. Look at what is going on to reconstruction: artefacts?
+	#    For this particular function exclusively
+	#            Get rid of line 2135, and maybe use dampedzeroedge instead of addshells.gauss
+	#                                                 play with mode options on dampedzeroedge
 	if not exclude:
 		p3=recon.preprocess_slice(p2, xf)
 		recon.insert_slice(p3,xf,1)

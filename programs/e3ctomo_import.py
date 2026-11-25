@@ -375,10 +375,18 @@ def step_iv_gain_and_align(input_movies, gain_file, apix,
 
                 # Shift
                 img_now.translate(dx, dy, 0)
-                img_now = img_now + 0.001
-                img_now.process_inplace("mask.dampedzeroedgefill",
-                                        {"mode": "edgetapermean"})
-                img_now = img_now - 0.001
+                # The edge fill is deferred to a later stage, so it is commented
+                # out here rather than left inert. The +/-0.001 offsets existed
+                # only to defeat it: mask.dampedzeroedgefill acts on pixels that
+                # are exactly zero, so adding 0.001 left it nothing to find and
+                # subtracting it afterwards restored the data. The net effect was
+                # a no-op at the cost of two full-frame passes per shifted frame.
+                # translate() leaves a genuine zero border, which is what the
+                # later fill expects.
+                #img_now = img_now + 0.001
+                #img_now.process_inplace("mask.dampedzeroedgefill",
+                #                        {"mode": "edgetapermean"})
+                #img_now = img_now - 0.001
                 img_now["apix_x"] = apix
                 img_now["apix_y"] = apix
                 img_now["apix_z"] = apix
