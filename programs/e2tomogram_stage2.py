@@ -44,6 +44,10 @@ def make_tomogram_tile(imgs, tltpm, options, basenameForOutputs, errtlt=[], clip
 		"ON -- mask tapered from the analytic support"
 		if getattr(options, "supportmask", False) else
 		"OFF -- shipped cos(ytilt) mask only"))
+	print("  maskmean    (variant J): {}".format(
+		"ON -- mask fades to the measured mean"
+		if getattr(options, "maskmean", False) else
+		"OFF -- mask fades to zero"))
 	tpm=np.array(tltpm.copy())
 	print(scale)
 	print(type(tpm))
@@ -267,6 +271,22 @@ def make_tomogram_tile(imgs, tltpm, options, basenameForOutputs, errtlt=[], clip
 	return full3d
 
 
+def support_hard(pad, ov, ztilt):
+	"""Boolean analytic support: True where real detector pixels landed.
+
+	Same geometry as support_taper(), thresholded. Used by --maskmean to take
+	the mean over the measured region only.
+	"""
+	th = -np.radians(ztilt)
+	c, sn = np.cos(th), np.sin(th)
+	Y, X = np.indices((pad, pad))
+	X = X - pad/2.0; Y = Y - pad/2.0
+	u =  X*c - Y*sn
+	v =  X*sn + Y*c
+	return ((u >= ov[0]-pad/2.0) & (u <= pad/2.0-ov[1]) &
+	        (v >= ov[2]-pad/2.0) & (v <= pad/2.0-ov[3]))
+
+
 def support_taper(pad, ov, ztilt, width):
 	"""Inward taper from the ANALYTIC support -- variant G, ported from
 	e2tomogram.py (19 Nov 2026).
@@ -405,7 +425,18 @@ def make_tile(args):
 				mn *= support_taper(pad, ov, float(t[2]), edge)
 				msk.update()
 
-			tileData.mult(msk)
+			#### VARIANT J: fade to the measured mean rather than to zero, so
+			#### the tile border is not a step down to nothing. Ported from
+			#### e2tomogram.py, 24 Nov 2026. Costs ~8 ms per tile-tilt.
+			if getattr(options, "maskmean", False):
+				hr = support_hard(pad, ov, float(t[2]))
+				tn = tileData.numpy()
+				c  = float(tn[hr].mean()) if hr.any() else 0.0
+				kk = np.array(msk.numpy(), copy=True)
+				tn[:] = (tn*kk + c*(1.0-kk)).astype(np.float32)
+				tileData.update()
+			else:
+				tileData.mult(msk)
 			del msk
 
 			mp = recon.preprocess_slice(tileData, xf)
@@ -737,6 +768,7 @@ def main():
     #parser.add_pos_argument("--json", type=str, help="Path to full options JSON file")
     #parser.add_argument("--ppid", type=int, help="PID of the parent process")
     parser.add_argument("--threads", type=int, default=0, help="Tile workers for the reconstruction. 0 (default) = choose automatically from available memory, which can take most of the machine (~16 GB per worker). Set 1 to leave the box free for other work.")
+    parser.add_argument("--maskmean", action="store_true", default=False, help="VARIANT J. Where the tile mask fades out, fade to the MEAN of the measured data rather than to zero: out = data*msk + c*(1-msk). The border then sits at the measured level instead of dropping to nothing. Requires --supportmask. Costs about 8 ms per tile-tilt, roughly 4 minutes over a stage-2 run.")
     parser.add_argument("--supportmask", action="store_true", default=False, help="VARIANT G. Taper the tile mask inward from the ANALYTIC support -- the detector rectangle displaced by the alignment shift and rotated by ztilt -- so no unmeasured region is inserted. The shipped cos(ytilt) mask leaves a zero plateau with a median of 354 px in y on this data, affecting 100 percent of tile-tilts. Costs about 29 ms per tile-tilt (~15 min over a full stage-2 run).")
     parser.add_argument("--filterres", type=float, default=-1, help="Override target lowpass resolution (Angstroms) for this stage's own reconstruction volume, recomputed against its own apix. -1 = use the filterto value inherited from the input JSON (legacy behavior).")
 
@@ -763,6 +795,7 @@ def main():
     # set on `options` while make_tile reads `fullopts`. Any new command-line
     # option that make_tile consults must be copied across here.
     fullopts.supportmask = bool(getattr(options, "supportmask", False))
+    fullopts.maskmean    = bool(getattr(options, "maskmean", False))
 
     # Load data
 
